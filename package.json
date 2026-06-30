@@ -1,0 +1,30 @@
+{
+  "name": "tournament-platform",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "yarn@1.22.22",
+  "engines": {
+    "node": ">=18.18.0"
+  },
+  "workspaces": [
+    "apps/web",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\""
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "prettier-plugin-tailwindcss": "^0.6.6",
+    "turbo": "^2.1.0"
+  },
+  "resolutions": {
+    "eslint-visitor-keys": "^4.2.0"
+  }
+}
