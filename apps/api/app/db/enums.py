@@ -1,0 +1,221 @@
+"""Postgres ENUM types — the single source of truth for the DB enums.
+
+Each class mirrors (or extends) the TypeScript unions in
+`packages/shared/src/types.ts`. VALUES are the lowercase wire strings and must
+match the TS side byte-for-byte (the generated API client depends on it).
+
+Native PG enums are used for closed, UI-bound sets. Open-ended taxonomies
+(`outbox.event_type`, `match_result_events.type`, `audit_logs.action/entity`,
+`identities.provider`, `notifications.type`) are plain ``text`` columns instead.
+
+FORWARD-ONLY: ``ALTER TYPE ... ADD VALUE`` cannot run inside a transaction block
+alongside other DDL, and the new value is not usable until the transaction
+commits; removing a value requires recreating the type and rewriting columns.
+Treat enum changes as append-only migrations.
+"""
+
+from __future__ import annotations
+
+import enum
+
+import sqlalchemy as sa
+
+
+class _StrEnum(str, enum.Enum):
+    """str-valued enum so members serialize as their plain wire string."""
+
+    def __str__(self) -> str:  # pragma: no cover - cosmetic
+        return str(self.value)
+
+
+# --- Mirrored from packages/shared/src/types.ts (values must match exactly) ---
+class SkillLevel(_StrEnum):
+    BEGINNER = "beginner"
+    INTERMEDIATE = "intermediate"
+    ADVANCED = "advanced"
+
+
+class ParticipantKind(_StrEnum):
+    INDIVIDUAL = "individual"
+    PAIR = "pair"
+    TEAM = "team"
+
+
+class MatchStatus(_StrEnum):
+    SCHEDULED = "scheduled"
+    LIVE = "live"
+    COMPLETED = "completed"
+    WALKOVER = "walkover"
+    NO_SHOW = "no_show"
+    CANCELLED = "cancelled"
+
+
+class TournamentStatus(_StrEnum):
+    DRAFT = "draft"
+    REGISTRATION = "registration"
+    SEEDING = "seeding"
+    LIVE = "live"
+    COMPLETED = "completed"
+    ARCHIVED = "archived"
+
+
+class StageFormat(_StrEnum):
+    ROUND_ROBIN = "round_robin"
+    SINGLE_ELIM = "single_elim"
+    GROUP_KNOCKOUT = "group_knockout"
+    SWISS = "swiss"
+    LADDER = "ladder"
+
+
+# --- Additional enums (mirror into packages/shared/src/types.ts for parity) ---
+class OrgRole(_StrEnum):
+    OWNER = "owner"
+    ADMIN = "admin"
+    ORGANIZER = "organizer"
+    SCOREKEEPER = "scorekeeper"
+    VIEWER = "viewer"
+
+
+class Visibility(_StrEnum):
+    PUBLIC = "public"
+    UNLISTED = "unlisted"
+    PRIVATE = "private"
+
+
+class ParticipantStatus(_StrEnum):
+    REGISTERED = "registered"
+    APPROVED = "approved"
+    WAITLISTED = "waitlisted"
+    WITHDRAWN = "withdrawn"
+    REJECTED = "rejected"
+    CHECKED_IN = "checked_in"
+
+
+class RegistrationStatus(_StrEnum):
+    SUBMITTED = "submitted"
+    APPROVED = "approved"
+    WAITLISTED = "waitlisted"
+    REJECTED = "rejected"
+    WITHDRAWN = "withdrawn"
+
+
+class MatchOutcome(_StrEnum):
+    """Per-side outcome on match_participants — the abstract result the engine reads."""
+
+    WIN = "win"
+    LOSS = "loss"
+    DRAW = "draw"
+    RANK = "rank"
+
+
+class AssignmentRole(_StrEnum):
+    SCOREKEEPER = "scorekeeper"
+    MARSHAL = "marshal"
+
+
+class ShareLinkScope(_StrEnum):
+    PUBLIC_VIEW = "public_view"
+    CHECK_IN = "check_in"
+    SCOREKEEPER = "scorekeeper"
+    TEAM_INVITE = "team_invite"
+
+
+class NotificationChannel(_StrEnum):
+    EMAIL = "email"
+    IN_APP = "in_app"
+
+
+class NotificationStatus(_StrEnum):
+    PENDING = "pending"
+    SENT = "sent"
+    DELIVERED = "delivered"
+    FAILED = "failed"
+    READ = "read"
+
+
+class FileKind(_StrEnum):
+    ORG_LOGO = "org_logo"
+    TOURNAMENT_LOGO = "tournament_logo"
+    RULES_DOC = "rules_doc"
+    EXPORT = "export"
+    AVATAR = "avatar"
+
+
+class FileStatus(_StrEnum):
+    PENDING = "pending"
+    READY = "ready"
+    FAILED = "failed"
+
+
+class OrgInviteStatus(_StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
+
+
+class IdempotencyStatus(_StrEnum):
+    STARTED = "started"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+def pg_enum(py_enum: type[enum.Enum], name: str) -> sa.Enum:
+    """Build a named native PG ENUM bound to a Python enum.
+
+    ``values_callable`` stores the enum *values* (lowercase wire strings), not the
+    member names. ``create_type=False``: the type is created/dropped explicitly in
+    the migration, so a type shared by several tables is not emitted more than once.
+    """
+    return sa.Enum(
+        py_enum,
+        name=name,
+        native_enum=True,
+        create_type=False,
+        values_callable=lambda e: [m.value for m in e],
+    )
+
+
+# Named ENUM instances — imported by models (for columns) AND by the initial
+# migration (to create/drop the types). One instance per type; reused across tables.
+SKILL_LEVEL = pg_enum(SkillLevel, "skill_level")
+PARTICIPANT_KIND = pg_enum(ParticipantKind, "participant_kind")
+MATCH_STATUS = pg_enum(MatchStatus, "match_status")
+TOURNAMENT_STATUS = pg_enum(TournamentStatus, "tournament_status")
+STAGE_FORMAT = pg_enum(StageFormat, "stage_format")
+ORG_ROLE = pg_enum(OrgRole, "org_role")
+VISIBILITY = pg_enum(Visibility, "visibility")
+PARTICIPANT_STATUS = pg_enum(ParticipantStatus, "participant_status")
+REGISTRATION_STATUS = pg_enum(RegistrationStatus, "registration_status")
+MATCH_OUTCOME = pg_enum(MatchOutcome, "match_outcome")
+ASSIGNMENT_ROLE = pg_enum(AssignmentRole, "assignment_role")
+SHARE_LINK_SCOPE = pg_enum(ShareLinkScope, "share_link_scope")
+NOTIFICATION_CHANNEL = pg_enum(NotificationChannel, "notification_channel")
+NOTIFICATION_STATUS = pg_enum(NotificationStatus, "notification_status")
+FILE_KIND = pg_enum(FileKind, "file_kind")
+FILE_STATUS = pg_enum(FileStatus, "file_status")
+ORG_INVITE_STATUS = pg_enum(OrgInviteStatus, "org_invite_status")
+IDEMPOTENCY_STATUS = pg_enum(IdempotencyStatus, "idempotency_status")
+
+# Consumed by the migration's upgrade()/downgrade(). Order is irrelevant
+# (no inter-enum dependencies).
+ALL_PG_ENUMS: list[sa.Enum] = [
+    SKILL_LEVEL,
+    PARTICIPANT_KIND,
+    MATCH_STATUS,
+    TOURNAMENT_STATUS,
+    STAGE_FORMAT,
+    ORG_ROLE,
+    VISIBILITY,
+    PARTICIPANT_STATUS,
+    REGISTRATION_STATUS,
+    MATCH_OUTCOME,
+    ASSIGNMENT_ROLE,
+    SHARE_LINK_SCOPE,
+    NOTIFICATION_CHANNEL,
+    NOTIFICATION_STATUS,
+    FILE_KIND,
+    FILE_STATUS,
+    ORG_INVITE_STATUS,
+    IDEMPOTENCY_STATUS,
+]

@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from app.api.schemas import ApiModel
 
 
-class HealthResponse(BaseModel):
+class HealthResponse(ApiModel):
     status: str
     service: str
     version: str
@@ -11,5 +11,5 @@ class HealthResponse(BaseModel):
     time: datetime
 
 
-class DBHealthResponse(BaseModel):
+class DBHealthResponse(ApiModel):
     database: str  # "ok" | "unavailable"

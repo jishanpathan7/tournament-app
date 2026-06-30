@@ -52,6 +52,7 @@ yarn-error.log*
 
 # Local-only docs — internal planning/specs, not published to the repo.
 # Remove an entry here if you want it tracked.
+/context.md
 /Platform-Product-Spec.md
 /Technical-Architecture.md
 /Tournament-Playbook.md

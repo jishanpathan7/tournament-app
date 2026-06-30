@@ -17,7 +17,7 @@ The canonical record of what we use and why. Reconciles the **"FastAPI + React S
 
 ## Backend — kept (pins in `apps/api/requirements.txt`)
 
-FastAPI `0.136.3` · Uvicorn `0.48.0` · Pydantic v2 `>=2.13.4` · email-validator · python-multipart · **SQLAlchemy[asyncio] 2.0 + asyncpg + Alembic** (Postgres) · PyJWT · passlib[bcrypt] + bcrypt `5.0.0` · cryptography · **boto3** (R2 via S3 API) · **resend** (email) · httpx · **sse-starlette** (live scoring) · sentry-sdk[fastapi] · python-json-logger · python-dotenv · typer · tzdata · pytest/black/isort/flake8/mypy.
+FastAPI `0.136.3` · Uvicorn `0.48.0` · Pydantic v2 `>=2.13.4` · email-validator · python-multipart · **SQLAlchemy[asyncio] 2.0 + asyncpg + Alembic** (Postgres) · **uuid6** (UUIDv7 primary keys) · greenlet (async ORM, pinned explicitly) · PyJWT · passlib[bcrypt] + bcrypt `5.0.0` · cryptography · **boto3** (R2 via S3 API) · **resend** (email) · httpx · **sse-starlette** (live scoring) · sentry-sdk[fastapi] · python-json-logger · python-dotenv · typer · tzdata · pytest (+ pytest-asyncio)/black/isort/flake8/mypy.
 
 ## Frontend — kept (pins in `apps/web/package.json`)
 

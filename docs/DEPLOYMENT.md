@@ -87,6 +87,27 @@ NEXT_PUBLIC_SENTRY_DSN=...
 6. **DNS** — `app.*` → Vercel, `api.*` → Railway/Render, `cdn.*` → R2.
 7. **Sentry + UptimeRobot** — wire DSNs; add keep-alive ping if on Render.
 
+## Database connection & RLS notes (read before going live)
+
+The data layer uses Postgres **Row-Level Security** (FORCE'd) scoped by a per-transaction
+GUC (`SET LOCAL app.current_org`). Three deployment requirements follow:
+
+- **PostgreSQL 15+ required.** The `standings` uniqueness uses `NULLS NOT DISTINCT`. Neon
+  is 15/16 (fine); the initial migration hard-fails on older servers with a clear error.
+- **Pooled endpoint + asyncpg.** Neon's pooled `DATABASE_URL` fronts Postgres with PgBouncer
+  in **transaction** mode. asyncpg auto-prepares statements, which collide across pooled
+  backends → intermittent `prepared statement does not exist` / `cached plan` errors under
+  load. Fix at wire-up time (engine `connect_args={"statement_cache_size": 0}`, plus a unique
+  `prepared_statement_name_func`), **or** point the app at Neon's **direct** endpoint and pool
+  in-process. Migrations always use `DIRECT_URL`. (Deliberately not hardcoded in `core/db.py`
+  yet — it would slow direct-connection dev/CI; decide it with the deploy topology.)
+- **RLS correctness under pooling.** `SET LOCAL` is transaction-scoped, so it is safe under
+  transaction pooling **only if** every org-scoped query runs inside the same transaction that
+  set the context. The auth layer must set `app.current_org` at the start of each request's
+  transaction (helper: `app/db/session.py:set_org_context` / `org_scope`). With FORCE on, a
+  query with no context returns **zero rows** — connect the app as a **non-superuser** role
+  (Neon's default role is non-superuser, so FORCE applies; never run the app as a superuser).
+
 ## Upgrade triggers (when free stops being enough)
 
 | Signal | Action |

@@ -34,6 +34,8 @@ app/
 
 ## Conventions
 
+> **The full backend & API contract every module follows lives in [`docs/API-CONVENTIONS.md`](../../docs/API-CONVENTIONS.md)** — module anatomy, the request-scoped org-context session, camelCase + `CursorPage`, Problem Details, auth/idempotency seams. Read it before adding a module. Highlights:
+
 - All routes under one `APIRouter(prefix="/api/v1")`; mount CORS **after** including routers.
 - String UUID ids (UUIDv7) on every row; never leak internal sequence ids.
 - **Cookie-based JWT** auth: `set_auth_cookies` derives `secure`/`samesite` from the base-URL scheme. No bearer tokens. Idempotent admin seed from `ADMIN_EMAIL`/`ADMIN_PASSWORD` on startup.
