@@ -1,0 +1,4 @@
+{
+  "extends": "@tournament/config/tsconfig.base.json",
+  "include": ["src"]
+}

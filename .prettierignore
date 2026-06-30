@@ -1,0 +1,18 @@
+# Build & deps
+node_modules
+.next
+out
+dist
+.turbo
+.venv
+build
+coverage
+yarn.lock
+
+# Python backend has its own formatters (black/isort)
+apps/api
+
+# Prose docs and static mockups are authored by hand, not Prettier
+**/*.md
+docs/mockups
+SIBL-Badminton-2026-Workbook.xlsx
