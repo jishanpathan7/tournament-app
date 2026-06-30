@@ -1,16 +1,18 @@
-"""Async SQLAlchemy engine/session. Lazily initialized so the app boots without a DB."""
+"""Async SQLAlchemy engine/session. Lazily initialized so the app boots without a DB.
+
+`Base` is defined in ``app.db.base`` and re-exported here for back-compat. ORM models
+register on ``Base.metadata`` (imported via ``app.db.models``); Alembic targets it.
+"""
 
 from collections.abc import AsyncGenerator
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
-from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
+from app.db.base import Base
 
-
-class Base(DeclarativeBase):
-    """Declarative base for all ORM models (Alembic targets this metadata)."""
+__all__ = ["Base", "get_session", "check_db"]
 
 
 _engine = None
@@ -26,7 +28,13 @@ def _init() -> None:
 
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    """FastAPI dependency yielding a scoped async session."""
+    """FastAPI dependency yielding a scoped async session.
+
+    RLS hook: once the auth layer resolves a request principal, it will call
+    ``app.db.session.set_org_context(session, org_id)`` here (inside a transaction)
+    so Postgres RLS is scoped per request. Until then, tenant tables are FORCE'd
+    and a query without an org context returns zero rows (not an error).
+    """
     _init()
     if _sessionmaker is None:
         raise RuntimeError("DATABASE_URL is not configured")

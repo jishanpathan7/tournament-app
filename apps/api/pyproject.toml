@@ -21,3 +21,4 @@ exclude = "(migrations|tests)"
 pythonpath = ["."]
 testpaths = ["tests"]
 addopts = "-q"
+asyncio_mode = "auto"
