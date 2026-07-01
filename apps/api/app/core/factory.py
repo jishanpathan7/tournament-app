@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from app.core.config import get_settings
-from app.core.ports import Cache, EmailChannel, LoginThrottle, Storage
+from app.core.ports import Cache, EmailChannel, JobQueue, LoginThrottle, Storage
 from app.core.throttle import build_throttle
 from app.emails.log_channel import LogEmailChannel
 
@@ -25,6 +25,14 @@ def get_cache() -> Cache:
     from app.cache.memory import InMemoryCache
 
     return InMemoryCache()
+
+
+@lru_cache
+def get_job_queue() -> JobQueue:
+    """Outbox-backed queue at MVP (drained by the in-process poller); ARQ/Celery later."""
+    from app.workers.queue import OutboxJobQueue
+
+    return OutboxJobQueue()
 
 
 @lru_cache

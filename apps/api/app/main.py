@@ -1,5 +1,6 @@
 """FastAPI application factory and entrypoint (`uvicorn app.main:app`)."""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -25,8 +26,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         import sentry_sdk
 
         sentry_sdk.init(dsn=settings.sentry_dsn, traces_sample_rate=0.1)
+
+    # In-process background job poller (single-instance MVP). Set WORKER_ENABLED=false
+    # to instead run a standalone worker (`python -m app.workers`).
+    worker_stop: asyncio.Event | None = None
+    worker_task: asyncio.Task[None] | None = None
+    if settings.worker_enabled and settings.database_url:
+        from app.workers.poller import run_forever
+
+        worker_stop = asyncio.Event()
+        worker_task = asyncio.create_task(run_forever(worker_stop))
+
     logger.info("api.startup", extra={"environment": settings.environment})
     yield
+    if worker_stop is not None and worker_task is not None:
+        worker_stop.set()
+        await worker_task
     logger.info("api.shutdown")
 
 
