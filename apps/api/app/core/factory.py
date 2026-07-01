@@ -15,6 +15,8 @@ from app.core.throttle import build_throttle
 from app.emails.log_channel import LogEmailChannel
 
 if TYPE_CHECKING:
+    from app.core.metrics import Metrics
+    from app.core.tracing import Tracer
     from app.realtime.broadcaster import Broadcaster
     from app.realtime.connections import ConnectionManager
     from app.realtime.transport import RealtimeTransport
@@ -69,6 +71,22 @@ def get_transport() -> RealtimeTransport:
     from app.realtime.transport import SSETransport
 
     return SSETransport()
+
+
+@lru_cache
+def get_metrics() -> Metrics:
+    """No-op metrics at MVP; an OTel/StatsD/Prometheus exporter slots in here."""
+    from app.core.metrics import NullMetrics
+
+    return NullMetrics()
+
+
+@lru_cache
+def get_tracer() -> Tracer:
+    """No-op tracer at MVP; an OpenTelemetry tracer slots in here when OTel is enabled."""
+    from app.core.tracing import NullTracer
+
+    return NullTracer()
 
 
 @lru_cache
