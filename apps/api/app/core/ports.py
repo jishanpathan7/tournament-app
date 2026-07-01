@@ -57,10 +57,25 @@ class EmailChannel(Protocol):
 
 @runtime_checkable
 class AuthService(Protocol):
-    """Identity. MVP: first-party JWT. Alternatives behind the same interface."""
+    """Identity. MVP: first-party JWT (see app/modules/auth). This Protocol is the
+    swap seam for managed auth (Clerk/Auth0) later — the first-party module does NOT
+    route through it; it keeps concrete, well-typed service functions."""
 
-    async def issue_tokens(self, user_id: str) -> dict[str, str]: ...
+    async def issue_tokens(
+        self, user_id: str, organization_id: str | None = None
+    ) -> dict[str, str]: ...
 
     async def verify_access(self, token: str) -> dict[str, Any]: ...
 
     async def rotate_refresh(self, token: str) -> dict[str, str]: ...
+
+
+@runtime_checkable
+class LoginThrottle(Protocol):
+    """Brute-force guard. MVP: in-process sliding window. Scale: Redis-backed."""
+
+    async def check(self, key: str) -> None: ...  # raise LoginThrottleError if locked out
+
+    async def record_failure(self, key: str) -> None: ...
+
+    async def reset(self, key: str) -> None: ...

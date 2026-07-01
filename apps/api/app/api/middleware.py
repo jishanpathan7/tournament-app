@@ -11,7 +11,7 @@ import uuid
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
-from app.core.context import request_id_var
+from app.core.context import request_id_var, set_principal_context
 
 REQUEST_ID_HEADER = b"x-request-id"
 
@@ -41,3 +41,4 @@ class RequestContextMiddleware:
             await self.app(scope, receive, send_wrapper)
         finally:
             request_id_var.reset(token)
+            set_principal_context(None, None)  # clear principal so it can't leak across requests

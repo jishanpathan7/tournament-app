@@ -15,6 +15,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import create_async_engine
 
 import app.db.models  # noqa: F401  -- registers all tables on Base.metadata
+from app.core.db import reset_engine
 from app.db.base import Base
 from app.db.enums import ALL_PG_ENUMS
 
@@ -23,7 +24,7 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="DATABASE_URL not set")
 
 EXPECTED_TABLES = len(Base.metadata.tables)
-EXPECTED_ENUMS = len(ALL_PG_ENUMS)
+EXPECTED_ENUMS = len(ALL_PG_ENUMS) + 1  # +auth_token_purpose, added in migration 0002
 
 
 def _cfg():
@@ -51,13 +52,17 @@ async def _counts():
 
 def test_upgrade_downgrade_roundtrip():
     cfg = _cfg()
+    try:
+        command.upgrade(cfg, "head")
+        assert asyncio.run(_counts()) == (EXPECTED_TABLES, EXPECTED_ENUMS)
 
-    command.upgrade(cfg, "head")
-    assert asyncio.run(_counts()) == (EXPECTED_TABLES, EXPECTED_ENUMS)
+        # Downgrade must leave NO orphaned tables AND no orphaned enum types.
+        command.downgrade(cfg, "base")
+        assert asyncio.run(_counts()) == (0, 0)
 
-    # Downgrade must leave NO orphaned tables AND no orphaned enum types.
-    command.downgrade(cfg, "base")
-    assert asyncio.run(_counts()) == (0, 0)
-
-    command.upgrade(cfg, "head")  # restore for any later DB-backed tests
-    assert asyncio.run(_counts()) == (EXPECTED_TABLES, EXPECTED_ENUMS)
+        command.upgrade(cfg, "head")  # restore for any later DB-backed tests
+        assert asyncio.run(_counts()) == (EXPECTED_TABLES, EXPECTED_ENUMS)
+    finally:
+        # Recreated enum types got new OIDs → refresh the app engine's pooled
+        # connections (their asyncpg type cache is now stale) for later tests.
+        reset_engine()

@@ -12,6 +12,7 @@ EXPECTED_TABLES = {
     "memberships",
     "identities",
     "auth_sessions",
+    "auth_tokens",
     "org_invites",
     # sport
     "sport_profiles",

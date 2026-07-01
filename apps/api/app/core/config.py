@@ -21,8 +21,32 @@ class Settings(BaseSettings):
     database_url: str | None = None
 
     jwt_secret: str = "dev-insecure-change-me"
-    access_token_ttl: int = 900
-    refresh_token_ttl: int = 2_592_000
+    jwt_algorithm: str = "HS256"
+    access_token_ttl: int = 900  # 15m
+    refresh_token_ttl: int = 2_592_000  # 30d server-side session lifetime
+    email_verification_token_ttl: int = 86_400  # 24h
+    password_reset_token_ttl: int = 3_600  # 1h
+
+    # Cookies (secure/samesite finalized per request scheme; secure enforced in prod).
+    cookie_domain: str | None = None
+    cookie_secure: bool = False
+    cookie_samesite: str = "lax"
+    access_cookie_name: str = "access_token"
+    refresh_cookie_name: str = "refresh_token"
+    csrf_cookie_name: str = "csrf_token"
+
+    # Brute-force throttle (in-process at MVP; Redis later behind LoginThrottle port).
+    login_max_attempts: int = 10
+    login_attempt_window: int = 900  # 15m sliding window
+
+    # Google OAuth — endpoints stay inert until all three are set.
+    google_client_id: str | None = None
+    google_client_secret: str | None = None
+    google_redirect_uri: str | None = None
+
+    # Email — LogEmailChannel default until an API key is set.
+    resend_api_key: str | None = None
+    email_from: str = "Tournament Platform <noreply@localhost>"
 
     sentry_dsn: str | None = None
     log_level: str = "INFO"
@@ -35,6 +59,12 @@ class Settings(BaseSettings):
     def is_production(self) -> bool:
         return self.environment.lower() == "production"
 
+    @property
+    def google_oauth_configured(self) -> bool:
+        return bool(
+            self.google_client_id and self.google_client_secret and self.google_redirect_uri
+        )
+
     @model_validator(mode="after")
     def _fail_fast_in_production(self) -> "Settings":
         """Refuse to boot with insecure/missing config in production."""
@@ -44,6 +74,8 @@ class Settings(BaseSettings):
                 problems.append("JWT_SECRET must be set")
             if not self.database_url:
                 problems.append("DATABASE_URL must be set")
+            if not self.cookie_secure:
+                problems.append("COOKIE_SECURE must be true")
             if problems:
                 raise ValueError("Invalid production configuration: " + "; ".join(problems))
         return self

@@ -4,7 +4,8 @@
 register on ``Base.metadata`` (imported via ``app.db.models``); Alembic targets it.
 """
 
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, AsyncIterator
+from contextlib import asynccontextmanager
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -35,6 +36,27 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
     so Postgres RLS is scoped per request. Until then, tenant tables are FORCE'd
     and a query without an org context returns zero rows (not an error).
     """
+    _init()
+    if _sessionmaker is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    async with _sessionmaker() as session:
+        yield session
+
+
+def reset_engine() -> None:
+    """Drop the cached engine/sessionmaker so the next use rebuilds them. Used by
+    tests after schema-recreating migrations, whose new type OIDs would otherwise
+    leave the pooled connections' asyncpg type cache stale."""
+    global _engine, _sessionmaker
+    _engine = None
+    _sessionmaker = None
+
+
+@asynccontextmanager
+async def session_scope() -> AsyncIterator[AsyncSession]:
+    """An INDEPENDENT session (own connection/transaction), for work that must
+    persist regardless of the request transaction — e.g. revoking a token family on
+    refresh-reuse detection, which commits before the handler raises and rolls back."""
     _init()
     if _sessionmaker is None:
         raise RuntimeError("DATABASE_URL is not configured")
