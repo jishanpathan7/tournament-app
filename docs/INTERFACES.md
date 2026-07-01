@@ -21,12 +21,12 @@ subscribe(channel: str) -> AsyncIterator[Event]
 - **MVP:** `InProcessPubSub` — an in-memory asyncio broker. Works because there's one instance; WS/SSE subscribers share the process.
 - **Scaled:** `RedisPubSub` (Upstash) or a managed provider adapter (Ably/Pusher) for cross-instance fan-out.
 
-### `JobQueue` — background work
+### `JobQueue` — background work (implemented)
 ```
-enqueue(task: str, payload: dict, *, run_at: datetime | None) -> JobId
+enqueue(task: str, payload: dict) -> str   # appends a `job` outbox row
 ```
-- **MVP:** `OutboxPoller` — an in-process async loop that reads the `outbox` table and runs handlers (notifications, standings recompute, exports). The outbox already exists for reliability, so no extra infra.
-- **Scaled:** `ArqQueue` (Redis-backed) so jobs run on dedicated worker instances.
+- **MVP:** `OutboxJobQueue` + the in-process **poller** (`app/workers/`). `enqueue` (or `emit_event` for work tied to a business write) appends to the transactional `outbox`; the poller claims rows `FOR UPDATE SKIP LOCKED`, dispatches to handlers in `app/workers/registry.py` inside a SAVEPOINT, and marks them processed — with per-row **retry + dead-letter** (`outbox.attempts`/`last_error`, ordered by `(attempts, id)` so a poison row can't block the queue). Handlers must be idempotent (at-least-once). Runs in the API lifespan at MVP (`WORKER_ENABLED`); also runnable standalone via `python -m app.workers`. Built-in handlers: `email.deliver`, `maintenance.cleanup`. Modules register their own (`notification.dispatch`, `standings.recompute`, `export.generate`) at import.
+- **Scaled:** `ArqQueue`/Celery (Redis-backed) runs the same handler registry on dedicated worker instances — a config swap.
 
 ### `Cache` (implemented)
 ```

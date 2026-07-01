@@ -65,6 +65,14 @@ class Settings(BaseSettings):
     redis_url: str | None = None
     cache_default_ttl: int = 300  # 5m default for cached entries
 
+    # Background jobs (in-process outbox poller). Runs inside the API lifespan at MVP;
+    # disable to run a standalone worker (python -m app.workers) or in tests.
+    worker_enabled: bool = True
+    worker_poll_interval: float = 2.0  # seconds to sleep when the queue is idle
+    worker_batch_size: int = 20  # rows drained per poll cycle
+    worker_max_attempts: int = 5  # dead-letter a job after this many failures
+    outbox_retention_days: int = 7  # processed outbox rows older than this are purged
+
     sentry_dsn: str | None = None
     log_level: str = "INFO"
 
