@@ -1,0 +1,8 @@
+{% extends "layouts/base.html" %}
+{% import "_button.html" as ui %}
+{% block content %}
+<p>Hi,</p>
+<p>You've been invited to join an organization on {{ app_name }}.</p>
+{{ ui.button(frontend_url ~ "/invite?token=" ~ token, "Accept invitation") }}
+<p style="color:#8a8a8a;font-size:12px">This invitation expires soon. If you weren't expecting it, you can ignore this email.</p>
+{% endblock %}
