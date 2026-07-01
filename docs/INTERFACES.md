@@ -37,13 +37,18 @@ delete(key: str) -> None
 - **MVP:** `InMemoryTTLCache` (per-instance) or skip and read Postgres.
 - **Scaled:** `RedisCache` (shared across instances).
 
-### `Storage` — files
+### `Storage` — files (implemented)
 ```
-presign_put(key: str, content_type: str, max_size: int) -> PresignedUpload
-presign_get(key: str, ttl: int) -> str
-public_url(key: str) -> str
+presign_put(key, content_type, max_size) -> dict   # {url, method, headers, maxSize, expiresIn}
+presign_get(key, ttl) -> str
+public_url(key) -> str
+delete(key) -> None
+stat(key) -> StoredObject | None                    # size + content_type (HEAD)
+read(key) -> bytes | None                           # for server-side image probing
 ```
-- **MVP & scaled:** `S3Storage` against **Cloudflare R2** (S3 API). Same implementation throughout; only credentials/bucket change. No swap needed — R2 scales with us.
+- **Prod:** `R2Storage` (`app/storage/r2.py`) against **Cloudflare R2** via the boto3 S3 API — presigned PUT/GET so bytes never transit the API. Selected automatically when the four `R2_*` settings are present.
+- **Dev:** `LocalStorage` (`app/storage/local.py`) keeps objects on disk and serves them through HMAC-signed `PUT/GET /files/local/{key}` endpoints (no R2 credentials needed). Chosen by `factory.get_storage` when R2 is unconfigured.
+- **Module:** `app/modules/files` (presign → complete → download → delete); per-kind MIME/size/visibility policy in `app/storage/policy.py`; dependency-free image dimension probing in `app/storage/images.py`. Same `Storage` contract at MVP and scale.
 
 ### `EmailChannel` (one impl of the broader `NotificationChannel`)
 ```

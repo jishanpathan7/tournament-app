@@ -48,6 +48,18 @@ class Settings(BaseSettings):
     resend_api_key: str | None = None
     email_from: str = "Tournament Platform <noreply@localhost>"
 
+    # Object storage — Cloudflare R2 (S3 API) in prod; local disk fallback in dev.
+    # When the four r2_* below are set the R2 backend is used automatically.
+    r2_account_id: str | None = None
+    r2_access_key_id: str | None = None
+    r2_secret_access_key: str | None = None
+    r2_bucket: str | None = None
+    r2_endpoint_url: str | None = None  # defaults to https://<account>.r2.cloudflarestorage.com
+    r2_public_base_url: str | None = None  # public bucket / custom domain for public_url()
+    storage_local_dir: str = ".storage"  # dev disk root (gitignored)
+    storage_presign_ttl: int = 900  # 15m default lifetime for presigned PUT/GET URLs
+    storage_max_upload_size: int = 52_428_800  # 50MB hard ceiling across all kinds
+
     sentry_dsn: str | None = None
     log_level: str = "INFO"
 
@@ -64,6 +76,28 @@ class Settings(BaseSettings):
         return bool(
             self.google_client_id and self.google_client_secret and self.google_redirect_uri
         )
+
+    @property
+    def r2_configured(self) -> bool:
+        return bool(
+            self.r2_account_id
+            and self.r2_access_key_id
+            and self.r2_secret_access_key
+            and self.r2_bucket
+        )
+
+    @property
+    def r2_endpoint(self) -> str | None:
+        if self.r2_endpoint_url:
+            return self.r2_endpoint_url
+        if self.r2_account_id:
+            return f"https://{self.r2_account_id}.r2.cloudflarestorage.com"
+        return None
+
+    @property
+    def storage_backend(self) -> str:
+        """'r2' when credentials are present, else the dev 'local' disk backend."""
+        return "r2" if self.r2_configured else "local"
 
     @model_validator(mode="after")
     def _fail_fast_in_production(self) -> "Settings":

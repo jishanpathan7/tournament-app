@@ -47,6 +47,9 @@ yarn-error.log*
 .run/
 *.pid
 
+# Local object storage (LocalStorage dev backend)
+.storage/
+
 # Claude Code local settings
 .claude/settings.local.json
 
