@@ -23,7 +23,10 @@ export function LoadingPanel({
 /** Skeleton grid of sticker cards — dashboards/lists while data loads. */
 export function CardGridSkeleton({ count = 6 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div
+      data-testid="card-grid-skeleton"
+      className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3"
+    >
       {Array.from({ length: count }).map((_, i) => (
         <Skeleton key={i} className="h-40 rounded-2xl" />
       ))}
