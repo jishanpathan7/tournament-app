@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from app.core.config import get_settings
-from app.core.ports import EmailChannel, LoginThrottle, Storage
+from app.core.ports import Cache, EmailChannel, LoginThrottle, Storage
 from app.core.throttle import build_throttle
 from app.emails.log_channel import LogEmailChannel
 
@@ -17,6 +17,14 @@ from app.emails.log_channel import LogEmailChannel
 @lru_cache
 def get_login_throttle() -> LoginThrottle:
     return build_throttle()
+
+
+@lru_cache
+def get_cache() -> Cache:
+    """In-process TTL cache at MVP; a RedisCache slots in here when REDIS_URL is set."""
+    from app.cache.memory import InMemoryCache
+
+    return InMemoryCache()
 
 
 @lru_cache

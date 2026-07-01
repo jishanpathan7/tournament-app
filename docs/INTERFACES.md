@@ -28,14 +28,14 @@ enqueue(task: str, payload: dict, *, run_at: datetime | None) -> JobId
 - **MVP:** `OutboxPoller` — an in-process async loop that reads the `outbox` table and runs handlers (notifications, standings recompute, exports). The outbox already exists for reliability, so no extra infra.
 - **Scaled:** `ArqQueue` (Redis-backed) so jobs run on dedicated worker instances.
 
-### `Cache`
+### `Cache` (implemented)
 ```
 get(key: str) -> bytes | None
 set(key: str, value: bytes, *, ttl: int) -> None
 delete(key: str) -> None
 ```
-- **MVP:** `InMemoryTTLCache` (per-instance) or skip and read Postgres.
-- **Scaled:** `RedisCache` (shared across instances).
+- **MVP:** `InMemoryCache` (`app/cache/memory.py`) — dict + lazy TTL expiry, injectable clock, process-local. Wired by `factory.get_cache`.
+- **Scaled:** `RedisCache` (shared across instances) drops in behind the same port when `REDIS_URL` is set. `app/cache/get_json`/`set_json` are impl-agnostic helpers for the common dict-caching case.
 
 ### `Storage` — files (implemented)
 ```
