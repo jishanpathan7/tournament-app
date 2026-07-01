@@ -231,14 +231,6 @@ def test_protocols_are_runtime_checkable():
 
 
 def test_engine_requests_are_immutable():
-    req = AdvancementRequest(
-        rule=parse_advancement(
-            {
-                "sources": [{"stage": "g", "take": {"by": "rank", "range": [1, 1]}}],
-                "seeding": "as_is",
-            }
-        ),
-        standings_by_group={},
-    )
+    req = AdvancementRequest(matches=(), seeds={1: "p1"}, winners={})
     with pytest.raises(dataclasses.FrozenInstanceError):
-        req.rng_seed = 5  # type: ignore[misc]
+        req.seeds = {}  # type: ignore[misc]

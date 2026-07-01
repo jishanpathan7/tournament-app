@@ -250,20 +250,27 @@ class SchedulePlan:
     unscheduled: tuple[MatchKey, ...] = ()  # could not be placed under constraints
 
 
-# ---- advancement result (AdvancementEngine output) ----
+# ---- bracket resolution (AdvancementEngine output) ----
 
 
 @dataclass(frozen=True)
-class QualifierSlot:
-    """A destination seed slot filled by a qualifier from a source stage."""
+class ResolvedSide:
+    """A bracket side after resolution: a known participant, a bye, or still pending
+    (its feeding match hasn't completed yet)."""
 
-    slot: int  # 1-based destination seed
-    participant_id: ParticipantId
-    source_group: GroupKey | None
-    source_rank: int
+    participant_id: ParticipantId | None = None
+    is_bye: bool = False
+
+    @property
+    def is_pending(self) -> bool:
+        return self.participant_id is None and not self.is_bye
 
 
 @dataclass(frozen=True)
 class AdvancementResult:
-    ordered: tuple[ParticipantId, ...] = ()  # qualifiers in seeded order
-    slots: tuple[QualifierSlot, ...] = field(default=())
+    """The resolved state of a bracket: per-match sides + derived progression."""
+
+    sides: Mapping[MatchKey, tuple[ResolvedSide, ...]] = field(default_factory=dict)
+    winners: Mapping[MatchKey, ParticipantId] = field(default_factory=dict)  # incl. bye walkovers
+    ready: frozenset[MatchKey] = frozenset()  # all sides known ⇒ playable
+    byes: frozenset[MatchKey] = frozenset()  # auto-decided by a bye (walkover)
