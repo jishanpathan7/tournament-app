@@ -46,6 +46,7 @@ from app.engine.errors import (
     UnknownFormatError,
     UnknownSportError,
 )
+from app.engine.formats.round_robin import RoundRobinFormat
 from app.engine.registry import FormatRegistry, SportRegistry
 from app.engine.source_refs import (
     ByeRef,
@@ -58,6 +59,7 @@ from app.engine.source_refs import (
     parse_source_refs,
 )
 from app.engine.sport import MatchMetadata, MatchReport, SportProfile
+from app.engine.standings import DefaultStandingsEngine
 from app.engine.types import (
     AdvancementResult,
     CourtWindow,
@@ -152,4 +154,7 @@ __all__ = [
     # registry
     "FormatRegistry",
     "SportRegistry",
+    # concrete implementations
+    "RoundRobinFormat",
+    "DefaultStandingsEngine",
 ]

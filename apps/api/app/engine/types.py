@@ -10,6 +10,7 @@ DB enums ↔ engine enums by value at the boundary (the string values match).
 from __future__ import annotations
 
 import enum
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
@@ -119,9 +120,12 @@ class SideResult:
 
     participant_id: ParticipantId
     outcome: SideOutcome
-    score_for: int = 0
+    score_for: int = 0  # primary score dimension (e.g. games won in badminton)
     score_against: int = 0
     rank: int | None = None  # for N-sided (ranked) contests
+    # Extra sport-defined per-side dimensions the standings engine accumulates
+    # (e.g. {"points_for": 42, "points_against": 25}). Keeps the engine sport-blind.
+    metrics: Mapping[str, int] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -167,6 +171,9 @@ class StandingRow:
     score_against: int = 0
     rank: int | None = None
     qualified: bool = False
+    # Accumulated sport-defined dimensions (e.g. points_for/points_against) for
+    # finer tie-breaks + display. The primary dimension stays in score_for/against.
+    metrics: Mapping[str, int] = field(default_factory=dict)
 
     @property
     def diff(self) -> int:
