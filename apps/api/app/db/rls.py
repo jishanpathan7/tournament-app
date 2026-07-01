@@ -70,6 +70,7 @@ NO_RLS_TABLES = [
     "org_invites",
     "outbox",
     "share_links",
+    "feature_flags",
 ]
 
 _ORG = "NULLIF(current_setting('app.current_org', true), '')::uuid"

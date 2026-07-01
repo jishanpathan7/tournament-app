@@ -165,6 +165,12 @@ class AuthTokenPurpose(_StrEnum):
     PASSWORD_RESET = "password_reset"
 
 
+class FeatureFlagScope(_StrEnum):
+    GLOBAL = "global"
+    ORGANIZATION = "organization"
+    USER = "user"
+
+
 def pg_enum(py_enum: type[enum.Enum], name: str) -> sa.Enum:
     """Build a named native PG ENUM bound to a Python enum.
 
@@ -202,9 +208,10 @@ FILE_STATUS = pg_enum(FileStatus, "file_status")
 ORG_INVITE_STATUS = pg_enum(OrgInviteStatus, "org_invite_status")
 IDEMPOTENCY_STATUS = pg_enum(IdempotencyStatus, "idempotency_status")
 
-# Added in migration 0002 (NOT part of the 0001 baseline below — each migration
+# Added in later migrations (NOT part of the 0001 baseline below — each migration
 # owns the enum types it introduces).
-AUTH_TOKEN_PURPOSE = pg_enum(AuthTokenPurpose, "auth_token_purpose")
+AUTH_TOKEN_PURPOSE = pg_enum(AuthTokenPurpose, "auth_token_purpose")  # 0002
+FEATURE_FLAG_SCOPE = pg_enum(FeatureFlagScope, "feature_flag_scope")  # 0006
 
 # The 0001 baseline enum set. Consumed by the initial migration's
 # upgrade()/downgrade(). Order is irrelevant (no inter-enum dependencies).

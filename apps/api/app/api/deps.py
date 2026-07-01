@@ -20,7 +20,7 @@ from fastapi import Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.auth_context import CurrentUser, get_current_user
-from app.api.errors import AuthenticationError, PermissionDeniedError
+from app.api.errors import AuthenticationError, NotFoundError, PermissionDeniedError
 from app.api.pagination import CursorParams, cursor_params
 from app.core import authz
 from app.core.config import get_settings
@@ -34,6 +34,7 @@ __all__ = [
     "get_current_user",
     "get_principal",
     "require_permission",
+    "require_flag",
     "get_request_session",
     "get_tx_session",
     "csrf_protect",
@@ -72,6 +73,29 @@ def require_permission(action: str) -> Callable[[Principal], Awaitable[Principal
     async def _dependency(principal: Principal = Depends(get_principal)) -> Principal:
         if not authz.can(principal.org_role, action):
             raise PermissionDeniedError(f"Not permitted: {action}")
+        return principal
+
+    return _dependency
+
+
+def require_flag(
+    action_key: str, *, error: str = "Feature not available"
+) -> Callable[[Principal, AsyncSession], Awaitable[Principal]]:
+    """Route guard: 404 unless feature flag ``action_key`` is enabled for the caller.
+    Reusable so modules gate on flags instead of hardcoded checks — evaluated with the
+    user > org > global precedence + rollout of ``flags.service.is_enabled``."""
+
+    async def _dependency(
+        principal: Principal = Depends(get_principal),
+        session: AsyncSession = Depends(get_session),
+    ) -> Principal:
+        from app.modules.flags import service as flags_service
+
+        enabled = await flags_service.is_enabled(
+            session, action_key, org_id=principal.organization_id, user_id=principal.user_id
+        )
+        if not enabled:
+            raise NotFoundError(error)
         return principal
 
     return _dependency

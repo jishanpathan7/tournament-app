@@ -47,6 +47,7 @@ EXPECTED_TABLES = {
     "outbox",
     "audit_logs",
     "idempotency_keys",
+    "feature_flags",
 }
 
 

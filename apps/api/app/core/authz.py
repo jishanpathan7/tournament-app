@@ -25,6 +25,7 @@ TOURNAMENT_DELETE = "tournament:delete"
 SCORING_WRITE = "scoring:write"
 FILE_READ = "file:read"
 FILE_WRITE = "file:write"
+FEATURE_FLAG_MANAGE = "feature_flag:manage"
 
 ALL_ACTIONS: frozenset[str] = frozenset(
     {
@@ -41,6 +42,7 @@ ALL_ACTIONS: frozenset[str] = frozenset(
         SCORING_WRITE,
         FILE_READ,
         FILE_WRITE,
+        FEATURE_FLAG_MANAGE,
     }
 )
 

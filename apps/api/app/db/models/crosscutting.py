@@ -28,6 +28,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db.base import Base
 from app.db.enums import (
+    FEATURE_FLAG_SCOPE,
     FILE_KIND,
     FILE_STATUS,
     IDEMPOTENCY_STATUS,
@@ -154,3 +155,33 @@ class IdempotencyKey(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
         IDEMPOTENCY_STATUS, nullable=False, server_default=text("'started'")
     )
     expires_at: Mapped[datetime.datetime] = mapped_column(nullable=False)
+
+
+class FeatureFlag(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Global / org / user feature flags with percentage rollout.
+
+    NO_RLS config table: `scope`+`scope_id` locate a flag (global → scope_id NULL,
+    organization → org id, user → user id). Precedence user > org > global is applied
+    by the evaluator, not the schema. `NULLS NOT DISTINCT` keeps one global row per key.
+    """
+
+    __tablename__ = "feature_flags"
+    __table_args__ = (
+        UniqueConstraint(
+            "key",
+            "scope",
+            "scope_id",
+            name="uq_feature_flags_key_scope",
+            postgresql_nulls_not_distinct=True,
+        ),
+        Index("ix_feature_flags_key", "key"),
+    )
+
+    key: Mapped[str] = mapped_column(String(120), nullable=False)
+    scope: Mapped[str] = mapped_column(FEATURE_FLAG_SCOPE, nullable=False)
+    scope_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
+    enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    rollout_percentage: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default=text("100")
+    )
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
