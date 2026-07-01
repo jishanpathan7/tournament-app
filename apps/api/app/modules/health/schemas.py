@@ -13,3 +13,8 @@ class HealthResponse(ApiModel):
 
 class DBHealthResponse(ApiModel):
     database: str  # "ok" | "unavailable"
+
+
+class ReadinessResponse(ApiModel):
+    status: str  # "ok" | "unavailable"
+    checks: dict[str, str]  # component -> "ok" | "unavailable"

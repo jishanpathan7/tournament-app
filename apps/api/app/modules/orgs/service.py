@@ -14,9 +14,10 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
+from app.core import audit
 from app.core.security import hash_token, new_opaque_token
 from app.db.enums import OrgInviteStatus, OrgRole
-from app.db.models import AuditLog, Membership, Organization, OrgInvite
+from app.db.models import Membership, Organization, OrgInvite
 from app.db.session import set_org_context
 from app.modules.orgs import events
 from app.modules.orgs import repository as repo
@@ -41,16 +42,15 @@ async def _audit(
     before: dict[str, Any] | None = None,
     after: dict[str, Any] | None = None,
 ) -> None:
-    session.add(
-        AuditLog(
-            organization_id=org_id,
-            actor_id=actor_id,
-            action=action,
-            entity=entity,
-            entity_id=entity_id,
-            before=before,
-            after=after,
-        )
+    audit.record(
+        session,
+        organization_id=org_id,
+        actor_id=actor_id,
+        action=action,
+        entity=entity,
+        entity_id=entity_id,
+        before=before,
+        after=after,
     )
 
 
