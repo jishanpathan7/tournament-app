@@ -7,11 +7,17 @@ makes each a process singleton (the throttle's sliding window must be shared).
 from __future__ import annotations
 
 from functools import lru_cache
+from typing import TYPE_CHECKING
 
 from app.core.config import get_settings
-from app.core.ports import Cache, EmailChannel, JobQueue, LoginThrottle, Storage
+from app.core.ports import Cache, EmailChannel, JobQueue, LoginThrottle, PubSub, Storage
 from app.core.throttle import build_throttle
 from app.emails.log_channel import LogEmailChannel
+
+if TYPE_CHECKING:
+    from app.realtime.broadcaster import Broadcaster
+    from app.realtime.connections import ConnectionManager
+    from app.realtime.transport import RealtimeTransport
 
 
 @lru_cache
@@ -33,6 +39,36 @@ def get_job_queue() -> JobQueue:
     from app.workers.queue import OutboxJobQueue
 
     return OutboxJobQueue()
+
+
+@lru_cache
+def get_pubsub() -> PubSub:
+    """In-process asyncio broker at MVP (single instance); RedisPubSub when scaling out."""
+    from app.realtime.pubsub import InProcessPubSub
+
+    return InProcessPubSub(max_queue=get_settings().realtime_max_queue)
+
+
+@lru_cache
+def get_broadcaster() -> Broadcaster:
+    from app.realtime.broadcaster import Broadcaster
+
+    return Broadcaster(get_pubsub())
+
+
+@lru_cache
+def get_connection_manager() -> ConnectionManager:
+    from app.realtime.connections import ConnectionManager
+
+    return ConnectionManager()
+
+
+@lru_cache
+def get_transport() -> RealtimeTransport:
+    """SSE transport at MVP; WebSocket/Ably/Pusher slot in behind the same protocol."""
+    from app.realtime.transport import SSETransport
+
+    return SSETransport()
 
 
 @lru_cache
