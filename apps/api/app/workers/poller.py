@@ -24,6 +24,13 @@ from app.workers.registry import JobContext, get_handler
 
 logger = logging.getLogger("app.worker")
 
+# Modules whose import registers job handlers (via @handler). The standalone worker
+# imports these on startup so every handler is present without the API's router graph.
+_HANDLER_MODULES = (
+    "app.workers.tasks",
+    "app.modules.notifications.handlers",
+)
+
 _handlers_loaded = False
 
 
@@ -32,12 +39,14 @@ def _now() -> datetime.datetime:
 
 
 def load_handlers() -> None:
-    """Import built-in handler modules so they self-register (idempotent)."""
+    """Import handler modules so they self-register (idempotent)."""
     global _handlers_loaded
     if _handlers_loaded:
         return
-    from app.workers import tasks  # noqa: F401  (import triggers @handler registration)
+    import importlib
 
+    for module in _HANDLER_MODULES:
+        importlib.import_module(module)
     _handlers_loaded = True
 
 

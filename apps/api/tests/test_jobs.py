@@ -35,6 +35,7 @@ async def _clean_outbox():
 
 @pytest.fixture
 def clean_registry():
+    poller.load_handlers()  # ensure built-in + module handlers are present in the snapshot
     saved = dict(registry._HANDLERS)
     yield
     registry._HANDLERS.clear()
