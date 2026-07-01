@@ -64,7 +64,7 @@ jobs:
         run: pytest
 
   web:
-    name: Web · lint · types · build
+    name: Web · lint · types · test · build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -78,5 +78,7 @@ jobs:
         run: yarn lint
       - name: Type check
         run: yarn typecheck
+      - name: Test
+        run: yarn test
       - name: Build
         run: yarn build
