@@ -14,6 +14,7 @@ from app.modules.health.router import router as health_router
 from app.modules.notifications.router import router as notifications_router
 from app.modules.orgs.router import router as orgs_router
 from app.modules.registrations.router import router as registrations_router
+from app.modules.scoring.router import router as scoring_router
 from app.modules.tournaments.router import router as tournaments_router
 from app.realtime.router import router as realtime_router
 
@@ -27,3 +28,4 @@ api_router.include_router(realtime_router)
 api_router.include_router(flags_router)
 api_router.include_router(tournaments_router)
 api_router.include_router(registrations_router)
+api_router.include_router(scoring_router)

@@ -29,6 +29,7 @@ logger = logging.getLogger("app.worker")
 _HANDLER_MODULES = (
     "app.workers.tasks",
     "app.modules.notifications.handlers",
+    "app.modules.scoring.handlers",
 )
 
 _handlers_loaded = False
