@@ -14,6 +14,15 @@ export function useOrgs() {
   });
 }
 
+/** Members of the active org — e.g. to resolve who submitted a registration. */
+export function useOrgMembers(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: queryKeys.orgs.members(),
+    queryFn: orgsApi.listMembers,
+    enabled: options?.enabled ?? true,
+  });
+}
+
 /** Seed the session cache from a fresh MeResponse and drop tenant-scoped caches. */
 function useApplySession() {
   const queryClient = useQueryClient();

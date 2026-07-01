@@ -25,6 +25,9 @@ class RegistrationResponse(ApiModel):
     status: str
     skill_level: str | None
     participant_id: uuid.UUID | None
+    # What the entrant submitted (team name / player names) — organizers need this to
+    # review an application; the submitter already has it (they wrote it).
+    form_response: dict[str, Any]
     created_at: datetime.datetime
 
 
@@ -44,3 +47,17 @@ class ParticipantResponse(ApiModel):
     user_id: uuid.UUID | None
     team_id: uuid.UUID | None
     created_at: datetime.datetime
+
+
+class RosterEntryItem(ApiModel):
+    id: uuid.UUID
+    user_id: uuid.UUID | None
+    external_name: str | None
+    role: str | None
+
+
+class TeamResponse(ApiModel):
+    id: uuid.UUID
+    name: str
+    captain_user_id: uuid.UUID | None
+    roster: list[RosterEntryItem]

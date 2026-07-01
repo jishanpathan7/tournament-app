@@ -7,9 +7,18 @@ from collections.abc import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.enums import ParticipantStatus
-from app.db.models import Division, Participant, Registration, SportProfile, Tournament, User
+from app.db.models import (
+    Division,
+    Participant,
+    Registration,
+    SportProfile,
+    Team,
+    Tournament,
+    User,
+)
 
 
 async def get_registration(
@@ -70,3 +79,14 @@ async def get_sport_profile(session: AsyncSession, pid: uuid.UUID) -> SportProfi
 
 async def get_user(session: AsyncSession, uid: uuid.UUID) -> User | None:
     return await session.get(User, uid)
+
+
+async def get_team_with_roster(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
+) -> Team | None:
+    stmt = (
+        select(Team)
+        .where(Team.id == tid, Team.organization_id == org_id)
+        .options(selectinload(Team.roster_entries))
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()

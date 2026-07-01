@@ -36,6 +36,10 @@ export const queryKeys = {
     detail: (id: string) => ["matches", "detail", id] as const,
   },
 
+  teams: {
+    detail: (id: string) => ["teams", "detail", id] as const,
+  },
+
   notifications: {
     all: ["notifications"] as const,
     list: (unreadOnly = false) => ["notifications", "list", { unreadOnly }] as const,

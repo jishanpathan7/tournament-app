@@ -50,11 +50,13 @@ export type CreateStageRequest = Schemas["CreateStageRequest"];
 export type DrawRequest = Schemas["DrawRequest"];
 export type DrawResponse = Schemas["DrawResponse"];
 
-// ---- registrations / participants ----
+// ---- registrations / participants / teams ----
 export type RegistrationResponse = Schemas["RegistrationResponse"];
 export type SubmitRegistrationRequest = Schemas["SubmitRegistrationRequest"];
 export type ApproveResult = Schemas["ApproveResult"];
 export type ParticipantResponse = Schemas["ParticipantResponse"];
+export type TeamResponse = Schemas["TeamResponse"];
+export type RosterEntryItem = Schemas["RosterEntryItem"];
 
 // ---- scoring / matches / standings ----
 export type MatchView = Schemas["MatchView"];

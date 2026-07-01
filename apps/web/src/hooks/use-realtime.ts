@@ -61,7 +61,24 @@ export function useRealtime(
           });
         }
       },
+      // Registration lifecycle events all share this shape: refresh both the
+      // registrations queue and the approved participants list for that division.
+      [REALTIME_EVENTS.REGISTRATION_SUBMITTED]: invalidateDivisionRegistrations,
+      [REALTIME_EVENTS.REGISTRATION_APPROVED]: invalidateDivisionRegistrations,
+      [REALTIME_EVENTS.REGISTRATION_WAITLISTED]: invalidateDivisionRegistrations,
+      [REALTIME_EVENTS.REGISTRATION_REJECTED]: invalidateDivisionRegistrations,
+      [REALTIME_EVENTS.REGISTRATION_WITHDRAWN]: invalidateDivisionRegistrations,
     };
+
+    function invalidateDivisionRegistrations(data: Record<string, unknown>): void {
+      if (typeof data.divisionId !== "string") return;
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.registrations(data.divisionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(data.divisionId),
+      });
+    }
 
     const listeners: Array<[string, (e: MessageEvent) => void]> = [];
     for (const type of Object.values(REALTIME_EVENTS)) {
