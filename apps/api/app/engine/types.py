@@ -59,6 +59,25 @@ class OutcomeKind(str, enum.Enum):
     RANKED = "ranked"
 
 
+class ParticipantKind(str, enum.Enum):
+    """Competitor shape (mirrors ``app.db.enums.ParticipantKind``). A Sport Profile
+    declares which kinds it supports — e.g. badminton singles = individual, doubles = pair."""
+
+    INDIVIDUAL = "individual"
+    PAIR = "pair"
+    TEAM = "team"
+
+
+class TerminalReason(str, enum.Enum):
+    """How a match reached a terminal state — lets standings treat a walkover/retirement
+    differently from a normal result (e.g. apply walkover points)."""
+
+    NORMAL = "normal"
+    WALKOVER = "walkover"
+    RETIREMENT = "retirement"
+    NO_SHOW = "no_show"
+
+
 # ---- competitor + result value objects ----
 
 
@@ -112,6 +131,7 @@ class MatchResult:
     match_key: MatchKey
     sides: tuple[SideResult, ...]
     group_key: GroupKey | None = None
+    terminal_reason: TerminalReason = TerminalReason.NORMAL
 
 
 # ---- scoring policies (from PointsRule / TiebreakRuleset) ----
