@@ -1,13 +1,13 @@
 """Shared test fixtures: a fresh app, an async HTTP client, and DB session helpers.
 
-DB-backed fixtures skip when DATABASE_URL is unset (keeps the default suite green
-without Postgres). The migration is applied once per session.
+DB-backed tests need Postgres (they skip without ``DATABASE_URL``). The target DB is
+migrated to head once per session, before any test runs.
 """
 
 from __future__ import annotations
 
 import os
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import pytest
@@ -24,6 +24,20 @@ API_DIR = Path(__file__).resolve().parents[1]
 DATABASE_URL = os.environ.get("DATABASE_URL")
 
 
+def _alembic_cfg() -> Config:
+    cfg = Config(str(API_DIR / "alembic.ini"))
+    cfg.set_main_option("script_location", str(API_DIR / "migrations"))
+    return cfg
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _migrate_db() -> Iterator[None]:
+    # Ensure the target DB is at head before any DB-backed test (no-op without a DB).
+    if DATABASE_URL:
+        command.upgrade(_alembic_cfg(), "head")
+    yield
+
+
 @pytest.fixture
 def app() -> FastAPI:
     """A fresh app per test (so dependency_overrides don't leak)."""
@@ -37,19 +51,12 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
         yield http_client
 
 
-@pytest.fixture(scope="session")
-def _migrated() -> None:
+@pytest_asyncio.fixture
+async def db_session() -> AsyncIterator[AsyncSession]:
+    """An async session whose work is rolled back on close (no commit in tests)."""
     if not DATABASE_URL:
         pytest.skip("DATABASE_URL not set")
-    cfg = Config(str(API_DIR / "alembic.ini"))
-    cfg.set_main_option("script_location", str(API_DIR / "migrations"))
-    command.upgrade(cfg, "head")
-
-
-@pytest_asyncio.fixture
-async def db_session(_migrated: None) -> AsyncIterator[AsyncSession]:
-    """An async session whose work is rolled back on close (no commit in tests)."""
-    engine = create_async_engine(DATABASE_URL or "")
+    engine = create_async_engine(DATABASE_URL)
     maker = async_sessionmaker(engine, expire_on_commit=False)
     async with maker() as session:
         yield session

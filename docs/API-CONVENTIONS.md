@@ -72,14 +72,31 @@ stay framework-free — never import FastAPI/SQLAlchemy there.
   `?filter=` DSL.
 - **Sorting:** `?sort=-created_at` style, allow-listed fields. All list endpoints paginate.
 
-## Auth / authz hooks (seams now, bodies with the auth module)
+## Auth / authz (implemented — `app/modules/auth`, `app/modules/orgs`, `app/core/authz`)
 
-- `Principal` (`app/api/deps.py`): `user_id`, `organization_id`, `org_role`. Grants/
-  assignments added with auth.
-- `get_principal` — resolves the caller; raises `NotImplementedError` until auth lands
-  (no endpoint depends on it yet; tests override it).
-- `require_permission(action)` — authz seam (default-deny). The policy
-  `can(principal, action, resource)` lands with auth.
+- **Two principals:** `get_current_user` (`app/api/auth_context.py`) decodes the access
+  cookie — org-optional. `get_principal` (`app/api/deps.py`) requires an active org and
+  is what tenant routes + `get_request_session` depend on (so RLS org context is set
+  automatically). `Principal` = `user_id`, `organization_id`, `org_role`.
+- **Authz:** `require_permission(action)` calls the pure policy `authz.can(role, action,
+  resource=None)` (`app/core/authz.py`, default-deny). Routers never embed authz logic;
+  the `resource` arg is the seam for resource-level checks (scoring module).
+- **Cookies:** `access_token` + `refresh_token` are HttpOnly; `csrf_token` is JS-readable.
+  Refresh rotates on every `/auth/refresh` with family reuse-detection. Remember-Me →
+  persistent vs session cookies. Google OAuth is built but inert until creds are set.
+- **Org model:** operations act on the **active org** (from the token). `/orgs/switch`,
+  `POST /orgs`, and invite-accept re-mint the access cookie for the new active org.
+
+## Frontend integration (Next.js + generated client)
+
+- The axios client uses `withCredentials: true` — cookies flow automatically.
+- **CSRF (double-submit):** on every mutating request (POST/PUT/PATCH/DELETE) the FE must
+  echo the `csrf_token` cookie in an `X-CSRF-Token` header (add one interceptor in the FE
+  client wrapper). Missing/mismatched → 403 `code: "csrf_failed"`. Public bootstrap
+  endpoints (login/register/refresh/password-reset/verify) are exempt.
+- Read errors as RFC 9457 Problem Details (`code` distinguishes cases, e.g. `unauthorized`,
+  `csrf_failed`, `rate_limited`, `validation_error`). `GET /auth/me` returns the session
+  (user + active org + role + memberships).
 
 ## Idempotency & optimistic concurrency (contract now, machinery later)
 

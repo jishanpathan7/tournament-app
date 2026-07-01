@@ -50,10 +50,16 @@ class AppError(Exception):
     code: str = "internal_error"
 
     def __init__(
-        self, detail: str | None = None, *, errors: list[FieldError] | None = None
+        self,
+        detail: str | None = None,
+        *,
+        errors: list[FieldError] | None = None,
+        code: str | None = None,
     ) -> None:
         self.detail = detail
         self.errors = errors
+        if code is not None:
+            self.code = code  # per-instance override of the class default
         super().__init__(detail or self.title)
 
 
@@ -91,6 +97,12 @@ class ValidationError(AppError):
     status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     title = "Unprocessable Entity"
     code = "validation_error"
+
+
+class RateLimitedError(AppError):
+    status_code = status.HTTP_429_TOO_MANY_REQUESTS
+    title = "Too Many Requests"
+    code = "rate_limited"
 
 
 def _problem(

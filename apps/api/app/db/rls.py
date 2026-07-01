@@ -66,6 +66,7 @@ NO_RLS_TABLES = [
     "memberships",
     "identities",
     "auth_sessions",
+    "auth_tokens",
     "org_invites",
     "outbox",
     "share_links",

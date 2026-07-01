@@ -160,6 +160,11 @@ class IdempotencyStatus(_StrEnum):
     FAILED = "failed"
 
 
+class AuthTokenPurpose(_StrEnum):
+    EMAIL_VERIFICATION = "email_verification"
+    PASSWORD_RESET = "password_reset"
+
+
 def pg_enum(py_enum: type[enum.Enum], name: str) -> sa.Enum:
     """Build a named native PG ENUM bound to a Python enum.
 
@@ -197,8 +202,12 @@ FILE_STATUS = pg_enum(FileStatus, "file_status")
 ORG_INVITE_STATUS = pg_enum(OrgInviteStatus, "org_invite_status")
 IDEMPOTENCY_STATUS = pg_enum(IdempotencyStatus, "idempotency_status")
 
-# Consumed by the migration's upgrade()/downgrade(). Order is irrelevant
-# (no inter-enum dependencies).
+# Added in migration 0002 (NOT part of the 0001 baseline below — each migration
+# owns the enum types it introduces).
+AUTH_TOKEN_PURPOSE = pg_enum(AuthTokenPurpose, "auth_token_purpose")
+
+# The 0001 baseline enum set. Consumed by the initial migration's
+# upgrade()/downgrade(). Order is irrelevant (no inter-enum dependencies).
 ALL_PG_ENUMS: list[sa.Enum] = [
     SKILL_LEVEL,
     PARTICIPANT_KIND,
