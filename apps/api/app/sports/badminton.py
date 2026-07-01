@@ -321,10 +321,18 @@ class BadmintonProfile:
         reason: TerminalReason,
     ) -> MatchReport:
         loser = 1 - winner
-        sides = (
-            SideResult(ids[winner], SideOutcome.WIN, games_won[winner], games_won[loser]),
-            SideResult(ids[loser], SideOutcome.LOSS, games_won[loser], games_won[winner]),
-        )
+
+        def _side(i: int, outcome: SideOutcome) -> SideResult:
+            # score_for/against = games; metrics carries rally points for point-diff tie-breaks
+            return SideResult(
+                participant_id=ids[i],
+                outcome=outcome,
+                score_for=games_won[i],
+                score_against=games_won[1 - i],
+                metrics={"points_for": points_for[i], "points_against": points_for[1 - i]},
+            )
+
+        sides = (_side(winner, SideOutcome.WIN), _side(loser, SideOutcome.LOSS))
         statistics = {
             ids[i]: {
                 "games_won": games_won[i],
