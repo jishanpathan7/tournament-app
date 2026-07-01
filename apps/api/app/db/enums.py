@@ -42,6 +42,7 @@ class ParticipantKind(_StrEnum):
 
 
 class MatchStatus(_StrEnum):
+    PENDING = "pending"  # bracket match whose sides aren't resolved yet (decision #1)
     SCHEDULED = "scheduled"
     LIVE = "live"
     COMPLETED = "completed"

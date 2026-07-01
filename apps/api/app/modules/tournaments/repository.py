@@ -1,0 +1,104 @@
+"""Data access for the tournament domain.
+
+Every query is scoped by ``organization_id`` at the app layer (the outer of the three
+tenancy layers — app scoping → policy → RLS), so isolation holds even under a
+superuser DB connection where RLS is bypassed.
+"""
+
+from __future__ import annotations
+
+import uuid
+from collections.abc import Sequence
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.enums import ParticipantStatus
+from app.db.models import Division, Match, Participant, SportProfile, Stage, Tournament
+
+
+async def get_tournament(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
+) -> Tournament | None:
+    stmt = select(Tournament).where(Tournament.id == tid, Tournament.organization_id == org_id)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def get_tournament_by_slug(
+    session: AsyncSession, org_id: uuid.UUID, slug: str
+) -> Tournament | None:
+    stmt = select(Tournament).where(Tournament.slug == slug, Tournament.organization_id == org_id)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def list_tournaments(session: AsyncSession, org_id: uuid.UUID) -> Sequence[Tournament]:
+    stmt = (
+        select(Tournament)
+        .where(Tournament.organization_id == org_id)
+        .order_by(Tournament.created_at.desc())
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def get_division(session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID) -> Division | None:
+    stmt = select(Division).where(Division.id == did, Division.organization_id == org_id)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def list_divisions(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
+) -> Sequence[Division]:
+    stmt = (
+        select(Division)
+        .where(Division.tournament_id == tid, Division.organization_id == org_id)
+        .order_by(Division.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def get_stage(session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID) -> Stage | None:
+    stmt = select(Stage).where(Stage.id == sid, Stage.organization_id == org_id)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def list_stages(session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID) -> Sequence[Stage]:
+    stmt = (
+        select(Stage)
+        .where(Stage.division_id == did, Stage.organization_id == org_id)
+        .order_by(Stage.seq)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def stage_match_count(session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID) -> int:
+    stmt = select(func.count()).where(Match.stage_id == sid, Match.organization_id == org_id)
+    return int((await session.execute(stmt)).scalar_one())
+
+
+async def approved_participants(
+    session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID
+) -> Sequence[Participant]:
+    """Approved participants for a division, in seed order (seeded first, then by age)."""
+    stmt = (
+        select(Participant)
+        .where(
+            Participant.division_id == did,
+            Participant.organization_id == org_id,
+            Participant.status == ParticipantStatus.APPROVED.value,
+        )
+        .order_by(Participant.seed.nulls_last(), Participant.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def get_sport_profile_by_key(
+    session: AsyncSession, org_id: uuid.UUID, key: str
+) -> SportProfile | None:
+    stmt = select(SportProfile).where(
+        SportProfile.key == key, SportProfile.organization_id == org_id
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def get_sport_profile(session: AsyncSession, pid: uuid.UUID) -> SportProfile | None:
+    return await session.get(SportProfile, pid)

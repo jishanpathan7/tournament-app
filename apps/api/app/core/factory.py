@@ -17,6 +17,12 @@ from app.emails.log_channel import LogEmailChannel
 if TYPE_CHECKING:
     from app.core.metrics import Metrics
     from app.core.tracing import Tracer
+    from app.engine import (
+        AdvancementEngine,
+        FormatRegistry,
+        SportRegistry,
+        StandingsEngine,
+    )
     from app.realtime.broadcaster import Broadcaster
     from app.realtime.connections import ConnectionManager
     from app.realtime.transport import RealtimeTransport
@@ -87,6 +93,42 @@ def get_tracer() -> Tracer:
     from app.core.tracing import NullTracer
 
     return NullTracer()
+
+
+@lru_cache
+def get_sport_registry() -> SportRegistry:
+    """The registered sport profiles. Adding a sport = one line here + one file in sports/."""
+    from app.engine import SportRegistry
+    from app.sports.badminton import BadmintonProfile
+
+    registry = SportRegistry()
+    registry.register(BadmintonProfile())
+    return registry
+
+
+@lru_cache
+def get_format_registry() -> FormatRegistry:
+    """The registered tournament formats. Adding a format = one line here + one engine file."""
+    from app.engine import FormatRegistry, RoundRobinFormat, SingleEliminationFormat
+
+    registry = FormatRegistry()
+    registry.register(RoundRobinFormat())
+    registry.register(SingleEliminationFormat())
+    return registry
+
+
+@lru_cache
+def get_standings_engine() -> StandingsEngine:
+    from app.engine import DefaultStandingsEngine
+
+    return DefaultStandingsEngine()
+
+
+@lru_cache
+def get_advancement_engine() -> AdvancementEngine:
+    from app.engine import DefaultAdvancementEngine
+
+    return DefaultAdvancementEngine()
 
 
 @lru_cache
