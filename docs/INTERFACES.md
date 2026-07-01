@@ -13,13 +13,14 @@ This is the seam that lets us run **free at MVP** and **upgrade to paid services
 
 ## Interfaces
 
-### `PubSub` — realtime fan-out
+### `PubSub` — realtime fan-out (implemented)
 ```
-publish(channel: str, event: Event) -> None
-subscribe(channel: str) -> AsyncIterator[Event]
+publish(channel: str, event: dict) -> None
+subscribe(channel: str) -> AsyncIterator[dict]
 ```
-- **MVP:** `InProcessPubSub` — an in-memory asyncio broker. Works because there's one instance; WS/SSE subscribers share the process.
-- **Scaled:** `RedisPubSub` (Upstash) or a managed provider adapter (Ably/Pusher) for cross-instance fan-out.
+- **MVP:** `InProcessPubSub` (`app/realtime/pubsub.py`) — in-memory asyncio broker, bounded per-subscriber queues (drops for a slow subscriber). One instance, so subscribers share the process.
+- **Scaled:** `RedisPubSub` (Upstash) or an Ably/Pusher adapter behind the same port for cross-instance fan-out.
+- **Realtime stack** (`app/realtime/`): `Broadcaster` publishes `{type, data}` envelopes; `ConnectionManager` counts live connections; `channels.py` scopes/authorizes subscriptions (own `org:{id}` / `user:{id}`, default-deny); `transport.py` is the transport seam. **SSE** ships now (`GET /api/v1/realtime/stream?channel=…`, cookie-auth, heartbeat); WebSocket/Ably/Pusher are future transports behind `RealtimeTransport`. No tournament events are published yet — producers call `broadcaster.publish` when a feature needs it.
 
 ### `JobQueue` — background work (implemented)
 ```

@@ -73,6 +73,11 @@ class Settings(BaseSettings):
     worker_max_attempts: int = 5  # dead-letter a job after this many failures
     outbox_retention_days: int = 7  # processed outbox rows older than this are purged
 
+    # Realtime — SSE transport at MVP; WebSocket/Ably/Pusher slot in behind the seam.
+    realtime_transport: str = "sse"
+    realtime_ping_interval: int = 15  # SSE heartbeat seconds (keeps the connection alive)
+    realtime_max_queue: int = 100  # per-subscriber buffer before events drop
+
     sentry_dsn: str | None = None
     log_level: str = "INFO"
 
