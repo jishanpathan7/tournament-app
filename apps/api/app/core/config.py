@@ -60,6 +60,11 @@ class Settings(BaseSettings):
     storage_presign_ttl: int = 900  # 15m default lifetime for presigned PUT/GET URLs
     storage_max_upload_size: int = 52_428_800  # 50MB hard ceiling across all kinds
 
+    # Cache / Redis — in-process cache at MVP; set REDIS_URL to move cache (and later
+    # pub/sub + jobs) onto Redis/Upstash when scaling to a 2nd instance.
+    redis_url: str | None = None
+    cache_default_ttl: int = 300  # 5m default for cached entries
+
     sentry_dsn: str | None = None
     log_level: str = "INFO"
 
