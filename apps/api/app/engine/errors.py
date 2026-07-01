@@ -42,6 +42,14 @@ class UnknownFormatError(EngineError):
         super().__init__(f"No format engine registered for {key!r}")
 
 
+class UnknownSportError(EngineError):
+    """No sport profile is registered for the requested sport key."""
+
+    def __init__(self, key: str) -> None:
+        self.key = key
+        super().__init__(f"No sport profile registered for {key!r}")
+
+
 class ContractError(EngineError):
     """An engine was called with structurally invalid input (programmer error,
     not user input) — e.g. a request that violates a documented precondition."""

@@ -1,14 +1,15 @@
-"""Format registry — the extension point future formats plug into.
+"""Registries — the extension points formats and sports plug into.
 
-Round Robin, Single Elimination, Group+Knockout, Swiss, Ladder each register a
-``FormatEngine`` here keyed by ``FormatKey``; the core looks one up by the stage's
-format. Adding a format is a new registration, never a change to the core.
+Formats (Round Robin, Single Elim, …) register a ``FormatEngine`` keyed by
+``FormatKey``; sports (Badminton, …) register a ``SportProfile`` keyed by its string
+key. Adding a format or sport is a new registration, never a change to the core.
 """
 
 from __future__ import annotations
 
 from app.engine.contracts import FormatEngine
-from app.engine.errors import EngineError, UnknownFormatError
+from app.engine.errors import EngineError, UnknownFormatError, UnknownSportError
+from app.engine.sport import SportProfile
 from app.engine.types import FormatKey
 
 
@@ -32,3 +33,25 @@ class FormatRegistry:
 
     def registered(self) -> frozenset[FormatKey]:
         return frozenset(self._formats)
+
+
+class SportRegistry:
+    def __init__(self) -> None:
+        self._sports: dict[str, SportProfile] = {}
+
+    def register(self, profile: SportProfile) -> None:
+        if profile.key in self._sports:
+            raise EngineError(f"Sport {profile.key!r} is already registered")
+        self._sports[profile.key] = profile
+
+    def get(self, key: str) -> SportProfile:
+        try:
+            return self._sports[key]
+        except KeyError:
+            raise UnknownSportError(key) from None
+
+    def is_registered(self, key: str) -> bool:
+        return key in self._sports
+
+    def registered(self) -> frozenset[str]:
+        return frozenset(self._sports)

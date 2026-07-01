@@ -44,8 +44,9 @@ from app.engine.errors import (
     EngineValidationError,
     Issue,
     UnknownFormatError,
+    UnknownSportError,
 )
-from app.engine.registry import FormatRegistry
+from app.engine.registry import FormatRegistry, SportRegistry
 from app.engine.source_refs import (
     ByeRef,
     LoserOfRef,
@@ -56,6 +57,7 @@ from app.engine.source_refs import (
     WinnerOfRef,
     parse_source_refs,
 )
+from app.engine.sport import MatchMetadata, MatchReport, SportProfile
 from app.engine.types import (
     AdvancementResult,
     CourtWindow,
@@ -65,6 +67,7 @@ from app.engine.types import (
     MatchResult,
     Outcome,
     OutcomeKind,
+    ParticipantKind,
     ParticipantRef,
     PointsPolicy,
     QualifierSlot,
@@ -77,6 +80,7 @@ from app.engine.types import (
     SlotAssignment,
     StandingRow,
     StructurePlan,
+    TerminalReason,
     TiebreakPolicy,
 )
 
@@ -86,12 +90,15 @@ __all__ = [
     "EngineError",
     "EngineValidationError",
     "UnknownFormatError",
+    "UnknownSportError",
     "ContractError",
     # enums / ids
     "FormatKey",
     "SeedingMethod",
     "SideOutcome",
     "OutcomeKind",
+    "ParticipantKind",
+    "TerminalReason",
     # value objects
     "ParticipantRef",
     "Outcome",
@@ -138,6 +145,11 @@ __all__ = [
     "StandingsRequest",
     "ScheduleRequest",
     "AdvancementRequest",
+    # sport profile contract
+    "SportProfile",
+    "MatchReport",
+    "MatchMetadata",
     # registry
     "FormatRegistry",
+    "SportRegistry",
 ]
