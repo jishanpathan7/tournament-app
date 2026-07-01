@@ -7,7 +7,16 @@ refactor. These are contracts only; no implementations live here.
 """
 
 from collections.abc import AsyncIterator
+from dataclasses import dataclass
 from typing import Any, Protocol, runtime_checkable
+
+
+@dataclass(frozen=True)
+class StoredObject:
+    """Metadata about a stored object (result of a HEAD/stat)."""
+
+    size: int
+    content_type: str | None
 
 
 @runtime_checkable
@@ -39,13 +48,24 @@ class Cache(Protocol):
 
 @runtime_checkable
 class Storage(Protocol):
-    """Object storage via presigned URLs (Cloudflare R2 / S3) at MVP and scale."""
+    """Object storage (Cloudflare R2 in prod, local disk in dev).
+
+    Clients upload/download directly via presigned URLs — bytes never transit the
+    API in production. ``stat``/``read`` back server-side verification and image
+    probing on upload-complete; ``delete`` removes objects. Same contract at scale.
+    """
 
     async def presign_put(self, key: str, content_type: str, max_size: int) -> dict[str, Any]: ...
 
     async def presign_get(self, key: str, ttl: int) -> str: ...
 
     def public_url(self, key: str) -> str: ...
+
+    async def delete(self, key: str) -> None: ...
+
+    async def stat(self, key: str) -> StoredObject | None: ...
+
+    async def read(self, key: str) -> bytes | None: ...
 
 
 @runtime_checkable

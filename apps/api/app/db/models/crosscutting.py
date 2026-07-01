@@ -67,6 +67,9 @@ class File(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(
         FILE_STATUS, nullable=False, server_default=text("'pending'")
     )
+    # Extracted on upload-complete: image dims etc. Attribute is `meta` because
+    # `metadata` is reserved by the Declarative API; the DB column stays `metadata`.
+    meta: Mapped[dict[str, Any] | None] = mapped_column("metadata", JSONB, nullable=True)
 
 
 class Notification(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
