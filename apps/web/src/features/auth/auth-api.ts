@@ -18,6 +18,7 @@ export async function login(body: LoginRequest): Promise<MeResponse> {
   return data;
 }
 
+/** Register — the endpoint signs the user in (sets auth cookies) and returns the session. */
 export async function register(body: RegisterRequest): Promise<MeResponse> {
   const { data } = await api.post<MeResponse>("/auth/register", body);
   return data;
@@ -25,4 +26,12 @@ export async function register(body: RegisterRequest): Promise<MeResponse> {
 
 export async function logout(): Promise<void> {
   await api.post("/auth/logout");
+}
+
+export async function confirmEmail(token: string): Promise<void> {
+  await api.post("/auth/verify-email/confirm", { token });
+}
+
+export async function requestEmailVerification(): Promise<void> {
+  await api.post("/auth/verify-email/request");
 }
