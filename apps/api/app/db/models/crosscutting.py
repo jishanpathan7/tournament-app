@@ -88,7 +88,9 @@ class Notification(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(
         NOTIFICATION_STATUS, nullable=False, server_default=text("'pending'")
     )
-    sent_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+    sent_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
 
 class Outbox(UUIDPrimaryKeyMixin, TimestampMixin, Base):
