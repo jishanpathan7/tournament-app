@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { RegistrationResponse } from "@tournament/api-client";
+import type { RegistrationResponse, SubmitRegistrationRequest } from "@tournament/api-client";
 
 import * as registrationsApi from "@/features/registrations/registrations-api";
 import { queryKeys } from "@/lib/query-keys";
@@ -22,7 +22,28 @@ export function useParticipants(divisionId: string, options?: { enabled?: boolea
   });
 }
 
-/** Optimistically flip a registration's status in the list, roll back on error. */
+export function useTeam(teamId: string | null | undefined) {
+  return useQuery({
+    queryKey: queryKeys.teams.detail(teamId ?? ""),
+    queryFn: () => registrationsApi.getTeam(teamId!),
+    enabled: !!teamId,
+  });
+}
+
+export function useSubmitRegistration(divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SubmitRegistrationRequest) =>
+      registrationsApi.submitRegistration(divisionId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.registrations(divisionId),
+      });
+    },
+  });
+}
+
+/** Optimistically flip one registration's status in the cached list, roll back on error. */
 function useRegistrationDecision(
   divisionId: string,
   mutationFn: (registrationId: string) => Promise<unknown>,
@@ -61,4 +82,75 @@ export function useApproveRegistration(divisionId: string) {
 
 export function useRejectRegistration(divisionId: string) {
   return useRegistrationDecision(divisionId, registrationsApi.rejectRegistration, "rejected");
+}
+
+export function useWaitlistRegistration(divisionId: string) {
+  return useRegistrationDecision(divisionId, registrationsApi.waitlistRegistration, "waitlisted");
+}
+
+export function useWithdrawRegistration(divisionId: string) {
+  return useRegistrationDecision(divisionId, registrationsApi.withdrawRegistration, "withdrawn");
+}
+
+export interface BulkActionResult {
+  succeeded: string[];
+  failed: { id: string; error: unknown }[];
+}
+
+/**
+ * Fan out a per-registration action across a selection (no bulk endpoint exists — the
+ * backend only accepts one id at a time). Applies the same optimistic flip to every
+ * selected row, settles independently per id via `Promise.allSettled`, and reports which
+ * ones failed so the UI can show a precise "3 of 5 approved" summary rather than an
+ * all-or-nothing result.
+ */
+function useBulkRegistrationAction(
+  divisionId: string,
+  actionFn: (registrationId: string) => Promise<unknown>,
+  optimisticStatus: string,
+) {
+  const queryClient = useQueryClient();
+  const key = queryKeys.divisions.registrations(divisionId);
+  return useMutation({
+    mutationFn: async (registrationIds: string[]): Promise<BulkActionResult> => {
+      const results = await Promise.allSettled(registrationIds.map((id) => actionFn(id)));
+      const succeeded: string[] = [];
+      const failed: BulkActionResult["failed"] = [];
+      results.forEach((result, i) => {
+        const id = registrationIds[i]!;
+        if (result.status === "fulfilled") succeeded.push(id);
+        else failed.push({ id, error: result.reason });
+      });
+      return { succeeded, failed };
+    },
+    onMutate: async (registrationIds: string[]) => {
+      await queryClient.cancelQueries({ queryKey: key });
+      const previous = queryClient.getQueryData<RegistrationResponse[]>(key);
+      if (previous) {
+        const ids = new Set(registrationIds);
+        queryClient.setQueryData<RegistrationResponse[]>(
+          key,
+          previous.map((r) => (ids.has(r.id) ? { ...r, status: optimisticStatus } : r)),
+        );
+      }
+      return { previous };
+    },
+    onError: (_err, _ids, context) => {
+      if (context?.previous) queryClient.setQueryData(key, context.previous);
+    },
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(divisionId),
+      });
+    },
+  });
+}
+
+export function useBulkApproveRegistrations(divisionId: string) {
+  return useBulkRegistrationAction(divisionId, registrationsApi.approveRegistration, "approved");
+}
+
+export function useBulkRejectRegistrations(divisionId: string) {
+  return useBulkRegistrationAction(divisionId, registrationsApi.rejectRegistration, "rejected");
 }

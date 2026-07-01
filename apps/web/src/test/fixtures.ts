@@ -1,4 +1,11 @@
-import type { TournamentResponse } from "@tournament/api-client";
+import type {
+  DivisionResponse,
+  MemberItem,
+  ParticipantResponse,
+  RegistrationResponse,
+  TeamResponse,
+  TournamentResponse,
+} from "@tournament/api-client";
 
 let seq = 0;
 
@@ -19,5 +26,71 @@ export function makeTournament(overrides: Partial<TournamentResponse> = {}): Tou
     schedulePublishedAt: overrides.schedulePublishedAt ?? null,
     resultsPublishedAt: overrides.resultsPublishedAt ?? null,
     createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+/** Build a RegistrationResponse with sensible defaults for tests. */
+export function makeRegistration(
+  overrides: Partial<RegistrationResponse> = {},
+): RegistrationResponse {
+  seq += 1;
+  return {
+    id: overrides.id ?? `r-${seq}`,
+    divisionId: overrides.divisionId ?? "div-1",
+    submittedBy: overrides.submittedBy ?? "user-1",
+    status: overrides.status ?? "submitted",
+    skillLevel: overrides.skillLevel ?? null,
+    participantId: overrides.participantId ?? null,
+    formResponse: overrides.formResponse ?? {},
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeParticipant(overrides: Partial<ParticipantResponse> = {}): ParticipantResponse {
+  seq += 1;
+  return {
+    id: overrides.id ?? `p-${seq}`,
+    divisionId: overrides.divisionId ?? "div-1",
+    kind: overrides.kind ?? "individual",
+    displayName: overrides.displayName ?? `Participant ${seq}`,
+    seed: overrides.seed ?? null,
+    status: overrides.status ?? "approved",
+    userId: overrides.userId ?? null,
+    teamId: overrides.teamId ?? null,
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeMember(overrides: Partial<MemberItem> = {}): MemberItem {
+  seq += 1;
+  return {
+    userId: overrides.userId ?? `user-${seq}`,
+    email: overrides.email ?? `member-${seq}@example.com`,
+    name: overrides.name ?? `Member ${seq}`,
+    role: overrides.role ?? "organizer",
+    joinedAt: overrides.joinedAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeDivision(overrides: Partial<DivisionResponse> = {}): DivisionResponse {
+  seq += 1;
+  return {
+    id: overrides.id ?? `div-${seq}`,
+    tournamentId: overrides.tournamentId ?? "t-1",
+    name: overrides.name ?? `Division ${seq}`,
+    participantType: overrides.participantType ?? "individual",
+    capacity: overrides.capacity ?? null,
+    regForm: overrides.regForm ?? {},
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeTeam(overrides: Partial<TeamResponse> = {}): TeamResponse {
+  seq += 1;
+  return {
+    id: overrides.id ?? `team-${seq}`,
+    name: overrides.name ?? `Team ${seq}`,
+    captainUserId: overrides.captainUserId ?? null,
+    roster: overrides.roster ?? [],
   };
 }

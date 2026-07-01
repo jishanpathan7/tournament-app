@@ -19,15 +19,18 @@ from app.api.deps import (
     get_request_session,
     require_permission,
 )
+from app.api.errors import NotFoundError
 from app.core import authz
-from app.db.models import Participant, Registration
+from app.db.models import Participant, Registration, Team
 from app.modules.registrations import repository as repo
 from app.modules.registrations import service
 from app.modules.registrations.schemas import (
     ApproveResult,
     ParticipantResponse,
     RegistrationResponse,
+    RosterEntryItem,
     SubmitRegistrationRequest,
+    TeamResponse,
 )
 
 router = APIRouter(tags=["registrations"])
@@ -43,7 +46,25 @@ def _registration_response(reg: Registration) -> RegistrationResponse:
         status=reg.status,
         skill_level=reg.skill_level,
         participant_id=reg.participant_id,
+        form_response=reg.form_response,
         created_at=reg.created_at,
+    )
+
+
+def _team_response(team: Team) -> TeamResponse:
+    return TeamResponse(
+        id=team.id,
+        name=team.name,
+        captain_user_id=team.captain_user_id,
+        roster=[
+            RosterEntryItem(
+                id=entry.id,
+                user_id=entry.user_id,
+                external_name=entry.external_name,
+                role=entry.role,
+            )
+            for entry in team.roster_entries
+        ],
     )
 
 
@@ -147,6 +168,25 @@ async def reject_registration(
 
 
 @router.post(
+    "/registrations/{registration_id}/waitlist",
+    response_model=RegistrationResponse,
+    dependencies=[Depends(authed_csrf)],
+)
+async def waitlist_registration(
+    registration_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> RegistrationResponse:
+    registration = await service.waitlist_registration(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        registration_id=registration_id,
+    )
+    return _registration_response(registration)
+
+
+@router.post(
     "/registrations/{registration_id}/withdraw",
     response_model=RegistrationResponse,
     dependencies=[Depends(authed_csrf)],
@@ -163,3 +203,15 @@ async def withdraw_registration(
         registration_id=registration_id,
     )
     return _registration_response(registration)
+
+
+@router.get("/teams/{team_id}", response_model=TeamResponse)
+async def get_team(
+    team_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> TeamResponse:
+    team = await repo.get_team_with_roster(session, principal.organization_id, team_id)
+    if team is None:
+        raise NotFoundError("Team not found")
+    return _team_response(team)

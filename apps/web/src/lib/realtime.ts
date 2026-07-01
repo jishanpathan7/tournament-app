@@ -10,6 +10,11 @@ export const REALTIME_EVENTS = {
   MATCH_COMPLETED: "match.completed",
   BRACKET_UPDATED: "bracket.updated",
   STANDINGS_UPDATED: "standings.updated",
+  REGISTRATION_SUBMITTED: "registration.submitted",
+  REGISTRATION_APPROVED: "registration.approved",
+  REGISTRATION_WAITLISTED: "registration.waitlisted",
+  REGISTRATION_REJECTED: "registration.rejected",
+  REGISTRATION_WITHDRAWN: "registration.withdrawn",
 } as const;
 
 export type RealtimeEventType = (typeof REALTIME_EVENTS)[keyof typeof REALTIME_EVENTS];

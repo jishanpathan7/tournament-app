@@ -2174,6 +2174,49 @@
         }
       }
     },
+    "/api/v1/registrations/{registration_id}/waitlist": {
+      "post": {
+        "tags": [
+          "registrations"
+        ],
+        "summary": "Waitlist Registration",
+        "operationId": "registrations_waitlist_registration",
+        "parameters": [
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Registration Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RegistrationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/registrations/{registration_id}/withdraw": {
       "post": {
         "tags": [
@@ -2200,6 +2243,49 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RegistrationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/teams/{team_id}": {
+      "get": {
+        "tags": [
+          "registrations"
+        ],
+        "summary": "Get Team",
+        "operationId": "registrations_get_team",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Team Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TeamResponse"
                 }
               }
             }
@@ -3742,6 +3828,11 @@
             ],
             "title": "Participantid"
           },
+          "formResponse": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Formresponse"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -3756,9 +3847,61 @@
           "status",
           "skillLevel",
           "participantId",
+          "formResponse",
           "createdAt"
         ],
         "title": "RegistrationResponse"
+      },
+      "RosterEntryItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "userId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Userid"
+          },
+          "externalName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Externalname"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Role"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "userId",
+          "externalName",
+          "role"
+        ],
+        "title": "RosterEntryItem"
       },
       "ScoreRequest": {
         "properties": {
@@ -4052,6 +4195,46 @@
           "organizationId"
         ],
         "title": "SwitchOrgRequest"
+      },
+      "TeamResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "captainUserId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captainuserid"
+          },
+          "roster": {
+            "items": {
+              "$ref": "#/components/schemas/RosterEntryItem"
+            },
+            "type": "array",
+            "title": "Roster"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "captainUserId",
+          "roster"
+        ],
+        "title": "TeamResponse"
       },
       "TournamentResponse": {
         "properties": {

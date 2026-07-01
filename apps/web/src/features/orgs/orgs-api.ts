@@ -1,6 +1,7 @@
 import type {
   CreateOrgRequest,
   MeResponse,
+  MemberItem,
   OrgResponse,
   OrgSummary,
   PresignUploadResponse,
@@ -13,6 +14,11 @@ import { api, apiGet } from "@/lib/api";
 
 export function listOrgs(): Promise<OrgSummary[]> {
   return apiGet<OrgSummary[]>("/orgs");
+}
+
+/** Members of the active org — used to resolve a registration's `submittedBy` to a name/email. */
+export function listMembers(): Promise<MemberItem[]> {
+  return apiGet<MemberItem[]>("/orgs/active/members");
 }
 
 export async function createOrg(body: CreateOrgRequest): Promise<MeResponse> {

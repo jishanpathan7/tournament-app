@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.errors import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_sport_registry
+from app.core.factory import get_broadcaster, get_sport_registry
 from app.db.enums import (
     ParticipantKind,
     ParticipantStatus,
@@ -25,6 +25,7 @@ from app.db.models import Participant, Registration, RosterEntry, Team
 from app.engine import EngineValidationError
 from app.modules.registrations import events
 from app.modules.registrations import repository as repo
+from app.realtime.channels import org_channel
 
 _APPROVABLE = {RegistrationStatus.SUBMITTED.value, RegistrationStatus.WAITLISTED.value}
 
@@ -57,7 +58,9 @@ async def submit_registration(
     )
     session.add(registration)
     await session.flush()
-    await _audit_event(session, org_id, user_id, events.REGISTRATION_SUBMITTED, registration.id)
+    await _audit_event(
+        session, org_id, user_id, events.REGISTRATION_SUBMITTED, registration.id, division.id
+    )
     return registration
 
 
@@ -76,7 +79,12 @@ async def approve_registration(
             registration.status = RegistrationStatus.WAITLISTED.value
             await session.flush()
             await _audit_event(
-                session, org_id, actor_id, events.REGISTRATION_WAITLISTED, registration.id
+                session,
+                org_id,
+                actor_id,
+                events.REGISTRATION_WAITLISTED,
+                registration.id,
+                division.id,
             )
             return registration, None
 
@@ -90,9 +98,29 @@ async def approve_registration(
         actor_id,
         events.REGISTRATION_APPROVED,
         registration.id,
+        division.id,
         after={"participantId": str(participant.id)},
     )
     return registration, participant
+
+
+async def waitlist_registration(
+    session: AsyncSession, *, org_id: uuid.UUID, actor_id: uuid.UUID, registration_id: uuid.UUID
+) -> Registration:
+    """Organizer-initiated waitlist — e.g. holding a slot pending payment/confirmation,
+    independent of the automatic capacity-driven waitlisting inside `approve_registration`.
+    Same reachable-from set as approve (a rejected/withdrawn/approved registration can't
+    be waitlisted — approved would need to go through withdraw first)."""
+    registration = await _require_registration(session, org_id, registration_id)
+    if registration.status not in _APPROVABLE:
+        raise ConflictError(f"registration is {registration.status}, cannot waitlist")
+    division = await _require_division(session, org_id, registration.division_id)
+    registration.status = RegistrationStatus.WAITLISTED.value
+    await session.flush()
+    await _audit_event(
+        session, org_id, actor_id, events.REGISTRATION_WAITLISTED, registration.id, division.id
+    )
+    return registration
 
 
 async def reject_registration(
@@ -103,7 +131,14 @@ async def reject_registration(
         raise ConflictError("cannot reject an approved registration")
     registration.status = RegistrationStatus.REJECTED.value
     await session.flush()
-    await _audit_event(session, org_id, actor_id, events.REGISTRATION_REJECTED, registration.id)
+    await _audit_event(
+        session,
+        org_id,
+        actor_id,
+        events.REGISTRATION_REJECTED,
+        registration.id,
+        registration.division_id,
+    )
     return registration
 
 
@@ -119,7 +154,14 @@ async def withdraw_registration(
         if participant is not None:
             participant.status = ParticipantStatus.WITHDRAWN.value
     await session.flush()
-    await _audit_event(session, org_id, user_id, events.REGISTRATION_WITHDRAWN, registration.id)
+    await _audit_event(
+        session,
+        org_id,
+        user_id,
+        events.REGISTRATION_WITHDRAWN,
+        registration.id,
+        registration.division_id,
+    )
     return registration
 
 
@@ -241,6 +283,7 @@ async def _audit_event(
     actor_id: uuid.UUID,
     action: str,
     entity_id: uuid.UUID,
+    division_id: uuid.UUID,
     *,
     after: dict[str, Any] | None = None,
 ) -> None:
@@ -253,9 +296,13 @@ async def _audit_event(
         entity_id=entity_id,
         after=after,
     )
-    await emit_event(
-        session,
-        aggregate="registration",
-        event_type=action,
-        payload={"id": str(entity_id), "organizationId": str(org_id)},
-    )
+    payload = {
+        "id": str(entity_id),
+        "registrationId": str(entity_id),
+        "divisionId": str(division_id),
+        "organizationId": str(org_id),
+    }
+    await emit_event(session, aggregate="registration", event_type=action, payload=payload)
+    # Realtime: organizers watching this org see registration changes live, same pattern
+    # as scoring's match/bracket/standings broadcasts.
+    await get_broadcaster().publish(org_channel(org_id), action, payload)

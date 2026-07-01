@@ -12,7 +12,9 @@ describe("register (first signup)", () => {
   beforeEach(() => vi.clearAllMocks());
 
   it("posts to /auth/register and returns the established session", async () => {
-    vi.mocked(api.post).mockResolvedValue({ data: { id: "u1", email: "new@example.com" } } as never);
+    vi.mocked(api.post).mockResolvedValue({
+      data: { id: "u1", email: "new@example.com" },
+    } as never);
 
     const me = await register({
       email: "new@example.com",

@@ -8,12 +8,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RegistrationsPanel } from "@/features/tournaments/components/detail/registrations-panel";
+import { RegistrationsSummaryLink } from "@/features/registrations/components/registrations-summary-link";
 import { StagesList } from "@/features/tournaments/components/detail/stages-list";
 import { PARTICIPANT_KINDS } from "@/features/tournaments/config";
 import { useDivisions } from "@/features/tournaments/use-tournaments";
 
-/** Divisions with their stages/draw status + registrations & participants. */
+/** Divisions with their stages/draw status + a registrations/capacity summary link. */
 export function DivisionsSection({
   tournamentId,
   canManage,
@@ -60,7 +60,12 @@ export function DivisionsSection({
           <CardContent className="flex flex-col gap-4">
             <StagesList divisionId={division.id} canManage={canManage} />
             <Separator />
-            <RegistrationsPanel divisionId={division.id} canManage={canManage} />
+            <RegistrationsSummaryLink
+              tournamentId={tournamentId}
+              divisionId={division.id}
+              capacity={division.capacity}
+              canManage={canManage}
+            />
           </CardContent>
         </Card>
       ))}

@@ -1,5 +1,7 @@
 import type { TournamentResponse } from "@tournament/api-client";
 
+export { paginate } from "@/lib/paginate";
+
 /** Client-side list controls (GET /tournaments returns the full array, unpaginated). */
 
 export type TournamentSort = "recent" | "oldest" | "name";
@@ -51,9 +53,4 @@ export function applyTournamentFilters(
     }
   });
   return sorted;
-}
-
-export function paginate<T>(items: T[], page: number, pageSize: number): T[] {
-  const start = (page - 1) * pageSize;
-  return items.slice(start, start + pageSize);
 }
