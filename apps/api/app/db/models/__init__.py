@@ -16,6 +16,7 @@ from app.db.models.crosscutting import (
 )
 from app.db.models.identity import (
     AuthSession,
+    AuthToken,
     Identity,
     Membership,
     Organization,
@@ -40,6 +41,7 @@ __all__ = [
     "Membership",
     "Identity",
     "AuthSession",
+    "AuthToken",
     "OrgInvite",
     # sport
     "SportProfile",

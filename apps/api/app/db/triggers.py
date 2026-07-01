@@ -25,17 +25,22 @@ def _trigger_name(table: str) -> str:
     return f"trg_{table}_set_updated_at"
 
 
+def create_trigger(table: str) -> str:
+    """One CREATE TRIGGER (assumes the shared set_updated_at() function exists)."""
+    return (
+        f"CREATE TRIGGER {_trigger_name(table)} BEFORE UPDATE ON {table} "
+        f"FOR EACH ROW EXECUTE FUNCTION set_updated_at();"
+    )
+
+
+def drop_trigger(table: str) -> str:
+    """One DROP TRIGGER (leaves the shared function in place)."""
+    return f"DROP TRIGGER IF EXISTS {_trigger_name(table)} ON {table};"
+
+
 def upgrade_statements(tables: list[str]) -> list[str]:
-    stmts = [SET_UPDATED_AT_FUNCTION]
-    for table in tables:
-        stmts.append(
-            f"CREATE TRIGGER {_trigger_name(table)} BEFORE UPDATE ON {table} "
-            f"FOR EACH ROW EXECUTE FUNCTION set_updated_at();"
-        )
-    return stmts
+    return [SET_UPDATED_AT_FUNCTION, *(create_trigger(t) for t in tables)]
 
 
 def downgrade_statements(tables: list[str]) -> list[str]:
-    stmts = [f"DROP TRIGGER IF EXISTS {_trigger_name(t)} ON {t};" for t in tables]
-    stmts.append("DROP FUNCTION IF EXISTS set_updated_at();")
-    return stmts
+    return [*(drop_trigger(t) for t in tables), "DROP FUNCTION IF EXISTS set_updated_at();"]

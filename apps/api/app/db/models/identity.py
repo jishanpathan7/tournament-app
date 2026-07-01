@@ -12,12 +12,12 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint, text
+from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.enums import ORG_INVITE_STATUS, ORG_ROLE
+from app.db.enums import AUTH_TOKEN_PURPOSE, ORG_INVITE_STATUS, ORG_ROLE
 from app.db.mixins import OrgScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
@@ -35,6 +35,12 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # References files.id; no DB FK to avoid a users<->files circular dependency.
     avatar_file_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, server_default=text("'active'"))
+    email_verified_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    last_login_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     # org_id/user_id FKs are RESTRICT, so no ORM delete-cascade here.
     memberships: Mapped[list[Membership]] = relationship(back_populates="user")
@@ -104,8 +110,10 @@ class AuthSession(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     token_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
     family_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), nullable=False, index=True)
     parent_id: Mapped[uuid.UUID | None] = mapped_column(UUID(as_uuid=True), nullable=True)
-    expires_at: Mapped[datetime.datetime] = mapped_column(nullable=False)
-    revoked_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     user_agent: Mapped[str | None] = mapped_column(Text, nullable=True)
     ip: Mapped[str | None] = mapped_column(INET, nullable=True)
 
@@ -124,8 +132,27 @@ class OrgInvite(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(
         ORG_INVITE_STATUS, nullable=False, server_default=text("'pending'")
     )
-    expires_at: Mapped[datetime.datetime] = mapped_column(nullable=False)
-    accepted_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     accepted_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+
+class AuthToken(UUIDPrimaryKeyMixin, TimestampMixin, Base):
+    """Single-use, expiring token for email verification / password reset (NO_RLS)."""
+
+    __tablename__ = "auth_tokens"
+    __table_args__ = (Index("ix_auth_tokens_user_id_purpose", "user_id", "purpose"),)
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    purpose: Mapped[str] = mapped_column(AUTH_TOKEN_PURPOSE, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    consumed_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
