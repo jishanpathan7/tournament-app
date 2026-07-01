@@ -1,0 +1,10 @@
+{
+  "extends": "@tournament/config/tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["dom", "esnext"],
+    "moduleResolution": "bundler",
+    "module": "esnext",
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"]
+}
