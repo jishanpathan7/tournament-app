@@ -18,8 +18,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.errors import ConflictError, NotFoundError, ValidationError
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_format_registry, get_sport_registry
-from app.db.enums import MatchStatus, ParticipantKind, TournamentStatus, Visibility
+from app.core.factory import get_advancement_engine, get_format_registry, get_sport_registry
+from app.db.enums import MatchOutcome, MatchStatus, ParticipantKind, TournamentStatus, Visibility
 from app.db.models import (
     Division,
     Group,
@@ -32,19 +32,29 @@ from app.db.models import (
     Tournament,
 )
 from app.engine import (
+    AdvancementRequest,
     ByeRef,
     EngineValidationError,
     FormatKey,
     GenerateRequest,
     LoserOfRef,
+    MatchPlan,
     ParticipantRef,
     ParticipantSideRef,
     SeedRef,
+    SourceRefs,
     StructurePlan,
     WinnerOfRef,
+    parse_source_refs,
 )
 from app.modules.tournaments import events
 from app.modules.tournaments import repository as repo
+
+_TERMINAL_STATUSES = {
+    MatchStatus.COMPLETED.value,
+    MatchStatus.WALKOVER.value,
+    MatchStatus.NO_SHOW.value,
+}
 
 _TRANSITIONS: dict[TournamentStatus, set[TournamentStatus]] = {
     TournamentStatus.DRAFT: {TournamentStatus.REGISTRATION},
@@ -308,8 +318,82 @@ async def generate_draw(
         raise ValidationError(str(exc), code="draw_failed") from exc
 
     summary = await _persist_structure(session, org_id, tournament.id, stage, plan, participants)
+    await resolve_bracket(session, org_id, stage)  # resolve byes into walkovers immediately
     await _audit_event(session, org_id, actor_id, events.STAGE_GENERATED, stage.id, after=summary)
     return stage, summary
+
+
+async def resolve_bracket(session: AsyncSession, org_id: uuid.UUID, stage: Stage) -> dict[str, Any]:
+    """Advance a bracket: reconstruct it from persisted rows, run the pure
+    AdvancementEngine over completed winners, then sync the DB — create newly-resolved
+    match sides, auto-decide byes as walkovers, and flip pending → scheduled. Idempotent;
+    a no-op for formats without winner_of/bye refs (e.g. round robin). Returns the ids of
+    matches newly made playable (for downstream notifications)."""
+    matches = list(await repo.stage_matches_with_participants(session, org_id, stage.id))
+    if not matches:
+        return {"activated": 0, "scheduled": []}
+
+    plans: list[MatchPlan] = []
+    winners: dict[str, str] = {}
+    for match in matches:
+        raw = match.source_refs or {}
+        source_refs = parse_source_refs(raw) if raw.get("sides") else SourceRefs(())
+        plans.append(MatchPlan(key=str(match.id), source_refs=source_refs))
+        if match.status in _TERMINAL_STATUSES:
+            winner = next(
+                (mp for mp in match.participants if mp.outcome == MatchOutcome.WIN.value), None
+            )
+            if winner is not None:
+                winners[str(match.id)] = str(winner.participant_id)
+
+    result = get_advancement_engine().resolve(
+        AdvancementRequest(matches=tuple(plans), seeds={}, winners=winners)
+    )
+
+    activated = 0
+    scheduled: list[str] = []
+    for match in matches:
+        sides = result.sides[str(match.id)]
+        existing = {str(mp.participant_id) for mp in match.participants}
+        for side in sides:
+            if side.participant_id and side.participant_id not in existing:
+                session.add(
+                    MatchParticipant(
+                        organization_id=org_id,
+                        match_id=match.id,
+                        participant_id=uuid.UUID(side.participant_id),
+                    )
+                )
+                existing.add(side.participant_id)
+        if match.status != MatchStatus.PENDING.value:
+            continue
+        if str(match.id) in result.byes:
+            match.status = MatchStatus.WALKOVER.value
+            winner_id = result.winners.get(str(match.id))
+            for mp in match.participants:
+                if str(mp.participant_id) == winner_id:
+                    mp.outcome = MatchOutcome.WIN.value
+            activated += 1
+        elif sides and all(side.participant_id is not None for side in sides):
+            match.status = MatchStatus.SCHEDULED.value
+            scheduled.append(str(match.id))
+            activated += 1
+
+    await session.flush()
+    return {"activated": activated, "scheduled": scheduled}
+
+
+def references_match(matches: list[Match], match_id: uuid.UUID) -> bool:
+    """True if any match feeds off ``match_id`` (winner_of/loser_of) — i.e. it has a
+    downstream dependent in the bracket (used to guard winner-changing corrections)."""
+    target = str(match_id)
+    for match in matches:
+        for side in (match.source_refs or {}).get("sides", []):
+            if isinstance(side, dict) and (
+                side.get("winner_of") == target or side.get("loser_of") == target
+            ):
+                return True
+    return False
 
 
 async def _persist_structure(

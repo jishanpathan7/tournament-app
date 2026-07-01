@@ -12,9 +12,22 @@ from collections.abc import Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.db.enums import ParticipantStatus
 from app.db.models import Division, Match, Participant, SportProfile, Stage, Tournament
+
+
+async def stage_matches_with_participants(
+    session: AsyncSession, org_id: uuid.UUID, stage_id: uuid.UUID
+) -> Sequence[Match]:
+    stmt = (
+        select(Match)
+        .where(Match.stage_id == stage_id, Match.organization_id == org_id)
+        .options(selectinload(Match.participants))
+        .order_by(Match.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
 
 
 async def get_tournament(
