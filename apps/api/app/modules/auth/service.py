@@ -147,8 +147,15 @@ async def _issue_session(
 
 
 async def register(
-    session: AsyncSession, *, email: str, name: str, password: str, email_channel: EmailChannel
-) -> User:
+    session: AsyncSession,
+    *,
+    email: str,
+    name: str,
+    password: str,
+    email_channel: EmailChannel,
+    ip: str | None = None,
+    user_agent: str | None = None,
+) -> AuthResult:
     if await repo.get_user_by_email(session, email) is not None:
         raise ConflictError("That email is already registered")
     user = User(email=email, name=name, password_hash=hash_password(password))
@@ -162,8 +169,18 @@ async def register(
         ttl=get_settings().email_verification_token_ttl,
         email_channel=email_channel,
     )
+    # Sign the user in immediately — a fresh account has no org yet (onboarding follows).
+    bundle = await _issue_session(
+        session,
+        user=user,
+        organization_id=None,
+        org_role=None,
+        remember=False,
+        ip=ip,
+        user_agent=user_agent,
+    )
     logger.info("auth.registered", extra={"user_id": str(user.id)})
-    return user
+    return AuthResult(bundle, user, None, None, [])
 
 
 async def authenticate(

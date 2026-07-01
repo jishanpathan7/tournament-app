@@ -1,22 +1,26 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { MeResponse, OrgSummary } from "@tournament/api-client";
+import type { MeResponse } from "@tournament/api-client";
 
-import { api, apiGet } from "@/lib/api";
+import * as orgsApi from "@/features/orgs/orgs-api";
 import { queryKeys } from "@/lib/query-keys";
 
-/** Organizations the signed-in user belongs to (for the org switcher). */
+/** Organizations the signed-in user belongs to (for the switcher + selector). */
 export function useOrgs() {
   return useQuery({
     queryKey: queryKeys.orgs.list(),
-    queryFn: () => apiGet<OrgSummary[]>("/orgs"),
+    queryFn: orgsApi.listOrgs,
   });
 }
 
-async function switchOrg(organizationId: string): Promise<MeResponse> {
-  const { data } = await api.post<MeResponse>("/orgs/switch", { organizationId });
-  return data;
+/** Seed the session cache from a fresh MeResponse and drop tenant-scoped caches. */
+function useApplySession() {
+  const queryClient = useQueryClient();
+  return (me: MeResponse) => {
+    queryClient.clear();
+    queryClient.setQueryData(queryKeys.session, me);
+  };
 }
 
 /**
@@ -24,13 +28,38 @@ async function switchOrg(organizationId: string): Promise<MeResponse> {
  * the session and drop all tenant-scoped caches so nothing from the old org lingers.
  */
 export function useSwitchOrg() {
+  const apply = useApplySession();
+  return useMutation({
+    mutationFn: orgsApi.switchOrg,
+    onSuccess: apply,
+  });
+}
+
+/** Create an organization → caller becomes OWNER, session re-mints with it active. */
+export function useCreateOrg() {
+  const apply = useApplySession();
+  return useMutation({
+    mutationFn: orgsApi.createOrg,
+    onSuccess: apply,
+  });
+}
+
+/** Patch the active org (name / timezone / branding). */
+export function useUpdateActiveOrg() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: switchOrg,
-    onSuccess: (me) => {
-      queryClient.setQueryData(queryKeys.session, me);
-      queryClient.clear();
-      queryClient.setQueryData(queryKeys.session, me);
+    mutationFn: orgsApi.updateActiveOrg,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.orgs.active() });
     },
+  });
+}
+
+/** Accept an invitation → join the org, session re-mints with it active. */
+export function useAcceptInvite() {
+  const apply = useApplySession();
+  return useMutation({
+    mutationFn: orgsApi.acceptInvite,
+    onSuccess: apply,
   });
 }

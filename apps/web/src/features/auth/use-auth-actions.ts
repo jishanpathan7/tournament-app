@@ -3,7 +3,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import type { MeResponse } from "@tournament/api-client";
 
-import { login, logout, register } from "@/features/auth/auth-api";
+import {
+  confirmEmail,
+  login,
+  logout,
+  register,
+  requestEmailVerification,
+} from "@/features/auth/auth-api";
 import type { LoginValues, RegisterValues } from "@/features/auth/schemas";
 import { queryKeys } from "@/lib/query-keys";
 
@@ -41,4 +47,19 @@ export function useLogout() {
       queryClient.clear();
     },
   });
+}
+
+/** Confirm an email-verification token, then refresh the session so `emailVerified` updates. */
+export function useConfirmEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (token: string) => confirmEmail(token),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.session });
+    },
+  });
+}
+
+export function useResendVerification() {
+  return useMutation({ mutationFn: requestEmailVerification });
 }

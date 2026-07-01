@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
@@ -16,6 +17,8 @@ import { errorMessage } from "@/lib/problem";
 export function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
+  const next = params.get("next");
+  const registerHref = next ? `/register?next=${encodeURIComponent(next)}` : "/register";
   const login = useLogin();
   const {
     register,
@@ -28,7 +31,7 @@ export function LoginForm() {
 
   const onSubmit = handleSubmit((values) => {
     login.mutate(values, {
-      onSuccess: () => router.replace(params.get("next") || "/console"),
+      onSuccess: () => router.replace(next || "/console"),
       onError: (error) => toast.error(errorMessage(error, "Sign in failed")),
     });
   });
@@ -61,6 +64,15 @@ export function LoginForm() {
         {login.isPending ? <Spinner className="text-white" /> : null}
         Sign in
       </Button>
+      <p className="text-muted-foreground text-center text-sm">
+        New here?{" "}
+        <Link
+          href={registerHref}
+          className="text-candy-dark font-semibold underline-offset-2 hover:underline"
+        >
+          Create an account
+        </Link>
+      </p>
     </form>
   );
 }

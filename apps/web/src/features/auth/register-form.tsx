@@ -1,7 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,9 @@ import { errorMessage } from "@/lib/problem";
 
 export function RegisterForm() {
   const router = useRouter();
+  const params = useSearchParams();
+  const next = params.get("next");
+  const loginHref = next ? `/login?next=${encodeURIComponent(next)}` : "/login";
   const registerMut = useRegister();
   const {
     register,
@@ -27,8 +31,8 @@ export function RegisterForm() {
 
   const onSubmit = handleSubmit((values) => {
     registerMut.mutate(values, {
-      // New accounts have no org yet — route to org onboarding.
-      onSuccess: () => router.replace("/console"),
+      // Honor an invite (next), else send new accounts to org onboarding.
+      onSuccess: () => router.replace(next || "/onboarding"),
       onError: (error) => toast.error(errorMessage(error, "Could not create account")),
     });
   });
@@ -65,6 +69,15 @@ export function RegisterForm() {
         {registerMut.isPending ? <Spinner className="text-white" /> : null}
         Create account
       </Button>
+      <p className="text-muted-foreground text-center text-sm">
+        Already have an account?{" "}
+        <Link
+          href={loginHref}
+          className="text-candy-dark font-semibold underline-offset-2 hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
     </form>
   );
 }

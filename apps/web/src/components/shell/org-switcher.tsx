@@ -1,6 +1,8 @@
 "use client";
 
-import { Check, ChevronsUpDown } from "lucide-react";
+import { Check, ChevronsUpDown, Plus } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import {
   DropdownMenu,
@@ -11,19 +13,26 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/sonner";
 import { useSession } from "@/features/auth/use-session";
 import { useSwitchOrg } from "@/features/orgs/use-orgs";
+import { errorMessage } from "@/lib/problem";
 import { cn } from "@/lib/utils";
 
-/** Active-org control (design system §13): current org + dropdown to switch between memberships. */
+/** Active-org control (design system §13): current org + switch, create, and manage. */
 export function OrgSwitcher() {
   const { session } = useSession();
   const switchOrg = useSwitchOrg();
+  const router = useRouter();
 
   const orgs = session?.organizations ?? [];
   const active = orgs.find((o) => o.id === session?.activeOrganizationId) ?? orgs[0];
 
   if (!active) return null;
+
+  // Show at most a handful inline; deep lists go to the full selector.
+  const inlineOrgs = orgs.slice(0, 6);
+  const hasMore = orgs.length > inlineOrgs.length;
 
   return (
     <DropdownMenu>
@@ -37,17 +46,20 @@ export function OrgSwitcher() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-64">
         <DropdownMenuLabel>Organizations</DropdownMenuLabel>
-        {orgs.map((org) => {
+        {inlineOrgs.map((org) => {
           const isActive = org.id === active.id;
           return (
             <DropdownMenuItem
               key={org.id}
               onSelect={() => {
-                if (!isActive) switchOrg.mutate(org.id);
+                if (!isActive)
+                  switchOrg.mutate(org.id, {
+                    onError: (e) => toast.error(errorMessage(e, "Couldn't switch organization")),
+                  });
               }}
               className="justify-between"
             >
-              <span className="flex flex-col">
+              <span className="flex min-w-0 flex-col">
                 <span className="truncate font-medium">{org.name}</span>
                 <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.16em]">
                   {org.role}
@@ -60,9 +72,18 @@ export function OrgSwitcher() {
             </DropdownMenuItem>
           );
         })}
+        {hasMore ? (
+          <DropdownMenuItem onSelect={() => router.push("/select-organization")}>
+            View all organizations
+          </DropdownMenuItem>
+        ) : null}
         <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => router.push("/onboarding")}>
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
+          Create organization
+        </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <a href="/console/settings">Organization settings</a>
+          <Link href="/console/settings">Organization settings</Link>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

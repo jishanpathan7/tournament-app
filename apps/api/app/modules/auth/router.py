@@ -64,17 +64,26 @@ def _apply_bundle(response: Response, request: Request, bundle: service.TokenBun
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register(
     body: RegisterRequest,
+    request: Request,
+    response: Response,
     session: AsyncSession = Depends(get_tx_session),
     email_channel: EmailChannel = Depends(get_email_channel),
 ) -> MeResponse:
-    user = await service.register(
+    ip, user_agent = _client(request)
+    result = await service.register(
         session,
         email=body.email,
         name=body.name,
         password=body.password,
         email_channel=email_channel,
+        ip=ip,
+        user_agent=user_agent,
     )
-    return service.build_me(user, None, None, [])
+    # Registration signs the user in (sets auth cookies) so onboarding can proceed directly.
+    _apply_bundle(response, request, result.bundle)
+    return service.build_me(
+        result.user, result.organization_id, result.org_role, result.memberships
+    )
 
 
 @router.post("/login")

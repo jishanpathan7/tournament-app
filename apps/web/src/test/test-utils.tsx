@@ -50,4 +50,9 @@ export function getRouterMock() {
     .__routerMock;
 }
 
+/** Set the mocked `useSearchParams` query (e.g. "token=abc"). Reset after each test. */
+export function setSearchParams(query: string) {
+  (globalThis as unknown as { __setSearchParams: (q: string) => void }).__setSearchParams(query);
+}
+
 export * from "@testing-library/react";
