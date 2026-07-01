@@ -87,11 +87,16 @@ class ScheduleRequest:
 
 @dataclass(frozen=True)
 class AdvancementRequest:
-    """Resolve qualifiers from source standings per an advancement rule."""
+    """Resolve a bracket's pending sides from its seeds + completed match winners.
 
-    rule: AdvancementRule
-    standings_by_group: Mapping[GroupKey, tuple[StandingRow, ...]]
-    rng_seed: int | None = None
+    ``matches`` is the bracket (each with ``source_refs``); ``seeds`` maps seed number
+    → participant id; ``winners`` maps a completed match's key → its winner id (a normal
+    result or a walkover). Byes are derived, not passed. Generic across elimination formats.
+    """
+
+    matches: tuple[MatchPlan, ...]
+    seeds: Mapping[int, ParticipantId] = field(default_factory=dict)
+    winners: Mapping[MatchKey, ParticipantId] = field(default_factory=dict)
 
 
 # ---- engine protocols ----
@@ -131,7 +136,9 @@ class StandingsEngine(Protocol):
 
 @runtime_checkable
 class AdvancementEngine(Protocol):
-    """Resolves who advances from source standings into destination seed slots."""
+    """Resolves a bracket forward: seeds + completed winners → each match's sides, the
+    matches now playable, and byes auto-decided as walkovers. Rejects invalid winners.
+    Generic across elimination formats (single/double elim, knockout stage)."""
 
     def resolve(self, request: AdvancementRequest) -> AdvancementResult: ...
 

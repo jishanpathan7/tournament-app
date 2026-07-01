@@ -47,6 +47,8 @@ from app.engine.errors import (
     UnknownSportError,
 )
 from app.engine.formats.round_robin import RoundRobinFormat
+from app.engine.formats.single_elimination import SingleEliminationFormat
+from app.engine.progression import DefaultAdvancementEngine
 from app.engine.registry import FormatRegistry, SportRegistry
 from app.engine.source_refs import (
     ByeRef,
@@ -72,7 +74,7 @@ from app.engine.types import (
     ParticipantKind,
     ParticipantRef,
     PointsPolicy,
-    QualifierSlot,
+    ResolvedSide,
     RoundPlan,
     SchedulePlan,
     SchedulingConstraints,
@@ -118,7 +120,7 @@ __all__ = [
     "SchedulingConstraints",
     "SlotAssignment",
     "SchedulePlan",
-    "QualifierSlot",
+    "ResolvedSide",
     "AdvancementResult",
     # source_refs schema
     "SourceRefs",
@@ -156,5 +158,7 @@ __all__ = [
     "SportRegistry",
     # concrete implementations
     "RoundRobinFormat",
+    "SingleEliminationFormat",
     "DefaultStandingsEngine",
+    "DefaultAdvancementEngine",
 ]
