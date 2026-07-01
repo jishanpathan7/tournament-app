@@ -1,0 +1,72 @@
+"""Data access for registrations/participants — org-scoped at the app layer."""
+
+from __future__ import annotations
+
+import uuid
+from collections.abc import Sequence
+
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.db.enums import ParticipantStatus
+from app.db.models import Division, Participant, Registration, SportProfile, Tournament, User
+
+
+async def get_registration(
+    session: AsyncSession, org_id: uuid.UUID, rid: uuid.UUID
+) -> Registration | None:
+    stmt = select(Registration).where(
+        Registration.id == rid, Registration.organization_id == org_id
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def list_registrations(
+    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+) -> Sequence[Registration]:
+    stmt = (
+        select(Registration)
+        .where(Registration.division_id == division_id, Registration.organization_id == org_id)
+        .order_by(Registration.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def count_approved(session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID) -> int:
+    stmt = select(func.count()).where(
+        Participant.division_id == division_id,
+        Participant.organization_id == org_id,
+        Participant.status == ParticipantStatus.APPROVED.value,
+    )
+    return int((await session.execute(stmt)).scalar_one())
+
+
+async def list_participants(
+    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+) -> Sequence[Participant]:
+    stmt = (
+        select(Participant)
+        .where(Participant.division_id == division_id, Participant.organization_id == org_id)
+        .order_by(Participant.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def get_division(session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID) -> Division | None:
+    stmt = select(Division).where(Division.id == did, Division.organization_id == org_id)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def get_tournament(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
+) -> Tournament | None:
+    stmt = select(Tournament).where(Tournament.id == tid, Tournament.organization_id == org_id)
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def get_sport_profile(session: AsyncSession, pid: uuid.UUID) -> SportProfile | None:
+    return await session.get(SportProfile, pid)
+
+
+async def get_user(session: AsyncSession, uid: uuid.UUID) -> User | None:
+    return await session.get(User, uid)

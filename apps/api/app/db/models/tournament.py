@@ -11,7 +11,7 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import ForeignKey, Index, Integer, String, UniqueConstraint, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -43,15 +43,25 @@ class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelete
     visibility: Mapped[str] = mapped_column(
         VISIBILITY, nullable=False, server_default=text("'private'")
     )
-    starts_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
-    ends_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+    starts_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    ends_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
     # Per-artifact publication gates for the public plane.
-    draw_published_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
-    schedule_published_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
-    results_published_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+    draw_published_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    schedule_published_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    results_published_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     organization: Mapped[Organization] = relationship(back_populates="tournaments")
     divisions: Mapped[list[Division]] = relationship(
