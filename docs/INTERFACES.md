@@ -50,11 +50,13 @@ read(key) -> bytes | None                           # for server-side image prob
 - **Dev:** `LocalStorage` (`app/storage/local.py`) keeps objects on disk and serves them through HMAC-signed `PUT/GET /files/local/{key}` endpoints (no R2 credentials needed). Chosen by `factory.get_storage` when R2 is unconfigured.
 - **Module:** `app/modules/files` (presign → complete → download → delete); per-kind MIME/size/visibility policy in `app/storage/policy.py`; dependency-free image dimension probing in `app/storage/images.py`. Same `Storage` contract at MVP and scale.
 
-### `EmailChannel` (one impl of the broader `NotificationChannel`)
+### `EmailChannel` (implemented — one impl of the broader `NotificationChannel`)
 ```
-send(to: Address, template: TemplateId, data: dict) -> DeliveryId
+send(to: str, template: str, data: dict) -> str   # returns a delivery/message id
 ```
-- **MVP & scaled:** `ResendEmail`. Adding push/SMS/WhatsApp later = new `NotificationChannel` impls; producers (which only emit outbox events) don't change.
+- **Prod:** `ResendEmailChannel` (`app/emails/resend_channel.py`) — renders then sends via Resend. Selected when `RESEND_API_KEY` is set.
+- **Dev:** `LogEmailChannel` — renders the subject and logs the payload (token links included) so flows work end-to-end with no secret.
+- **Rendering:** `app/emails/renderer.py` (Jinja2) is the single place a `(template, data)` pair becomes subject + HTML + plaintext, using the shared layout in `templates/layouts/base.html`. `StrictUndefined` makes a template/data mismatch a loud error. Callers pass a template id + data only — **never raw HTML/subjects**. Templates: `verify_email`, `password_reset`, `org_invite`. Adding push/SMS/WhatsApp later = new `NotificationChannel` impls; producers don't change.
 
 ### `AuthService` — identity
 ```

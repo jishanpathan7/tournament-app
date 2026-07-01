@@ -29,8 +29,16 @@ def get_cache() -> Cache:
 
 @lru_cache
 def get_email_channel() -> EmailChannel:
-    # Resend wiring is deferred; LogEmailChannel renders to logs until RESEND_API_KEY is set.
-    return LogEmailChannel()
+    """Resend when RESEND_API_KEY is set; otherwise the dev LogEmailChannel.
+    Both render through app.emails.renderer — callers never build raw HTML."""
+    settings = get_settings()
+    if settings.resend_api_key:
+        from app.emails.resend_channel import ResendEmailChannel
+
+        return ResendEmailChannel(
+            api_key=settings.resend_api_key, sender=settings.email_from, settings=settings
+        )
+    return LogEmailChannel(settings)
 
 
 @lru_cache
