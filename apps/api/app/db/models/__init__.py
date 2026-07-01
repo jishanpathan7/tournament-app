@@ -8,6 +8,7 @@ models below.
 from app.db.models.competition import Match, MatchParticipant, MatchResultEvent, Standing
 from app.db.models.crosscutting import (
     AuditLog,
+    FeatureFlag,
     File,
     IdempotencyKey,
     Notification,
@@ -76,4 +77,5 @@ __all__ = [
     "Outbox",
     "AuditLog",
     "IdempotencyKey",
+    "FeatureFlag",
 ]
