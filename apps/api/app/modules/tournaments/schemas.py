@@ -85,6 +85,9 @@ class StageResponse(ApiModel):
     config: dict[str, Any]
     advances_n: int | None
     drawn: bool
+    # True once any match has a real submitted result — mirrors the guard in
+    # ``service.clear_draw``, so the UI can show "locked" without re-deriving it.
+    locked: bool
     created_at: datetime.datetime
 
 

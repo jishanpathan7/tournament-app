@@ -270,6 +270,90 @@ async def test_draw_requires_enough_participants(app, client):
     assert resp.status_code == 422 and resp.json()["code"] == "too_few_participants"
 
 
+def _win_payload(sides: list[dict], winner_participant_id: str) -> dict:
+    side0_wins = sides[0]["participantId"] == winner_participant_id
+    games = [[21, 10], [21, 12]] if side0_wins else [[10, 21], [12, 21]]
+    return {"games": games, "endedBy": "normal"}
+
+
+async def _score(client: AsyncClient, match_id: str, payload: dict) -> tuple[int, dict]:
+    resp = await client.post(
+        f"/api/v1/matches/{match_id}/score", json={"payload": payload}, headers=_csrf(client)
+    )
+    return resp.status_code, resp.json()
+
+
+async def test_matches_expose_round_and_group_labels(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    did = await _division(client, tid)
+    sid = await _stage(client, did, "single_elim")
+    await _open_registration(client, tid)
+    await _approved_entrants(client, did, 4)
+    draw = await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    assert draw.status_code == 201, draw.text
+
+    matches = (await client.get(f"/api/v1/stages/{sid}/matches")).json()
+    assert len(matches) == 3
+    labels = {m["roundLabel"] for m in matches}
+    assert labels == {"Semifinal", "Final"}
+    assert all(m["roundSeq"] is not None for m in matches)
+
+
+async def test_clear_draw_then_regenerate(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    did = await _division(client, tid)
+    sid = await _stage(client, did, "round_robin")
+    await _open_registration(client, tid)
+    await _approved_entrants(client, did, 4)
+    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+
+    stage_before = (await client.get(f"/api/v1/divisions/{did}/stages")).json()[0]
+    assert stage_before["drawn"] is True and stage_before["locked"] is False
+
+    cleared = await client.delete(f"/api/v1/stages/{sid}/draw", headers=_csrf(client))
+    assert cleared.status_code == 204, cleared.text
+
+    stage_after = (await client.get(f"/api/v1/divisions/{did}/stages")).json()[0]
+    assert stage_after["drawn"] is False
+
+    redrawn = await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    assert redrawn.status_code == 201, redrawn.text
+
+
+async def test_clear_draw_rejects_undrawn_stage(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    did = await _division(client, tid)
+    sid = await _stage(client, did, "round_robin")
+    resp = await client.delete(f"/api/v1/stages/{sid}/draw", headers=_csrf(client))
+    assert resp.status_code == 409
+
+
+async def test_clear_draw_blocked_once_a_match_is_scored(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    did = await _division(client, tid)
+    sid = await _stage(client, did, "round_robin")
+    await _open_registration(client, tid)
+    await _approved_entrants(client, did, 4)
+    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+
+    matches = (await client.get(f"/api/v1/stages/{sid}/matches")).json()
+    winner = matches[0]["sides"][0]["participantId"]
+    status, _body = await _score(
+        client, matches[0]["id"], _win_payload(matches[0]["sides"], winner)
+    )
+    assert status == 200
+
+    stage = (await client.get(f"/api/v1/divisions/{did}/stages")).json()[0]
+    assert stage["locked"] is True
+
+    resp = await client.delete(f"/api/v1/stages/{sid}/draw", headers=_csrf(client))
+    assert resp.status_code == 409
+
+
 async def test_publish_sets_gate(app, client):
     await _new_org(client)
     tid = await _tournament(client)

@@ -323,6 +323,25 @@ async def generate_draw(
     return stage, summary
 
 
+async def clear_draw(
+    session: AsyncSession, *, org_id: uuid.UUID, actor_id: uuid.UUID, stage_id: uuid.UUID
+) -> Stage:
+    """Wipe a stage's draw (matches/rounds/groups/standings) so it can be regenerated —
+    the "regenerate" flow is clear-then-draw, two small auditable steps rather than one
+    endpoint that does both. Only safe before anything has actually been played: blocked
+    once any match has a real submitted result, even if every match is still otherwise
+    pending/scheduled (byes auto-resolved into walkovers at draw time don't count — see
+    `stage_has_scored_matches`)."""
+    stage = await _require_stage(session, org_id, stage_id)
+    if await repo.stage_match_count(session, org_id, stage.id) == 0:
+        raise ConflictError("this stage has not been drawn yet")
+    if await repo.stage_has_scored_matches(session, org_id, stage.id):
+        raise ConflictError("cannot clear a draw that already has scored matches")
+    await repo.delete_stage_draw(session, org_id, stage.id)
+    await _audit_event(session, org_id, actor_id, events.STAGE_DRAW_CLEARED, stage.id)
+    return stage
+
+
 async def resolve_bracket(session: AsyncSession, org_id: uuid.UUID, stage: Stage) -> dict[str, Any]:
     """Advance a bracket: reconstruct it from persisted rows, run the pure
     AdvancementEngine over completed winners, then sync the DB — create newly-resolved

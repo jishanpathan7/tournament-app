@@ -1,8 +1,10 @@
 import type {
   DivisionResponse,
+  MatchView,
   MemberItem,
   ParticipantResponse,
   RegistrationResponse,
+  StageResponse,
   TeamResponse,
   TournamentResponse,
 } from "@tournament/api-client";
@@ -92,5 +94,37 @@ export function makeTeam(overrides: Partial<TeamResponse> = {}): TeamResponse {
     name: overrides.name ?? `Team ${seq}`,
     captainUserId: overrides.captainUserId ?? null,
     roster: overrides.roster ?? [],
+  };
+}
+
+export function makeStage(overrides: Partial<StageResponse> = {}): StageResponse {
+  seq += 1;
+  return {
+    id: overrides.id ?? `stage-${seq}`,
+    divisionId: overrides.divisionId ?? "div-1",
+    type: overrides.type ?? "round_robin",
+    seq: overrides.seq ?? 0,
+    config: overrides.config ?? {},
+    advancesN: overrides.advancesN ?? null,
+    drawn: overrides.drawn ?? false,
+    locked: overrides.locked ?? false,
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeMatch(overrides: Partial<MatchView> = {}): MatchView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `match-${seq}`,
+    stageId: overrides.stageId ?? "stage-1",
+    status: overrides.status ?? "pending",
+    sides: overrides.sides ?? [],
+    resultPayload: overrides.resultPayload ?? {},
+    roundId: overrides.roundId ?? null,
+    roundSeq: overrides.roundSeq ?? null,
+    roundLabel: overrides.roundLabel ?? null,
+    groupId: overrides.groupId ?? null,
+    groupName: overrides.groupName ?? null,
+    updatedAt: overrides.updatedAt ?? "2026-01-01T00:00:00Z",
   };
 }

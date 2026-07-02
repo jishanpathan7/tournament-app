@@ -7,3 +7,4 @@ TOURNAMENT_PUBLISHED = "tournament.published"
 DIVISION_CREATED = "division.created"
 STAGE_CREATED = "stage.created"
 STAGE_GENERATED = "stage.generated"  # draw generated + structure persisted
+STAGE_DRAW_CLEARED = "stage.draw_cleared"  # draw wiped so it can be regenerated

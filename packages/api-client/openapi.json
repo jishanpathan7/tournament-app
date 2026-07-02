@@ -1941,6 +1941,40 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Clear Draw",
+        "operationId": "tournaments_clear_draw",
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/divisions/{division_id}/registrations": {
@@ -3290,6 +3324,63 @@
             "type": "object",
             "title": "Resultpayload"
           },
+          "roundId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roundid"
+          },
+          "roundSeq": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roundseq"
+          },
+          "roundLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roundlabel"
+          },
+          "groupId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Groupid"
+          },
+          "groupName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Groupname"
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
@@ -3303,6 +3394,11 @@
           "status",
           "sides",
           "resultPayload",
+          "roundId",
+          "roundSeq",
+          "roundLabel",
+          "groupId",
+          "groupName",
           "updatedAt"
         ],
         "title": "MatchView"
@@ -4029,6 +4125,10 @@
             "type": "boolean",
             "title": "Drawn"
           },
+          "locked": {
+            "type": "boolean",
+            "title": "Locked"
+          },
           "createdAt": {
             "type": "string",
             "format": "date-time",
@@ -4044,6 +4144,7 @@
           "config",
           "advancesN",
           "drawn",
+          "locked",
           "createdAt"
         ],
         "title": "StageResponse"

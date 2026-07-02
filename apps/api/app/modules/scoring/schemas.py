@@ -31,6 +31,15 @@ class MatchView(ApiModel):
     status: str
     sides: list[MatchSideView]
     result_payload: dict[str, Any]
+    # Human labels for bracket/fixture rendering — already computed by the format engine
+    # onto Round.label / Group.name at draw time; there is no dedicated Round/Group
+    # endpoint, so the client needs these here to render "Semifinal" / "Round Robin"
+    # instead of raw UUIDs.
+    round_id: uuid.UUID | None
+    round_seq: int | None
+    round_label: str | None
+    group_id: uuid.UUID | None
+    group_name: str | None
     updated_at: datetime.datetime
 
 

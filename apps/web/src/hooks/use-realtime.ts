@@ -53,6 +53,12 @@ export function useRealtime(
           void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(data.stageId) });
         }
         void queryClient.invalidateQueries({ queryKey: ["matches"] });
+        // The broadcast only carries stageId, not divisionId, so refresh every cached
+        // division stage list — that's where `drawn`/`locked` live for the setup panel.
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            query.queryKey[0] === "divisions" && query.queryKey[2] === "stages",
+        });
       },
       [REALTIME_EVENTS.STANDINGS_UPDATED]: (data) => {
         if (typeof data.stageId === "string") {

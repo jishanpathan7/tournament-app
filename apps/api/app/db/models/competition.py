@@ -34,7 +34,7 @@ from app.db.mixins import OrgScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
     from app.db.models.participants import Participant
-    from app.db.models.tournament import Stage
+    from app.db.models.tournament import Group, Round, Stage
 
 
 class Match(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
@@ -74,6 +74,10 @@ class Match(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     )
 
     stage: Mapped[Stage] = relationship(back_populates="matches")
+    # Read-only: Round/Group carry the human label ("Quarterfinal", "Pool A") the engine
+    # already computes at draw time — surfaced to the API via these, never written here.
+    round: Mapped[Round | None] = relationship(viewonly=True)
+    group: Mapped[Group | None] = relationship(viewonly=True)
     participants: Mapped[list[MatchParticipant]] = relationship(
         back_populates="match", cascade="all, delete-orphan", passive_deletes=True
     )

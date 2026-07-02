@@ -81,3 +81,7 @@ export async function generateDraw(stageId: string, body: DrawRequest): Promise<
   const { data } = await api.post<DrawResponse>(`/stages/${stageId}/draw`, body);
   return data;
 }
+
+export async function clearDraw(stageId: string): Promise<void> {
+  await api.delete(`/stages/${stageId}/draw`);
+}
