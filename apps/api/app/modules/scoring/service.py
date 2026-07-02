@@ -310,7 +310,7 @@ async def _notify(
     session: AsyncSession, org_id: uuid.UUID, match: Match, scheduled_ids: list[str]
 ) -> None:
     for mp in match.participants:
-        user_id = await _participant_user(session, org_id, mp.participant_id)
+        user_id = await participant_user(session, org_id, mp.participant_id)
         if user_id is not None:
             await notify(
                 session,
@@ -324,7 +324,7 @@ async def _notify(
         if ready is None:
             continue
         for mp in ready.participants:
-            user_id = await _participant_user(session, org_id, mp.participant_id)
+            user_id = await participant_user(session, org_id, mp.participant_id)
             if user_id is not None:
                 await notify(
                     session,
@@ -335,7 +335,7 @@ async def _notify(
                 )
 
 
-async def _participant_user(
+async def participant_user(
     session: AsyncSession, org_id: uuid.UUID, participant_id: uuid.UUID
 ) -> uuid.UUID | None:
     participant = await repo.get_participant(session, org_id, participant_id)

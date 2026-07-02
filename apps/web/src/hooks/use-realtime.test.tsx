@@ -123,6 +123,28 @@ describe("useRealtime — registration events", () => {
     );
   });
 
+  it("invalidates the match detail + tournament matches + schedule queue on schedule.updated", () => {
+    const client = createTestQueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <Providers client={client}>{children}</Providers>
+    );
+
+    renderHook(() => useRealtime("org:org-1"), { wrapper });
+    const source = FakeEventSource.instances[0]!;
+    source.emit("schedule.updated", { matchId: "m-1", tournamentId: "t-1", courtId: "c-1" });
+
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.matches.detail("m-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.tournaments.matches("t-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.schedule.queue("t-1") }),
+    );
+  });
+
   it("does nothing (no connection) when channel is null", () => {
     expect(() => {
       const client = createTestQueryClient();

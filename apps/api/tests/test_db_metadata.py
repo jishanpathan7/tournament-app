@@ -38,6 +38,7 @@ EXPECTED_TABLES = {
     # logistics
     "venues",
     "courts",
+    "tournament_courts",
     "schedule_slots",
     "assignments",
     # crosscutting

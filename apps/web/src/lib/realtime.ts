@@ -10,6 +10,7 @@ export const REALTIME_EVENTS = {
   MATCH_COMPLETED: "match.completed",
   BRACKET_UPDATED: "bracket.updated",
   STANDINGS_UPDATED: "standings.updated",
+  SCHEDULE_UPDATED: "schedule.updated",
   REGISTRATION_SUBMITTED: "registration.submitted",
   REGISTRATION_APPROVED: "registration.approved",
   REGISTRATION_WAITLISTED: "registration.waitlisted",

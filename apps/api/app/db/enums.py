@@ -172,6 +172,12 @@ class FeatureFlagScope(_StrEnum):
     USER = "user"
 
 
+class CourtStatus(_StrEnum):
+    ACTIVE = "active"
+    MAINTENANCE = "maintenance"
+    DISABLED = "disabled"
+
+
 def pg_enum(py_enum: type[enum.Enum], name: str) -> sa.Enum:
     """Build a named native PG ENUM bound to a Python enum.
 
@@ -213,6 +219,7 @@ IDEMPOTENCY_STATUS = pg_enum(IdempotencyStatus, "idempotency_status")
 # owns the enum types it introduces).
 AUTH_TOKEN_PURPOSE = pg_enum(AuthTokenPurpose, "auth_token_purpose")  # 0002
 FEATURE_FLAG_SCOPE = pg_enum(FeatureFlagScope, "feature_flag_scope")  # 0006
+COURT_STATUS = pg_enum(CourtStatus, "court_status")  # 0010
 
 # The 0001 baseline enum set. Consumed by the initial migration's
 # upgrade()/downgrade(). Order is irrelevant (no inter-enum dependencies).

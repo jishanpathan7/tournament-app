@@ -23,6 +23,14 @@ describe("can (authz mirror)", () => {
     expect(can("scorekeeper", ACTIONS.TOURNAMENT_CREATE)).toBe(false);
   });
 
+  it("lets organizers manage the schedule but not scorekeepers or viewers", () => {
+    expect(can("organizer", ACTIONS.SCHEDULE_MANAGE)).toBe(true);
+    expect(can("owner", ACTIONS.SCHEDULE_MANAGE)).toBe(true);
+    expect(can("admin", ACTIONS.SCHEDULE_MANAGE)).toBe(true);
+    expect(can("scorekeeper", ACTIONS.SCHEDULE_MANAGE)).toBe(false);
+    expect(can("viewer", ACTIONS.SCHEDULE_MANAGE)).toBe(false);
+  });
+
   it("gives viewers read-only", () => {
     expect(can("viewer", ACTIONS.ORG_READ)).toBe(true);
     expect(can("viewer", ACTIONS.TOURNAMENT_CREATE)).toBe(false);

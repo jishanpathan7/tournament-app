@@ -3222,6 +3222,574 @@
           }
         }
       }
+    },
+    "/api/v1/venues": {
+      "get": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "List Venues",
+        "operationId": "courts_list_venues",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VenueView"
+                  },
+                  "type": "array",
+                  "title": "Response Courts List Venues"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "Create Venue",
+        "operationId": "courts_create_venue",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVenueRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VenueView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courts": {
+      "get": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "List Courts",
+        "operationId": "courts_list_courts",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/CourtView"
+                  },
+                  "type": "array",
+                  "title": "Response Courts List Courts"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "Create Court",
+        "operationId": "courts_create_court",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCourtRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/courts/{court_id}": {
+      "patch": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "Update Court",
+        "operationId": "courts_update_court",
+        "parameters": [
+          {
+            "name": "court_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Court Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCourtRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CourtView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/courts": {
+      "post": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "Assign Court",
+        "operationId": "courts_assign_court",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignCourtRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentCourtView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "List Tournament Courts",
+        "operationId": "courts_list_tournament_courts",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TournamentCourtView"
+                  },
+                  "title": "Response Courts List Tournament Courts"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/courts/{court_id}": {
+      "delete": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "Unassign Court",
+        "operationId": "courts_unassign_court",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          },
+          {
+            "name": "court_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Court Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matches/{match_id}/schedule/check": {
+      "post": {
+        "tags": [
+          "scheduling"
+        ],
+        "summary": "Check Schedule",
+        "operationId": "scheduling_check_schedule",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matches/{match_id}/schedule": {
+      "patch": {
+        "tags": [
+          "scheduling"
+        ],
+        "summary": "Assign Schedule",
+        "operationId": "scheduling_assign_schedule",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScheduleAssignRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleResultView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "scheduling"
+        ],
+        "summary": "Clear Schedule",
+        "operationId": "scheduling_clear_schedule",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/schedule/bulk": {
+      "post": {
+        "tags": [
+          "scheduling"
+        ],
+        "summary": "Bulk Assign Schedule",
+        "operationId": "scheduling_bulk_assign_schedule",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkScheduleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkScheduleResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/schedule/queue": {
+      "get": {
+        "tags": [
+          "scheduling"
+        ],
+        "summary": "Get Queue",
+        "operationId": "scheduling_get_queue",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScheduleQueueView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3347,6 +3915,86 @@
         ],
         "title": "ApproveResult"
       },
+      "AssignCourtRequest": {
+        "properties": {
+          "courtId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Courtid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "courtId"
+        ],
+        "title": "AssignCourtRequest"
+      },
+      "BulkScheduleItem": {
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Matchid"
+          },
+          "courtId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Courtid"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduledat"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "maximum": 480.0,
+            "minimum": 5.0,
+            "title": "Durationminutes",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "matchId",
+          "courtId",
+          "scheduledAt"
+        ],
+        "title": "BulkScheduleItem"
+      },
+      "BulkScheduleRequest": {
+        "properties": {
+          "assignments": {
+            "items": {
+              "$ref": "#/components/schemas/BulkScheduleItem"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Assignments"
+          }
+        },
+        "type": "object",
+        "required": [
+          "assignments"
+        ],
+        "title": "BulkScheduleRequest"
+      },
+      "BulkScheduleResponse": {
+        "properties": {
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/ScheduleResultView"
+            },
+            "type": "array",
+            "title": "Results"
+          }
+        },
+        "type": "object",
+        "required": [
+          "results"
+        ],
+        "title": "BulkScheduleResponse"
+      },
       "ChangePasswordRequest": {
         "properties": {
           "currentPassword": {
@@ -3366,6 +4014,149 @@
           "newPassword"
         ],
         "title": "ChangePasswordRequest"
+      },
+      "ConflictView": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "matchId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Matchid"
+          },
+          "otherMatchId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Othermatchid"
+          },
+          "participantId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participantid"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "matchId",
+          "otherMatchId",
+          "message"
+        ],
+        "title": "ConflictView"
+      },
+      "CourtQueueView": {
+        "properties": {
+          "court": {
+            "$ref": "#/components/schemas/CourtView"
+          },
+          "currentMatch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MatchView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "nextMatch": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MatchView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isDelayed": {
+            "type": "boolean",
+            "title": "Isdelayed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "court",
+          "currentMatch",
+          "nextMatch",
+          "isDelayed"
+        ],
+        "title": "CourtQueueView"
+      },
+      "CourtView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "venueId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Venueid"
+          },
+          "venueName": {
+            "type": "string",
+            "title": "Venuename"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "venueId",
+          "venueName",
+          "name",
+          "status",
+          "createdAt"
+        ],
+        "title": "CourtView"
+      },
+      "CreateCourtRequest": {
+        "properties": {
+          "venueId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Venueid"
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "venueId",
+          "name"
+        ],
+        "title": "CreateCourtRequest"
       },
       "CreateDivisionRequest": {
         "properties": {
@@ -3536,6 +4327,32 @@
           "sportKey"
         ],
         "title": "CreateTournamentRequest"
+      },
+      "CreateVenueRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CreateVenueRequest"
       },
       "CursorPage_NotificationResource_": {
         "properties": {
@@ -5108,6 +5925,128 @@
         ],
         "title": "RosterEntryItem"
       },
+      "ScheduleAssignRequest": {
+        "properties": {
+          "courtId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Courtid"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduledat"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "maximum": 480.0,
+            "minimum": 5.0,
+            "title": "Durationminutes",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "courtId",
+          "scheduledAt"
+        ],
+        "title": "ScheduleAssignRequest"
+      },
+      "ScheduleCheckRequest": {
+        "properties": {
+          "courtId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Courtid"
+          },
+          "scheduledAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Scheduledat"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "maximum": 480.0,
+            "minimum": 5.0,
+            "title": "Durationminutes",
+            "default": 30
+          }
+        },
+        "type": "object",
+        "required": [
+          "courtId",
+          "scheduledAt"
+        ],
+        "title": "ScheduleCheckRequest"
+      },
+      "ScheduleCheckResponse": {
+        "properties": {
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictView"
+            },
+            "type": "array",
+            "title": "Conflicts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "conflicts"
+        ],
+        "title": "ScheduleCheckResponse"
+      },
+      "ScheduleQueueView": {
+        "properties": {
+          "courts": {
+            "items": {
+              "$ref": "#/components/schemas/CourtQueueView"
+            },
+            "type": "array",
+            "title": "Courts"
+          },
+          "unscheduled": {
+            "items": {
+              "$ref": "#/components/schemas/MatchView"
+            },
+            "type": "array",
+            "title": "Unscheduled"
+          },
+          "pending": {
+            "items": {
+              "$ref": "#/components/schemas/MatchView"
+            },
+            "type": "array",
+            "title": "Pending"
+          }
+        },
+        "type": "object",
+        "required": [
+          "courts",
+          "unscheduled",
+          "pending"
+        ],
+        "title": "ScheduleQueueView"
+      },
+      "ScheduleResultView": {
+        "properties": {
+          "match": {
+            "$ref": "#/components/schemas/MatchView"
+          },
+          "conflicts": {
+            "items": {
+              "$ref": "#/components/schemas/ConflictView"
+            },
+            "type": "array",
+            "title": "Conflicts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "match",
+          "conflicts"
+        ],
+        "title": "ScheduleResultView"
+      },
       "ScoreRequest": {
         "properties": {
           "payload": {
@@ -5446,6 +6385,36 @@
         ],
         "title": "TeamResponse"
       },
+      "TournamentCourtView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "court": {
+            "$ref": "#/components/schemas/CourtView"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "tournamentId",
+          "court",
+          "createdAt"
+        ],
+        "title": "TournamentCourtView"
+      },
       "TournamentResponse": {
         "properties": {
           "id": {
@@ -5586,6 +6555,37 @@
           "count"
         ],
         "title": "UnreadCountResponse"
+      },
+      "UpdateCourtRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "title": "UpdateCourtRequest",
+        "description": "Partial update \u2014 omitted fields are left unchanged."
       },
       "UpdateMemberRoleRequest": {
         "properties": {
@@ -5821,6 +6821,43 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VenueView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "address",
+          "createdAt"
+        ],
+        "title": "VenueView"
       },
       "VerifyEmailConfirmRequest": {
         "properties": {

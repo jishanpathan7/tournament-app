@@ -24,7 +24,7 @@ from app.db.models.identity import (
     OrgInvite,
     User,
 )
-from app.db.models.logistics import Assignment, Court, ScheduleSlot, Venue
+from app.db.models.logistics import Assignment, Court, ScheduleSlot, TournamentCourt, Venue
 from app.db.models.participants import (
     PairingRequest,
     Participant,
@@ -68,6 +68,7 @@ __all__ = [
     # logistics
     "Venue",
     "Court",
+    "TournamentCourt",
     "ScheduleSlot",
     "Assignment",
     # crosscutting

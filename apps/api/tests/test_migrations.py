@@ -24,8 +24,9 @@ DATABASE_URL = os.environ.get("DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="DATABASE_URL not set")
 
 EXPECTED_TABLES = len(Base.metadata.tables)
-# +2 post-baseline enums: auth_token_purpose (0002) and feature_flag_scope (0006).
-EXPECTED_ENUMS = len(ALL_PG_ENUMS) + 2
+# +3 post-baseline enums: auth_token_purpose (0002), feature_flag_scope (0006),
+# court_status (0010).
+EXPECTED_ENUMS = len(ALL_PG_ENUMS) + 3
 
 
 def _cfg():

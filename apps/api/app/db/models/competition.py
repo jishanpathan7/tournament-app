@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 from sqlalchemy import (
     Boolean,
     Computed,
+    DateTime,
     ForeignKey,
     Index,
     Integer,
@@ -61,10 +62,16 @@ class Match(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     status: Mapped[str] = mapped_column(
         MATCH_STATUS, nullable=False, server_default=text("'scheduled'")
     )
-    scheduled_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
+    scheduled_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     court_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("courts.id", ondelete="RESTRICT"), nullable=True
     )
+    # Estimate used to compute the match's occupied window for conflict detection + the
+    # schedule timeline; null until a duration is assigned (defaults applied by the
+    # scheduling service, not the column).
+    duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
     result_payload: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
