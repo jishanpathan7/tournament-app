@@ -1588,6 +1588,53 @@
         }
       }
     },
+    "/api/v1/tournaments/{tournament_id}/activity": {
+      "get": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Get Tournament Activity",
+        "operationId": "tournaments_get_tournament_activity",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ActivityEventView"
+                  },
+                  "title": "Response Tournaments Get Tournament Activity"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/tournaments/{tournament_id}/status": {
       "post": {
         "tags": [
@@ -2469,6 +2516,53 @@
         }
       }
     },
+    "/api/v1/tournaments/{tournament_id}/matches": {
+      "get": {
+        "tags": [
+          "scoring"
+        ],
+        "summary": "List Tournament Matches",
+        "operationId": "scoring_list_tournament_matches",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchView"
+                  },
+                  "title": "Response Scoring List Tournament Matches"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/matches/{match_id}": {
       "get": {
         "tags": [
@@ -2495,6 +2589,53 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/MatchView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/matches/{match_id}/events": {
+      "get": {
+        "tags": [
+          "scoring"
+        ],
+        "summary": "List Match Events",
+        "operationId": "scoring_list_match_events",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchResultEventView"
+                  },
+                  "title": "Response Scoring List Match Events"
                 }
               }
             }
@@ -2570,6 +2711,82 @@
           "token"
         ],
         "title": "AcceptInviteRequest"
+      },
+      "ActivityEventView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "action": {
+            "type": "string",
+            "title": "Action"
+          },
+          "entity": {
+            "type": "string",
+            "title": "Entity"
+          },
+          "entityId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entityid"
+          },
+          "actorId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actorid"
+          },
+          "before": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Before"
+          },
+          "after": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "After"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "action",
+          "entity",
+          "entityId",
+          "actorId",
+          "before",
+          "after",
+          "createdAt"
+        ],
+        "title": "ActivityEventView",
+        "description": "One row of the org-wide audit trail (`AuditLog`), scoped to a single tournament \u2014\nthe source for the Match Center's activity timeline."
       },
       "ApproveResult": {
         "properties": {
@@ -3234,6 +3451,57 @@
         ],
         "title": "MarkAllReadResponse"
       },
+      "MatchResultEventView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "matchId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Matchid"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          },
+          "actorId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actorid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Createdat"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "matchId",
+          "type",
+          "payload",
+          "actorId",
+          "createdAt"
+        ],
+        "title": "MatchResultEventView",
+        "description": "One row of the append-only scoring/correction log for a match (`MatchResultEvent`) \u2014\nthe source of truth for Match Detail's history panel."
+      },
       "MatchSideView": {
         "properties": {
           "participantId": {
@@ -3381,6 +3649,30 @@
             ],
             "title": "Groupname"
           },
+          "courtId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtid"
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduledat"
+          },
           "updatedAt": {
             "type": "string",
             "format": "date-time",
@@ -3399,6 +3691,8 @@
           "roundLabel",
           "groupId",
           "groupName",
+          "courtId",
+          "scheduledAt",
           "updatedAt"
         ],
         "title": "MatchView"

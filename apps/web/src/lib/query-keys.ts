@@ -19,6 +19,10 @@ export const queryKeys = {
     list: () => ["tournaments", "list"] as const,
     detail: (id: string) => ["tournaments", "detail", id] as const,
     divisions: (tournamentId: string) => ["tournaments", tournamentId, "divisions"] as const,
+    matches: (tournamentId: string) => ["tournaments", tournamentId, "matches"] as const,
+    activity: (tournamentId: string) => ["tournaments", tournamentId, "activity"] as const,
+    participants: (tournamentId: string) => ["tournaments", tournamentId, "participants"] as const,
+    stages: (tournamentId: string) => ["tournaments", tournamentId, "all-stages"] as const,
   },
 
   divisions: {
@@ -34,6 +38,7 @@ export const queryKeys = {
 
   matches: {
     detail: (id: string) => ["matches", "detail", id] as const,
+    events: (id: string) => ["matches", "detail", id, "events"] as const,
   },
 
   teams: {

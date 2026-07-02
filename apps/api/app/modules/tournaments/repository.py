@@ -10,12 +10,13 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import delete, func, select
+from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.enums import ParticipantStatus
 from app.db.models import (
+    AuditLog,
     Division,
     Group,
     Match,
@@ -161,3 +162,59 @@ async def get_sport_profile_by_key(
 
 async def get_sport_profile(session: AsyncSession, pid: uuid.UUID) -> SportProfile | None:
     return await session.get(SportProfile, pid)
+
+
+async def tournament_activity(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID, limit: int = 200
+) -> Sequence[AuditLog]:
+    """Audit trail across a tournament's own record plus every division/stage/match it
+    owns — backs the Match Center's tournament-wide activity timeline. ``AuditLog`` has
+    no direct ``tournament_id`` (it's polymorphic across entity kinds via `entity` +
+    `entity_id`), so this collects the owned entity ids first, then matches any of them."""
+    division_ids = (
+        (
+            await session.execute(
+                select(Division.id).where(
+                    Division.tournament_id == tid, Division.organization_id == org_id
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    stage_ids = (
+        (
+            await session.execute(
+                select(Stage.id)
+                .join(Division, Division.id == Stage.division_id)
+                .where(Division.tournament_id == tid, Stage.organization_id == org_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    match_ids = (
+        (
+            await session.execute(
+                select(Match.id).where(Match.tournament_id == tid, Match.organization_id == org_id)
+            )
+        )
+        .scalars()
+        .all()
+    )
+
+    conditions = [and_(AuditLog.entity == "tournament", AuditLog.entity_id == tid)]
+    if division_ids:
+        conditions.append(and_(AuditLog.entity == "division", AuditLog.entity_id.in_(division_ids)))
+    if stage_ids:
+        conditions.append(and_(AuditLog.entity == "stage", AuditLog.entity_id.in_(stage_ids)))
+    if match_ids:
+        conditions.append(and_(AuditLog.entity == "match", AuditLog.entity_id.in_(match_ids)))
+
+    stmt = (
+        select(AuditLog)
+        .where(AuditLog.organization_id == org_id, or_(*conditions))
+        .order_by(AuditLog.created_at.desc())
+        .limit(limit)
+    )
+    return (await session.execute(stmt)).scalars().all()

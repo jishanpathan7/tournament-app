@@ -40,7 +40,23 @@ class MatchView(ApiModel):
     round_label: str | None
     group_id: uuid.UUID | None
     group_name: str | None
+    # Scheduling — real columns on Match, populated once the (not-yet-built) scheduling
+    # workflow assigns them; null until then.
+    court_id: uuid.UUID | None
+    scheduled_at: datetime.datetime | None
     updated_at: datetime.datetime
+
+
+class MatchResultEventView(ApiModel):
+    """One row of the append-only scoring/correction log for a match (`MatchResultEvent`) —
+    the source of truth for Match Detail's history panel."""
+
+    id: uuid.UUID
+    match_id: uuid.UUID
+    type: str  # "normal" | "walkover" | "retirement" | "no_show" | "correction"
+    payload: dict[str, Any]
+    actor_id: uuid.UUID | None
+    created_at: datetime.datetime
 
 
 class StandingRowView(ApiModel):

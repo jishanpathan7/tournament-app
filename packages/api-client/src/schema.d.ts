@@ -681,6 +681,23 @@ export interface paths {
         patch: operations["tournaments_update_tournament"];
         trace?: never;
     };
+    "/api/v1/tournaments/{tournament_id}/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Tournament Activity */
+        get: operations["tournaments_get_tournament_activity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/tournaments/{tournament_id}/status": {
         parameters: {
             query?: never;
@@ -923,6 +940,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tournaments/{tournament_id}/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tournament Matches */
+        get: operations["scoring_list_tournament_matches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matches/{match_id}": {
         parameters: {
             query?: never;
@@ -932,6 +966,23 @@ export interface paths {
         };
         /** Get Match */
         get: operations["scoring_get_match"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches/{match_id}/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Match Events */
+        get: operations["scoring_list_match_events"];
         put?: never;
         post?: never;
         delete?: never;
@@ -965,6 +1016,42 @@ export interface components {
         AcceptInviteRequest: {
             /** Token */
             token: string;
+        };
+        /**
+         * ActivityEventView
+         * @description One row of the org-wide audit trail (`AuditLog`), scoped to a single tournament —
+         *     the source for the Match Center's activity timeline.
+         */
+        ActivityEventView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Action */
+            action: string;
+            /** Entity */
+            entity: string;
+            /**
+             * Entityid
+             * Format: uuid
+             */
+            entityId: string;
+            /** Actorid */
+            actorId: string | null;
+            /** Before */
+            before: {
+                [key: string]: unknown;
+            } | null;
+            /** After */
+            after: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
         };
         /** ApproveResult */
         ApproveResult: {
@@ -1236,6 +1323,36 @@ export interface components {
             /** Updated */
             updated: number;
         };
+        /**
+         * MatchResultEventView
+         * @description One row of the append-only scoring/correction log for a match (`MatchResultEvent`) —
+         *     the source of truth for Match Detail's history panel.
+         */
+        MatchResultEventView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Matchid
+             * Format: uuid
+             */
+            matchId: string;
+            /** Type */
+            type: string;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Actorid */
+            actorId: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
         /** MatchSideView */
         MatchSideView: {
             /**
@@ -1282,6 +1399,10 @@ export interface components {
             groupId: string | null;
             /** Groupname */
             groupName: string | null;
+            /** Courtid */
+            courtId: string | null;
+            /** Scheduledat */
+            scheduledAt: string | null;
             /**
              * Updatedat
              * Format: date-time
@@ -3099,6 +3220,37 @@ export interface operations {
             };
         };
     };
+    tournaments_get_tournament_activity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityEventView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     tournaments_transition_status: {
         parameters: {
             query?: never;
@@ -3686,6 +3838,37 @@ export interface operations {
             };
         };
     };
+    scoring_list_tournament_matches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     scoring_get_match: {
         parameters: {
             query?: never;
@@ -3704,6 +3887,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MatchView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scoring_list_match_events: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchResultEventView"][];
                 };
             };
             /** @description Validation Error */

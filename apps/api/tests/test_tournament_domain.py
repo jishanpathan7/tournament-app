@@ -416,3 +416,55 @@ async def test_organization_isolation(app, client):
         await _new_org(other)  # a different org
         resp = await other.get(f"{TOUR}/{tid}")
         assert resp.status_code == 404  # cannot see another org's tournament
+
+
+# ---- Match Center: tournament-wide activity timeline ----
+
+
+async def test_tournament_activity_spans_every_owned_entity(app, client):
+    await _new_org(client)
+    me = (await client.get(f"{AUTH}/me")).json()
+    tid = await _tournament(client)
+    did = await _division(client, tid)
+    sid = await _stage(client, did, "round_robin")
+    await _open_registration(client, tid)
+    await _approved_entrants(client, did, 3)
+    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    matches = (await client.get(f"/api/v1/stages/{sid}/matches")).json()
+    winner = matches[0]["sides"][0]["participantId"]
+    assert (await _score(client, matches[0]["id"], _win_payload(matches[0]["sides"], winner)))[
+        0
+    ] == 200
+
+    resp = await client.get(f"{TOUR}/{tid}/activity")
+    assert resp.status_code == 200, resp.text
+    events = resp.json()
+    actions = {e["action"] for e in events}
+    assert {"tournament.created", "division.created", "stage.created", "stage.generated"} <= actions
+    assert "match.completed" in actions
+
+    match_completed = next(e for e in events if e["action"] == "match.completed")
+    assert match_completed["entity"] == "match"
+    assert match_completed["actorId"] == me["id"]  # was hardcoded None before this milestone
+
+    # Newest first.
+    assert events == sorted(events, key=lambda e: e["createdAt"], reverse=True)
+
+
+async def test_tournament_activity_excludes_other_tournaments(app, client):
+    await _new_org(client)
+    tid_a = await _tournament(client)
+    tid_b = await _tournament(client)
+    did_b = await _division(client, tid_b)
+
+    activity_a = (await client.get(f"{TOUR}/{tid_a}/activity")).json()
+    assert all(e["entityId"] != did_b for e in activity_a)
+    assert not any(e["action"] == "division.created" for e in activity_a)
+
+
+async def test_tournament_activity_requires_org_membership(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    async with _client(app) as other:
+        await _new_org(other)
+        assert (await other.get(f"{TOUR}/{tid}/activity")).status_code == 404

@@ -26,6 +26,7 @@ from app.db.models import Match
 from app.modules.scoring import repository as repo
 from app.modules.scoring import service
 from app.modules.scoring.schemas import (
+    MatchResultEventView,
     MatchSideView,
     MatchView,
     ScoreRequest,
@@ -65,6 +66,8 @@ def _match_view(match: Match) -> MatchView:
         round_label=match.round.label if match.round else None,
         group_id=match.group_id,
         group_name=match.group.name if match.group else None,
+        court_id=match.court_id,
+        scheduled_at=match.scheduled_at,
         updated_at=match.updated_at,
     )
 
@@ -106,6 +109,16 @@ async def list_stage_matches(
     return [_match_view(m) for m in rows]
 
 
+@router.get("/tournaments/{tournament_id}/matches", response_model=list[MatchView])
+async def list_tournament_matches(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> list[MatchView]:
+    rows = await repo.list_tournament_matches(session, principal.organization_id, tournament_id)
+    return [_match_view(m) for m in rows]
+
+
 @router.get("/matches/{match_id}", response_model=MatchView)
 async def get_match(
     match_id: uuid.UUID,
@@ -118,6 +131,29 @@ async def get_match(
         raise NotFoundError("Match not found")
     response.headers["ETag"] = service.match_etag(match)
     return _match_view(match)
+
+
+@router.get("/matches/{match_id}/events", response_model=list[MatchResultEventView])
+async def list_match_events(
+    match_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> list[MatchResultEventView]:
+    match = await repo.get_match(session, principal.organization_id, match_id)
+    if match is None:
+        raise NotFoundError("Match not found")
+    rows = await repo.list_match_events(session, principal.organization_id, match_id)
+    return [
+        MatchResultEventView(
+            id=e.id,
+            match_id=e.match_id,
+            type=e.type,
+            payload=e.payload,
+            actor_id=e.actor_id,
+            created_at=e.created_at,
+        )
+        for e in rows
+    ]
 
 
 @router.get("/stages/{stage_id}/standings", response_model=StandingsView)

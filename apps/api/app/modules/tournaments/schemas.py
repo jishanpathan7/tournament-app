@@ -103,3 +103,17 @@ class DrawResponse(ApiModel):
     matches: int
     scheduled: int  # matches ready to play (all sides known)
     pending: int  # matches awaiting bracket resolution
+
+
+class ActivityEventView(ApiModel):
+    """One row of the org-wide audit trail (`AuditLog`), scoped to a single tournament —
+    the source for the Match Center's activity timeline."""
+
+    id: uuid.UUID
+    action: str  # e.g. "match.completed", "stage.generated", "tournament.status_changed"
+    entity: str  # "tournament" | "division" | "stage" | "match"
+    entity_id: uuid.UUID
+    actor_id: uuid.UUID | None
+    before: dict[str, Any] | None
+    after: dict[str, Any] | None
+    created_at: datetime.datetime
