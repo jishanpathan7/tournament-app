@@ -10,12 +10,23 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.enums import ParticipantStatus
-from app.db.models import Division, Match, Participant, SportProfile, Stage, Tournament
+from app.db.models import (
+    Division,
+    Group,
+    Match,
+    MatchResultEvent,
+    Participant,
+    Round,
+    SportProfile,
+    Stage,
+    Standing,
+    Tournament,
+)
 
 
 async def stage_matches_with_participants(
@@ -86,6 +97,41 @@ async def list_stages(session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID) 
 async def stage_match_count(session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID) -> int:
     stmt = select(func.count()).where(Match.stage_id == sid, Match.organization_id == org_id)
     return int((await session.execute(stmt)).scalar_one())
+
+
+async def stage_has_scored_matches(
+    session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID
+) -> bool:
+    """True if any match in this stage has a real submitted result. Distinguishes actual
+    play from the automatic bye→walkover resolution done at draw time (which never goes
+    through ``scoring.service.score_match`` and so never writes a ``MatchResultEvent``) —
+    this is exactly what makes it safe to clear an unplayed draw and redraw it."""
+    stmt = (
+        select(func.count())
+        .select_from(MatchResultEvent)
+        .join(Match, Match.id == MatchResultEvent.match_id)
+        .where(Match.stage_id == sid, Match.organization_id == org_id)
+    )
+    return int((await session.execute(stmt)).scalar_one()) > 0
+
+
+async def delete_stage_draw(session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID) -> None:
+    """Delete everything a draw persisted for a stage (Standings, Matches — which cascade
+    their MatchParticipant/MatchResultEvent rows —, Rounds, Groups), leaving the Stage
+    itself (and its config) intact so it can be redrawn. Caller must have already
+    confirmed the stage is safe to clear (see `stage_has_scored_matches`)."""
+    await session.execute(
+        delete(Standing).where(Standing.stage_id == sid, Standing.organization_id == org_id)
+    )
+    await session.execute(
+        delete(Match).where(Match.stage_id == sid, Match.organization_id == org_id)
+    )
+    await session.execute(
+        delete(Round).where(Round.stage_id == sid, Round.organization_id == org_id)
+    )
+    await session.execute(
+        delete(Group).where(Group.stage_id == sid, Group.organization_id == org_id)
+    )
 
 
 async def approved_participants(

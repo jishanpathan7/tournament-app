@@ -1,27 +1,24 @@
 "use client";
 
 import type { StageResponse } from "@tournament/api-client";
-import { Shuffle } from "lucide-react";
+import { GitMerge } from "lucide-react";
+import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
-import { toast } from "@/components/ui/sonner";
 import { getFormat } from "@/features/tournaments/config";
-import { useGenerateDraw, useStages } from "@/features/tournaments/use-tournaments";
-import { errorMessage } from "@/lib/problem";
+import { useStages } from "@/features/tournaments/use-tournaments";
 
 function StageRow({
   stage,
+  tournamentId,
   divisionId,
-  canManage,
 }: {
   stage: StageResponse;
+  tournamentId: string;
   divisionId: string;
-  canManage: boolean;
 }) {
-  const draw = useGenerateDraw(stage.id, divisionId);
   return (
     <div className="flex items-center justify-between gap-3 py-2.5">
       <div className="flex flex-col gap-0.5">
@@ -32,32 +29,28 @@ function StageRow({
       </div>
       <div className="flex items-center gap-2">
         <Badge tone={stage.drawn ? "mint" : "muted"}>{stage.drawn ? "Drawn" : "Not drawn"}</Badge>
-        {!stage.drawn && canManage ? (
-          <Button
-            tone="paper"
-            size="sm"
-            disabled={draw.isPending}
-            onClick={() =>
-              draw.mutate(
-                {},
-                {
-                  onSuccess: (r) => toast.success(`Draw created — ${r.matches} matches`),
-                  onError: (e) => toast.error(errorMessage(e, "Couldn't generate draw")),
-                },
-              )
-            }
+        {stage.locked ? <Badge tone="ink">Locked</Badge> : null}
+        <Button asChild tone="paper" size="sm">
+          <Link
+            href={`/console/tournaments/${tournamentId}/divisions/${divisionId}/stages/${stage.id}/draw`}
           >
-            {draw.isPending ? <Spinner /> : <Shuffle className="h-4 w-4" strokeWidth={2.25} />}
-            Generate draw
-          </Button>
-        ) : null}
+            <GitMerge className="h-4 w-4" strokeWidth={2.25} />
+            {stage.drawn ? "View draw" : "Set up draw"}
+          </Link>
+        </Button>
       </div>
     </div>
   );
 }
 
-/** Stages within a division, with draw status + a gated generate action. */
-export function StagesList({ divisionId, canManage }: { divisionId: string; canManage: boolean }) {
+/** Stages within a division, with draw status + a link into the draw workflow. */
+export function StagesList({
+  tournamentId,
+  divisionId,
+}: {
+  tournamentId: string;
+  divisionId: string;
+}) {
   const { data, isLoading } = useStages(divisionId);
 
   if (isLoading) return <Skeleton className="h-10 border-0" />;
@@ -68,7 +61,12 @@ export function StagesList({ divisionId, canManage }: { divisionId: string; canM
   return (
     <div className="divide-border divide-y">
       {data.map((stage) => (
-        <StageRow key={stage.id} stage={stage} divisionId={divisionId} canManage={canManage} />
+        <StageRow
+          key={stage.id}
+          stage={stage}
+          tournamentId={tournamentId}
+          divisionId={divisionId}
+        />
       ))}
     </div>
   );

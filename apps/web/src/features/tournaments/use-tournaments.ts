@@ -176,3 +176,17 @@ export function useGenerateDraw(stageId: string, divisionId: string) {
     },
   });
 }
+
+/** Wipes a stage's draw so it can be regenerated. Backend rejects (409) once any match has
+ * a real submitted result — see `StageResponse.locked`, which mirrors that same guard. */
+export function useClearDraw(stageId: string, divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => tournamentsApi.clearDraw(stageId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(stageId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.stages.standings(stageId) });
+    },
+  });
+}

@@ -58,7 +58,7 @@ export function DivisionsSection({
             </Badge>
           </CardHeader>
           <CardContent className="flex flex-col gap-4">
-            <StagesList divisionId={division.id} canManage={canManage} />
+            <StagesList tournamentId={tournamentId} divisionId={division.id} />
             <Separator />
             <RegistrationsSummaryLink
               tournamentId={tournamentId}

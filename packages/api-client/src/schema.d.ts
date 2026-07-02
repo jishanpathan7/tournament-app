@@ -4,3706 +4,3748 @@
  */
 
 export interface paths {
-  "/api/v1/health": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health
+         * @description Liveness — the process is up (no dependency checks). Always 200.
+         */
+        get: operations["health_health"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Health
-     * @description Liveness — the process is up (no dependency checks). Always 200.
-     */
-    get: operations["health_health"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/health/db": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/health/db": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Health Db */
+        get: operations["health_health_db"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Health Db */
-    get: operations["health_health_db"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/health/ready": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/health/ready": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Health Ready
+         * @description Readiness — dependencies reachable. 503 when not ready (for load-balancer probes).
+         */
+        get: operations["health_health_ready"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /**
-     * Health Ready
-     * @description Readiness — dependencies reachable. 503 when not ready (for load-balancer probes).
-     */
-    get: operations["health_health_ready"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/register": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register */
+        post: operations["auth_register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Register */
-    post: operations["auth_register"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/login": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login */
+        post: operations["auth_login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Login */
-    post: operations["auth_login"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/refresh": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh */
+        post: operations["auth_refresh"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Refresh */
-    post: operations["auth_refresh"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/logout": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/logout": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout */
+        post: operations["auth_logout"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Logout */
-    post: operations["auth_logout"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/logout-all": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/logout-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Logout All */
+        post: operations["auth_logout_all"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Logout All */
-    post: operations["auth_logout_all"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/sessions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Sessions */
+        get: operations["auth_list_sessions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Sessions */
-    get: operations["auth_list_sessions"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/sessions/{session_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Session */
+        delete: operations["auth_revoke_session"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Revoke Session */
-    delete: operations["auth_revoke_session"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/verify-email/request": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/verify-email/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request Email Verification */
+        post: operations["auth_request_email_verification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Request Email Verification */
-    post: operations["auth_request_email_verification"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/verify-email/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/verify-email/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Email */
+        post: operations["auth_confirm_email"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Confirm Email */
-    post: operations["auth_confirm_email"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/password-reset/request": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/password-reset/request": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Request Password Reset */
+        post: operations["auth_request_password_reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Request Password Reset */
-    post: operations["auth_request_password_reset"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/password-reset/confirm": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/password-reset/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Password Reset */
+        post: operations["auth_confirm_password_reset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Confirm Password Reset */
-    post: operations["auth_confirm_password_reset"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/password/change": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/password/change": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Password */
+        post: operations["auth_change_password"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Change Password */
-    post: operations["auth_change_password"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/me": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Me */
+        get: operations["auth_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Me */
-    get: operations["auth_me"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/google/authorize": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/google/authorize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Google Authorize */
+        get: operations["auth_google_authorize"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Google Authorize */
-    get: operations["auth_google_authorize"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/auth/google/callback": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/auth/google/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Google Callback */
+        get: operations["auth_google_callback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Google Callback */
-    get: operations["auth_google_callback"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orgs": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Orgs */
+        get: operations["orgs_list_my_orgs"];
+        put?: never;
+        /** Create Org */
+        post: operations["orgs_create_org"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List My Orgs */
-    get: operations["orgs_list_my_orgs"];
-    put?: never;
-    /** Create Org */
-    post: operations["orgs_create_org"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orgs/switch": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs/switch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Switch Org */
+        post: operations["orgs_switch_org"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Switch Org */
-    post: operations["orgs_switch_org"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orgs/invites/accept": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs/invites/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept Invite */
+        post: operations["orgs_accept_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Accept Invite */
-    post: operations["orgs_accept_invite"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orgs/active": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs/active": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Active Org */
+        get: operations["orgs_get_active_org"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Active Org */
+        patch: operations["orgs_update_active_org"];
+        trace?: never;
     };
-    /** Get Active Org */
-    get: operations["orgs_get_active_org"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update Active Org */
-    patch: operations["orgs_update_active_org"];
-    trace?: never;
-  };
-  "/api/v1/orgs/active/members": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs/active/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Members */
+        get: operations["orgs_list_members"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Members */
-    get: operations["orgs_list_members"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orgs/active/members/{user_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs/active/members/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Member */
+        delete: operations["orgs_remove_member"];
+        options?: never;
+        head?: never;
+        /** Update Member Role */
+        patch: operations["orgs_update_member_role"];
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Remove Member */
-    delete: operations["orgs_remove_member"];
-    options?: never;
-    head?: never;
-    /** Update Member Role */
-    patch: operations["orgs_update_member_role"];
-    trace?: never;
-  };
-  "/api/v1/orgs/active/invites": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs/active/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Invites */
+        get: operations["orgs_list_invites"];
+        put?: never;
+        /** Create Invite */
+        post: operations["orgs_create_invite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Invites */
-    get: operations["orgs_list_invites"];
-    put?: never;
-    /** Create Invite */
-    post: operations["orgs_create_invite"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/orgs/active/invites/{invite_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/orgs/active/invites/{invite_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Invite */
+        delete: operations["orgs_revoke_invite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Revoke Invite */
-    delete: operations["orgs_revoke_invite"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/files": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/files": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Presign Upload */
+        post: operations["files_presign_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Presign Upload */
-    post: operations["files_presign_upload"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/files/{file_id}/complete": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/files/{file_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Upload */
+        post: operations["files_complete_upload"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Complete Upload */
-    post: operations["files_complete_upload"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/files/{file_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/files/{file_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get File */
+        get: operations["files_get_file"];
+        put?: never;
+        post?: never;
+        /** Delete File */
+        delete: operations["files_delete_file"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get File */
-    get: operations["files_get_file"];
-    put?: never;
-    post?: never;
-    /** Delete File */
-    delete: operations["files_delete_file"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/notifications": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Notifications */
+        get: operations["notifications_list_notifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Notifications */
-    get: operations["notifications_list_notifications"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/notifications/unread-count": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unread Count */
+        get: operations["notifications_unread_count"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Unread Count */
-    get: operations["notifications_unread_count"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/notifications/{notification_id}/read": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Read */
+        post: operations["notifications_mark_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Mark Read */
-    post: operations["notifications_mark_read"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/notifications/read-all": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark All Read */
+        post: operations["notifications_mark_all_read"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Mark All Read */
-    post: operations["notifications_mark_all_read"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/realtime/stream": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/realtime/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream */
+        get: operations["realtime_stream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Stream */
-    get: operations["realtime_stream"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/feature-flags": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/feature-flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Flags */
+        get: operations["feature-flags_list_flags"];
+        /** Upsert Flag */
+        put: operations["feature-flags_upsert_flag"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Flags */
-    get: operations["feature-flags_list_flags"];
-    /** Upsert Flag */
-    put: operations["feature-flags_upsert_flag"];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/feature-flags/{flag_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/feature-flags/{flag_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Flag */
+        delete: operations["feature-flags_delete_flag"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    post?: never;
-    /** Delete Flag */
-    delete: operations["feature-flags_delete_flag"];
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/feature-flags/{key}/enabled": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/feature-flags/{key}/enabled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Flag Enabled */
+        get: operations["feature-flags_flag_enabled"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Flag Enabled */
-    get: operations["feature-flags_flag_enabled"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tournaments": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/tournaments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tournaments */
+        get: operations["tournaments_list_tournaments"];
+        put?: never;
+        /** Create Tournament */
+        post: operations["tournaments_create_tournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Tournaments */
-    get: operations["tournaments_list_tournaments"];
-    put?: never;
-    /** Create Tournament */
-    post: operations["tournaments_create_tournament"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tournaments/{tournament_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/tournaments/{tournament_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Tournament */
+        get: operations["tournaments_get_tournament"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Tournament */
+        patch: operations["tournaments_update_tournament"];
+        trace?: never;
     };
-    /** Get Tournament */
-    get: operations["tournaments_get_tournament"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    /** Update Tournament */
-    patch: operations["tournaments_update_tournament"];
-    trace?: never;
-  };
-  "/api/v1/tournaments/{tournament_id}/status": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/tournaments/{tournament_id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Transition Status */
+        post: operations["tournaments_transition_status"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Transition Status */
-    post: operations["tournaments_transition_status"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tournaments/{tournament_id}/publish": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/tournaments/{tournament_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Tournament */
+        post: operations["tournaments_publish_tournament"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Publish Tournament */
-    post: operations["tournaments_publish_tournament"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/tournaments/{tournament_id}/divisions": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/tournaments/{tournament_id}/divisions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Divisions */
+        get: operations["tournaments_list_divisions"];
+        put?: never;
+        /** Create Division */
+        post: operations["tournaments_create_division"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Divisions */
-    get: operations["tournaments_list_divisions"];
-    put?: never;
-    /** Create Division */
-    post: operations["tournaments_create_division"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/divisions/{division_id}/stages": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/divisions/{division_id}/stages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stages */
+        get: operations["tournaments_list_stages"];
+        put?: never;
+        /** Create Stage */
+        post: operations["tournaments_create_stage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Stages */
-    get: operations["tournaments_list_stages"];
-    put?: never;
-    /** Create Stage */
-    post: operations["tournaments_create_stage"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/stages/{stage_id}/draw": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/stages/{stage_id}/draw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Draw */
+        post: operations["tournaments_generate_draw"];
+        /** Clear Draw */
+        delete: operations["tournaments_clear_draw"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Generate Draw */
-    post: operations["tournaments_generate_draw"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/divisions/{division_id}/registrations": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/divisions/{division_id}/registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Registrations */
+        get: operations["registrations_list_registrations"];
+        put?: never;
+        /** Submit Registration */
+        post: operations["registrations_submit_registration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Registrations */
-    get: operations["registrations_list_registrations"];
-    put?: never;
-    /** Submit Registration */
-    post: operations["registrations_submit_registration"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/divisions/{division_id}/participants": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/divisions/{division_id}/participants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Participants */
+        get: operations["registrations_list_participants"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Participants */
-    get: operations["registrations_list_participants"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/registrations/{registration_id}/approve": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/registrations/{registration_id}/approve": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Approve Registration */
+        post: operations["registrations_approve_registration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Approve Registration */
-    post: operations["registrations_approve_registration"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/registrations/{registration_id}/reject": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/registrations/{registration_id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reject Registration */
+        post: operations["registrations_reject_registration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Reject Registration */
-    post: operations["registrations_reject_registration"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/registrations/{registration_id}/waitlist": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/registrations/{registration_id}/waitlist": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Waitlist Registration */
+        post: operations["registrations_waitlist_registration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Waitlist Registration */
-    post: operations["registrations_waitlist_registration"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/registrations/{registration_id}/withdraw": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/registrations/{registration_id}/withdraw": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Withdraw Registration */
+        post: operations["registrations_withdraw_registration"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Withdraw Registration */
-    post: operations["registrations_withdraw_registration"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/teams/{team_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/teams/{team_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Team */
+        get: operations["registrations_get_team"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Team */
-    get: operations["registrations_get_team"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/matches/{match_id}/score": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/matches/{match_id}/score": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Score Match */
+        post: operations["scoring_score_match"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    get?: never;
-    put?: never;
-    /** Score Match */
-    post: operations["scoring_score_match"];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/stages/{stage_id}/matches": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/stages/{stage_id}/matches": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stage Matches */
+        get: operations["scoring_list_stage_matches"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** List Stage Matches */
-    get: operations["scoring_list_stage_matches"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/matches/{match_id}": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/matches/{match_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Match */
+        get: operations["scoring_get_match"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Match */
-    get: operations["scoring_get_match"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  "/api/v1/stages/{stage_id}/standings": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
+    "/api/v1/stages/{stage_id}/standings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Standings */
+        get: operations["scoring_get_standings"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
     };
-    /** Get Standings */
-    get: operations["scoring_get_standings"];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
-  schemas: {
-    /** AcceptInviteRequest */
-    AcceptInviteRequest: {
-      /** Token */
-      token: string;
+    schemas: {
+        /** AcceptInviteRequest */
+        AcceptInviteRequest: {
+            /** Token */
+            token: string;
+        };
+        /** ApproveResult */
+        ApproveResult: {
+            /**
+             * Registrationid
+             * Format: uuid
+             */
+            registrationId: string;
+            /** Status */
+            status: string;
+            /** Participantid */
+            participantId: string | null;
+        };
+        /** ChangePasswordRequest */
+        ChangePasswordRequest: {
+            /** Currentpassword */
+            currentPassword: string;
+            /** Newpassword */
+            newPassword: string;
+        };
+        /** CreateDivisionRequest */
+        CreateDivisionRequest: {
+            /** Name */
+            name: string;
+            participantType: components["schemas"]["ParticipantKind"];
+            /** Capacity */
+            capacity?: number | null;
+            /** Regform */
+            regForm?: {
+                [key: string]: unknown;
+            };
+        };
+        /** CreateInviteRequest */
+        CreateInviteRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            role: components["schemas"]["OrgRole"];
+        };
+        /** CreateOrgRequest */
+        CreateOrgRequest: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+        };
+        /** CreateStageRequest */
+        CreateStageRequest: {
+            type: components["schemas"]["StageFormat"];
+            /**
+             * Seq
+             * @default 0
+             */
+            seq: number;
+            /** Config */
+            config?: {
+                [key: string]: unknown;
+            };
+            /** Pointsruleid */
+            pointsRuleId?: string | null;
+            /** Tiebreakrulesetid */
+            tiebreakRulesetId?: string | null;
+            /** Advancesn */
+            advancesN?: number | null;
+        };
+        /** CreateTournamentRequest */
+        CreateTournamentRequest: {
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Sportkey */
+            sportKey: string;
+            /** @default private */
+            visibility: components["schemas"]["Visibility"];
+        };
+        /** CursorPage[NotificationResource] */
+        CursorPage_NotificationResource_: {
+            /** Items */
+            items: components["schemas"]["NotificationResource"][];
+            /** Nextcursor */
+            nextCursor?: string | null;
+        };
+        /** DBHealthResponse */
+        DBHealthResponse: {
+            /** Database */
+            database: string;
+        };
+        /** DivisionResponse */
+        DivisionResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Tournamentid
+             * Format: uuid
+             */
+            tournamentId: string;
+            /** Name */
+            name: string;
+            /** Participanttype */
+            participantType: string;
+            /** Capacity */
+            capacity: number | null;
+            /** Regform */
+            regForm: {
+                [key: string]: unknown;
+            };
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** DrawRequest */
+        DrawRequest: {
+            /** Rngseed */
+            rngSeed?: number | null;
+        };
+        /** DrawResponse */
+        DrawResponse: {
+            /**
+             * Stageid
+             * Format: uuid
+             */
+            stageId: string;
+            /** Format */
+            format: string;
+            /** Groups */
+            groups: number;
+            /** Rounds */
+            rounds: number;
+            /** Matches */
+            matches: number;
+            /** Scheduled */
+            scheduled: number;
+            /** Pending */
+            pending: number;
+        };
+        /** FeatureFlagResource */
+        FeatureFlagResource: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Scope */
+            scope: string;
+            /** Scopeid */
+            scopeId: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Rolloutpercentage */
+            rolloutPercentage: number;
+            /** Description */
+            description: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /**
+         * FileKind
+         * @enum {string}
+         */
+        FileKind: "org_logo" | "tournament_logo" | "rules_doc" | "export" | "avatar";
+        /** FileResource */
+        FileResource: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            kind: components["schemas"]["FileKind"];
+            /** Contenttype */
+            contentType: string;
+            /** Size */
+            size: number;
+            /** Status */
+            status: string;
+            /** Visibility */
+            visibility: string;
+            /** Url */
+            url: string | null;
+            /** Metadata */
+            metadata: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** FlagEnabledResponse */
+        FlagEnabledResponse: {
+            /** Key */
+            key: string;
+            /** Enabled */
+            enabled: boolean;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HealthResponse */
+        HealthResponse: {
+            /** Status */
+            status: string;
+            /** Service */
+            service: string;
+            /** Version */
+            version: string;
+            /** Environment */
+            environment: string;
+            /**
+             * Time
+             * Format: date-time
+             */
+            time: string;
+        };
+        /** InviteItem */
+        InviteItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            role: components["schemas"]["OrgRole"];
+            status: components["schemas"]["OrgInviteStatus"];
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** LoginRequest */
+        LoginRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+            /**
+             * Rememberme
+             * @default false
+             */
+            rememberMe: boolean;
+        };
+        /** MarkAllReadResponse */
+        MarkAllReadResponse: {
+            /** Updated */
+            updated: number;
+        };
+        /** MatchSideView */
+        MatchSideView: {
+            /**
+             * Participantid
+             * Format: uuid
+             */
+            participantId: string;
+            /** Outcome */
+            outcome: string | null;
+            /** Scorefor */
+            scoreFor: number | null;
+            /** Scoreagainst */
+            scoreAgainst: number | null;
+            /** Rank */
+            rank: number | null;
+        };
+        /** MatchView */
+        MatchView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Stageid
+             * Format: uuid
+             */
+            stageId: string;
+            /** Status */
+            status: string;
+            /** Sides */
+            sides: components["schemas"]["MatchSideView"][];
+            /** Resultpayload */
+            resultPayload: {
+                [key: string]: unknown;
+            };
+            /** Roundid */
+            roundId: string | null;
+            /** Roundseq */
+            roundSeq: number | null;
+            /** Roundlabel */
+            roundLabel: string | null;
+            /** Groupid */
+            groupId: string | null;
+            /** Groupname */
+            groupName: string | null;
+            /**
+             * Updatedat
+             * Format: date-time
+             */
+            updatedAt: string;
+        };
+        /** MeResponse */
+        MeResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            /** Emailverified */
+            emailVerified: boolean;
+            /** Activeorganizationid */
+            activeOrganizationId: string | null;
+            activeRole: components["schemas"]["OrgRole"] | null;
+            /** Organizations */
+            organizations: components["schemas"]["OrgSummary"][];
+        };
+        /** MemberItem */
+        MemberItem: {
+            /**
+             * Userid
+             * Format: uuid
+             */
+            userId: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string;
+            role: components["schemas"]["OrgRole"];
+            /**
+             * Joinedat
+             * Format: date-time
+             */
+            joinedAt: string;
+        };
+        /** NotificationResource */
+        NotificationResource: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Type */
+            type: string;
+            /** Title */
+            title: string | null;
+            /** Body */
+            body: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /**
+         * OrgInviteStatus
+         * @enum {string}
+         */
+        OrgInviteStatus: "pending" | "accepted" | "revoked" | "expired";
+        /** OrgResponse */
+        OrgResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Timezone */
+            timezone: string;
+            /** Plan */
+            plan: string;
+            /** Branding */
+            branding: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * OrgRole
+         * @enum {string}
+         */
+        OrgRole: "owner" | "admin" | "organizer" | "scorekeeper" | "viewer";
+        /** OrgSummary */
+        OrgSummary: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            role: components["schemas"]["OrgRole"];
+        };
+        /**
+         * ParticipantKind
+         * @enum {string}
+         */
+        ParticipantKind: "individual" | "pair" | "team";
+        /** ParticipantResponse */
+        ParticipantResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Divisionid
+             * Format: uuid
+             */
+            divisionId: string;
+            /** Kind */
+            kind: string;
+            /** Displayname */
+            displayName: string;
+            /** Seed */
+            seed: number | null;
+            /** Status */
+            status: string;
+            /** Userid */
+            userId: string | null;
+            /** Teamid */
+            teamId: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** PasswordResetConfirmRequest */
+        PasswordResetConfirmRequest: {
+            /** Token */
+            token: string;
+            /** Newpassword */
+            newPassword: string;
+        };
+        /** PasswordResetRequest */
+        PasswordResetRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
+        /** PresignUploadRequest */
+        PresignUploadRequest: {
+            kind: components["schemas"]["FileKind"];
+            /** Filename */
+            filename: string;
+            /** Contenttype */
+            contentType: string;
+            /** Size */
+            size: number;
+        };
+        /** PresignUploadResponse */
+        PresignUploadResponse: {
+            /**
+             * Fileid
+             * Format: uuid
+             */
+            fileId: string;
+            /** Storagekey */
+            storageKey: string;
+            upload: components["schemas"]["UploadTarget"];
+        };
+        /** PublishRequest */
+        PublishRequest: {
+            /** Artifacts */
+            artifacts?: string[];
+        };
+        /** ReadinessResponse */
+        ReadinessResponse: {
+            /** Status */
+            status: string;
+            /** Checks */
+            checks: {
+                [key: string]: string;
+            };
+        };
+        /** RegisterRequest */
+        RegisterRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Name */
+            name: string;
+            /** Password */
+            password: string;
+        };
+        /** RegistrationResponse */
+        RegistrationResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Divisionid
+             * Format: uuid
+             */
+            divisionId: string;
+            /**
+             * Submittedby
+             * Format: uuid
+             */
+            submittedBy: string;
+            /** Status */
+            status: string;
+            /** Skilllevel */
+            skillLevel: string | null;
+            /** Participantid */
+            participantId: string | null;
+            /** Formresponse */
+            formResponse: {
+                [key: string]: unknown;
+            };
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** RosterEntryItem */
+        RosterEntryItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Userid */
+            userId: string | null;
+            /** Externalname */
+            externalName: string | null;
+            /** Role */
+            role: string | null;
+        };
+        /** ScoreRequest */
+        ScoreRequest: {
+            /** Payload */
+            payload?: {
+                [key: string]: unknown;
+            };
+        };
+        /** SessionItem */
+        SessionItem: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+            /**
+             * Expiresat
+             * Format: date-time
+             */
+            expiresAt: string;
+            /** Ip */
+            ip: string | null;
+            /** Useragent */
+            userAgent: string | null;
+            /** Current */
+            current: boolean;
+        };
+        /**
+         * SkillLevel
+         * @enum {string}
+         */
+        SkillLevel: "beginner" | "intermediate" | "advanced";
+        /**
+         * StageFormat
+         * @enum {string}
+         */
+        StageFormat: "round_robin" | "single_elim" | "group_knockout" | "swiss" | "ladder";
+        /** StageResponse */
+        StageResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Divisionid
+             * Format: uuid
+             */
+            divisionId: string;
+            /** Type */
+            type: string;
+            /** Seq */
+            seq: number;
+            /** Config */
+            config: {
+                [key: string]: unknown;
+            };
+            /** Advancesn */
+            advancesN: number | null;
+            /** Drawn */
+            drawn: boolean;
+            /** Locked */
+            locked: boolean;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** StandingRowView */
+        StandingRowView: {
+            /**
+             * Participantid
+             * Format: uuid
+             */
+            participantId: string;
+            /** Groupid */
+            groupId: string | null;
+            /** Played */
+            played: number;
+            /** Won */
+            won: number;
+            /** Drawn */
+            drawn: number;
+            /** Lost */
+            lost: number;
+            /** Points */
+            points: number;
+            /** Scorefor */
+            scoreFor: number;
+            /** Scoreagainst */
+            scoreAgainst: number;
+            /** Diff */
+            diff: number;
+            /** Rank */
+            rank: number | null;
+        };
+        /** StandingsView */
+        StandingsView: {
+            /**
+             * Stageid
+             * Format: uuid
+             */
+            stageId: string;
+            /** Rows */
+            rows: components["schemas"]["StandingRowView"][];
+        };
+        /** StatusTransitionRequest */
+        StatusTransitionRequest: {
+            status: components["schemas"]["TournamentStatus"];
+        };
+        /** SubmitRegistrationRequest */
+        SubmitRegistrationRequest: {
+            /** Formresponse */
+            formResponse?: {
+                [key: string]: unknown;
+            };
+            skillLevel?: components["schemas"]["SkillLevel"] | null;
+        };
+        /** SwitchOrgRequest */
+        SwitchOrgRequest: {
+            /**
+             * Organizationid
+             * Format: uuid
+             */
+            organizationId: string;
+        };
+        /** TeamResponse */
+        TeamResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Captainuserid */
+            captainUserId: string | null;
+            /** Roster */
+            roster: components["schemas"]["RosterEntryItem"][];
+        };
+        /** TournamentResponse */
+        TournamentResponse: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Slug */
+            slug: string;
+            /** Name */
+            name: string;
+            /** Sportkey */
+            sportKey: string;
+            /** Status */
+            status: string;
+            /** Visibility */
+            visibility: string;
+            /** Startsat */
+            startsAt: string | null;
+            /** Endsat */
+            endsAt: string | null;
+            /** Settings */
+            settings: {
+                [key: string]: unknown;
+            };
+            /** Drawpublishedat */
+            drawPublishedAt: string | null;
+            /** Schedulepublishedat */
+            schedulePublishedAt: string | null;
+            /** Resultspublishedat */
+            resultsPublishedAt: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /**
+         * TournamentStatus
+         * @enum {string}
+         */
+        TournamentStatus: "draft" | "registration" | "seeding" | "live" | "completed" | "archived";
+        /** UnreadCountResponse */
+        UnreadCountResponse: {
+            /** Count */
+            count: number;
+        };
+        /** UpdateMemberRoleRequest */
+        UpdateMemberRoleRequest: {
+            role: components["schemas"]["OrgRole"];
+        };
+        /** UpdateOrgRequest */
+        UpdateOrgRequest: {
+            /** Name */
+            name?: string | null;
+            /** Timezone */
+            timezone?: string | null;
+            /** Branding */
+            branding?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /** UpdateTournamentRequest */
+        UpdateTournamentRequest: {
+            /** Name */
+            name?: string | null;
+            visibility?: components["schemas"]["Visibility"] | null;
+            /** Startsat */
+            startsAt?: string | null;
+            /** Endsat */
+            endsAt?: string | null;
+            /** Settings */
+            settings?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * UploadTarget
+         * @description Where and how the client uploads the bytes directly (presigned).
+         */
+        UploadTarget: {
+            /** Url */
+            url: string;
+            /** Method */
+            method: string;
+            /** Headers */
+            headers: {
+                [key: string]: string;
+            };
+            /** Maxsize */
+            maxSize: number;
+            /** Expiresin */
+            expiresIn: number;
+        };
+        /** UpsertFeatureFlagRequest */
+        UpsertFeatureFlagRequest: {
+            /** Key */
+            key: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Rolloutpercentage
+             * @default 100
+             */
+            rolloutPercentage: number;
+            /** Description */
+            description?: string | null;
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
+        };
+        /** VerifyEmailConfirmRequest */
+        VerifyEmailConfirmRequest: {
+            /** Token */
+            token: string;
+        };
+        /**
+         * Visibility
+         * @enum {string}
+         */
+        Visibility: "public" | "unlisted" | "private";
     };
-    /** ApproveResult */
-    ApproveResult: {
-      /**
-       * Registrationid
-       * Format: uuid
-       */
-      registrationId: string;
-      /** Status */
-      status: string;
-      /** Participantid */
-      participantId: string | null;
-    };
-    /** ChangePasswordRequest */
-    ChangePasswordRequest: {
-      /** Currentpassword */
-      currentPassword: string;
-      /** Newpassword */
-      newPassword: string;
-    };
-    /** CreateDivisionRequest */
-    CreateDivisionRequest: {
-      /** Name */
-      name: string;
-      participantType: components["schemas"]["ParticipantKind"];
-      /** Capacity */
-      capacity?: number | null;
-      /** Regform */
-      regForm?: {
-        [key: string]: unknown;
-      };
-    };
-    /** CreateInviteRequest */
-    CreateInviteRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string;
-      role: components["schemas"]["OrgRole"];
-    };
-    /** CreateOrgRequest */
-    CreateOrgRequest: {
-      /** Name */
-      name: string;
-      /** Slug */
-      slug: string;
-    };
-    /** CreateStageRequest */
-    CreateStageRequest: {
-      type: components["schemas"]["StageFormat"];
-      /**
-       * Seq
-       * @default 0
-       */
-      seq: number;
-      /** Config */
-      config?: {
-        [key: string]: unknown;
-      };
-      /** Pointsruleid */
-      pointsRuleId?: string | null;
-      /** Tiebreakrulesetid */
-      tiebreakRulesetId?: string | null;
-      /** Advancesn */
-      advancesN?: number | null;
-    };
-    /** CreateTournamentRequest */
-    CreateTournamentRequest: {
-      /** Name */
-      name: string;
-      /** Slug */
-      slug: string;
-      /** Sportkey */
-      sportKey: string;
-      /** @default private */
-      visibility: components["schemas"]["Visibility"];
-    };
-    /** CursorPage[NotificationResource] */
-    CursorPage_NotificationResource_: {
-      /** Items */
-      items: components["schemas"]["NotificationResource"][];
-      /** Nextcursor */
-      nextCursor?: string | null;
-    };
-    /** DBHealthResponse */
-    DBHealthResponse: {
-      /** Database */
-      database: string;
-    };
-    /** DivisionResponse */
-    DivisionResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Tournamentid
-       * Format: uuid
-       */
-      tournamentId: string;
-      /** Name */
-      name: string;
-      /** Participanttype */
-      participantType: string;
-      /** Capacity */
-      capacity: number | null;
-      /** Regform */
-      regForm: {
-        [key: string]: unknown;
-      };
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /** DrawRequest */
-    DrawRequest: {
-      /** Rngseed */
-      rngSeed?: number | null;
-    };
-    /** DrawResponse */
-    DrawResponse: {
-      /**
-       * Stageid
-       * Format: uuid
-       */
-      stageId: string;
-      /** Format */
-      format: string;
-      /** Groups */
-      groups: number;
-      /** Rounds */
-      rounds: number;
-      /** Matches */
-      matches: number;
-      /** Scheduled */
-      scheduled: number;
-      /** Pending */
-      pending: number;
-    };
-    /** FeatureFlagResource */
-    FeatureFlagResource: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Key */
-      key: string;
-      /** Scope */
-      scope: string;
-      /** Scopeid */
-      scopeId: string | null;
-      /** Enabled */
-      enabled: boolean;
-      /** Rolloutpercentage */
-      rolloutPercentage: number;
-      /** Description */
-      description: string | null;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /**
-     * FileKind
-     * @enum {string}
-     */
-    FileKind: "org_logo" | "tournament_logo" | "rules_doc" | "export" | "avatar";
-    /** FileResource */
-    FileResource: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      kind: components["schemas"]["FileKind"];
-      /** Contenttype */
-      contentType: string;
-      /** Size */
-      size: number;
-      /** Status */
-      status: string;
-      /** Visibility */
-      visibility: string;
-      /** Url */
-      url: string | null;
-      /** Metadata */
-      metadata: {
-        [key: string]: unknown;
-      } | null;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /** FlagEnabledResponse */
-    FlagEnabledResponse: {
-      /** Key */
-      key: string;
-      /** Enabled */
-      enabled: boolean;
-    };
-    /** HTTPValidationError */
-    HTTPValidationError: {
-      /** Detail */
-      detail?: components["schemas"]["ValidationError"][];
-    };
-    /** HealthResponse */
-    HealthResponse: {
-      /** Status */
-      status: string;
-      /** Service */
-      service: string;
-      /** Version */
-      version: string;
-      /** Environment */
-      environment: string;
-      /**
-       * Time
-       * Format: date-time
-       */
-      time: string;
-    };
-    /** InviteItem */
-    InviteItem: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Email */
-      email: string;
-      role: components["schemas"]["OrgRole"];
-      status: components["schemas"]["OrgInviteStatus"];
-      /**
-       * Expiresat
-       * Format: date-time
-       */
-      expiresAt: string;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /** LoginRequest */
-    LoginRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string;
-      /** Password */
-      password: string;
-      /**
-       * Rememberme
-       * @default false
-       */
-      rememberMe: boolean;
-    };
-    /** MarkAllReadResponse */
-    MarkAllReadResponse: {
-      /** Updated */
-      updated: number;
-    };
-    /** MatchSideView */
-    MatchSideView: {
-      /**
-       * Participantid
-       * Format: uuid
-       */
-      participantId: string;
-      /** Outcome */
-      outcome: string | null;
-      /** Scorefor */
-      scoreFor: number | null;
-      /** Scoreagainst */
-      scoreAgainst: number | null;
-      /** Rank */
-      rank: number | null;
-    };
-    /** MatchView */
-    MatchView: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Stageid
-       * Format: uuid
-       */
-      stageId: string;
-      /** Status */
-      status: string;
-      /** Sides */
-      sides: components["schemas"]["MatchSideView"][];
-      /** Resultpayload */
-      resultPayload: {
-        [key: string]: unknown;
-      };
-      /**
-       * Updatedat
-       * Format: date-time
-       */
-      updatedAt: string;
-    };
-    /** MeResponse */
-    MeResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Email */
-      email: string;
-      /** Name */
-      name: string;
-      /** Emailverified */
-      emailVerified: boolean;
-      /** Activeorganizationid */
-      activeOrganizationId: string | null;
-      activeRole: components["schemas"]["OrgRole"] | null;
-      /** Organizations */
-      organizations: components["schemas"]["OrgSummary"][];
-    };
-    /** MemberItem */
-    MemberItem: {
-      /**
-       * Userid
-       * Format: uuid
-       */
-      userId: string;
-      /** Email */
-      email: string;
-      /** Name */
-      name: string;
-      role: components["schemas"]["OrgRole"];
-      /**
-       * Joinedat
-       * Format: date-time
-       */
-      joinedAt: string;
-    };
-    /** NotificationResource */
-    NotificationResource: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Type */
-      type: string;
-      /** Title */
-      title: string | null;
-      /** Body */
-      body: string | null;
-      /** Status */
-      status: string;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /**
-     * OrgInviteStatus
-     * @enum {string}
-     */
-    OrgInviteStatus: "pending" | "accepted" | "revoked" | "expired";
-    /** OrgResponse */
-    OrgResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Slug */
-      slug: string;
-      /** Name */
-      name: string;
-      /** Timezone */
-      timezone: string;
-      /** Plan */
-      plan: string;
-      /** Branding */
-      branding: {
-        [key: string]: unknown;
-      };
-    };
-    /**
-     * OrgRole
-     * @enum {string}
-     */
-    OrgRole: "owner" | "admin" | "organizer" | "scorekeeper" | "viewer";
-    /** OrgSummary */
-    OrgSummary: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Slug */
-      slug: string;
-      /** Name */
-      name: string;
-      role: components["schemas"]["OrgRole"];
-    };
-    /**
-     * ParticipantKind
-     * @enum {string}
-     */
-    ParticipantKind: "individual" | "pair" | "team";
-    /** ParticipantResponse */
-    ParticipantResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Divisionid
-       * Format: uuid
-       */
-      divisionId: string;
-      /** Kind */
-      kind: string;
-      /** Displayname */
-      displayName: string;
-      /** Seed */
-      seed: number | null;
-      /** Status */
-      status: string;
-      /** Userid */
-      userId: string | null;
-      /** Teamid */
-      teamId: string | null;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /** PasswordResetConfirmRequest */
-    PasswordResetConfirmRequest: {
-      /** Token */
-      token: string;
-      /** Newpassword */
-      newPassword: string;
-    };
-    /** PasswordResetRequest */
-    PasswordResetRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string;
-    };
-    /** PresignUploadRequest */
-    PresignUploadRequest: {
-      kind: components["schemas"]["FileKind"];
-      /** Filename */
-      filename: string;
-      /** Contenttype */
-      contentType: string;
-      /** Size */
-      size: number;
-    };
-    /** PresignUploadResponse */
-    PresignUploadResponse: {
-      /**
-       * Fileid
-       * Format: uuid
-       */
-      fileId: string;
-      /** Storagekey */
-      storageKey: string;
-      upload: components["schemas"]["UploadTarget"];
-    };
-    /** PublishRequest */
-    PublishRequest: {
-      /** Artifacts */
-      artifacts?: string[];
-    };
-    /** ReadinessResponse */
-    ReadinessResponse: {
-      /** Status */
-      status: string;
-      /** Checks */
-      checks: {
-        [key: string]: string;
-      };
-    };
-    /** RegisterRequest */
-    RegisterRequest: {
-      /**
-       * Email
-       * Format: email
-       */
-      email: string;
-      /** Name */
-      name: string;
-      /** Password */
-      password: string;
-    };
-    /** RegistrationResponse */
-    RegistrationResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Divisionid
-       * Format: uuid
-       */
-      divisionId: string;
-      /**
-       * Submittedby
-       * Format: uuid
-       */
-      submittedBy: string;
-      /** Status */
-      status: string;
-      /** Skilllevel */
-      skillLevel: string | null;
-      /** Participantid */
-      participantId: string | null;
-      /** Formresponse */
-      formResponse: {
-        [key: string]: unknown;
-      };
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /** RosterEntryItem */
-    RosterEntryItem: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Userid */
-      userId: string | null;
-      /** Externalname */
-      externalName: string | null;
-      /** Role */
-      role: string | null;
-    };
-    /** ScoreRequest */
-    ScoreRequest: {
-      /** Payload */
-      payload?: {
-        [key: string]: unknown;
-      };
-    };
-    /** SessionItem */
-    SessionItem: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-      /**
-       * Expiresat
-       * Format: date-time
-       */
-      expiresAt: string;
-      /** Ip */
-      ip: string | null;
-      /** Useragent */
-      userAgent: string | null;
-      /** Current */
-      current: boolean;
-    };
-    /**
-     * SkillLevel
-     * @enum {string}
-     */
-    SkillLevel: "beginner" | "intermediate" | "advanced";
-    /**
-     * StageFormat
-     * @enum {string}
-     */
-    StageFormat: "round_robin" | "single_elim" | "group_knockout" | "swiss" | "ladder";
-    /** StageResponse */
-    StageResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /**
-       * Divisionid
-       * Format: uuid
-       */
-      divisionId: string;
-      /** Type */
-      type: string;
-      /** Seq */
-      seq: number;
-      /** Config */
-      config: {
-        [key: string]: unknown;
-      };
-      /** Advancesn */
-      advancesN: number | null;
-      /** Drawn */
-      drawn: boolean;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /** StandingRowView */
-    StandingRowView: {
-      /**
-       * Participantid
-       * Format: uuid
-       */
-      participantId: string;
-      /** Groupid */
-      groupId: string | null;
-      /** Played */
-      played: number;
-      /** Won */
-      won: number;
-      /** Drawn */
-      drawn: number;
-      /** Lost */
-      lost: number;
-      /** Points */
-      points: number;
-      /** Scorefor */
-      scoreFor: number;
-      /** Scoreagainst */
-      scoreAgainst: number;
-      /** Diff */
-      diff: number;
-      /** Rank */
-      rank: number | null;
-    };
-    /** StandingsView */
-    StandingsView: {
-      /**
-       * Stageid
-       * Format: uuid
-       */
-      stageId: string;
-      /** Rows */
-      rows: components["schemas"]["StandingRowView"][];
-    };
-    /** StatusTransitionRequest */
-    StatusTransitionRequest: {
-      status: components["schemas"]["TournamentStatus"];
-    };
-    /** SubmitRegistrationRequest */
-    SubmitRegistrationRequest: {
-      /** Formresponse */
-      formResponse?: {
-        [key: string]: unknown;
-      };
-      skillLevel?: components["schemas"]["SkillLevel"] | null;
-    };
-    /** SwitchOrgRequest */
-    SwitchOrgRequest: {
-      /**
-       * Organizationid
-       * Format: uuid
-       */
-      organizationId: string;
-    };
-    /** TeamResponse */
-    TeamResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Name */
-      name: string;
-      /** Captainuserid */
-      captainUserId: string | null;
-      /** Roster */
-      roster: components["schemas"]["RosterEntryItem"][];
-    };
-    /** TournamentResponse */
-    TournamentResponse: {
-      /**
-       * Id
-       * Format: uuid
-       */
-      id: string;
-      /** Slug */
-      slug: string;
-      /** Name */
-      name: string;
-      /** Sportkey */
-      sportKey: string;
-      /** Status */
-      status: string;
-      /** Visibility */
-      visibility: string;
-      /** Startsat */
-      startsAt: string | null;
-      /** Endsat */
-      endsAt: string | null;
-      /** Settings */
-      settings: {
-        [key: string]: unknown;
-      };
-      /** Drawpublishedat */
-      drawPublishedAt: string | null;
-      /** Schedulepublishedat */
-      schedulePublishedAt: string | null;
-      /** Resultspublishedat */
-      resultsPublishedAt: string | null;
-      /**
-       * Createdat
-       * Format: date-time
-       */
-      createdAt: string;
-    };
-    /**
-     * TournamentStatus
-     * @enum {string}
-     */
-    TournamentStatus: "draft" | "registration" | "seeding" | "live" | "completed" | "archived";
-    /** UnreadCountResponse */
-    UnreadCountResponse: {
-      /** Count */
-      count: number;
-    };
-    /** UpdateMemberRoleRequest */
-    UpdateMemberRoleRequest: {
-      role: components["schemas"]["OrgRole"];
-    };
-    /** UpdateOrgRequest */
-    UpdateOrgRequest: {
-      /** Name */
-      name?: string | null;
-      /** Timezone */
-      timezone?: string | null;
-      /** Branding */
-      branding?: {
-        [key: string]: unknown;
-      } | null;
-    };
-    /** UpdateTournamentRequest */
-    UpdateTournamentRequest: {
-      /** Name */
-      name?: string | null;
-      visibility?: components["schemas"]["Visibility"] | null;
-      /** Startsat */
-      startsAt?: string | null;
-      /** Endsat */
-      endsAt?: string | null;
-      /** Settings */
-      settings?: {
-        [key: string]: unknown;
-      } | null;
-    };
-    /**
-     * UploadTarget
-     * @description Where and how the client uploads the bytes directly (presigned).
-     */
-    UploadTarget: {
-      /** Url */
-      url: string;
-      /** Method */
-      method: string;
-      /** Headers */
-      headers: {
-        [key: string]: string;
-      };
-      /** Maxsize */
-      maxSize: number;
-      /** Expiresin */
-      expiresIn: number;
-    };
-    /** UpsertFeatureFlagRequest */
-    UpsertFeatureFlagRequest: {
-      /** Key */
-      key: string;
-      /**
-       * Enabled
-       * @default true
-       */
-      enabled: boolean;
-      /**
-       * Rolloutpercentage
-       * @default 100
-       */
-      rolloutPercentage: number;
-      /** Description */
-      description?: string | null;
-    };
-    /** ValidationError */
-    ValidationError: {
-      /** Location */
-      loc: (string | number)[];
-      /** Message */
-      msg: string;
-      /** Error Type */
-      type: string;
-      /** Input */
-      input?: unknown;
-      /** Context */
-      ctx?: Record<string, never>;
-    };
-    /** VerifyEmailConfirmRequest */
-    VerifyEmailConfirmRequest: {
-      /** Token */
-      token: string;
-    };
-    /**
-     * Visibility
-     * @enum {string}
-     */
-    Visibility: "public" | "unlisted" | "private";
-  };
-  responses: never;
-  parameters: never;
-  requestBodies: never;
-  headers: never;
-  pathItems: never;
+    responses: never;
+    parameters: never;
+    requestBodies: never;
+    headers: never;
+    pathItems: never;
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  health_health: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HealthResponse"];
-        };
-      };
-    };
-  };
-  health_health_db: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DBHealthResponse"];
-        };
-      };
-    };
-  };
-  health_health_ready: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ReadinessResponse"];
-        };
-      };
-    };
-  };
-  auth_register: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["RegisterRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  auth_login: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["LoginRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  auth_refresh: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeResponse"];
-        };
-      };
-    };
-  };
-  auth_logout: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  auth_logout_all: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-    };
-  };
-  auth_list_sessions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["SessionItem"][];
-        };
-      };
-    };
-  };
-  auth_revoke_session: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        session_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  auth_request_email_verification: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  auth_confirm_email: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["VerifyEmailConfirmRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  auth_request_password_reset: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PasswordResetRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      202: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  auth_confirm_password_reset: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PasswordResetConfirmRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  auth_change_password: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ChangePasswordRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  auth_me: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeResponse"];
-        };
-      };
-    };
-  };
-  auth_google_authorize: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": unknown;
-        };
-      };
-    };
-  };
-  auth_google_callback: {
-    parameters: {
-      query: {
-        code: string;
-        state: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_list_my_orgs: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["OrgSummary"][];
-        };
-      };
-    };
-  };
-  orgs_create_org: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateOrgRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_switch_org: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SwitchOrgRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_accept_invite: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["AcceptInviteRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MeResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_get_active_org: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["OrgResponse"];
-        };
-      };
-    };
-  };
-  orgs_update_active_org: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateOrgRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["OrgResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_list_members: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MemberItem"][];
-        };
-      };
-    };
-  };
-  orgs_remove_member: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_update_member_role: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        user_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateMemberRoleRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MemberItem"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_list_invites: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["InviteItem"][];
-        };
-      };
-    };
-  };
-  orgs_create_invite: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateInviteRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["InviteItem"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  orgs_revoke_invite: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        invite_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  files_presign_upload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PresignUploadRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["PresignUploadResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  files_complete_upload: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        file_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FileResource"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  files_get_file: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        file_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FileResource"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  files_delete_file: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        file_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  notifications_list_notifications: {
-    parameters: {
-      query?: {
-        unreadOnly?: boolean;
-        cursor?: string | null;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["CursorPage_NotificationResource_"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  notifications_unread_count: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["UnreadCountResponse"];
-        };
-      };
-    };
-  };
-  notifications_mark_read: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        notification_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["NotificationResource"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  notifications_mark_all_read: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MarkAllReadResponse"];
-        };
-      };
-    };
-  };
-  realtime_stream: {
-    parameters: {
-      query: {
-        channel: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": unknown;
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  "feature-flags_list_flags": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FeatureFlagResource"][];
-        };
-      };
-    };
-  };
-  "feature-flags_upsert_flag": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpsertFeatureFlagRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FeatureFlagResource"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  "feature-flags_delete_flag": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        flag_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      204: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  "feature-flags_flag_enabled": {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        key: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["FlagEnabledResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_list_tournaments: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TournamentResponse"][];
-        };
-      };
-    };
-  };
-  tournaments_create_tournament: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateTournamentRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TournamentResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_get_tournament: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        tournament_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TournamentResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_update_tournament: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        tournament_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["UpdateTournamentRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TournamentResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_transition_status: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        tournament_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["StatusTransitionRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TournamentResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_publish_tournament: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        tournament_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["PublishRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TournamentResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_list_divisions: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        tournament_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DivisionResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_create_division: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        tournament_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateDivisionRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DivisionResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_list_stages: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        division_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["StageResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_create_stage: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        division_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["CreateStageRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["StageResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  tournaments_generate_draw: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        stage_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["DrawRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["DrawResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_list_registrations: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        division_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_submit_registration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        division_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["SubmitRegistrationRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_list_participants: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        division_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ParticipantResponse"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_approve_registration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        registration_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["ApproveResult"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_reject_registration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        registration_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_waitlist_registration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        registration_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_withdraw_registration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        registration_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["RegistrationResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  registrations_get_team: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        team_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["TeamResponse"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  scoring_score_match: {
-    parameters: {
-      query?: never;
-      header?: {
-        "If-Match"?: string | null;
-        "Idempotency-Key"?: string | null;
-      };
-      path: {
-        match_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        "application/json": components["schemas"]["ScoreRequest"];
-      };
-    };
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MatchView"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  scoring_list_stage_matches: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        stage_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MatchView"][];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  scoring_get_match: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        match_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["MatchView"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
-  scoring_get_standings: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        stage_id: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Successful Response */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["StandingsView"];
-        };
-      };
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          "application/json": components["schemas"]["HTTPValidationError"];
-        };
-      };
-    };
-  };
+    health_health: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HealthResponse"];
+                };
+            };
+        };
+    };
+    health_health_db: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DBHealthResponse"];
+                };
+            };
+        };
+    };
+    health_health_ready: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadinessResponse"];
+                };
+            };
+        };
+    };
+    auth_register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_login: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_refresh: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    auth_logout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_logout_all: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_list_sessions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionItem"][];
+                };
+            };
+        };
+    };
+    auth_revoke_session: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_request_email_verification: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    auth_confirm_email: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_request_password_reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_confirm_password_reset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordResetConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_change_password: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    auth_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+        };
+    };
+    auth_google_authorize: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    auth_google_callback: {
+        parameters: {
+            query: {
+                code: string;
+                state: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_list_my_orgs: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgSummary"][];
+                };
+            };
+        };
+    };
+    orgs_create_org: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateOrgRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_switch_org: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwitchOrgRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_accept_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_get_active_org: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgResponse"];
+                };
+            };
+        };
+    };
+    orgs_update_active_org: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateOrgRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_list_members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberItem"][];
+                };
+            };
+        };
+    };
+    orgs_remove_member: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_update_member_role: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMemberRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemberItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_list_invites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteItem"][];
+                };
+            };
+        };
+    };
+    orgs_create_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteItem"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    orgs_revoke_invite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                invite_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    files_presign_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PresignUploadRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PresignUploadResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    files_complete_upload: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileResource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    files_get_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FileResource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    files_delete_file: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                file_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    notifications_list_notifications: {
+        parameters: {
+            query?: {
+                unreadOnly?: boolean;
+                cursor?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CursorPage_NotificationResource_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    notifications_unread_count: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCountResponse"];
+                };
+            };
+        };
+    };
+    notifications_mark_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationResource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    notifications_mark_all_read: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MarkAllReadResponse"];
+                };
+            };
+        };
+    };
+    realtime_stream: {
+        parameters: {
+            query: {
+                channel: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "feature-flags_list_flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFlagResource"][];
+                };
+            };
+        };
+    };
+    "feature-flags_upsert_flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpsertFeatureFlagRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeatureFlagResource"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "feature-flags_delete_flag": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                flag_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "feature-flags_flag_enabled": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagEnabledResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_list_tournaments: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentResponse"][];
+                };
+            };
+        };
+    };
+    tournaments_create_tournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTournamentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_get_tournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_update_tournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateTournamentRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_transition_status: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StatusTransitionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_publish_tournament: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_list_divisions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DivisionResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_create_division: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateDivisionRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DivisionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_list_stages: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StageResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_create_stage: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateStageRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_generate_draw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DrawRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DrawResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tournaments_clear_draw: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_list_registrations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_submit_registration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitRegistrationRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_list_participants: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_approve_registration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                registration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApproveResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_reject_registration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                registration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_waitlist_registration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                registration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_withdraw_registration: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                registration_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegistrationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    registrations_get_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TeamResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scoring_score_match: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScoreRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scoring_list_stage_matches: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scoring_get_match: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scoring_get_standings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                stage_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StandingsView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
 }

@@ -60,6 +60,11 @@ def _match_view(match: Match) -> MatchView:
         status=match.status,
         sides=views,
         result_payload=match.result_payload or {},
+        round_id=match.round_id,
+        round_seq=match.round.seq if match.round else None,
+        round_label=match.round.label if match.round else None,
+        group_id=match.group_id,
+        group_name=match.group.name if match.group else None,
         updated_at=match.updated_at,
     )
 

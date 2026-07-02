@@ -26,7 +26,9 @@ async def get_match(session: AsyncSession, org_id: uuid.UUID, mid: uuid.UUID) ->
     stmt = (
         select(Match)
         .where(Match.id == mid, Match.organization_id == org_id)
-        .options(selectinload(Match.participants))
+        .options(
+            selectinload(Match.participants), selectinload(Match.round), selectinload(Match.group)
+        )
     )
     return (await session.execute(stmt)).scalar_one_or_none()
 
@@ -37,7 +39,9 @@ async def list_stage_matches(
     stmt = (
         select(Match)
         .where(Match.stage_id == sid, Match.organization_id == org_id)
-        .options(selectinload(Match.participants))
+        .options(
+            selectinload(Match.participants), selectinload(Match.round), selectinload(Match.group)
+        )
         .order_by(Match.round_id.nulls_first(), Match.created_at, Match.id)
     )
     return (await session.execute(stmt)).scalars().all()

@@ -74,7 +74,7 @@ def _division_response(division: Division) -> DivisionResponse:
     )
 
 
-def _stage_response(stage: Stage, *, drawn: bool) -> StageResponse:
+def _stage_response(stage: Stage, *, drawn: bool, locked: bool) -> StageResponse:
     return StageResponse(
         id=stage.id,
         division_id=stage.division_id,
@@ -83,6 +83,7 @@ def _stage_response(stage: Stage, *, drawn: bool) -> StageResponse:
         config=stage.config,
         advances_n=stage.advances_n,
         drawn=drawn,
+        locked=locked,
         created_at=stage.created_at,
     )
 
@@ -266,7 +267,7 @@ async def create_stage(
         tiebreak_ruleset_id=body.tiebreak_ruleset_id,
         advances_n=body.advances_n,
     )
-    return _stage_response(stage, drawn=False)
+    return _stage_response(stage, drawn=False, locked=False)
 
 
 @router.get("/divisions/{division_id}/stages", response_model=list[StageResponse])
@@ -279,7 +280,10 @@ async def list_stages(
     result = []
     for stage in rows:
         count = await repo.stage_match_count(session, principal.organization_id, stage.id)
-        result.append(_stage_response(stage, drawn=count > 0))
+        locked = count > 0 and await repo.stage_has_scored_matches(
+            session, principal.organization_id, stage.id
+        )
+        result.append(_stage_response(stage, drawn=count > 0, locked=locked))
     return result
 
 
@@ -303,3 +307,21 @@ async def generate_draw(
         rng_seed=body.rng_seed,
     )
     return DrawResponse(stage_id=stage_id, **summary)
+
+
+@router.delete(
+    "/stages/{stage_id}/draw",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(authed_csrf)],
+)
+async def clear_draw(
+    stage_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> None:
+    await service.clear_draw(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        stage_id=stage_id,
+    )
