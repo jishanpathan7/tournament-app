@@ -427,3 +427,63 @@ async def test_organization_isolation(app, client):
             headers=_csrf(other),
         )
         assert resp.status_code == 404
+
+
+# ---- 8. Match Center: tournament-wide match list + per-match event history ----
+
+
+async def test_tournament_matches_spans_every_division(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    did_a = await _division(client, tid)
+    did_b = await _division(client, tid)
+    sid_a = await _stage(client, did_a, "round_robin")
+    sid_b = await _stage(client, did_b, "single_elim")
+    await _open_registration(client, tid)
+    await _approved_entrants(client, did_a, 3)
+    await _approved_entrants(client, did_b, 4)
+    await client.post(f"/api/v1/stages/{sid_a}/draw", json={}, headers=_csrf(client))
+    await client.post(f"/api/v1/stages/{sid_b}/draw", json={}, headers=_csrf(client))
+
+    resp = await client.get(f"/api/v1/tournaments/{tid}/matches")
+    assert resp.status_code == 200, resp.text
+    matches = resp.json()
+    assert len(matches) == 3 + 3  # round robin C(3,2) + single-elim bracket-of-4
+    assert {m["stageId"] for m in matches} == {sid_a, sid_b}
+    # Court/scheduling fields exist on the wire even though nothing populates them yet.
+    assert all(m["courtId"] is None and m["scheduledAt"] is None for m in matches)
+
+
+async def test_match_events_records_submission_then_correction_with_actor(app, client):
+    _tid, _did, sid = await _bracket(client, "round_robin", 3)
+    match = (await _matches(client, sid))[0]
+    me = (await client.get(f"{AUTH}/me")).json()
+
+    winner = match["sides"][0]["participantId"]
+    assert (await _score(client, match["id"], _win_payload(match["sides"], winner)))[0] == 200
+
+    events_resp = await client.get(f"/api/v1/matches/{match['id']}/events")
+    assert events_resp.status_code == 200, events_resp.text
+    events = events_resp.json()
+    assert len(events) == 1
+    assert events[0]["type"] == "normal"
+    assert events[0]["actorId"] == me["id"]
+
+    corrected = {"games": [[21, 19], [19, 21], [21, 18]], "endedBy": "normal"}
+    side0_wins = match["sides"][0]["participantId"] == winner
+    if not side0_wins:
+        corrected = {"games": [[19, 21], [21, 19], [18, 21]], "endedBy": "normal"}
+    assert (await _score(client, match["id"], corrected))[0] == 200
+
+    events = (await client.get(f"/api/v1/matches/{match['id']}/events")).json()
+    assert [e["type"] for e in events] == ["normal", "correction"]
+    assert events[1]["actorId"] == me["id"]
+
+
+async def test_match_events_requires_org_membership(app, client):
+    _tid, _did, sid = await _bracket(client, "round_robin", 3)
+    match = (await _matches(client, sid))[0]
+
+    async with _client(app) as other:
+        await _new_org(other)
+        assert (await other.get(f"/api/v1/matches/{match['id']}/events")).status_code == 404

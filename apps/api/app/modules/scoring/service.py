@@ -171,18 +171,20 @@ async def score_match(
             idem.status = IdempotencyStatus.COMPLETED.value
             idem.response_snapshot = {"matchId": str(match.id), "status": match.status}
 
-    await _emit(session, org_id, match, was_terminal)
+    await _emit(session, org_id, actor_id, match, was_terminal)
     await _broadcast(org_id, match)
     await _notify(session, org_id, match, advancement.get("scheduled", []))
     return match
 
 
-async def _emit(session: AsyncSession, org_id: uuid.UUID, match: Match, was_terminal: bool) -> None:
+async def _emit(
+    session: AsyncSession, org_id: uuid.UUID, actor_id: uuid.UUID, match: Match, was_terminal: bool
+) -> None:
     action = events.MATCH_CORRECTED if was_terminal else events.MATCH_COMPLETED
     audit.record(
         session,
         organization_id=org_id,
-        actor_id=None,
+        actor_id=actor_id,
         action=action,
         entity="match",
         entity_id=match.id,

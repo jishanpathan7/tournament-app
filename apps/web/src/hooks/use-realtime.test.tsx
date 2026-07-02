@@ -79,6 +79,50 @@ describe("useRealtime — registration events", () => {
     expect(invalidate).not.toHaveBeenCalled();
   });
 
+  it("invalidates the tournament-wide match queue + activity feed on match.completed", () => {
+    const client = createTestQueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <Providers client={client}>{children}</Providers>
+    );
+
+    renderHook(() => useRealtime("org:org-1"), { wrapper });
+    const source = FakeEventSource.instances[0]!;
+    source.emit("match.completed", { matchId: "m-1", tournamentId: "t-1", status: "completed" });
+
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.matches.detail("m-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.matches.events("m-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.tournaments.matches("t-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.tournaments.activity("t-1") }),
+    );
+  });
+
+  it("invalidates the tournament-wide match queue on bracket.updated", () => {
+    const client = createTestQueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <Providers client={client}>{children}</Providers>
+    );
+
+    renderHook(() => useRealtime("org:org-1"), { wrapper });
+    const source = FakeEventSource.instances[0]!;
+    source.emit("bracket.updated", { stageId: "stage-1", tournamentId: "t-1" });
+
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.stages.matches("stage-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.tournaments.matches("t-1") }),
+    );
+  });
+
   it("does nothing (no connection) when channel is null", () => {
     expect(() => {
       const client = createTestQueryClient();

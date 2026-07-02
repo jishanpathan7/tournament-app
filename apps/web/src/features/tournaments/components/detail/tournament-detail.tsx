@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Swords } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -58,6 +58,12 @@ export function TournamentDetail({ id }: { id: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button asChild tone="paper" size="sm">
+            <Link href={`/console/tournaments/${tournament.id}/matches`}>
+              <Swords className="h-4 w-4" strokeWidth={2.25} />
+              Match Center
+            </Link>
+          </Button>
           {canManage ? (
             <Button tone="paper" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4" strokeWidth={2.25} />

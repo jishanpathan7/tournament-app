@@ -1,5 +1,7 @@
 import type {
+  ActivityEventView,
   DivisionResponse,
+  MatchResultEventView,
   MatchView,
   MemberItem,
   ParticipantResponse,
@@ -125,6 +127,38 @@ export function makeMatch(overrides: Partial<MatchView> = {}): MatchView {
     roundLabel: overrides.roundLabel ?? null,
     groupId: overrides.groupId ?? null,
     groupName: overrides.groupName ?? null,
+    courtId: overrides.courtId ?? null,
+    scheduledAt: overrides.scheduledAt ?? null,
     updatedAt: overrides.updatedAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeMatchResultEvent(
+  overrides: Partial<MatchResultEventView> = {},
+): MatchResultEventView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `event-${seq}`,
+    matchId: overrides.matchId ?? "match-1",
+    type: overrides.type ?? "normal",
+    payload: overrides.payload ?? {},
+    actorId: overrides.actorId ?? "user-1",
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeActivityEvent(
+  overrides: Partial<ActivityEventView> = {},
+): ActivityEventView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `activity-${seq}`,
+    action: overrides.action ?? "match.completed",
+    entity: overrides.entity ?? "match",
+    entityId: overrides.entityId ?? "match-1",
+    actorId: overrides.actorId ?? "user-1",
+    before: overrides.before ?? null,
+    after: overrides.after ?? null,
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
   };
 }

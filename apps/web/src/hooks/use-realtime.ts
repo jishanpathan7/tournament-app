@@ -44,6 +44,11 @@ export function useRealtime(
       [REALTIME_EVENTS.MATCH_COMPLETED]: (data) => {
         if (typeof data.matchId === "string") {
           void queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(data.matchId) });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.matches.events(data.matchId) });
+        }
+        if (typeof data.tournamentId === "string") {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(data.tournamentId) });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.activity(data.tournamentId) });
         }
         void queryClient.invalidateQueries({ queryKey: ["stages"] });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
@@ -51,6 +56,9 @@ export function useRealtime(
       [REALTIME_EVENTS.BRACKET_UPDATED]: (data) => {
         if (typeof data.stageId === "string") {
           void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(data.stageId) });
+        }
+        if (typeof data.tournamentId === "string") {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(data.tournamentId) });
         }
         void queryClient.invalidateQueries({ queryKey: ["matches"] });
         // The broadcast only carries stageId, not divisionId, so refresh every cached

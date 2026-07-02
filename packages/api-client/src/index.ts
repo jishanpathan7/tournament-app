@@ -49,6 +49,7 @@ export type StageResponse = Schemas["StageResponse"];
 export type CreateStageRequest = Schemas["CreateStageRequest"];
 export type DrawRequest = Schemas["DrawRequest"];
 export type DrawResponse = Schemas["DrawResponse"];
+export type ActivityEventView = Schemas["ActivityEventView"];
 
 // ---- registrations / participants / teams ----
 export type RegistrationResponse = Schemas["RegistrationResponse"];
@@ -62,6 +63,7 @@ export type RosterEntryItem = Schemas["RosterEntryItem"];
 export type MatchView = Schemas["MatchView"];
 export type MatchSideView = Schemas["MatchSideView"];
 export type ScoreRequest = Schemas["ScoreRequest"];
+export type MatchResultEventView = Schemas["MatchResultEventView"];
 export type StandingsView = Schemas["StandingsView"];
 export type StandingRowView = Schemas["StandingRowView"];
 

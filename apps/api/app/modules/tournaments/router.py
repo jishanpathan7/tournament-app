@@ -24,6 +24,7 @@ from app.db.models import Division, Stage, Tournament
 from app.modules.tournaments import repository as repo
 from app.modules.tournaments import service
 from app.modules.tournaments.schemas import (
+    ActivityEventView,
     CreateDivisionRequest,
     CreateStageRequest,
     CreateTournamentRequest,
@@ -133,6 +134,29 @@ async def get_tournament(
         session, principal.organization_id, tournament_id
     )
     return await _tournament_response(session, tournament)
+
+
+@router.get("/tournaments/{tournament_id}/activity", response_model=list[ActivityEventView])
+async def get_tournament_activity(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> list[ActivityEventView]:
+    await service._require_tournament(session, principal.organization_id, tournament_id)
+    rows = await repo.tournament_activity(session, principal.organization_id, tournament_id)
+    return [
+        ActivityEventView(
+            id=e.id,
+            action=e.action,
+            entity=e.entity,
+            entity_id=e.entity_id,
+            actor_id=e.actor_id,
+            before=e.before,
+            after=e.after,
+            created_at=e.created_at,
+        )
+        for e in rows
+    ]
 
 
 @router.patch(

@@ -13,6 +13,7 @@ from app.db.models import (
     Division,
     IdempotencyKey,
     Match,
+    MatchResultEvent,
     Participant,
     SportProfile,
     Stage,
@@ -43,6 +44,34 @@ async def list_stage_matches(
             selectinload(Match.participants), selectinload(Match.round), selectinload(Match.group)
         )
         .order_by(Match.round_id.nulls_first(), Match.created_at, Match.id)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def list_tournament_matches(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
+) -> Sequence[Match]:
+    """Every match across every division/stage of a tournament — the Match Center queue.
+    ``Match.tournament_id`` is denormalized directly onto the row, so this needs no join
+    through Stage/Division."""
+    stmt = (
+        select(Match)
+        .where(Match.tournament_id == tid, Match.organization_id == org_id)
+        .options(
+            selectinload(Match.participants), selectinload(Match.round), selectinload(Match.group)
+        )
+        .order_by(Match.scheduled_at.nulls_last(), Match.created_at, Match.id)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def list_match_events(
+    session: AsyncSession, org_id: uuid.UUID, mid: uuid.UUID
+) -> Sequence[MatchResultEvent]:
+    stmt = (
+        select(MatchResultEvent)
+        .where(MatchResultEvent.match_id == mid, MatchResultEvent.organization_id == org_id)
+        .order_by(MatchResultEvent.created_at)
     )
     return (await session.execute(stmt)).scalars().all()
 
