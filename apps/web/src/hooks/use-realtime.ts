@@ -75,6 +75,17 @@ export function useRealtime(
           });
         }
       },
+      [REALTIME_EVENTS.SCHEDULE_UPDATED]: (data) => {
+        if (typeof data.matchId === "string") {
+          void queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(data.matchId) });
+        }
+        if (typeof data.tournamentId === "string") {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.tournaments.matches(data.tournamentId),
+          });
+          void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(data.tournamentId) });
+        }
+      },
       // Registration lifecycle events all share this shape: refresh both the
       // registrations queue and the approved participants list for that division.
       [REALTIME_EVENTS.REGISTRATION_SUBMITTED]: invalidateDivisionRegistrations,

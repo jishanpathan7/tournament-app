@@ -25,6 +25,7 @@ from app.db.models import Match, MatchResultEvent, Participant, Stage, Standing,
 from app.db.session import set_org_context
 from app.modules.public import repository as repo
 from app.modules.scoring import repository as scoring_repo
+from app.modules.scoring.schemas import MatchView
 from app.modules.tournaments import repository as tournaments_repo
 
 
@@ -111,6 +112,17 @@ async def list_match_events(
     # Confirms the match belongs to this tournament before returning its history.
     await get_match(session, tournament, match_id)
     return await scoring_repo.list_match_events(session, tournament.organization_id, match_id)
+
+
+def redact_unpublished_schedule(tournament: Tournament, view: MatchView) -> MatchView:
+    """Court/time are real ``Match`` columns that ``build_match_view`` always
+    populates — gate them here the same way ``list_matches``/``get_match`` gate the
+    match's very existence on ``draw_published_at``, so a schedule an organizer is
+    still arranging (courts assigned, times not yet final) isn't visible to the
+    public before they hit "publish"."""
+    if tournament.schedule_published_at is not None:
+        return view
+    return view.model_copy(update={"court_id": None, "scheduled_at": None})
 
 
 async def get_standings(

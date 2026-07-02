@@ -23,6 +23,7 @@ TOURNAMENT_CREATE = "tournament:create"
 TOURNAMENT_UPDATE = "tournament:update"
 TOURNAMENT_DELETE = "tournament:delete"
 SCORING_WRITE = "scoring:write"
+SCHEDULE_MANAGE = "schedule:manage"
 FILE_READ = "file:read"
 FILE_WRITE = "file:write"
 FEATURE_FLAG_MANAGE = "feature_flag:manage"
@@ -40,6 +41,7 @@ ALL_ACTIONS: frozenset[str] = frozenset(
         TOURNAMENT_UPDATE,
         TOURNAMENT_DELETE,
         SCORING_WRITE,
+        SCHEDULE_MANAGE,
         FILE_READ,
         FILE_WRITE,
         FEATURE_FLAG_MANAGE,
@@ -57,6 +59,7 @@ ROLE_PERMISSIONS: dict[OrgRole, frozenset[str]] = {
             TOURNAMENT_UPDATE,
             TOURNAMENT_DELETE,
             SCORING_WRITE,
+            SCHEDULE_MANAGE,
             FILE_READ,
             FILE_WRITE,
         }

@@ -1,5 +1,7 @@
 import type {
   ActivityEventView,
+  CourtQueueView,
+  CourtView,
   DivisionResponse,
   MatchResultEventView,
   MatchView,
@@ -10,8 +12,10 @@ import type {
   PublicStageView,
   PublicTournamentView,
   RegistrationResponse,
+  ScheduleQueueView,
   StageResponse,
   TeamResponse,
+  TournamentCourtView,
   TournamentResponse,
 } from "@tournament/api-client";
 
@@ -225,5 +229,46 @@ export function makePublicParticipant(
     kind: overrides.kind ?? "individual",
     displayName: overrides.displayName ?? `Participant ${seq}`,
     seed: overrides.seed ?? null,
+  };
+}
+
+export function makeCourt(overrides: Partial<CourtView> = {}): CourtView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `court-${seq}`,
+    venueId: overrides.venueId ?? "venue-1",
+    venueName: overrides.venueName ?? "Main Gym",
+    name: overrides.name ?? `Court ${seq}`,
+    status: overrides.status ?? "active",
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeTournamentCourt(
+  overrides: Partial<TournamentCourtView> = {},
+): TournamentCourtView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `tc-${seq}`,
+    tournamentId: overrides.tournamentId ?? "t-1",
+    court: overrides.court ?? makeCourt(),
+    createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makeCourtQueue(overrides: Partial<CourtQueueView> = {}): CourtQueueView {
+  return {
+    court: overrides.court ?? makeCourt(),
+    currentMatch: overrides.currentMatch ?? null,
+    nextMatch: overrides.nextMatch ?? null,
+    isDelayed: overrides.isDelayed ?? false,
+  };
+}
+
+export function makeScheduleQueue(overrides: Partial<ScheduleQueueView> = {}): ScheduleQueueView {
+  return {
+    courts: overrides.courts ?? [],
+    unscheduled: overrides.unscheduled ?? [],
+    pending: overrides.pending ?? [],
   };
 }

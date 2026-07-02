@@ -69,7 +69,7 @@ def upgrade() -> None:
     # 2. Baseline tables, FKs, indexes, generated/unique/check constraints.
     Base.metadata.create_all(bind, tables=tables)
     # 3. Row-Level Security: ENABLE + FORCE + org-isolation policies.
-    for statement in rls.upgrade_statements():
+    for statement in rls.upgrade_statements(BASELINE_TABLES):
         op.execute(statement)
     # 4. DB-side updated_at trigger on every baseline table (all have updated_at).
     for statement in triggers.upgrade_statements([t.name for t in tables]):
@@ -82,7 +82,7 @@ def downgrade() -> None:
     # Reverse order: triggers -> policies/RLS -> tables -> ENUM types.
     for statement in triggers.downgrade_statements([t.name for t in tables]):
         op.execute(statement)
-    for statement in rls.downgrade_statements():
+    for statement in rls.downgrade_statements(BASELINE_TABLES):
         op.execute(statement)
     Base.metadata.drop_all(bind, tables=tables)
     for enum_type in reversed(ALL_PG_ENUMS):

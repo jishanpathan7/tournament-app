@@ -8,6 +8,7 @@ from fastapi import APIRouter
 
 from app.core.config import get_settings
 from app.modules.auth.router import router as auth_router
+from app.modules.courts.router import router as courts_router
 from app.modules.files.router import router as files_router
 from app.modules.flags.router import router as flags_router
 from app.modules.health.router import router as health_router
@@ -15,6 +16,7 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.orgs.router import router as orgs_router
 from app.modules.public.router import router as public_router
 from app.modules.registrations.router import router as registrations_router
+from app.modules.scheduling.router import router as scheduling_router
 from app.modules.scoring.router import router as scoring_router
 from app.modules.tournaments.router import router as tournaments_router
 from app.realtime.router import router as realtime_router
@@ -31,3 +33,5 @@ api_router.include_router(tournaments_router)
 api_router.include_router(registrations_router)
 api_router.include_router(scoring_router)
 api_router.include_router(public_router)
+api_router.include_router(courts_router)
+api_router.include_router(scheduling_router)

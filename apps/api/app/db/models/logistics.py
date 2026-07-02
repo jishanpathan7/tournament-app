@@ -1,16 +1,16 @@
-"""Logistics: Venue, Court, ScheduleSlot, Assignment."""
+"""Logistics: Venue, Court, TournamentCourt, ScheduleSlot, Assignment."""
 
 from __future__ import annotations
 
 import datetime
 import uuid
 
-from sqlalchemy import ForeignKey, Index, String, Text
+from sqlalchemy import ForeignKey, Index, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.enums import ASSIGNMENT_ROLE
+from app.db.enums import ASSIGNMENT_ROLE, COURT_STATUS
 from app.db.mixins import OrgScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 
@@ -32,8 +32,35 @@ class Court(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
         UUID(as_uuid=True), ForeignKey("venues.id", ondelete="CASCADE"), nullable=False, index=True
     )
     name: Mapped[str] = mapped_column(String(80), nullable=False)
+    # Operational status — a "disabled" or "maintenance" court is skipped by scheduling
+    # (assignment + conflict checks both read this), independent of tournament assignment.
+    status: Mapped[str] = mapped_column(
+        COURT_STATUS, nullable=False, server_default=text("'active'")
+    )
 
     venue: Mapped[Venue] = relationship(back_populates="courts")
+
+
+class TournamentCourt(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
+    """Explicit "this court may be used by this tournament" assignment — distinct from
+    the finer-grained per-window availability already modeled by ``ScheduleSlot``. A
+    court must be assigned here before a match in the tournament can be scheduled onto
+    it."""
+
+    __tablename__ = "tournament_courts"
+    __table_args__ = (UniqueConstraint("tournament_id", "court_id"),)
+
+    tournament_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tournaments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    court_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("courts.id", ondelete="RESTRICT"), nullable=False, index=True
+    )
+
+    court: Mapped[Court] = relationship()
 
 
 class ScheduleSlot(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):

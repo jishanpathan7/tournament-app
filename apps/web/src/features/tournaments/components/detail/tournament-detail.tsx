@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Pencil, Swords } from "lucide-react";
+import { ArrowLeft, CalendarClock, LayoutGrid, Pencil, Swords } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -58,6 +58,18 @@ export function TournamentDetail({ id }: { id: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Button asChild tone="paper" size="sm">
+            <Link href={`/console/tournaments/${tournament.id}/schedule`}>
+              <CalendarClock className="h-4 w-4" strokeWidth={2.25} />
+              Schedule
+            </Link>
+          </Button>
+          <Button asChild tone="paper" size="sm">
+            <Link href={`/console/tournaments/${tournament.id}/courts`}>
+              <LayoutGrid className="h-4 w-4" strokeWidth={2.25} />
+              Courts
+            </Link>
+          </Button>
           <Button asChild tone="paper" size="sm">
             <Link href={`/console/tournaments/${tournament.id}/matches`}>
               <Swords className="h-4 w-4" strokeWidth={2.25} />

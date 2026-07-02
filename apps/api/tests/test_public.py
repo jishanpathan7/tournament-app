@@ -284,6 +284,51 @@ async def test_public_participant_detail(app, client):
 # ---- cross-org / cross-tournament isolation ----
 
 
+# ---- schedule (court/time) gated by schedule_published_at ----
+
+
+async def test_court_and_time_hidden_until_schedule_is_published(app, client):
+    await _new_org(client)
+    tid, slug = await _tournament(client, visibility="public")
+    did = await _division(client, tid)
+    sid = await _stage(client, did)
+    await _open_registration(client, tid)
+    await _approved_entrants(client, did, 3)
+    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    await _publish_draw(client, tid)
+
+    venue = await client.post("/api/v1/venues", json={"name": "Gym"}, headers=_csrf(client))
+    court = await client.post(
+        "/api/v1/courts",
+        json={"venueId": venue.json()["id"], "name": "Court 1"},
+        headers=_csrf(client),
+    )
+    court_id = court.json()["id"]
+    await client.post(f"{TOUR}/{tid}/courts", json={"courtId": court_id}, headers=_csrf(client))
+
+    match = (await client.get(f"{PUBLIC}/tournaments/{slug}/matches")).json()[0]
+    await client.patch(
+        f"/api/v1/matches/{match['id']}/schedule",
+        json={"courtId": court_id, "scheduledAt": "2026-07-25T08:00:00Z", "durationMinutes": 30},
+        headers=_csrf(client),
+    )
+
+    still_hidden = (await client.get(f"{PUBLIC}/tournaments/{slug}/matches")).json()[0]
+    assert still_hidden["courtId"] is None
+    assert still_hidden["scheduledAt"] is None
+
+    detail_hidden = await client.get(f"{PUBLIC}/tournaments/{slug}/matches/{match['id']}")
+    assert detail_hidden.json()["courtId"] is None
+
+    await client.post(
+        f"{TOUR}/{tid}/publish", json={"artifacts": ["schedule"]}, headers=_csrf(client)
+    )
+
+    now_visible = (await client.get(f"{PUBLIC}/tournaments/{slug}/matches")).json()[0]
+    assert now_visible["courtId"] == court_id
+    assert now_visible["scheduledAt"] is not None
+
+
 async def test_match_from_another_tournament_is_not_reachable(app, client):
     await _new_org(client)
     tid_a, slug_a = await _tournament(client, visibility="public")

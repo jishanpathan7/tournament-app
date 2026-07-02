@@ -1200,6 +1200,163 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/venues": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Venues */
+        get: operations["courts_list_venues"];
+        put?: never;
+        /** Create Venue */
+        post: operations["courts_create_venue"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Courts */
+        get: operations["courts_list_courts"];
+        put?: never;
+        /** Create Court */
+        post: operations["courts_create_court"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courts/{court_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Court */
+        patch: operations["courts_update_court"];
+        trace?: never;
+    };
+    "/api/v1/tournaments/{tournament_id}/courts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tournament Courts */
+        get: operations["courts_list_tournament_courts"];
+        put?: never;
+        /** Assign Court */
+        post: operations["courts_assign_court"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{tournament_id}/courts/{court_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unassign Court */
+        delete: operations["courts_unassign_court"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches/{match_id}/schedule/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check Schedule */
+        post: operations["scheduling_check_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/matches/{match_id}/schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Clear Schedule */
+        delete: operations["scheduling_clear_schedule"];
+        options?: never;
+        head?: never;
+        /** Assign Schedule */
+        patch: operations["scheduling_assign_schedule"];
+        trace?: never;
+    };
+    "/api/v1/tournaments/{tournament_id}/schedule/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk Assign Schedule */
+        post: operations["scheduling_bulk_assign_schedule"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{tournament_id}/schedule/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Queue */
+        get: operations["scheduling_get_queue"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1257,12 +1414,114 @@ export interface components {
             /** Participantid */
             participantId: string | null;
         };
+        /** AssignCourtRequest */
+        AssignCourtRequest: {
+            /**
+             * Courtid
+             * Format: uuid
+             */
+            courtId: string;
+        };
+        /** BulkScheduleItem */
+        BulkScheduleItem: {
+            /**
+             * Matchid
+             * Format: uuid
+             */
+            matchId: string;
+            /**
+             * Courtid
+             * Format: uuid
+             */
+            courtId: string;
+            /**
+             * Scheduledat
+             * Format: date-time
+             */
+            scheduledAt: string;
+            /**
+             * Durationminutes
+             * @default 30
+             */
+            durationMinutes: number;
+        };
+        /** BulkScheduleRequest */
+        BulkScheduleRequest: {
+            /** Assignments */
+            assignments: components["schemas"]["BulkScheduleItem"][];
+        };
+        /** BulkScheduleResponse */
+        BulkScheduleResponse: {
+            /** Results */
+            results: components["schemas"]["ScheduleResultView"][];
+        };
         /** ChangePasswordRequest */
         ChangePasswordRequest: {
             /** Currentpassword */
             currentPassword: string;
             /** Newpassword */
             newPassword: string;
+        };
+        /** ConflictView */
+        ConflictView: {
+            /** Kind */
+            kind: string;
+            /**
+             * Matchid
+             * Format: uuid
+             */
+            matchId: string;
+            /**
+             * Othermatchid
+             * Format: uuid
+             */
+            otherMatchId: string;
+            /** Participantid */
+            participantId?: string | null;
+            /** Message */
+            message: string;
+        };
+        /** CourtQueueView */
+        CourtQueueView: {
+            court: components["schemas"]["CourtView"];
+            currentMatch: components["schemas"]["MatchView"] | null;
+            nextMatch: components["schemas"]["MatchView"] | null;
+            /** Isdelayed */
+            isDelayed: boolean;
+        };
+        /** CourtView */
+        CourtView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Venueid
+             * Format: uuid
+             */
+            venueId: string;
+            /** Venuename */
+            venueName: string;
+            /** Name */
+            name: string;
+            /** Status */
+            status: string;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
+        /** CreateCourtRequest */
+        CreateCourtRequest: {
+            /**
+             * Venueid
+             * Format: uuid
+             */
+            venueId: string;
+            /** Name */
+            name: string;
         };
         /** CreateDivisionRequest */
         CreateDivisionRequest: {
@@ -1321,6 +1580,13 @@ export interface components {
             sportKey: string;
             /** @default private */
             visibility: components["schemas"]["Visibility"];
+        };
+        /** CreateVenueRequest */
+        CreateVenueRequest: {
+            /** Name */
+            name: string;
+            /** Address */
+            address?: string | null;
         };
         /** CursorPage[NotificationResource] */
         CursorPage_NotificationResource_: {
@@ -1955,6 +2221,62 @@ export interface components {
             /** Role */
             role: string | null;
         };
+        /** ScheduleAssignRequest */
+        ScheduleAssignRequest: {
+            /**
+             * Courtid
+             * Format: uuid
+             */
+            courtId: string;
+            /**
+             * Scheduledat
+             * Format: date-time
+             */
+            scheduledAt: string;
+            /**
+             * Durationminutes
+             * @default 30
+             */
+            durationMinutes: number;
+        };
+        /** ScheduleCheckRequest */
+        ScheduleCheckRequest: {
+            /**
+             * Courtid
+             * Format: uuid
+             */
+            courtId: string;
+            /**
+             * Scheduledat
+             * Format: date-time
+             */
+            scheduledAt: string;
+            /**
+             * Durationminutes
+             * @default 30
+             */
+            durationMinutes: number;
+        };
+        /** ScheduleCheckResponse */
+        ScheduleCheckResponse: {
+            /** Conflicts */
+            conflicts: components["schemas"]["ConflictView"][];
+        };
+        /** ScheduleQueueView */
+        ScheduleQueueView: {
+            /** Courts */
+            courts: components["schemas"]["CourtQueueView"][];
+            /** Unscheduled */
+            unscheduled: components["schemas"]["MatchView"][];
+            /** Pending */
+            pending: components["schemas"]["MatchView"][];
+        };
+        /** ScheduleResultView */
+        ScheduleResultView: {
+            match: components["schemas"]["MatchView"];
+            /** Conflicts */
+            conflicts: components["schemas"]["ConflictView"][];
+        };
         /** ScoreRequest */
         ScoreRequest: {
             /** Payload */
@@ -2100,6 +2422,25 @@ export interface components {
             /** Roster */
             roster: components["schemas"]["RosterEntryItem"][];
         };
+        /** TournamentCourtView */
+        TournamentCourtView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Tournamentid
+             * Format: uuid
+             */
+            tournamentId: string;
+            court: components["schemas"]["CourtView"];
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
+        };
         /** TournamentResponse */
         TournamentResponse: {
             /**
@@ -2146,6 +2487,16 @@ export interface components {
         UnreadCountResponse: {
             /** Count */
             count: number;
+        };
+        /**
+         * UpdateCourtRequest
+         * @description Partial update — omitted fields are left unchanged.
+         */
+        UpdateCourtRequest: {
+            /** Name */
+            name?: string | null;
+            /** Status */
+            status?: string | null;
         };
         /** UpdateMemberRoleRequest */
         UpdateMemberRoleRequest: {
@@ -2223,6 +2574,23 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VenueView */
+        VenueView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Address */
+            address: string | null;
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
         };
         /** VerifyEmailConfirmRequest */
         VerifyEmailConfirmRequest: {
@@ -4595,6 +4963,410 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    courts_list_venues: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VenueView"][];
+                };
+            };
+        };
+    };
+    courts_create_venue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateVenueRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VenueView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    courts_list_courts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourtView"][];
+                };
+            };
+        };
+    };
+    courts_create_court: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCourtRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourtView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    courts_update_court: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                court_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCourtRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourtView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    courts_list_tournament_courts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentCourtView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    courts_assign_court: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AssignCourtRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentCourtView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    courts_unassign_court: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+                court_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scheduling_check_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleCheckRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scheduling_clear_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MatchView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scheduling_assign_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                match_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScheduleAssignRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleResultView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scheduling_bulk_assign_schedule: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkScheduleRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkScheduleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    scheduling_get_queue: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduleQueueView"];
                 };
             };
             /** @description Validation Error */

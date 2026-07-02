@@ -83,6 +83,27 @@ export type FeatureFlagResource = Schemas["FeatureFlagResource"];
 export type UpsertFeatureFlagRequest = Schemas["UpsertFeatureFlagRequest"];
 export type FlagEnabledResponse = Schemas["FlagEnabledResponse"];
 
+// ---- courts / venues / tournament court assignment ----
+export type VenueView = Schemas["VenueView"];
+export type CreateVenueRequest = Schemas["CreateVenueRequest"];
+export type CourtView = Schemas["CourtView"];
+export type CreateCourtRequest = Schemas["CreateCourtRequest"];
+export type UpdateCourtRequest = Schemas["UpdateCourtRequest"];
+export type AssignCourtRequest = Schemas["AssignCourtRequest"];
+export type TournamentCourtView = Schemas["TournamentCourtView"];
+
+// ---- scheduling: assign/move a match, conflicts, bulk scheduling, the queue ----
+export type ScheduleAssignRequest = Schemas["ScheduleAssignRequest"];
+export type ConflictView = Schemas["ConflictView"];
+export type ScheduleResultView = Schemas["ScheduleResultView"];
+export type ScheduleCheckRequest = Schemas["ScheduleCheckRequest"];
+export type ScheduleCheckResponse = Schemas["ScheduleCheckResponse"];
+export type BulkScheduleItem = Schemas["BulkScheduleItem"];
+export type BulkScheduleRequest = Schemas["BulkScheduleRequest"];
+export type BulkScheduleResponse = Schemas["BulkScheduleResponse"];
+export type CourtQueueView = Schemas["CourtQueueView"];
+export type ScheduleQueueView = Schemas["ScheduleQueueView"];
+
 // ---- public microsite (anonymous — never fields tracing back to a user account) ----
 export type PublicOrgView = Schemas["PublicOrgView"];
 export type PublicTournamentView = Schemas["PublicTournamentView"];

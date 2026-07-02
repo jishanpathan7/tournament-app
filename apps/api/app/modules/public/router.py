@@ -149,7 +149,10 @@ async def list_matches(
 ) -> list[MatchView]:
     tournament = await service.resolve_tournament(session, slug)
     rows = await service.list_matches(session, tournament)
-    return [scoring_service.build_match_view(m) for m in rows]
+    return [
+        service.redact_unpublished_schedule(tournament, scoring_service.build_match_view(m))
+        for m in rows
+    ]
 
 
 @router.get("/tournaments/{slug}/matches/{match_id}", response_model=MatchView)
@@ -158,7 +161,7 @@ async def get_match(
 ) -> MatchView:
     tournament = await service.resolve_tournament(session, slug)
     match = await service.get_match(session, tournament, match_id)
-    return scoring_service.build_match_view(match)
+    return service.redact_unpublished_schedule(tournament, scoring_service.build_match_view(match))
 
 
 @router.get(

@@ -45,6 +45,17 @@ export const queryKeys = {
     detail: (id: string) => ["teams", "detail", id] as const,
   },
 
+  courts: {
+    all: ["courts"] as const,
+    venues: () => ["courts", "venues"] as const,
+    list: () => ["courts", "list"] as const,
+    tournament: (tournamentId: string) => ["courts", "tournament", tournamentId] as const,
+  },
+
+  schedule: {
+    queue: (tournamentId: string) => ["schedule", tournamentId, "queue"] as const,
+  },
+
   notifications: {
     all: ["notifications"] as const,
     list: (unreadOnly = false) => ["notifications", "list", { unreadOnly }] as const,

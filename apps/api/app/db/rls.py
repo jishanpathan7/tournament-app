@@ -30,6 +30,8 @@ unset (NULL) or cleared ('') context yields NULL (rows hidden) instead of a
 
 from __future__ import annotations
 
+from collections.abc import Container
+
 # organization_id-scoped operational domain tables (NOT NULL org_id).
 TENANT_STRICT_TABLES = [
     "tournaments",
@@ -48,6 +50,7 @@ TENANT_STRICT_TABLES = [
     "standings",
     "venues",
     "courts",
+    "tournament_courts",
     "schedule_slots",
     "assignments",
     "files",
@@ -99,25 +102,56 @@ def _tenant_or_global_policy(table: str) -> str:
     )
 
 
-def upgrade_statements() -> list[str]:
-    """ENABLE + FORCE + policy for every RLS-managed table."""
+def upgrade_statements(tables: Container[str] | None = None) -> list[str]:
+    """ENABLE + FORCE + policy for every RLS-managed table.
+
+    ``tables``, when given, restricts the sweep to that subset — the 0001 baseline
+    passes its own pinned ``BASELINE_TABLES`` so it stays correct as later migrations
+    (e.g. 0010) extend ``TENANT_STRICT_TABLES`` with tables the baseline never creates.
+    """
+    strict = (
+        TENANT_STRICT_TABLES if tables is None else [t for t in TENANT_STRICT_TABLES if t in tables]
+    )
+    glob = (
+        GLOBAL_OR_TENANT_TABLES
+        if tables is None
+        else [t for t in GLOBAL_OR_TENANT_TABLES if t in tables]
+    )
     stmts: list[str] = []
-    for table in TENANT_STRICT_TABLES:
+    for table in strict:
         stmts.extend(_enable_force(table))
         stmts.append(_tenant_policy(table))
-    for table in GLOBAL_OR_TENANT_TABLES:
+    for table in glob:
         stmts.extend(_enable_force(table))
         stmts.append(_tenant_or_global_policy(table))
     return stmts
 
 
-def downgrade_statements() -> list[str]:
-    """Drop policies + disable RLS (run before dropping the tables)."""
+def downgrade_statements(tables: Container[str] | None = None) -> list[str]:
+    """Drop policies + disable RLS (run before dropping the tables). See ``tables``
+    above."""
+    all_tables = TENANT_STRICT_TABLES + GLOBAL_OR_TENANT_TABLES
+    scoped = all_tables if tables is None else [t for t in all_tables if t in tables]
     stmts: list[str] = []
-    for table in TENANT_STRICT_TABLES + GLOBAL_OR_TENANT_TABLES:
+    for table in scoped:
         stmts.append(f"DROP POLICY IF EXISTS {table}_org_isolation ON {table};")
         stmts.append(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY;")
     return stmts
+
+
+def tenant_table_upgrade_statements(table: str) -> list[str]:
+    """ENABLE + FORCE + policy for a single tenant-strict table added in a later
+    migration (i.e. not part of the 0001 baseline's ``upgrade_statements()`` sweep).
+    ``table`` must also be added to ``TENANT_STRICT_TABLES`` so the classification
+    stays exhaustive (see ``tests/test_db_metadata.py``)."""
+    return [*_enable_force(table), _tenant_policy(table)]
+
+
+def tenant_table_downgrade_statements(table: str) -> list[str]:
+    return [
+        f"DROP POLICY IF EXISTS {table}_org_isolation ON {table};",
+        f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY;",
+    ]
 
 
 # ---- public microsite bootstrap ----

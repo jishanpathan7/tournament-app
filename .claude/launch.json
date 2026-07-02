@@ -6,6 +6,15 @@
       "runtimeExecutable": "yarn",
       "runtimeArgs": ["workspace", "web", "dev"],
       "port": 3000
+    },
+    {
+      "name": "api",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-c",
+        "cd apps/api && .venv/bin/python -m uvicorn app.main:app --reload --port 8000"
+      ],
+      "port": 8000
     }
   ]
 }
