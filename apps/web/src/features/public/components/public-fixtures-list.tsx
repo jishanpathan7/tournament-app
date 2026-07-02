@@ -1,0 +1,206 @@
+"use client";
+
+import type { MatchView, PublicParticipantView, PublicStageView } from "@tournament/api-client";
+import { CalendarDays, Search, X } from "lucide-react";
+import Link from "next/link";
+import { useMemo, useState } from "react";
+
+import { EmptyState } from "@/components/common/empty-state";
+import { ErrorState } from "@/components/common/error-state";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ALL,
+  applyFixtureFilters,
+  DEFAULT_FIXTURE_FILTERS,
+  type FixtureBucket,
+  groupByBucket,
+  participantName,
+} from "@/features/public/config";
+import {
+  usePublicMatches,
+  usePublicParticipants,
+  usePublicStages,
+} from "@/features/public/use-public-tournament";
+import { matchStatusMeta } from "@/features/draws/config";
+import { getFormat } from "@/features/tournaments/config";
+
+const BUCKET_LABELS: Record<FixtureBucket, string> = {
+  today: "Today",
+  upcoming: "Upcoming",
+  completed: "Completed",
+};
+
+function FixtureCard({
+  slug,
+  match,
+  participantsById,
+}: {
+  slug: string;
+  match: MatchView;
+  participantsById: Map<string, PublicParticipantView>;
+}) {
+  const status = matchStatusMeta(match.status);
+  const [a, b] = match.sides;
+  return (
+    <Link
+      href={`/t/${slug}/matches/${match.id}`}
+      className="border-ink bg-card shadow-sticker-xs hover:shadow-sticker-md ease-bouncy flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm transition-[transform,box-shadow] hover:-translate-y-0.5"
+    >
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="truncate">
+          <span className={a?.outcome === "win" ? "font-bold" : ""}>
+            {participantName(a?.participantId, participantsById)}
+          </span>
+          <span className="text-muted-foreground"> vs </span>
+          <span className={b?.outcome === "win" ? "font-bold" : ""}>
+            {participantName(b?.participantId, participantsById)}
+          </span>
+        </span>
+        <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.14em]">
+          {match.roundLabel ?? "Round"}
+          {match.groupName ? ` · ${match.groupName}` : ""}
+        </span>
+      </div>
+      <Badge tone={status.tone} className="shrink-0">
+        {status.label}
+      </Badge>
+    </Link>
+  );
+}
+
+/** Today's / upcoming / completed matches, filterable by stage, round, and
+ * participant (court filtering is scoped out — no scheduling data exists yet, see
+ * `courtId` on `MatchView`, always null today). */
+export function PublicFixturesList({ slug }: { slug: string }) {
+  const matches = usePublicMatches(slug);
+  const stages = usePublicStages(slug);
+  const participants = usePublicParticipants(slug);
+  const [filters, setFilters] = useState(DEFAULT_FIXTURE_FILTERS);
+
+  const participantsById = useMemo(
+    () => new Map((participants.data ?? []).map((p) => [p.id, p])),
+    [participants.data],
+  );
+  const filtered = useMemo(
+    () => applyFixtureFilters(matches.data ?? [], filters, participantsById),
+    [matches.data, filters, participantsById],
+  );
+  const buckets = useMemo(() => groupByBucket(filtered), [filtered]);
+
+  const rounds = useMemo(() => {
+    const seen = new Map<string, { seq: number; label: string }>();
+    for (const m of matches.data ?? []) {
+      if (m.roundId && !seen.has(m.roundId)) {
+        seen.set(m.roundId, { seq: m.roundSeq ?? 0, label: m.roundLabel ?? "Round" });
+      }
+    }
+    return [...seen.entries()].sort((a, b) => a[1].seq - b[1].seq);
+  }, [matches.data]);
+
+  if (matches.isLoading || stages.isLoading) {
+    return <Skeleton className="h-64 rounded-2xl" />;
+  }
+  if (matches.isError) {
+    return <ErrorState error={matches.error} onRetry={() => matches.refetch()} />;
+  }
+  if ((matches.data?.length ?? 0) === 0) {
+    return (
+      <EmptyState
+        icon={CalendarDays}
+        title="No fixtures yet"
+        description="Matches will show up here once the draw is published."
+        className="py-16"
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative min-w-[200px] flex-1">
+          <Search
+            className="text-muted-foreground pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2"
+            strokeWidth={2.25}
+            aria-hidden
+          />
+          <Input
+            type="search"
+            value={filters.search}
+            onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+            placeholder="Search by participant name…"
+            aria-label="Search fixtures"
+            className="h-10 pl-10 pr-9"
+          />
+          {filters.search ? (
+            <button
+              type="button"
+              onClick={() => setFilters({ ...filters, search: "" })}
+              aria-label="Clear search"
+              className="text-muted-foreground hover:text-foreground absolute right-3 top-1/2 -translate-y-1/2"
+            >
+              <X className="h-4 w-4" strokeWidth={2.25} />
+            </button>
+          ) : null}
+        </div>
+
+        <Select value={filters.stageId} onValueChange={(stageId) => setFilters({ ...filters, stageId })}>
+          <SelectTrigger className="sm:w-48" aria-label="Filter by stage">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL}>All stages</SelectItem>
+            {(stages.data ?? []).map((stage: PublicStageView) => (
+              <SelectItem key={stage.id} value={stage.id}>
+                {getFormat(stage.type)?.label ?? stage.type} · Stage {stage.seq + 1}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {rounds.length > 1 ? (
+          <Select value={filters.roundId} onValueChange={(roundId) => setFilters({ ...filters, roundId })}>
+            <SelectTrigger className="sm:w-40" aria-label="Filter by round">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL}>All rounds</SelectItem>
+              {rounds.map(([id, r]) => (
+                <SelectItem key={id} value={id}>
+                  {r.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : null}
+      </div>
+
+      {(["today", "upcoming", "completed"] as const).map((bucket) =>
+        buckets[bucket].length > 0 ? (
+          <div key={bucket} className="flex flex-col gap-3">
+            <h2 className="font-serif text-xl font-semibold tracking-tight">
+              {BUCKET_LABELS[bucket]}
+            </h2>
+            <div className="flex flex-col gap-2">
+              {buckets[bucket].map((match) => (
+                <FixtureCard key={match.id} slug={slug} match={match} participantsById={participantsById} />
+              ))}
+            </div>
+          </div>
+        ) : null,
+      )}
+
+      {filtered.length === 0 ? (
+        <EmptyState icon={CalendarDays} title="No matches match" description="Try different filters." />
+      ) : null}
+    </div>
+  );
+}

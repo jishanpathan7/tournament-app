@@ -37,6 +37,7 @@ __all__ = [
     "require_flag",
     "get_request_session",
     "get_tx_session",
+    "get_public_session",
     "csrf_protect",
     "authed_csrf",
     "CursorParams",
@@ -117,6 +118,22 @@ async def get_tx_session(
 ) -> AsyncIterator[AsyncSession]:
     """Transactional session WITHOUT org context — for identity/system paths
     (login, register, password flows) that touch NO_RLS tables. Commits on success."""
+    async with session.begin():
+        yield session
+
+
+async def get_public_session(
+    session: AsyncSession = Depends(get_session),
+) -> AsyncIterator[AsyncSession]:
+    """Transactional session for the anonymous public module — no org context set up
+    front, since a public request doesn't know (and can't be trusted to assert) which
+    org it's about. The public service resolves a tournament by slug (the additive
+    ``tournaments_public_read`` RLS policy allows this with no org context, but the
+    app-layer visibility check is the real fence), then calls ``set_org_context``
+    itself for that tournament's now-verified org before running any further query —
+    so every other table's normal org-isolation policy applies for the rest of the
+    request. Same mechanics as ``get_tx_session``; kept separate so call sites read
+    as "public" rather than "identity/system."""
     async with session.begin():
         yield session
 

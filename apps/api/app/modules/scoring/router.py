@@ -22,54 +22,18 @@ from app.api.deps import (
 )
 from app.api.errors import NotFoundError
 from app.core import authz
-from app.db.models import Match
 from app.modules.scoring import repository as repo
 from app.modules.scoring import service
 from app.modules.scoring.schemas import (
     MatchResultEventView,
-    MatchSideView,
     MatchView,
     ScoreRequest,
-    StandingRowView,
     StandingsView,
 )
 
 router = APIRouter(tags=["scoring"])
 
 _score = require_permission(authz.SCORING_WRITE)
-
-
-def _match_view(match: Match) -> MatchView:
-    sides = service._ordered_sides(match)
-    score_by_id = {mp.participant_id: mp.score for mp in sides}
-    views = []
-    for mp in sides:
-        other = next((o for o in sides if o.participant_id != mp.participant_id), None)
-        against = score_by_id.get(other.participant_id) if other else None
-        views.append(
-            MatchSideView(
-                participant_id=mp.participant_id,
-                outcome=mp.outcome,
-                score_for=int(mp.score) if mp.score is not None else None,
-                score_against=int(against) if against is not None else None,
-                rank=mp.rank,
-            )
-        )
-    return MatchView(
-        id=match.id,
-        stage_id=match.stage_id,
-        status=match.status,
-        sides=views,
-        result_payload=match.result_payload or {},
-        round_id=match.round_id,
-        round_seq=match.round.seq if match.round else None,
-        round_label=match.round.label if match.round else None,
-        group_id=match.group_id,
-        group_name=match.group.name if match.group else None,
-        court_id=match.court_id,
-        scheduled_at=match.scheduled_at,
-        updated_at=match.updated_at,
-    )
 
 
 @router.post(
@@ -96,7 +60,7 @@ async def score_match(
         idempotency_key=idem_key,
     )
     response.headers["ETag"] = service.match_etag(match)
-    return _match_view(match)
+    return service.build_match_view(match)
 
 
 @router.get("/stages/{stage_id}/matches", response_model=list[MatchView])
@@ -106,7 +70,7 @@ async def list_stage_matches(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[MatchView]:
     rows = await repo.list_stage_matches(session, principal.organization_id, stage_id)
-    return [_match_view(m) for m in rows]
+    return [service.build_match_view(m) for m in rows]
 
 
 @router.get("/tournaments/{tournament_id}/matches", response_model=list[MatchView])
@@ -116,7 +80,7 @@ async def list_tournament_matches(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[MatchView]:
     rows = await repo.list_tournament_matches(session, principal.organization_id, tournament_id)
-    return [_match_view(m) for m in rows]
+    return [service.build_match_view(m) for m in rows]
 
 
 @router.get("/matches/{match_id}", response_model=MatchView)
@@ -130,7 +94,7 @@ async def get_match(
     if match is None:
         raise NotFoundError("Match not found")
     response.headers["ETag"] = service.match_etag(match)
-    return _match_view(match)
+    return service.build_match_view(match)
 
 
 @router.get("/matches/{match_id}/events", response_model=list[MatchResultEventView])
@@ -143,17 +107,7 @@ async def list_match_events(
     if match is None:
         raise NotFoundError("Match not found")
     rows = await repo.list_match_events(session, principal.organization_id, match_id)
-    return [
-        MatchResultEventView(
-            id=e.id,
-            match_id=e.match_id,
-            type=e.type,
-            payload=e.payload,
-            actor_id=e.actor_id,
-            created_at=e.created_at,
-        )
-        for e in rows
-    ]
+    return [service.build_match_event_view(e, include_actor=True) for e in rows]
 
 
 @router.get("/stages/{stage_id}/standings", response_model=StandingsView)
@@ -163,22 +117,4 @@ async def get_standings(
     session: AsyncSession = Depends(get_request_session),
 ) -> StandingsView:
     rows = await repo.stage_standings(session, principal.organization_id, stage_id)
-    return StandingsView(
-        stage_id=stage_id,
-        rows=[
-            StandingRowView(
-                participant_id=r.participant_id,
-                group_id=r.group_id,
-                played=r.played,
-                won=r.won,
-                drawn=r.drawn,
-                lost=r.lost,
-                points=float(r.points),
-                score_for=r.score_for,
-                score_against=r.score_against,
-                diff=r.score_for - r.score_against,
-                rank=r.rank,
-            )
-            for r in rows
-        ],
-    )
+    return service.build_standings_view(stage_id, rows)

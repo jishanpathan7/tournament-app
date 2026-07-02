@@ -118,3 +118,40 @@ def downgrade_statements() -> list[str]:
         stmts.append(f"DROP POLICY IF EXISTS {table}_org_isolation ON {table};")
         stmts.append(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY;")
     return stmts
+
+
+# ---- public microsite bootstrap ----
+#
+# A single, narrow, additive exception: the public microsite needs to resolve a
+# tournament by slug *before* it knows (or is allowed to assume) which org owns it —
+# there is no org context to set yet. Postgres combines multiple permissive policies
+# on the same table with OR, so this is a second policy on `tournaments` alongside
+# `tournaments_org_isolation`, not a replacement for it: an authenticated request
+# still only sees its own org's rows (first policy); an anonymous request (no org
+# context — the ``NULLIF`` collapses to NULL, so the first policy's comparison is
+# never true) additionally sees rows with visibility 'public' or 'unlisted'.
+#
+# 'private' tournaments stay invisible to anonymous reads. 'unlisted' is deliberately
+# included here (reachable by direct slug link) but the app layer excludes it from
+# search results — this policy only decides *can Postgres return the row at all*, not
+# *should this feature list it*. Once the public module resolves a tournament this
+# way, it sets `app.current_org` to that tournament's real (now-verified) org for the
+# rest of the request, so every other table's normal org-isolation policy applies —
+# this is the only table that needs the extra policy.
+
+PUBLIC_READABLE_VISIBILITIES = "'public', 'unlisted'"
+
+
+def _public_read_policy(table: str) -> str:
+    return (
+        f"CREATE POLICY {table}_public_read ON {table} "
+        f"FOR SELECT USING (visibility IN ({PUBLIC_READABLE_VISIBILITIES}));"
+    )
+
+
+def public_read_upgrade_statements() -> list[str]:
+    return [_public_read_policy("tournaments")]
+
+
+def public_read_downgrade_statements() -> list[str]:
+    return ["DROP POLICY IF EXISTS tournaments_public_read ON tournaments;"]

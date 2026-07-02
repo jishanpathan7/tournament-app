@@ -42,7 +42,7 @@ from app.engine import (
     TiebreakPolicy,
 )
 from app.modules.scoring import events
-from app.realtime.channels import org_channel
+from app.realtime.channels import org_channel, tournament_channel
 from app.workers.registry import JobContext, handler
 
 _TERMINAL = {MatchStatus.COMPLETED.value, MatchStatus.WALKOVER.value, MatchStatus.NO_SHOW.value}
@@ -136,9 +136,19 @@ async def recompute_standings(payload: dict, ctx: JobContext) -> None:
         event_type=events.STANDINGS_RECOMPUTED,
         payload={"stageId": str(stage_id), "organizationId": str(org_id)},
     )
-    await get_broadcaster().publish(
-        org_channel(org_id), events.RT_STANDINGS_UPDATED, {"stageId": str(stage_id)}
-    )
+    broadcaster = get_broadcaster()
+    standings_data = {"stageId": str(stage_id)}
+    await broadcaster.publish(org_channel(org_id), events.RT_STANDINGS_UPDATED, standings_data)
+    tournament_id = await _stage_tournament_id(session, stage)
+    if tournament_id is not None:
+        await broadcaster.publish(
+            tournament_channel(tournament_id), events.RT_STANDINGS_UPDATED, standings_data
+        )
+
+
+async def _stage_tournament_id(session: AsyncSession, stage: Stage) -> uuid.UUID | None:
+    division = await session.get(Division, stage.division_id)
+    return division.tournament_id if division is not None else None
 
 
 def _to_result(match: Match) -> MatchResult:

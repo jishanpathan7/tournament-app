@@ -37,3 +37,10 @@ export function streamUrl(channel: string): string {
   const base = `${env.apiUrl}/api/v1/realtime/stream`;
   return `${base}?channel=${encodeURIComponent(channel)}`;
 }
+
+/** The public microsite's own SSE endpoint — no cookies, no principal, a fresh
+ * visibility check on every connect. Never the authenticated `/realtime/stream`
+ * (which requires `get_principal`) — see `app.modules.public.router::stream`. */
+export function publicTournamentStreamUrl(slug: string): string {
+  return `${env.apiUrl}/api/v1/public/tournaments/${encodeURIComponent(slug)}/stream`;
+}
