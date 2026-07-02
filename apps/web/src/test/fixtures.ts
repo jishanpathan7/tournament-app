@@ -5,6 +5,10 @@ import type {
   MatchView,
   MemberItem,
   ParticipantResponse,
+  PublicDivisionView,
+  PublicParticipantView,
+  PublicStageView,
+  PublicTournamentView,
   RegistrationResponse,
   StageResponse,
   TeamResponse,
@@ -160,5 +164,66 @@ export function makeActivityEvent(
     before: overrides.before ?? null,
     after: overrides.after ?? null,
     createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+  };
+}
+
+export function makePublicTournament(
+  overrides: Partial<PublicTournamentView> = {},
+): PublicTournamentView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `t-${seq}`,
+    slug: overrides.slug ?? `tournament-${seq}`,
+    name: overrides.name ?? `Tournament ${seq}`,
+    sportKey: overrides.sportKey ?? "badminton",
+    status: overrides.status ?? "registration",
+    visibility: overrides.visibility ?? "public",
+    startsAt: overrides.startsAt ?? null,
+    endsAt: overrides.endsAt ?? null,
+    drawPublishedAt: overrides.drawPublishedAt ?? null,
+    schedulePublishedAt: overrides.schedulePublishedAt ?? null,
+    resultsPublishedAt: overrides.resultsPublishedAt ?? null,
+    organization: overrides.organization ?? {
+      slug: "org",
+      name: "Org",
+      branding: {},
+    },
+  };
+}
+
+export function makePublicDivision(
+  overrides: Partial<PublicDivisionView> = {},
+): PublicDivisionView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `div-${seq}`,
+    name: overrides.name ?? `Division ${seq}`,
+    participantType: overrides.participantType ?? "individual",
+    capacity: overrides.capacity ?? null,
+    approvedCount: overrides.approvedCount ?? 0,
+  };
+}
+
+export function makePublicStage(overrides: Partial<PublicStageView> = {}): PublicStageView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `stage-${seq}`,
+    divisionId: overrides.divisionId ?? "div-1",
+    type: overrides.type ?? "round_robin",
+    seq: overrides.seq ?? 0,
+    drawn: overrides.drawn ?? false,
+  };
+}
+
+export function makePublicParticipant(
+  overrides: Partial<PublicParticipantView> = {},
+): PublicParticipantView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `p-${seq}`,
+    divisionId: overrides.divisionId ?? "div-1",
+    kind: overrides.kind ?? "individual",
+    displayName: overrides.displayName ?? `Participant ${seq}`,
+    seed: overrides.seed ?? null,
   };
 }

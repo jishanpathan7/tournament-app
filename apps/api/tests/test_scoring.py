@@ -26,6 +26,17 @@ from app.workers import poller
 DATABASE_URL = os.environ.get("DATABASE_URL")
 pytestmark = pytest.mark.skipif(not DATABASE_URL, reason="DATABASE_URL not set")
 
+
+async def _drain_outbox() -> None:
+    """Fully drain pending outbox jobs rather than a fixed batch size — the shared test
+    DB accumulates other tests' undrained events (nothing else in the suite needs the
+    async recompute to finish, so nothing else bothers draining), and a fixed
+    `batch_size` can leave THIS test's own event stuck behind an arbitrarily large
+    backlog it has no control over."""
+    while await poller.process_pending(batch_size=200, max_attempts=5):
+        pass
+
+
 PASSWORD = secrets.token_urlsafe(16)
 AUTH = "/api/v1/auth"
 ORGS = "/api/v1/orgs"
@@ -159,7 +170,7 @@ async def test_round_robin_scoring_recomputes_standings(app, client):
         assert resp.json()["status"] == "completed"
 
     # Standings are recomputed asynchronously by the worker.
-    await poller.process_pending(batch_size=100, max_attempts=5)
+    await _drain_outbox()
 
     standings = await client.get(f"/api/v1/stages/{sid}/standings")
     assert standings.status_code == 200, standings.text
@@ -177,7 +188,7 @@ async def test_partial_standings_count_only_completed_matches(app, client):
     winner = matches[0]["sides"][0]["participantId"]
     status, resp = await _score(client, matches[0]["id"], _win_payload(matches[0]["sides"], winner))
     assert status == 200
-    await poller.process_pending(batch_size=100, max_attempts=5)
+    await _drain_outbox()
 
     rows = (await client.get(f"/api/v1/stages/{sid}/standings")).json()["rows"]
     assert sum(r["played"] for r in rows) == 2  # only the one completed match counts

@@ -1,4 +1,4 @@
-import { SurfacePlaceholder } from "@/components/surface-placeholder";
+import { PublicOverview } from "@/features/public/components/public-overview";
 
 export default async function PublicTournamentPage({
   params,
@@ -6,5 +6,5 @@ export default async function PublicTournamentPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  return <SurfacePlaceholder surface={`Public microsite · ${slug}`} group="(public)" />;
+  return <PublicOverview slug={slug} />;
 }

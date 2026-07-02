@@ -83,6 +83,14 @@ export type FeatureFlagResource = Schemas["FeatureFlagResource"];
 export type UpsertFeatureFlagRequest = Schemas["UpsertFeatureFlagRequest"];
 export type FlagEnabledResponse = Schemas["FlagEnabledResponse"];
 
+// ---- public microsite (anonymous — never fields tracing back to a user account) ----
+export type PublicOrgView = Schemas["PublicOrgView"];
+export type PublicTournamentView = Schemas["PublicTournamentView"];
+export type PublicDivisionView = Schemas["PublicDivisionView"];
+export type PublicStageView = Schemas["PublicStageView"];
+export type PublicParticipantView = Schemas["PublicParticipantView"];
+export type PublicTournamentSearchResult = Schemas["PublicTournamentSearchResult"];
+
 // ---- health / errors ----
 export type HealthResponse = Schemas["HealthResponse"];
 

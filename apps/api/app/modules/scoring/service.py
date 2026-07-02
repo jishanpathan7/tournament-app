@@ -12,6 +12,7 @@ import datetime
 import hashlib
 import json
 import uuid
+from collections.abc import Sequence
 from decimal import Decimal
 from typing import Any
 
@@ -22,15 +23,22 @@ from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster, get_sport_registry
 from app.db.enums import IdempotencyStatus, MatchOutcome, MatchStatus, NotificationChannel
-from app.db.models import IdempotencyKey, Match, MatchParticipant, MatchResultEvent
+from app.db.models import IdempotencyKey, Match, MatchParticipant, MatchResultEvent, Standing
 from app.engine import ContractError, EngineValidationError, TerminalReason
 from app.modules.notifications.service import notify
 from app.modules.notifications.templates import NotificationTemplate, register_template
 from app.modules.scoring import events
 from app.modules.scoring import repository as repo
+from app.modules.scoring.schemas import (
+    MatchResultEventView,
+    MatchSideView,
+    MatchView,
+    StandingRowView,
+    StandingsView,
+)
 from app.modules.tournaments import repository as tournaments_repo
 from app.modules.tournaments import service as tournaments_service
-from app.realtime.channels import org_channel
+from app.realtime.channels import org_channel, tournament_channel
 
 register_template(
     NotificationTemplate(
@@ -68,6 +76,78 @@ def _ordered_sides(match: Match) -> list[MatchParticipant]:
     return sorted(
         match.participants,
         key=lambda mp: (mp.seed_in_match or 0, mp.created_at, str(mp.participant_id)),
+    )
+
+
+def build_match_view(match: Match) -> MatchView:
+    """The one place a `Match` ORM row becomes a `MatchView` — shared by the
+    authenticated scoring router and the public microsite so the shape (and the
+    score-against cross-referencing) never drifts between the two."""
+    sides = _ordered_sides(match)
+    score_by_id = {mp.participant_id: mp.score for mp in sides}
+    views = []
+    for mp in sides:
+        other = next((o for o in sides if o.participant_id != mp.participant_id), None)
+        against = score_by_id.get(other.participant_id) if other else None
+        views.append(
+            MatchSideView(
+                participant_id=mp.participant_id,
+                outcome=mp.outcome,
+                score_for=int(mp.score) if mp.score is not None else None,
+                score_against=int(against) if against is not None else None,
+                rank=mp.rank,
+            )
+        )
+    return MatchView(
+        id=match.id,
+        stage_id=match.stage_id,
+        status=match.status,
+        sides=views,
+        result_payload=match.result_payload or {},
+        round_id=match.round_id,
+        round_seq=match.round.seq if match.round else None,
+        round_label=match.round.label if match.round else None,
+        group_id=match.group_id,
+        group_name=match.group.name if match.group else None,
+        court_id=match.court_id,
+        scheduled_at=match.scheduled_at,
+        updated_at=match.updated_at,
+    )
+
+
+def build_match_event_view(event: MatchResultEvent, *, include_actor: bool) -> MatchResultEventView:
+    """`include_actor=False` for the public microsite — who scored/corrected a match
+    is operational detail, never shown outside the organizer's own console."""
+    return MatchResultEventView(
+        id=event.id,
+        match_id=event.match_id,
+        type=event.type,
+        payload=event.payload,
+        actor_id=event.actor_id if include_actor else None,
+        created_at=event.created_at,
+    )
+
+
+def build_standings_view(stage_id: uuid.UUID, rows: Sequence[Standing]) -> StandingsView:
+    """Shared by the authenticated scoring router and the public microsite."""
+    return StandingsView(
+        stage_id=stage_id,
+        rows=[
+            StandingRowView(
+                participant_id=r.participant_id,
+                group_id=r.group_id,
+                played=r.played,
+                won=r.won,
+                drawn=r.drawn,
+                lost=r.lost,
+                points=float(r.points),
+                score_for=r.score_for,
+                score_against=r.score_against,
+                diff=r.score_for - r.score_against,
+                rank=r.rank,
+            )
+            for r in rows
+        ],
     )
 
 
@@ -211,18 +291,19 @@ async def _emit(
 
 async def _broadcast(org_id: uuid.UUID, match: Match) -> None:
     broadcaster = get_broadcaster()
-    channel = org_channel(org_id)
-    data = {
+    org = org_channel(org_id)
+    # Also fan out to the tournament's own channel — the public microsite's anonymous
+    # viewers subscribe to this one, never to the org channel (see `channels.py`).
+    tournament = tournament_channel(match.tournament_id)
+    match_data = {
         "tournamentId": str(match.tournament_id),
         "matchId": str(match.id),
         "status": match.status,
     }
-    await broadcaster.publish(channel, events.RT_MATCH_COMPLETED, data)
-    await broadcaster.publish(
-        channel,
-        events.RT_BRACKET_UPDATED,
-        {"tournamentId": str(match.tournament_id), "stageId": str(match.stage_id)},
-    )
+    bracket_data = {"tournamentId": str(match.tournament_id), "stageId": str(match.stage_id)}
+    for channel in (org, tournament):
+        await broadcaster.publish(channel, events.RT_MATCH_COMPLETED, match_data)
+        await broadcaster.publish(channel, events.RT_BRACKET_UPDATED, bracket_data)
 
 
 async def _notify(

@@ -1,0 +1,100 @@
+import type {
+  MatchResultEventView,
+  MatchView,
+  PublicDivisionView,
+  PublicParticipantView,
+  PublicStageView,
+  PublicTournamentSearchResult,
+  PublicTournamentView,
+  StandingsView,
+} from "@tournament/api-client";
+
+import { env } from "@/lib/env";
+
+/**
+ * Transport for the public microsite — plain `fetch`, not the console's `api` axios
+ * instance. That instance's 401-refresh-retry interceptor assumes an authenticated
+ * session and, on failure, dispatches `AUTH_EXPIRED_EVENT` (which redirects to
+ * `/login`) — exactly wrong for an anonymous visitor who was never logged in. Every
+ * public endpoint is unauthenticated GET, so there's nothing that transport was
+ * buying us here. Works identically from a Server Component (SSR, for SEO) and a
+ * client component (TanStack Query refetch/realtime-triggered invalidation).
+ */
+
+const BASE = `${env.apiUrl}/api/v1/public`;
+
+export class PublicApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "PublicApiError";
+    this.status = status;
+  }
+
+  get isNotFound(): boolean {
+    return this.status === 404;
+  }
+}
+
+async function getJson<T>(path: string): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, { next: { revalidate: 30 } });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new PublicApiError(res.status, body || res.statusText);
+  }
+  return (await res.json()) as T;
+}
+
+export function getTournament(slug: string): Promise<PublicTournamentView> {
+  return getJson(`/tournaments/${encodeURIComponent(slug)}`);
+}
+
+export function listDivisions(slug: string): Promise<PublicDivisionView[]> {
+  return getJson(`/tournaments/${encodeURIComponent(slug)}/divisions`);
+}
+
+export function listStages(slug: string): Promise<PublicStageView[]> {
+  return getJson(`/tournaments/${encodeURIComponent(slug)}/stages`);
+}
+
+export function listParticipants(slug: string): Promise<PublicParticipantView[]> {
+  return getJson(`/tournaments/${encodeURIComponent(slug)}/participants`);
+}
+
+export function getParticipant(
+  slug: string,
+  participantId: string,
+): Promise<PublicParticipantView> {
+  return getJson(
+    `/tournaments/${encodeURIComponent(slug)}/participants/${encodeURIComponent(participantId)}`,
+  );
+}
+
+export function listMatches(slug: string): Promise<MatchView[]> {
+  return getJson(`/tournaments/${encodeURIComponent(slug)}/matches`);
+}
+
+export function getMatch(slug: string, matchId: string): Promise<MatchView> {
+  return getJson(
+    `/tournaments/${encodeURIComponent(slug)}/matches/${encodeURIComponent(matchId)}`,
+  );
+}
+
+export function listMatchEvents(
+  slug: string,
+  matchId: string,
+): Promise<MatchResultEventView[]> {
+  return getJson(
+    `/tournaments/${encodeURIComponent(slug)}/matches/${encodeURIComponent(matchId)}/events`,
+  );
+}
+
+export function getStandings(slug: string, stageId: string): Promise<StandingsView> {
+  return getJson(
+    `/tournaments/${encodeURIComponent(slug)}/stages/${encodeURIComponent(stageId)}/standings`,
+  );
+}
+
+export function searchTournaments(query: string): Promise<PublicTournamentSearchResult[]> {
+  return getJson(`/search?q=${encodeURIComponent(query)}`);
+}

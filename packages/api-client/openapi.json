@@ -2695,6 +2695,533 @@
           }
         }
       }
+    },
+    "/api/v1/public/search": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Search Tournaments",
+        "operationId": "public_search_tournaments",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicTournamentSearchResult"
+                  },
+                  "title": "Response Public Search Tournaments"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Get Tournament",
+        "operationId": "public_get_tournament",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTournamentView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/divisions": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "List Divisions",
+        "operationId": "public_list_divisions",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicDivisionView"
+                  },
+                  "title": "Response Public List Divisions"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/stages": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "List Stages",
+        "operationId": "public_list_stages",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicStageView"
+                  },
+                  "title": "Response Public List Stages"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/participants": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "List Participants",
+        "operationId": "public_list_participants",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicParticipantView"
+                  },
+                  "title": "Response Public List Participants"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/participants/{participant_id}": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Get Participant",
+        "operationId": "public_get_participant",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "participant_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Participant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicParticipantView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/matches": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "List Matches",
+        "operationId": "public_list_matches",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchView"
+                  },
+                  "title": "Response Public List Matches"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/matches/{match_id}": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Get Match",
+        "operationId": "public_get_match",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/matches/{match_id}/events": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "List Match Events",
+        "operationId": "public_list_match_events",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MatchResultEventView"
+                  },
+                  "title": "Response Public List Match Events"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/stages/{stage_id}/standings": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Get Standings",
+        "operationId": "public_get_standings",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StandingsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/stream": {
+      "get": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Stream",
+        "description": "Anonymous SSE subscription to this tournament's own channel \u2014 never the org\nchannel. Re-validates visibility the same way every other public read does; no\nprincipal, no `is_authorized` (that's the authenticated-only gate).",
+        "operationId": "public_stream",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -4111,6 +4638,294 @@
           "upload"
         ],
         "title": "PresignUploadResponse"
+      },
+      "PublicDivisionView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "participantType": {
+            "type": "string",
+            "title": "Participanttype"
+          },
+          "capacity": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Capacity"
+          },
+          "approvedCount": {
+            "type": "integer",
+            "title": "Approvedcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "participantType",
+          "capacity",
+          "approvedCount"
+        ],
+        "title": "PublicDivisionView"
+      },
+      "PublicOrgView": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "branding": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Branding"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "branding"
+        ],
+        "title": "PublicOrgView"
+      },
+      "PublicParticipantView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "divisionId",
+          "kind",
+          "displayName",
+          "seed"
+        ],
+        "title": "PublicParticipantView"
+      },
+      "PublicStageView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "type": {
+            "type": "string",
+            "title": "Type"
+          },
+          "seq": {
+            "type": "integer",
+            "title": "Seq"
+          },
+          "drawn": {
+            "type": "boolean",
+            "title": "Drawn"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "divisionId",
+          "type",
+          "seq",
+          "drawn"
+        ],
+        "title": "PublicStageView"
+      },
+      "PublicTournamentSearchResult": {
+        "properties": {
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sportKey": {
+            "type": "string",
+            "title": "Sportkey"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "organizationName": {
+            "type": "string",
+            "title": "Organizationname"
+          },
+          "organizationSlug": {
+            "type": "string",
+            "title": "Organizationslug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "slug",
+          "name",
+          "sportKey",
+          "status",
+          "organizationName",
+          "organizationSlug"
+        ],
+        "title": "PublicTournamentSearchResult"
+      },
+      "PublicTournamentView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sportKey": {
+            "type": "string",
+            "title": "Sportkey"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "visibility": {
+            "type": "string",
+            "title": "Visibility"
+          },
+          "startsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Startsat"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Endsat"
+          },
+          "drawPublishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Drawpublishedat"
+          },
+          "schedulePublishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Schedulepublishedat"
+          },
+          "resultsPublishedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultspublishedat"
+          },
+          "organization": {
+            "$ref": "#/components/schemas/PublicOrgView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "sportKey",
+          "status",
+          "visibility",
+          "startsAt",
+          "endsAt",
+          "drawPublishedAt",
+          "schedulePublishedAt",
+          "resultsPublishedAt",
+          "organization"
+        ],
+        "title": "PublicTournamentView"
       },
       "PublishRequest": {
         "properties": {
