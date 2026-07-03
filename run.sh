@@ -83,7 +83,7 @@ stop_db() {
 start_api() {
   if pid_alive "$API_PID"; then warn "API already running (pid $(cat "$API_PID"))"; return; fi
   if [ ! -x "$API_DIR/.venv/bin/python" ]; then
-    err "No Python venv at apps/api/.venv — run: cd apps/api && python3 -m venv .venv && .venv/bin/pip install -r requirements.txt"
+    err "No Python venv at apps/api/.venv — run: cd apps/api && python3.13 -m venv .venv && .venv/bin/pip install -r requirements.txt"
     exit 1
   fi
   info "Starting API on http://$API_HOST:$API_PORT"
