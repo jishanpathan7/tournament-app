@@ -78,12 +78,12 @@ describe("useGenerateDraw", () => {
       wrapper: ({ children }) => <Providers client={client}>{children}</Providers>,
     });
 
-    result.current.mutate({});
+    result.current.mutate({ overrideReadiness: false });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(vi.mocked(tournamentsApi.generateDraw).mock.calls[0]?.slice(0, 2)).toEqual([
       "stage-1",
-      {},
+      { overrideReadiness: false },
     ]);
     expect(invalidateSpy).toHaveBeenCalledWith({
       queryKey: ["divisions", "div-1", "stages"],
@@ -97,7 +97,7 @@ describe("useGenerateDraw", () => {
     vi.mocked(tournamentsApi.generateDraw).mockRejectedValue(new Error("too few participants"));
     const { result } = renderHook(() => useGenerateDraw("stage-1", "div-1"), { wrapper });
 
-    result.current.mutate({});
+    result.current.mutate({ overrideReadiness: false });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });

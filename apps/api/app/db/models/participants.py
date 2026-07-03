@@ -8,16 +8,28 @@ tenant-strict; FKs to org-level users/teams are RESTRICT, division links CASCADE
 
 from __future__ import annotations
 
+import datetime
 import decimal
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Integer, Numeric, String, text
+from sqlalchemy import (
+    Boolean,
+    CheckConstraint,
+    DateTime,
+    ForeignKey,
+    Index,
+    Integer,
+    Numeric,
+    String,
+    text,
+)
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.enums import (
+    ATTENDANCE_STATUS,
     PAIRING_RUN_STATUS,
     PARTICIPANT_KIND,
     PARTICIPANT_STATUS,
@@ -97,6 +109,13 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
     skill_level: Mapped[str | None] = mapped_column(SKILL_LEVEL, nullable=True)
     status: Mapped[str] = mapped_column(
         PARTICIPANT_STATUS, nullable=False, server_default=text("'registered'")
+    )
+    # Event-day attendance — independent of the registration-lifecycle ``status`` above.
+    attendance: Mapped[str] = mapped_column(
+        ATTENDANCE_STATUS, nullable=False, server_default=text("'pending'")
+    )
+    checked_in_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
     )
 
     division: Mapped[Division] = relationship(back_populates="participants")

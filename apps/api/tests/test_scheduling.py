@@ -128,7 +128,9 @@ async def _bracket(client: AsyncClient, entrants: int = 3) -> tuple[str, str, st
     sid = await _stage(client, did)
     await _open_registration(client, tid)
     await _approved_entrants(client, did, entrants)
-    draw = await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    draw = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert draw.status_code == 201, draw.text
     await client.post(f"{TOUR}/{tid}/publish", json={"artifacts": ["draw"]}, headers=_csrf(client))
     return tid, did, sid
@@ -247,7 +249,9 @@ async def test_assign_rejects_unresolved_pending_match(app, client):
     sid2 = await _stage(client, did2, "single_elim")
     await _open_registration(client, tid2)
     await _approved_entrants(client, did2, 4)
-    await client.post(f"/api/v1/stages/{sid2}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid2}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     court_id2 = await _venue_and_court(client, "Court 2")
     await _assign_court_to_tournament(client, tid2, court_id2)
     matches = await _matches(client, sid2)
@@ -457,7 +461,9 @@ async def test_schedule_change_emits_realtime_event(app, client):
     sid = await _stage(client, did)
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     court_id = await _venue_and_court(client)
     await _assign_court_to_tournament(client, tid, court_id)
     match = (await _matches(client, sid))[0]

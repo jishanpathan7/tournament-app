@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Sparkles } from "lucide-react";
+import { CheckSquare, LayoutGrid, Sparkles, Upload } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -68,14 +68,32 @@ export function DivisionsSection({
               capacity={division.capacity}
               canManage={canManage}
             />
-            {division.participantType !== "individual" ? (
-              <Button tone="paper" size="sm" asChild className="self-start">
-                <Link
-                  href={`/console/tournaments/${tournamentId}/divisions/${division.id}/pairing`}
-                >
-                  <Sparkles className="h-4 w-4" /> Team pairing
-                </Link>
-              </Button>
+            {canManage ? (
+              <div className="flex flex-wrap gap-2">
+                {division.participantType !== "individual" ? (
+                  <Button tone="paper" size="sm" asChild>
+                    <Link
+                      href={`/console/tournaments/${tournamentId}/divisions/${division.id}/pairing`}
+                    >
+                      <Sparkles className="h-4 w-4" strokeWidth={2.25} /> Team pairing
+                    </Link>
+                  </Button>
+                ) : null}
+                <Button tone="paper" size="sm" asChild>
+                  <Link
+                    href={`/console/tournaments/${tournamentId}/divisions/${division.id}/import`}
+                  >
+                    <Upload className="h-4 w-4" strokeWidth={2.25} /> Import CSV
+                  </Link>
+                </Button>
+                <Button tone="paper" size="sm" asChild>
+                  <Link
+                    href={`/console/tournaments/${tournamentId}/divisions/${division.id}/attendance`}
+                  >
+                    <CheckSquare className="h-4 w-4" strokeWidth={2.25} /> Check-in
+                  </Link>
+                </Button>
+              </div>
             ) : null}
           </CardContent>
         </Card>

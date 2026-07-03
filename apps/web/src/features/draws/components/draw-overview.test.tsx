@@ -117,7 +117,7 @@ describe("DrawOverview", () => {
     await waitFor(() =>
       expect(vi.mocked(tournamentsApi.generateDraw).mock.calls[0]?.slice(0, 2)).toEqual([
         STAGE_ID,
-        {},
+        { overrideReadiness: false },
       ]),
     );
   });

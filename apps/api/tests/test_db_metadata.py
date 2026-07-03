@@ -32,6 +32,8 @@ EXPECTED_TABLES = {
     "pairing_requests",
     "pairing_runs",
     "proposed_teams",
+    "mapping_templates",
+    "import_batches",
     # competition
     "matches",
     "match_participants",

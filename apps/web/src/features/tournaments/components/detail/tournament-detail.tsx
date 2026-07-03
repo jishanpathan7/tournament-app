@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CalendarClock, LayoutGrid, Pencil, Swords } from "lucide-react";
+import { ArrowLeft, CalendarClock, ClipboardCheck, LayoutGrid, Pencil, Swords } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -76,6 +76,14 @@ export function TournamentDetail({ id }: { id: string }) {
               Match Center
             </Link>
           </Button>
+          {canManage ? (
+            <Button asChild tone="paper" size="sm">
+              <Link href={`/console/tournaments/${tournament.id}/readiness`}>
+                <ClipboardCheck className="h-4 w-4" strokeWidth={2.25} />
+                Readiness
+              </Link>
+            </Button>
+          ) : null}
           {canManage ? (
             <Button tone="paper" size="sm" onClick={() => setEditOpen(true)}>
               <Pencil className="h-4 w-4" strokeWidth={2.25} />

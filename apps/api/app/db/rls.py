@@ -46,6 +46,8 @@ TENANT_STRICT_TABLES = [
     "pairing_requests",
     "pairing_runs",
     "proposed_teams",
+    "mapping_templates",
+    "import_batches",
     "matches",
     "match_participants",
     "match_result_events",

@@ -906,6 +906,177 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/imports/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Import Sources */
+        get: operations["registration-ops_list_import_sources"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/detect": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Detect Columns */
+        post: operations["registration-ops_detect_columns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/divisions/{division_id}/imports/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview Import */
+        post: operations["registration-ops_preview_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/divisions/{division_id}/imports/commit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Commit Import */
+        post: operations["registration-ops_commit_import"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/mapping-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Mapping Templates */
+        get: operations["registration-ops_list_mapping_templates"];
+        put?: never;
+        /** Save Mapping Template */
+        post: operations["registration-ops_save_mapping_template"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/imports/mapping-templates/{template_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Mapping Template */
+        delete: operations["registration-ops_delete_mapping_template"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/divisions/{division_id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Attendance */
+        get: operations["registration-ops_list_attendance"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/participants/{participant_id}/attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set Attendance */
+        post: operations["registration-ops_set_attendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/divisions/{division_id}/attendance/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Bulk Set Attendance */
+        post: operations["registration-ops_bulk_set_attendance"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tournaments/{tournament_id}/readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Readiness */
+        get: operations["registration-ops_get_readiness"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/divisions/{division_id}/pairing/generate": {
         parameters: {
             query?: never;
@@ -1507,6 +1678,20 @@ export interface components {
              */
             courtId: string;
         };
+        /** BulkCheckInRequest */
+        BulkCheckInRequest: {
+            /** Participantids */
+            participantIds: string[];
+            /** Status */
+            status: string;
+        };
+        /** BulkCheckInResult */
+        BulkCheckInResult: {
+            /** Updated */
+            updated: string[];
+            /** Attendance */
+            attendance: string;
+        };
         /** BulkScheduleItem */
         BulkScheduleItem: {
             /**
@@ -1546,6 +1731,14 @@ export interface components {
             currentPassword: string;
             /** Newpassword */
             newPassword: string;
+        };
+        /**
+         * CheckInRequest
+         * @description Set attendance for a single participant. ``status`` ∈ pending|checked_in|absent.
+         */
+        CheckInRequest: {
+            /** Status */
+            status: string;
         };
         /** ConflictView */
         ConflictView: {
@@ -1685,6 +1878,52 @@ export interface components {
             /** Database */
             database: string;
         };
+        /** DetectColumnsRequest */
+        DetectColumnsRequest: {
+            /** Source */
+            source: string;
+            /** Raw */
+            raw: string;
+        };
+        /** DetectColumnsResponse */
+        DetectColumnsResponse: {
+            /** Columns */
+            columns: string[];
+            /** Samplerows */
+            sampleRows: {
+                [key: string]: string;
+            }[];
+        };
+        /** DivisionReadinessView */
+        DivisionReadinessView: {
+            /**
+             * Divisionid
+             * Format: uuid
+             */
+            divisionId: string;
+            /** Divisionname */
+            divisionName: string;
+            /** Participanttype */
+            participantType: string;
+            /** Approved */
+            approved: number;
+            /** Checkedin */
+            checkedIn: number;
+            /** Pending */
+            pending: number;
+            /** Absent */
+            absent: number;
+            /** Unpairedentrants */
+            unpairedEntrants: number;
+            /** Drawn */
+            drawn: boolean;
+            /** Readyfordraw */
+            readyForDraw: boolean;
+            /** Readyforstart */
+            readyForStart: boolean;
+            /** Blockers */
+            blockers: string[];
+        };
         /** DivisionResponse */
         DivisionResponse: {
             /**
@@ -1717,6 +1956,11 @@ export interface components {
         DrawRequest: {
             /** Rngseed */
             rngSeed?: number | null;
+            /**
+             * Overridereadiness
+             * @default false
+             */
+            overrideReadiness: boolean;
         };
         /** DrawResponse */
         DrawResponse: {
@@ -1849,6 +2093,79 @@ export interface components {
              */
             time: string;
         };
+        /** ImportFieldInfo */
+        ImportFieldInfo: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Required */
+            required: boolean;
+        };
+        /** ImportPreview */
+        ImportPreview: {
+            /** Columns */
+            columns: string[];
+            /** Rows */
+            rows: components["schemas"]["PreviewRow"][];
+            summary: components["schemas"]["ImportPreviewSummary"];
+        };
+        /** ImportPreviewSummary */
+        ImportPreviewSummary: {
+            /** Total */
+            total: number;
+            /** New */
+            new: number;
+            /** Update */
+            update: number;
+            /** Duplicate */
+            duplicate: number;
+            /** Invalid */
+            invalid: number;
+        };
+        /**
+         * ImportRequest
+         * @description Shared shape for preview + commit — the raw upload, the chosen source, and the
+         *     column → target-field mapping. Preview is a dry run; commit applies it.
+         */
+        ImportRequest: {
+            /** Source */
+            source: string;
+            /** Raw */
+            raw: string;
+            /** Mapping */
+            mapping?: {
+                [key: string]: string;
+            };
+            /**
+             * Updateexisting
+             * @default false
+             */
+            updateExisting: boolean;
+        };
+        /** ImportResult */
+        ImportResult: {
+            /**
+             * Batchid
+             * Format: uuid
+             */
+            batchId: string;
+            /** Imported */
+            imported: number;
+            /** Updated */
+            updated: number;
+            /** Skipped */
+            skipped: number;
+        };
+        /** ImportSourceInfo */
+        ImportSourceInfo: {
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Targetfields */
+            targetFields: components["schemas"]["ImportFieldInfo"][];
+        };
         /** InviteItem */
         InviteItem: {
             /**
@@ -1885,6 +2202,27 @@ export interface components {
              * @default false
              */
             rememberMe: boolean;
+        };
+        /** MappingTemplateView */
+        MappingTemplateView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+            /** Mapping */
+            mapping: {
+                [key: string]: string;
+            };
+            /**
+             * Createdat
+             * Format: date-time
+             */
+            createdAt: string;
         };
         /** MarkAllReadResponse */
         MarkAllReadResponse: {
@@ -2113,6 +2451,31 @@ export interface components {
             /** Averageconfidence */
             averageConfidence: number;
         };
+        /** ParticipantAttendanceView */
+        ParticipantAttendanceView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Divisionid
+             * Format: uuid
+             */
+            divisionId: string;
+            /** Kind */
+            kind: string;
+            /** Displayname */
+            displayName: string;
+            /** Status */
+            status: string;
+            /** Attendance */
+            attendance: string;
+            /** Checkedinat */
+            checkedInAt: string | null;
+            /** Seed */
+            seed: number | null;
+        };
         /**
          * ParticipantKind
          * @enum {string}
@@ -2183,6 +2546,19 @@ export interface components {
             /** Storagekey */
             storageKey: string;
             upload: components["schemas"]["UploadTarget"];
+        };
+        /** PreviewRow */
+        PreviewRow: {
+            /** Rownumber */
+            rowNumber: number;
+            /** Status */
+            status: string;
+            /** Values */
+            values: {
+                [key: string]: string | null;
+            };
+            /** Messages */
+            messages: string[];
         };
         /** ProposedTeamView */
         ProposedTeamView: {
@@ -2397,6 +2773,17 @@ export interface components {
             externalName: string | null;
             /** Role */
             role: string | null;
+        };
+        /** SaveMappingTemplateRequest */
+        SaveMappingTemplateRequest: {
+            /** Name */
+            name: string;
+            /** Source */
+            source: string;
+            /** Mapping */
+            mapping: {
+                [key: string]: string;
+            };
         };
         /** ScheduleAssignRequest */
         ScheduleAssignRequest: {
@@ -2633,6 +3020,20 @@ export interface components {
              * Format: date-time
              */
             createdAt: string;
+        };
+        /** TournamentReadinessView */
+        TournamentReadinessView: {
+            /**
+             * Tournamentid
+             * Format: uuid
+             */
+            tournamentId: string;
+            /** Divisions */
+            divisions: components["schemas"]["DivisionReadinessView"][];
+            /** Totalcheckedin */
+            totalCheckedIn: number;
+            /** Totalpending */
+            totalPending: number;
         };
         /** TournamentResponse */
         TournamentResponse: {
@@ -4630,6 +5031,354 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeamResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_list_import_sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportSourceInfo"][];
+                };
+            };
+        };
+    };
+    "registration-ops_detect_columns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DetectColumnsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DetectColumnsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_preview_import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_commit_import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_list_mapping_templates": {
+        parameters: {
+            query?: {
+                source?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MappingTemplateView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_save_mapping_template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SaveMappingTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MappingTemplateView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_delete_mapping_template": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                template_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_list_attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantAttendanceView"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_set_attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                participant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ParticipantAttendanceView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_bulk_set_attendance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkCheckInRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkCheckInResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    "registration-ops_get_readiness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                tournament_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TournamentReadinessView"];
                 };
             };
             /** @description Validation Error */

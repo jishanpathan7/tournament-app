@@ -19,7 +19,14 @@ from app.api.errors import ConflictError, NotFoundError, ValidationError
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_advancement_engine, get_format_registry, get_sport_registry
-from app.db.enums import MatchOutcome, MatchStatus, ParticipantKind, TournamentStatus, Visibility
+from app.db.enums import (
+    AttendanceStatus,
+    MatchOutcome,
+    MatchStatus,
+    ParticipantKind,
+    TournamentStatus,
+    Visibility,
+)
 from app.db.models import (
     Division,
     Group,
@@ -286,6 +293,7 @@ async def generate_draw(
     actor_id: uuid.UUID,
     stage_id: uuid.UUID,
     rng_seed: int | None,
+    override_readiness: bool = False,
 ) -> tuple[Stage, dict[str, Any]]:
     stage = await _require_stage(session, org_id, stage_id)
     if await repo.stage_match_count(session, org_id, stage.id) > 0:
@@ -298,6 +306,18 @@ async def generate_draw(
         raise ValidationError(
             "at least 2 approved participants are required to draw", code="too_few_participants"
         )
+    # Check-in gate: don't draw with un-checked-in participants unless the organizer
+    # explicitly overrides. Attendance lives on the participant row (Registration Ops).
+    if not override_readiness:
+        not_checked_in = sum(
+            1 for p in participants if p.attendance != AttendanceStatus.CHECKED_IN.value
+        )
+        if not_checked_in:
+            raise ValidationError(
+                f"{not_checked_in} of {len(participants)} participants haven't checked in — "
+                "check them in or override to draw anyway",
+                code="checkin_incomplete",
+            )
     # The domain owns ordering: seed order from the DB, or a reproducible random draw.
     # Participants are passed to the engine in final order (rng_seed=None) so the plan's
     # SeedRef(n) maps deterministically to participants[n-1] here.

@@ -124,7 +124,9 @@ async def _bracket(client: AsyncClient, fmt: str, entrants: int) -> tuple[str, s
     sid = await _stage(client, did, fmt)
     await _open_registration(client, tid)
     await _approved_entrants(client, did, entrants)
-    draw = await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    draw = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert draw.status_code == 201, draw.text
     return tid, did, sid
 
@@ -350,7 +352,9 @@ async def test_scoring_emits_realtime_and_notifications(app, client):
     sid = await _stage(client, did, "round_robin")
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     match = (await _matches(client, sid))[0]
     winner = match["sides"][0]["participantId"]
 
@@ -453,8 +457,12 @@ async def test_tournament_matches_spans_every_division(app, client):
     await _open_registration(client, tid)
     await _approved_entrants(client, did_a, 3)
     await _approved_entrants(client, did_b, 4)
-    await client.post(f"/api/v1/stages/{sid_a}/draw", json={}, headers=_csrf(client))
-    await client.post(f"/api/v1/stages/{sid_b}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid_a}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
+    await client.post(
+        f"/api/v1/stages/{sid_b}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
 
     resp = await client.get(f"/api/v1/tournaments/{tid}/matches")
     assert resp.status_code == 200, resp.text

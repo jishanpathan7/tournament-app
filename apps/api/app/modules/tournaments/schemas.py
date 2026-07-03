@@ -93,6 +93,8 @@ class StageResponse(ApiModel):
 
 class DrawRequest(ApiModel):
     rng_seed: int | None = None  # provide for a reproducible random draw; omit to seed by order
+    # Draw even if some approved participants haven't checked in (organizer override).
+    override_readiness: bool = False
 
 
 class DrawResponse(ApiModel):

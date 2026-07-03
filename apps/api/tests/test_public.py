@@ -206,7 +206,9 @@ async def test_matches_hidden_until_draw_is_published_even_if_generated(app, cli
     sid = await _stage(client, did)
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)
-    draw = await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    draw = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert draw.status_code == 201, draw.text
 
     matches = await client.get(f"{PUBLIC}/tournaments/{slug}/matches")
@@ -225,7 +227,9 @@ async def test_matches_and_standings_visible_once_draw_published(app, client):
     sid = await _stage(client, did)
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     await _publish_draw(client, tid)
 
     matches = await client.get(f"{PUBLIC}/tournaments/{slug}/matches")
@@ -251,7 +255,9 @@ async def test_public_match_detail_and_events_never_expose_actor(app, client):
     sid = await _stage(client, did)
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     await _publish_draw(client, tid)
 
     matches = (await client.get(f"{PUBLIC}/tournaments/{slug}/matches")).json()
@@ -294,7 +300,9 @@ async def test_court_and_time_hidden_until_schedule_is_published(app, client):
     sid = await _stage(client, did)
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     await _publish_draw(client, tid)
 
     venue = await client.post("/api/v1/venues", json={"name": "Gym"}, headers=_csrf(client))
@@ -336,7 +344,9 @@ async def test_match_from_another_tournament_is_not_reachable(app, client):
     sid_a = await _stage(client, did_a)
     await _open_registration(client, tid_a)
     await _approved_entrants(client, did_a, 3)
-    await client.post(f"/api/v1/stages/{sid_a}/draw", json={}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid_a}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     await _publish_draw(client, tid_a)
     match_a = (await client.get(f"{PUBLIC}/tournaments/{slug_a}/matches")).json()[0]
 
