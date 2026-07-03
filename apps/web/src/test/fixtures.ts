@@ -3,10 +3,13 @@ import type {
   CourtQueueView,
   CourtView,
   DivisionResponse,
+  EntrantView,
   MatchResultEventView,
   MatchView,
   MemberItem,
+  PairingRunView,
   ParticipantResponse,
+  ProposedTeamView,
   PublicDivisionView,
   PublicParticipantView,
   PublicStageView,
@@ -270,5 +273,51 @@ export function makeScheduleQueue(overrides: Partial<ScheduleQueueView> = {}): S
     courts: overrides.courts ?? [],
     unscheduled: overrides.unscheduled ?? [],
     pending: overrides.pending ?? [],
+  };
+}
+
+export function makeEntrant(overrides: Partial<EntrantView> = {}): EntrantView {
+  seq += 1;
+  return {
+    registrationId: overrides.registrationId ?? `reg-${seq}`,
+    displayName: overrides.displayName ?? `Player ${seq}`,
+    skillLevel: overrides.skillLevel ?? "intermediate",
+    weight: overrides.weight ?? 2,
+    preferredPartnerId: overrides.preferredPartnerId ?? null,
+  };
+}
+
+export function makeProposedTeam(overrides: Partial<ProposedTeamView> = {}): ProposedTeamView {
+  seq += 1;
+  return {
+    id: overrides.id ?? `team-${seq}`,
+    memberIds: overrides.memberIds ?? [],
+    strength: overrides.strength ?? 4,
+    confidence: overrides.confidence ?? 1,
+    reasons: overrides.reasons ?? [],
+    locked: overrides.locked ?? false,
+    teamName: overrides.teamName ?? null,
+  };
+}
+
+export function makePairingRun(overrides: Partial<PairingRunView> = {}): PairingRunView {
+  seq += 1;
+  const entrants = overrides.entrants ?? [];
+  const teams = overrides.teams ?? [];
+  return {
+    id: overrides.id ?? `run-${seq}`,
+    divisionId: overrides.divisionId ?? "div-1",
+    status: overrides.status ?? "draft",
+    rngSeed: overrides.rngSeed ?? null,
+    entrants,
+    teams,
+    unpairedIds: overrides.unpairedIds ?? [],
+    summary: overrides.summary ?? {
+      teamCount: teams.length,
+      entrantCount: entrants.length,
+      unpairedCount: overrides.unpairedIds?.length ?? 0,
+      averageConfidence:
+        teams.length > 0 ? teams.reduce((s, t) => s + t.confidence, 0) / teams.length : 0,
+    },
   };
 }

@@ -178,6 +178,12 @@ class CourtStatus(_StrEnum):
     DISABLED = "disabled"
 
 
+class PairingRunStatus(_StrEnum):
+    DRAFT = "draft"  # generated, under organizer review — not yet real participants
+    PUBLISHED = "published"  # materialized into Team + pair Participant rows
+    DISCARDED = "discarded"  # superseded by a regenerate or thrown away
+
+
 def pg_enum(py_enum: type[enum.Enum], name: str) -> sa.Enum:
     """Build a named native PG ENUM bound to a Python enum.
 
@@ -220,6 +226,7 @@ IDEMPOTENCY_STATUS = pg_enum(IdempotencyStatus, "idempotency_status")
 AUTH_TOKEN_PURPOSE = pg_enum(AuthTokenPurpose, "auth_token_purpose")  # 0002
 FEATURE_FLAG_SCOPE = pg_enum(FeatureFlagScope, "feature_flag_scope")  # 0006
 COURT_STATUS = pg_enum(CourtStatus, "court_status")  # 0010
+PAIRING_RUN_STATUS = pg_enum(PairingRunStatus, "pairing_run_status")  # 0011
 
 # The 0001 baseline enum set. Consumed by the initial migration's
 # upgrade()/downgrade(). Order is irrelevant (no inter-enum dependencies).

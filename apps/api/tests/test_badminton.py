@@ -8,6 +8,8 @@ satisfies the engine's SportProfile contract + plugs into the SportRegistry.
 
 from __future__ import annotations
 
+from decimal import Decimal
+
 import pytest
 
 from app.engine import (
@@ -60,6 +62,31 @@ def test_satisfies_sport_profile_protocol_and_registry():
         registry.register(PROFILE)  # duplicate
     with pytest.raises(UnknownSportError):
         registry.get("chess")
+
+
+# ---- pairing policy ----
+
+
+def test_pairing_policy_doubles_targets_strength_four():
+    policy = PROFILE.pairing_policy({})
+    assert policy.supports_pairing
+    assert policy.team_size == 2
+    assert policy.target_strength == Decimal(4)
+
+
+def test_pairing_policy_singles_does_not_pair():
+    policy = PROFILE.pairing_policy({"participantType": "individual"})
+    assert not policy.supports_pairing
+    assert policy.team_size == 1
+
+
+def test_skill_weight_maps_tiers_and_defaults_to_intermediate():
+    assert PROFILE.skill_weight("beginner") == Decimal(1)
+    assert PROFILE.skill_weight("intermediate") == Decimal(2)
+    assert PROFILE.skill_weight("advanced") == Decimal(3)
+    assert PROFILE.skill_weight("ADVANCED") == Decimal(3)  # case-insensitive
+    assert PROFILE.skill_weight(None) == Decimal(2)
+    assert PROFILE.skill_weight("unknown") == Decimal(2)
 
 
 # ---- config ----

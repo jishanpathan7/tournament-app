@@ -22,6 +22,7 @@ if TYPE_CHECKING:
         FormatRegistry,
         SportRegistry,
         StandingsEngine,
+        TeamFormationEngine,
     )
     from app.realtime.broadcaster import Broadcaster
     from app.realtime.connections import ConnectionManager
@@ -129,6 +130,16 @@ def get_advancement_engine() -> AdvancementEngine:
     from app.engine import DefaultAdvancementEngine
 
     return DefaultAdvancementEngine()
+
+
+@lru_cache
+def get_team_formation_engine() -> TeamFormationEngine:
+    """The engine that combines solo entrants into balanced teams (the Smart Pairing
+    Engine). One implementation serves every sport; the Sport Profile supplies the
+    weights + policy."""
+    from app.engine import FoldPairingEngine
+
+    return FoldPairingEngine()
 
 
 @lru_cache

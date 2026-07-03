@@ -1,4 +1,5 @@
-"""Participants: Team, RosterEntry, Participant (polymorphic), Registration, PairingRequest.
+"""Participants: Team, RosterEntry, Participant (polymorphic), Registration, PairingRequest,
+plus the Smart Pairing staging tables (PairingRun, ProposedTeam).
 
 A Participant abstracts "who competes": an individual (a user), or a pair/team
 (a Team row with roster entries). The CHECK keeps the polymorphism honest. All
@@ -11,12 +12,18 @@ import decimal
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, Integer, Numeric, String, text
+from sqlalchemy import Boolean, CheckConstraint, ForeignKey, Index, Integer, Numeric, String, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.enums import PARTICIPANT_KIND, PARTICIPANT_STATUS, REGISTRATION_STATUS, SKILL_LEVEL
+from app.db.enums import (
+    PAIRING_RUN_STATUS,
+    PARTICIPANT_KIND,
+    PARTICIPANT_STATUS,
+    REGISTRATION_STATUS,
+    SKILL_LEVEL,
+)
 from app.db.mixins import OrgScopedMixin, SoftDeleteMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
@@ -149,3 +156,61 @@ class PairingRequest(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     preferred_partner_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
     )
+
+
+class PairingRun(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
+    """One Smart-Pairing generation for a division — a reviewable draft batch.
+
+    The engine's proposed teams live here (as ``ProposedTeam`` rows) until the organizer
+    publishes them, at which point they materialize into real ``Team`` + pair
+    ``Participant`` rows. Kept separate so drafts never pollute the live participant pool
+    (draws/standings). ``config`` snapshots the policy + constraints used; ``rng_seed``
+    makes a run reproducible.
+    """
+
+    __tablename__ = "pairing_runs"
+
+    division_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("divisions.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    status: Mapped[str] = mapped_column(
+        PAIRING_RUN_STATUS, nullable=False, server_default=text("'draft'")
+    )
+    rng_seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    config: Mapped[dict[str, Any]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'{}'::jsonb")
+    )
+
+    proposed_teams: Mapped[list[ProposedTeam]] = relationship(
+        back_populates="run", cascade="all, delete-orphan", passive_deletes=True
+    )
+
+
+class ProposedTeam(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
+    """A team the pairing engine proposed within a run. ``member_ids`` are the source
+    registration ids (the solo entrants); ``locked`` pins an organizer-edited team so a
+    regenerate leaves it intact. Ephemeral until its run is published."""
+
+    __tablename__ = "proposed_teams"
+
+    pairing_run_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("pairing_runs.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    member_ids: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    strength: Mapped[decimal.Decimal] = mapped_column(Numeric(8, 3), nullable=False)
+    confidence: Mapped[decimal.Decimal] = mapped_column(Numeric(4, 3), nullable=False)
+    reasons: Mapped[list[str]] = mapped_column(
+        JSONB, nullable=False, server_default=text("'[]'::jsonb")
+    )
+    locked: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
+    team_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
+
+    run: Mapped[PairingRun] = relationship(back_populates="proposed_teams")

@@ -27,7 +27,9 @@ from app.db.models.identity import (
 from app.db.models.logistics import Assignment, Court, ScheduleSlot, TournamentCourt, Venue
 from app.db.models.participants import (
     PairingRequest,
+    PairingRun,
     Participant,
+    ProposedTeam,
     Registration,
     RosterEntry,
     Team,
@@ -60,6 +62,8 @@ __all__ = [
     "Participant",
     "Registration",
     "PairingRequest",
+    "PairingRun",
+    "ProposedTeam",
     # competition
     "Match",
     "MatchParticipant",
