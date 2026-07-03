@@ -122,6 +122,25 @@ export type PublicStageView = Schemas["PublicStageView"];
 export type PublicParticipantView = Schemas["PublicParticipantView"];
 export type PublicTournamentSearchResult = Schemas["PublicTournamentSearchResult"];
 
+// ---- registration ops: CSV import, attendance, readiness dashboard ----
+export type ImportSourceInfo = Schemas["ImportSourceInfo"];
+export type ImportFieldInfo = Schemas["ImportFieldInfo"];
+export type DetectColumnsRequest = Schemas["DetectColumnsRequest"];
+export type DetectColumnsResponse = Schemas["DetectColumnsResponse"];
+export type ImportRequest = Schemas["ImportRequest"];
+export type PreviewRow = Schemas["PreviewRow"];
+export type ImportPreview = Schemas["ImportPreview"];
+export type ImportPreviewSummary = Schemas["ImportPreviewSummary"];
+export type ImportResult = Schemas["ImportResult"];
+export type SaveMappingTemplateRequest = Schemas["SaveMappingTemplateRequest"];
+export type MappingTemplateView = Schemas["MappingTemplateView"];
+export type CheckInRequest = Schemas["CheckInRequest"];
+export type BulkCheckInRequest = Schemas["BulkCheckInRequest"];
+export type BulkCheckInResult = Schemas["BulkCheckInResult"];
+export type ParticipantAttendanceView = Schemas["ParticipantAttendanceView"];
+export type DivisionReadinessView = Schemas["DivisionReadinessView"];
+export type TournamentReadinessView = Schemas["TournamentReadinessView"];
+
 // ---- health / errors ----
 export type HealthResponse = Schemas["HealthResponse"];
 

@@ -69,5 +69,18 @@ export const queryKeys = {
     enabled: (key: string) => ["feature-flags", "enabled", key] as const,
   },
 
+  imports: {
+    sources: () => ["imports", "sources"] as const,
+    templates: (source?: string) => ["imports", "templates", source ?? "all"] as const,
+  },
+
+  attendance: {
+    division: (divisionId: string) => ["attendance", divisionId] as const,
+  },
+
+  readiness: {
+    tournament: (tournamentId: string) => ["readiness", tournamentId] as const,
+  },
+
   health: ["health"] as const,
 } as const;
