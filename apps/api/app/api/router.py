@@ -16,6 +16,7 @@ from app.modules.notifications.router import router as notifications_router
 from app.modules.orgs.router import router as orgs_router
 from app.modules.pairing.router import router as pairing_router
 from app.modules.public.router import router as public_router
+from app.modules.registration_ops.router import router as registration_ops_router
 from app.modules.registrations.router import router as registrations_router
 from app.modules.scheduling.router import router as scheduling_router
 from app.modules.scoring.router import router as scoring_router
@@ -32,6 +33,7 @@ api_router.include_router(realtime_router)
 api_router.include_router(flags_router)
 api_router.include_router(tournaments_router)
 api_router.include_router(registrations_router)
+api_router.include_router(registration_ops_router)
 api_router.include_router(pairing_router)
 api_router.include_router(scoring_router)
 api_router.include_router(public_router)

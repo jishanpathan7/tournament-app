@@ -329,6 +329,7 @@ async def generate_draw(
         actor_id=principal.user_id,
         stage_id=stage_id,
         rng_seed=body.rng_seed,
+        override_readiness=body.override_readiness,
     )
     return DrawResponse(stage_id=stage_id, **summary)
 

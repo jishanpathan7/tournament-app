@@ -24,6 +24,7 @@ from app.db.models.identity import (
     OrgInvite,
     User,
 )
+from app.db.models.imports import ImportBatch, MappingTemplate
 from app.db.models.logistics import Assignment, Court, ScheduleSlot, TournamentCourt, Venue
 from app.db.models.participants import (
     PairingRequest,
@@ -64,6 +65,9 @@ __all__ = [
     "PairingRequest",
     "PairingRun",
     "ProposedTeam",
+    # registration ops (imports)
+    "MappingTemplate",
+    "ImportBatch",
     # competition
     "Match",
     "MatchParticipant",

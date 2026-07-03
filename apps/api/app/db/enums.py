@@ -100,6 +100,16 @@ class RegistrationStatus(_StrEnum):
     WITHDRAWN = "withdrawn"
 
 
+class AttendanceStatus(_StrEnum):
+    """Event-day attendance — kept separate from the registration-lifecycle ``status``
+    so an approved participant can independently be pending / checked-in / absent
+    (``ParticipantStatus.CHECKED_IN`` predates this and is left unused)."""
+
+    PENDING = "pending"
+    CHECKED_IN = "checked_in"
+    ABSENT = "absent"
+
+
 class MatchOutcome(_StrEnum):
     """Per-side outcome on match_participants — the abstract result the engine reads."""
 
@@ -227,6 +237,7 @@ AUTH_TOKEN_PURPOSE = pg_enum(AuthTokenPurpose, "auth_token_purpose")  # 0002
 FEATURE_FLAG_SCOPE = pg_enum(FeatureFlagScope, "feature_flag_scope")  # 0006
 COURT_STATUS = pg_enum(CourtStatus, "court_status")  # 0010
 PAIRING_RUN_STATUS = pg_enum(PairingRunStatus, "pairing_run_status")  # 0011
+ATTENDANCE_STATUS = pg_enum(AttendanceStatus, "attendance_status")  # 0012
 
 # The 0001 baseline enum set. Consumed by the initial migration's
 # upgrade()/downgrade(). Order is irrelevant (no inter-enum dependencies).
