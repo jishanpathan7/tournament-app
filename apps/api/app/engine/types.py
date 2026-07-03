@@ -217,6 +217,86 @@ class StructurePlan:
     matches: tuple[MatchPlan, ...] = ()
 
 
+# ---- team formation (TeamFormationEngine input/output) ----
+#
+# A distinct concept from opponent pairing (``PairingEngine.pair_round``, which pairs
+# who-plays-whom in a dynamic round). Team formation is a *pre-draw* step: combine solo
+# entrants into balanced teams (e.g. doubles pairs) that then enter the draw as
+# ``ParticipantKind.PAIR``/``TEAM`` competitors. Sport-agnostic: the engine pairs purely
+# by numeric ``weight`` — the Sport Profile maps its skill vocabulary to those numbers
+# and supplies the ``PairingPolicy`` (see ``SportProfile.pairing_policy``).
+
+EntrantId = str  # a solo entrant awaiting team formation (a registration/user id at the boundary)
+
+
+class PairingStrategy(str, enum.Enum):
+    """How the engine aggregates entrant weights into teams."""
+
+    BALANCE = "balance"  # fold pairing: drive every team toward ``target_strength``
+
+
+@dataclass(frozen=True)
+class PairingPolicy:
+    """The sport-supplied numeric rules the engine forms teams by — never skill *labels*.
+
+    ``target_strength`` is the ideal per-team aggregate weight (e.g. badminton doubles:
+    2 + midpoint of 1..3 = 4). ``None`` means "no target" (the engine just fills teams).
+    """
+
+    team_size: int = 2
+    target_strength: Decimal | None = None
+    strategy: PairingStrategy = PairingStrategy.BALANCE
+
+    @property
+    def supports_pairing(self) -> bool:
+        return self.team_size >= 2
+
+
+@dataclass(frozen=True)
+class PairingEntrant:
+    """A solo competitor awaiting team formation, with its resolved numeric weight."""
+
+    id: EntrantId
+    weight: Decimal = Decimal(0)  # resolved skill weight — the Sport Profile maps skill→weight
+    display_name: str = ""
+    preferred_partner_id: EntrantId | None = None  # soft: honored when mutual + feasible
+
+
+@dataclass(frozen=True)
+class PairingConstraints:
+    """Constraints on team formation. ``forced_groups`` are hard manual overrides (each
+    inner group must become exactly one team); ``forbidden_pairs`` may never share a team;
+    ``prior_pairings`` are partnerships from earlier rounds the engine avoids repeating
+    when ``avoid_repeats`` is set (best-effort — repeats are allowed if unavoidable)."""
+
+    forced_groups: tuple[tuple[EntrantId, ...], ...] = ()
+    forbidden_pairs: tuple[tuple[EntrantId, EntrantId], ...] = ()
+    prior_pairings: tuple[tuple[EntrantId, EntrantId], ...] = ()
+    avoid_repeats: bool = True
+
+
+@dataclass(frozen=True)
+class TeamProposal:
+    """A team the engine formed. ``confidence`` is 0..1 (how close to the target strength
+    plus honored preferences); ``reasons`` explains the decision for the organizer UI."""
+
+    key: str  # stable within the plan (e.g. "T1")
+    member_ids: tuple[EntrantId, ...]
+    strength: Decimal
+    confidence: Decimal
+    reasons: tuple[str, ...] = ()
+    forced: bool = False  # formed from a hard override / honored preference, not the balancer
+
+
+@dataclass(frozen=True)
+class TeamFormationPlan:
+    """The engine's proposed teams plus any odd-one-out entrants that couldn't be placed."""
+
+    teams: tuple[TeamProposal, ...] = ()
+    unpaired: tuple[EntrantId, ...] = ()
+    rng_seed: int | None = None  # echoes the seed used, for reproducibility display
+
+
 # ---- scheduling value objects (SchedulingEngine) ----
 
 

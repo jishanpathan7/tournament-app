@@ -36,6 +36,8 @@ from app.engine.contracts import (
     SchemaValidator,
     StandingsEngine,
     StandingsRequest,
+    TeamFormationEngine,
+    TeamFormationRequest,
     ValidationEngine,
 )
 from app.engine.errors import (
@@ -48,6 +50,7 @@ from app.engine.errors import (
 )
 from app.engine.formats.round_robin import RoundRobinFormat
 from app.engine.formats.single_elimination import SingleEliminationFormat
+from app.engine.pairing import FoldPairingEngine, field_max_dev, pairing_confidence
 from app.engine.progression import DefaultAdvancementEngine
 from app.engine.registry import FormatRegistry, SportRegistry
 from app.engine.source_refs import (
@@ -71,6 +74,10 @@ from app.engine.types import (
     MatchResult,
     Outcome,
     OutcomeKind,
+    PairingConstraints,
+    PairingEntrant,
+    PairingPolicy,
+    PairingStrategy,
     ParticipantKind,
     ParticipantRef,
     PointsPolicy,
@@ -84,6 +91,8 @@ from app.engine.types import (
     SlotAssignment,
     StandingRow,
     StructurePlan,
+    TeamFormationPlan,
+    TeamProposal,
     TerminalReason,
     TiebreakPolicy,
 )
@@ -116,6 +125,13 @@ __all__ = [
     "GroupPlan",
     "RoundPlan",
     "StructurePlan",
+    # team formation
+    "PairingStrategy",
+    "PairingPolicy",
+    "PairingEntrant",
+    "PairingConstraints",
+    "TeamProposal",
+    "TeamFormationPlan",
     "CourtWindow",
     "SchedulingConstraints",
     "SlotAssignment",
@@ -139,6 +155,7 @@ __all__ = [
     # contracts
     "FormatEngine",
     "PairingEngine",
+    "TeamFormationEngine",
     "StandingsEngine",
     "AdvancementEngine",
     "SchedulingEngine",
@@ -146,6 +163,7 @@ __all__ = [
     "SchemaValidator",
     "GenerateRequest",
     "PairingRequest",
+    "TeamFormationRequest",
     "StandingsRequest",
     "ScheduleRequest",
     "AdvancementRequest",
@@ -161,4 +179,7 @@ __all__ = [
     "SingleEliminationFormat",
     "DefaultStandingsEngine",
     "DefaultAdvancementEngine",
+    "FoldPairingEngine",
+    "field_max_dev",
+    "pairing_confidence",
 ]

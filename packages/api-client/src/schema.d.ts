@@ -906,6 +906,91 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/divisions/{division_id}/pairing/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Pairing */
+        post: operations["pairing_generate_pairing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/divisions/{division_id}/pairing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Pairing */
+        get: operations["pairing_get_pairing"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pairing/teams/{team_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Team */
+        patch: operations["pairing_update_team"];
+        trace?: never;
+    };
+    "/api/v1/pairing/runs/{run_id}/swap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Swap Members */
+        post: operations["pairing_swap_members"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pairing/runs/{run_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish Pairing */
+        post: operations["pairing_publish_pairing"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/matches/{match_id}/score": {
         parameters: {
             query?: never;
@@ -1653,6 +1738,22 @@ export interface components {
             /** Pending */
             pending: number;
         };
+        /** EntrantView */
+        EntrantView: {
+            /**
+             * Registrationid
+             * Format: uuid
+             */
+            registrationId: string;
+            /** Displayname */
+            displayName: string;
+            /** Skilllevel */
+            skillLevel: string | null;
+            /** Weight */
+            weight: number;
+            /** Preferredpartnerid */
+            preferredPartnerId: string | null;
+        };
         /** FeatureFlagResource */
         FeatureFlagResource: {
             /**
@@ -1717,6 +1818,15 @@ export interface components {
             key: string;
             /** Enabled */
             enabled: boolean;
+        };
+        /** GeneratePairingRequest */
+        GeneratePairingRequest: {
+            /** Rngseed */
+            rngSeed?: number | null;
+            /** Forcedgroups */
+            forcedGroups?: string[][];
+            /** Forbiddenpairs */
+            forbiddenPairs?: string[][];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1968,6 +2078,41 @@ export interface components {
             name: string;
             role: components["schemas"]["OrgRole"];
         };
+        /** PairingRunView */
+        PairingRunView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Divisionid
+             * Format: uuid
+             */
+            divisionId: string;
+            /** Status */
+            status: string;
+            /** Rngseed */
+            rngSeed: number | null;
+            /** Entrants */
+            entrants: components["schemas"]["EntrantView"][];
+            /** Teams */
+            teams: components["schemas"]["ProposedTeamView"][];
+            /** Unpairedids */
+            unpairedIds: string[];
+            summary: components["schemas"]["PairingSummary"];
+        };
+        /** PairingSummary */
+        PairingSummary: {
+            /** Teamcount */
+            teamCount: number;
+            /** Entrantcount */
+            entrantCount: number;
+            /** Unpairedcount */
+            unpairedCount: number;
+            /** Averageconfidence */
+            averageConfidence: number;
+        };
         /**
          * ParticipantKind
          * @enum {string}
@@ -2038,6 +2183,26 @@ export interface components {
             /** Storagekey */
             storageKey: string;
             upload: components["schemas"]["UploadTarget"];
+        };
+        /** ProposedTeamView */
+        ProposedTeamView: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Memberids */
+            memberIds: string[];
+            /** Strength */
+            strength: number;
+            /** Confidence */
+            confidence: number;
+            /** Reasons */
+            reasons: string[];
+            /** Locked */
+            locked: boolean;
+            /** Teamname */
+            teamName: string | null;
         };
         /** PublicDivisionView */
         PublicDivisionView: {
@@ -2147,6 +2312,18 @@ export interface components {
             /** Resultspublishedat */
             resultsPublishedAt: string | null;
             organization: components["schemas"]["PublicOrgView"];
+        };
+        /** PublishPairingResponse */
+        PublishPairingResponse: {
+            /**
+             * Runid
+             * Format: uuid
+             */
+            runId: string;
+            /** Publishedteams */
+            publishedTeams: number;
+            /** Unpairedcount */
+            unpairedCount: number;
         };
         /** PublishRequest */
         PublishRequest: {
@@ -2400,6 +2577,22 @@ export interface components {
             };
             skillLevel?: components["schemas"]["SkillLevel"] | null;
         };
+        /**
+         * SwapMembersRequest
+         * @description Swap two members between their (different) proposed teams — a manual override.
+         */
+        SwapMembersRequest: {
+            /**
+             * Membera
+             * Format: uuid
+             */
+            memberA: string;
+            /**
+             * Memberb
+             * Format: uuid
+             */
+            memberB: string;
+        };
         /** SwitchOrgRequest */
         SwitchOrgRequest: {
             /**
@@ -2512,6 +2705,18 @@ export interface components {
             branding?: {
                 [key: string]: unknown;
             } | null;
+        };
+        /** UpdateProposedTeamRequest */
+        UpdateProposedTeamRequest: {
+            /** Locked */
+            locked?: boolean | null;
+            /** Teamname */
+            teamName?: string | null;
+            /**
+             * Clearteamname
+             * @default false
+             */
+            clearTeamName: boolean;
         };
         /** UpdateTournamentRequest */
         UpdateTournamentRequest: {
@@ -4425,6 +4630,173 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TeamResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pairing_generate_pairing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeneratePairingRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingRunView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pairing_get_pairing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                division_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingRunView"] | null;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pairing_update_team: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateProposedTeamRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProposedTeamView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pairing_swap_members: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SwapMembersRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingRunView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pairing_publish_pairing: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublishPairingResponse"];
                 };
             };
             /** @description Validation Error */

@@ -15,11 +15,13 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from decimal import Decimal
 from typing import Any, Protocol, runtime_checkable
 
 from app.engine.types import (
     FormatKey,
     Outcome,
+    PairingPolicy,
     ParticipantId,
     ParticipantKind,
     SideResult,
@@ -78,6 +80,18 @@ class SportProfile(Protocol):
         self, kind: ParticipantKind, side_rosters: Sequence[Sequence[ParticipantId]]
     ) -> None:
         """Validate competitor shape (kind + roster sizes) for singles/doubles/teams."""
+        ...
+
+    # --- team formation (pairing) ---
+    def pairing_policy(self, config: Mapping[str, Any]) -> PairingPolicy:
+        """The team-formation rules for this sport — team size, target aggregate strength,
+        and strategy. Return ``PairingPolicy(team_size=1)`` (``supports_pairing`` is False)
+        for singles-only sports that never combine entrants into teams."""
+        ...
+
+    def skill_weight(self, skill: str | None) -> Decimal:
+        """Map a skill label (or ``None``) to the numeric weight the pairing engine
+        balances teams by. Sports with no skill tiers may return a constant."""
         ...
 
     # --- results ---

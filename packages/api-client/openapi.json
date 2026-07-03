@@ -2384,6 +2384,259 @@
         }
       }
     },
+    "/api/v1/divisions/{division_id}/pairing/generate": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Generate Pairing",
+        "operationId": "pairing_generate_pairing",
+        "parameters": [
+          {
+            "name": "division_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Division Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneratePairingRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/divisions/{division_id}/pairing": {
+      "get": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Get Pairing",
+        "operationId": "pairing_get_pairing",
+        "parameters": [
+          {
+            "name": "division_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Division Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/PairingRunView"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Pairing Get Pairing"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pairing/teams/{team_id}": {
+      "patch": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Update Team",
+        "operationId": "pairing_update_team",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Team Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProposedTeamRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProposedTeamView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pairing/runs/{run_id}/swap": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Swap Members",
+        "operationId": "pairing_swap_members",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SwapMembersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pairing/runs/{run_id}/publish": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Publish Pairing",
+        "operationId": "pairing_publish_pairing",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublishPairingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/matches/{match_id}/score": {
       "post": {
         "tags": [
@@ -4509,6 +4762,55 @@
         ],
         "title": "DrawResponse"
       },
+      "EntrantView": {
+        "properties": {
+          "registrationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Registrationid"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "skillLevel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skilllevel"
+          },
+          "weight": {
+            "type": "number",
+            "title": "Weight"
+          },
+          "preferredPartnerId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferredpartnerid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registrationId",
+          "displayName",
+          "skillLevel",
+          "weight",
+          "preferredPartnerId"
+        ],
+        "title": "EntrantView"
+      },
       "FeatureFlagResource": {
         "properties": {
           "id": {
@@ -4671,6 +4973,45 @@
           "enabled"
         ],
         "title": "FlagEnabledResponse"
+      },
+      "GeneratePairingRequest": {
+        "properties": {
+          "rngSeed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rngseed"
+          },
+          "forcedGroups": {
+            "items": {
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Forcedgroups"
+          },
+          "forbiddenPairs": {
+            "items": {
+              "items": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "type": "array"
+            },
+            "type": "array",
+            "title": "Forbiddenpairs"
+          }
+        },
+        "type": "object",
+        "title": "GeneratePairingRequest"
       },
       "HTTPValidationError": {
         "properties": {
@@ -5279,6 +5620,100 @@
         ],
         "title": "OrgSummary"
       },
+      "PairingRunView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "rngSeed": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rngseed"
+          },
+          "entrants": {
+            "items": {
+              "$ref": "#/components/schemas/EntrantView"
+            },
+            "type": "array",
+            "title": "Entrants"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/ProposedTeamView"
+            },
+            "type": "array",
+            "title": "Teams"
+          },
+          "unpairedIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Unpairedids"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/PairingSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "divisionId",
+          "status",
+          "rngSeed",
+          "entrants",
+          "teams",
+          "unpairedIds",
+          "summary"
+        ],
+        "title": "PairingRunView"
+      },
+      "PairingSummary": {
+        "properties": {
+          "teamCount": {
+            "type": "integer",
+            "title": "Teamcount"
+          },
+          "entrantCount": {
+            "type": "integer",
+            "title": "Entrantcount"
+          },
+          "unpairedCount": {
+            "type": "integer",
+            "title": "Unpairedcount"
+          },
+          "averageConfidence": {
+            "type": "number",
+            "title": "Averageconfidence"
+          }
+        },
+        "type": "object",
+        "required": [
+          "teamCount",
+          "entrantCount",
+          "unpairedCount",
+          "averageConfidence"
+        ],
+        "title": "PairingSummary"
+      },
       "ParticipantKind": {
         "type": "string",
         "enum": [
@@ -5455,6 +5890,64 @@
           "upload"
         ],
         "title": "PresignUploadResponse"
+      },
+      "ProposedTeamView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "memberIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Memberids"
+          },
+          "strength": {
+            "type": "number",
+            "title": "Strength"
+          },
+          "confidence": {
+            "type": "number",
+            "title": "Confidence"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "locked": {
+            "type": "boolean",
+            "title": "Locked"
+          },
+          "teamName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teamname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "memberIds",
+          "strength",
+          "confidence",
+          "reasons",
+          "locked",
+          "teamName"
+        ],
+        "title": "ProposedTeamView"
       },
       "PublicDivisionView": {
         "properties": {
@@ -5743,6 +6236,30 @@
           "organization"
         ],
         "title": "PublicTournamentView"
+      },
+      "PublishPairingResponse": {
+        "properties": {
+          "runId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Runid"
+          },
+          "publishedTeams": {
+            "type": "integer",
+            "title": "Publishedteams"
+          },
+          "unpairedCount": {
+            "type": "integer",
+            "title": "Unpairedcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "runId",
+          "publishedTeams",
+          "unpairedCount"
+        ],
+        "title": "PublishPairingResponse"
       },
       "PublishRequest": {
         "properties": {
@@ -6331,6 +6848,27 @@
         "type": "object",
         "title": "SubmitRegistrationRequest"
       },
+      "SwapMembersRequest": {
+        "properties": {
+          "memberA": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Membera"
+          },
+          "memberB": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Memberb"
+          }
+        },
+        "type": "object",
+        "required": [
+          "memberA",
+          "memberB"
+        ],
+        "title": "SwapMembersRequest",
+        "description": "Swap two members between their (different) proposed teams \u2014 a manual override."
+      },
       "SwitchOrgRequest": {
         "properties": {
           "organizationId": {
@@ -6641,6 +7179,39 @@
         },
         "type": "object",
         "title": "UpdateOrgRequest"
+      },
+      "UpdateProposedTeamRequest": {
+        "properties": {
+          "locked": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Locked"
+          },
+          "teamName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Teamname"
+          },
+          "clearTeamName": {
+            "type": "boolean",
+            "title": "Clearteamname",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "UpdateProposedTeamRequest"
       },
       "UpdateTournamentRequest": {
         "properties": {

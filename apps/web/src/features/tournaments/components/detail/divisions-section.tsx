@@ -1,10 +1,12 @@
 "use client";
 
-import { LayoutGrid } from "lucide-react";
+import { LayoutGrid, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -66,6 +68,15 @@ export function DivisionsSection({
               capacity={division.capacity}
               canManage={canManage}
             />
+            {division.participantType !== "individual" ? (
+              <Button tone="paper" size="sm" asChild className="self-start">
+                <Link
+                  href={`/console/tournaments/${tournamentId}/divisions/${division.id}/pairing`}
+                >
+                  <Sparkles className="h-4 w-4" /> Team pairing
+                </Link>
+              </Button>
+            ) : null}
           </CardContent>
         </Card>
       ))}

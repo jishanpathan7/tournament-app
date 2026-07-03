@@ -104,6 +104,16 @@ export type BulkScheduleResponse = Schemas["BulkScheduleResponse"];
 export type CourtQueueView = Schemas["CourtQueueView"];
 export type ScheduleQueueView = Schemas["ScheduleQueueView"];
 
+// ---- smart pairing (skill-balanced team formation) ----
+export type GeneratePairingRequest = Schemas["GeneratePairingRequest"];
+export type EntrantView = Schemas["EntrantView"];
+export type ProposedTeamView = Schemas["ProposedTeamView"];
+export type PairingSummary = Schemas["PairingSummary"];
+export type PairingRunView = Schemas["PairingRunView"];
+export type UpdateProposedTeamRequest = Schemas["UpdateProposedTeamRequest"];
+export type SwapMembersRequest = Schemas["SwapMembersRequest"];
+export type PublishPairingResponse = Schemas["PublishPairingResponse"];
+
 // ---- public microsite (anonymous — never fields tracing back to a user account) ----
 export type PublicOrgView = Schemas["PublicOrgView"];
 export type PublicTournamentView = Schemas["PublicTournamentView"];

@@ -29,6 +29,9 @@ from app.engine.types import (
     MatchKey,
     MatchPlan,
     MatchResult,
+    PairingConstraints,
+    PairingEntrant,
+    PairingPolicy,
     ParticipantId,
     ParticipantRef,
     PointsPolicy,
@@ -36,6 +39,7 @@ from app.engine.types import (
     SchedulingConstraints,
     StandingRow,
     StructurePlan,
+    TeamFormationPlan,
     TiebreakPolicy,
 )
 
@@ -61,6 +65,16 @@ class PairingRequest:
     played_pairs: frozenset[tuple[ParticipantId, ParticipantId]]
     round_seq: int
     config: Mapping[str, Any] = field(default_factory=dict)
+    rng_seed: int | None = None
+
+
+@dataclass(frozen=True)
+class TeamFormationRequest:
+    """Combine solo entrants into balanced teams before the draw (deterministic + seeded)."""
+
+    entrants: tuple[PairingEntrant, ...]
+    policy: PairingPolicy
+    constraints: PairingConstraints = field(default_factory=PairingConstraints)
     rng_seed: int | None = None
 
 
@@ -121,9 +135,26 @@ class FormatEngine(Protocol):
 
 @runtime_checkable
 class PairingEngine(Protocol):
-    """Produces the next round's matches for formats that pair dynamically."""
+    """Produces the next round's matches for formats that pair dynamically (swiss/ladder).
+
+    NOTE: this is *opponent* pairing (who plays whom). For combining solo entrants into
+    doubles/teams before the draw, see ``TeamFormationEngine`` — a distinct concept.
+    """
 
     def pair_round(self, request: PairingRequest) -> tuple[MatchPlan, ...]: ...
+
+
+@runtime_checkable
+class TeamFormationEngine(Protocol):
+    """Combines solo entrants into balanced teams (e.g. doubles pairs) before the draw.
+
+    Deterministic + seed-reproducible + sport-agnostic: it pairs purely by the numeric
+    ``PairingEntrant.weight`` and the ``PairingPolicy`` the Sport Profile supplies — it
+    never sees a skill *label*. Extension point: one implementation (the default
+    ``FoldPairingEngine``) serves every sport whose profile opts into pairing.
+    """
+
+    def form_teams(self, request: TeamFormationRequest) -> TeamFormationPlan: ...
 
 
 @runtime_checkable

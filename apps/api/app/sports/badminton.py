@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import enum
 from collections.abc import Mapping, Sequence
+from decimal import Decimal
 from typing import Any
 
 from app.engine.errors import ContractError, EngineValidationError, Issue
@@ -28,6 +29,8 @@ from app.engine.sport import MatchMetadata, MatchReport
 from app.engine.types import (
     FormatKey,
     Outcome,
+    PairingPolicy,
+    PairingStrategy,
     ParticipantId,
     ParticipantKind,
     SideOutcome,
@@ -38,6 +41,17 @@ from app.engine.types import (
 _DEFAULTS: dict[str, int] = {"best_of": 3, "points_to_win": 21, "win_by": 2, "point_cap": 30}
 _ROSTER_SIZE = {ParticipantKind.INDIVIDUAL: 1, ParticipantKind.PAIR: 2}
 _ENDED_BY = {r.value: r for r in TerminalReason}
+
+# Doubles fairness weights (SIBL fairness engine): beginner=1, intermediate=2, advanced=3.
+# A doubles team's strength is the sum of its two players' weights (range 2..6); the
+# fair target is the midpoint, 4 — so a "3+1" advanced+beginner team balances a "2+2".
+_SKILL_WEIGHT: dict[str, Decimal] = {
+    "beginner": Decimal(1),
+    "intermediate": Decimal(2),
+    "advanced": Decimal(3),
+}
+_DEFAULT_WEIGHT = Decimal(2)  # unknown/blank skill ⇒ treated as intermediate
+_DOUBLES_TARGET_STRENGTH = Decimal(4)
 
 
 class _GameState(enum.Enum):
@@ -147,6 +161,28 @@ class BadmintonProfile:
                 )
         if issues:
             raise EngineValidationError(issues)
+
+    # --- team formation (pairing) ---
+
+    def pairing_policy(self, config: Mapping[str, Any]) -> PairingPolicy:
+        """Doubles = balanced pairs of two (target strength 4); singles never pair.
+
+        A tournament configures which via ``config["participantType"]``; absent that,
+        the presence of a doubles division is what drives pairing, so we default to the
+        doubles policy (the only kind pairing is meaningful for)."""
+        kind = config.get("participantType") or config.get("kind")
+        if kind == ParticipantKind.INDIVIDUAL.value:
+            return PairingPolicy(team_size=1)
+        return PairingPolicy(
+            team_size=2,
+            target_strength=_DOUBLES_TARGET_STRENGTH,
+            strategy=PairingStrategy.BALANCE,
+        )
+
+    def skill_weight(self, skill: str | None) -> Decimal:
+        if skill is None:
+            return _DEFAULT_WEIGHT
+        return _SKILL_WEIGHT.get(skill.lower(), _DEFAULT_WEIGHT)
 
     # --- results ---
 

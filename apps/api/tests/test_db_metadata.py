@@ -30,6 +30,8 @@ EXPECTED_TABLES = {
     "participants",
     "registrations",
     "pairing_requests",
+    "pairing_runs",
+    "proposed_teams",
     # competition
     "matches",
     "match_participants",
