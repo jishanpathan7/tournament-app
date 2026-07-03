@@ -230,7 +230,9 @@ async def test_round_robin_draw_persists_full_schedule(app, client):
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 4)
 
-    draw = await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    draw = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert draw.status_code == 201, draw.text
     body = draw.json()
     assert body["format"] == "round_robin"
@@ -240,7 +242,9 @@ async def test_round_robin_draw_persists_full_schedule(app, client):
     assert stages.json()[0]["drawn"] is True
     # a second draw is rejected
     assert (
-        await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+        await client.post(
+            f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+        )
     ).status_code == 409
 
 
@@ -252,7 +256,9 @@ async def test_single_elimination_draw_has_pending_and_byes(app, client):
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)  # bracket of 4 → 1 bye
 
-    draw = await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    draw = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert draw.status_code == 201, draw.text
     body = draw.json()
     # 3 matches total; only the real semifinal is scheduled, bye-match + final are pending
@@ -266,7 +272,9 @@ async def test_draw_requires_enough_participants(app, client):
     sid = await _stage(client, did, "round_robin")
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 1)
-    resp = await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    resp = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert resp.status_code == 422 and resp.json()["code"] == "too_few_participants"
 
 
@@ -290,7 +298,9 @@ async def test_matches_expose_round_and_group_labels(app, client):
     sid = await _stage(client, did, "single_elim")
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 4)
-    draw = await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    draw = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert draw.status_code == 201, draw.text
 
     matches = (await client.get(f"/api/v1/stages/{sid}/matches")).json()
@@ -307,7 +317,9 @@ async def test_clear_draw_then_regenerate(app, client):
     sid = await _stage(client, did, "round_robin")
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 4)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
 
     stage_before = (await client.get(f"/api/v1/divisions/{did}/stages")).json()[0]
     assert stage_before["drawn"] is True and stage_before["locked"] is False
@@ -318,7 +330,9 @@ async def test_clear_draw_then_regenerate(app, client):
     stage_after = (await client.get(f"/api/v1/divisions/{did}/stages")).json()[0]
     assert stage_after["drawn"] is False
 
-    redrawn = await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    redrawn = await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     assert redrawn.status_code == 201, redrawn.text
 
 
@@ -338,7 +352,9 @@ async def test_clear_draw_blocked_once_a_match_is_scored(app, client):
     sid = await _stage(client, did, "round_robin")
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 4)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
 
     matches = (await client.get(f"/api/v1/stages/{sid}/matches")).json()
     winner = matches[0]["sides"][0]["participantId"]
@@ -429,7 +445,9 @@ async def test_tournament_activity_spans_every_owned_entity(app, client):
     sid = await _stage(client, did, "round_robin")
     await _open_registration(client, tid)
     await _approved_entrants(client, did, 3)
-    await client.post(f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client))
+    await client.post(
+        f"/api/v1/stages/{sid}/draw", json={"overrideReadiness": True}, headers=_csrf(client)
+    )
     matches = (await client.get(f"/api/v1/stages/{sid}/matches")).json()
     winner = matches[0]["sides"][0]["participantId"]
     assert (await _score(client, matches[0]["id"], _win_payload(matches[0]["sides"], winner)))[

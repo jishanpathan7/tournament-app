@@ -23,10 +23,20 @@ TOUR = "/api/v1/tournaments"
 IMPORTS = "/api/v1/imports"
 
 # ---- minimal valid SurveyMonkey-style CSV ----
-_CSV_SIMPLE = "Name,Email,Skill\nAlice Smith,alice@example.com,advanced\nBob Jones,bob@example.com,intermediate\n"
+_CSV_SIMPLE = (
+    "Name,Email,Skill\n"
+    "Alice Smith,alice@example.com,advanced\n"
+    "Bob Jones,bob@example.com,intermediate\n"
+)
 _CSV_BOM = "﻿Name,Email,Skill\nCarol Li,carol@example.com,beginner\n"
-_CSV_SM_SECOND_HEADER = "Name,Email,Skill\n,Open-ended response,\nDave Kim,dave@example.com,advanced\n"
-_CSV_DUPE_EMAIL = "Name,Email,Skill\nAlice Smith,alice@example.com,advanced\nAlice Dupe,alice@example.com,intermediate\n"
+_CSV_SM_SECOND_HEADER = (
+    "Name,Email,Skill\n,Open-ended response,\nDave Kim,dave@example.com,advanced\n"
+)
+_CSV_DUPE_EMAIL = (
+    "Name,Email,Skill\n"
+    "Alice Smith,alice@example.com,advanced\n"
+    "Alice Dupe,alice@example.com,intermediate\n"
+)
 _CSV_INVALID_SKILL = "Name,Email,Skill\nEve,eve@example.com,expert\n"
 _CSV_MISSING_NAME = "Name,Email,Skill\n,empty@example.com,beginner\n"
 
@@ -70,7 +80,9 @@ async def _individual_division(client: AsyncClient) -> tuple[str, str]:
         headers=_csrf(client),
     )
     assert div.status_code == 201, div.text
-    await client.post(f"{TOUR}/{tid}/status", json={"status": "registration"}, headers=_csrf(client))
+    await client.post(
+        f"{TOUR}/{tid}/status", json={"status": "registration"}, headers=_csrf(client)
+    )
     return tid, div.json()["id"]
 
 
@@ -633,9 +645,7 @@ async def test_viewer_cannot_commit_import(app, client):
             f"{AUTH}/register", json={"email": invitee, "name": "V", "password": PASSWORD}
         )
         await viewer.post(f"{AUTH}/login", json={"email": invitee, "password": PASSWORD})
-        await viewer.post(
-            f"{ORGS}/invites/accept", json={"token": token}, headers=_csrf(viewer)
-        )
+        await viewer.post(f"{ORGS}/invites/accept", json={"token": token}, headers=_csrf(viewer))
         resp = await viewer.post(
             f"/api/v1/divisions/{did}/imports/commit",
             json={
@@ -674,9 +684,7 @@ async def test_viewer_cannot_set_attendance(app, client):
             f"{AUTH}/register", json={"email": invitee, "name": "V", "password": PASSWORD}
         )
         await viewer.post(f"{AUTH}/login", json={"email": invitee, "password": PASSWORD})
-        await viewer.post(
-            f"{ORGS}/invites/accept", json={"token": token}, headers=_csrf(viewer)
-        )
+        await viewer.post(f"{ORGS}/invites/accept", json={"token": token}, headers=_csrf(viewer))
         resp = await viewer.post(
             f"/api/v1/participants/{pid}/attendance",
             json={"status": "checked_in"},
