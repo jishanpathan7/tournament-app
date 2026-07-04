@@ -71,7 +71,11 @@ async def create_squad(
         entity_id=squad.id,
         after={"tournament_id": str(tournament_id), "name": squad.name},
     )
-    await _emit(session, events.SQUAD_CREATED, {"squad_id": str(squad.id), "tournament_id": str(tournament_id)})
+    await _emit(
+        session,
+        events.SQUAD_CREATED,
+        {"squad_id": str(squad.id), "tournament_id": str(tournament_id)},
+    )
 
     board = await _build_board(session, org_id, tournament_id)
     return _find_squad_view(board, squad.id)
@@ -153,7 +157,9 @@ async def assign_member(
     if squad is None:
         raise NotFoundError("Team not found")
 
-    registration = await _eligible_registration(session, org_id, squad.tournament_id, registration_id)
+    registration = await _eligible_registration(
+        session, org_id, squad.tournament_id, registration_id
+    )
     existing = await repo.get_member_by_registration(session, org_id, registration_id)
     if existing is not None:
         if existing.squad_id == squad_id:

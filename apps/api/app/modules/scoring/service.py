@@ -22,8 +22,21 @@ from app.api.errors import ConflictError, NotFoundError, PreconditionFailedError
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster, get_sport_registry
-from app.db.enums import ContestKind, IdempotencyStatus, MatchOutcome, MatchStatus, NotificationChannel
-from app.db.models import IdempotencyKey, Match, MatchParticipant, MatchResultEvent, Standing, Tournament
+from app.db.enums import (
+    ContestKind,
+    IdempotencyStatus,
+    MatchOutcome,
+    MatchStatus,
+    NotificationChannel,
+)
+from app.db.models import (
+    IdempotencyKey,
+    Match,
+    MatchParticipant,
+    MatchResultEvent,
+    Standing,
+    Tournament,
+)
 from app.engine import ContractError, EngineValidationError, TerminalReason
 from app.modules.notifications.service import notify
 from app.modules.notifications.templates import NotificationTemplate, register_template
@@ -334,7 +347,11 @@ async def score_match(
 
 
 async def _emit(
-    session: AsyncSession, org_id: uuid.UUID, actor_id: uuid.UUID | None, match: Match, was_terminal: bool
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID | None,
+    match: Match,
+    was_terminal: bool,
 ) -> None:
     action = events.MATCH_CORRECTED if was_terminal else events.MATCH_COMPLETED
     audit.record(

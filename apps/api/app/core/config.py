@@ -138,7 +138,9 @@ class Settings(BaseSettings):
             if not self.cookie_secure:
                 problems.append("COOKIE_SECURE must be true")
             if not self.resend_api_key:
-                problems.append("RESEND_API_KEY must be set (LogEmailChannel must not be used in production)")
+                problems.append(
+                    "RESEND_API_KEY must be set (LogEmailChannel must not be used in production)"
+                )
             if not self.storage_signing_secret:
                 problems.append("STORAGE_SIGNING_SECRET must be set (separate from JWT_SECRET)")
             if problems:

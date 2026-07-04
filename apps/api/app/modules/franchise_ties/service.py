@@ -66,9 +66,7 @@ async def materialize_squad_participants(
         )
     out: list[Participant] = []
     for idx, squad in enumerate(squads):
-        existing = await repo.get_squad_participant_by_squad(
-            session, org_id, division_id, squad.id
-        )
+        existing = await repo.get_squad_participant_by_squad(session, org_id, division_id, squad.id)
         if existing is not None:
             out.append(existing)
             continue
@@ -171,7 +169,12 @@ async def generate_franchise_draw(
     )
     fmt = RoundRobinFormat()
     plan = fmt.generate(
-        GenerateRequest(format=FormatKey.ROUND_ROBIN, participants=refs, config=stage.config or {}, rng_seed=None)
+        GenerateRequest(
+            format=FormatKey.ROUND_ROBIN,
+            participants=refs,
+            config=stage.config or {},
+            rng_seed=None,
+        )
     )
 
     # Mark stage as franchise mode for standings filtering.
@@ -253,9 +256,7 @@ async def generate_franchise_knockout_draw(
                 code="too_few_squads",
             )
     else:
-        squad_participants = list(
-            await repo.list_squad_participants(session, org_id, division.id)
-        )
+        squad_participants = list(await repo.list_squad_participants(session, org_id, division.id))
         if advance_count is not None:
             squad_participants = squad_participants[:advance_count]
         if len(squad_participants) < 2:
@@ -277,8 +278,7 @@ async def generate_franchise_knockout_draw(
     per_tie = games_per_tie or _default_games_per_tie(pairs_by_squad)
 
     refs = tuple(
-        ParticipantRef(id=str(p.id), seed=p.seed or i + 1)
-        for i, p in enumerate(squad_participants)
+        ParticipantRef(id=str(p.id), seed=p.seed or i + 1) for i, p in enumerate(squad_participants)
     )
     fmt = SingleEliminationFormat()
     plan = fmt.generate(
@@ -426,7 +426,11 @@ async def expand_tie_legs(
         )
 
     payload = tie.result_payload or {}
-    tie.result_payload = {**payload, "gamesPerTie": games_per_tie, "legWins": payload.get("legWins") or {}}
+    tie.result_payload = {
+        **payload,
+        "gamesPerTie": games_per_tie,
+        "legWins": payload.get("legWins") or {},
+    }
 
     leg_count = 0
     for leg_index in range(games_per_tie):
@@ -653,7 +657,9 @@ async def rollup_leg_to_tie(
         if leg.status not in _TERMINAL:
             leg_outcomes.append(LegOutcome(None))
             continue
-        winner_mp = next((mp for mp in leg.participants if mp.outcome == MatchOutcome.WIN.value), None)
+        winner_mp = next(
+            (mp for mp in leg.participants if mp.outcome == MatchOutcome.WIN.value), None
+        )
         if winner_mp is None:
             leg_outcomes.append(LegOutcome(None))
             continue

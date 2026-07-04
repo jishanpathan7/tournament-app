@@ -42,8 +42,8 @@ def rollup_legs(*, games_per_tie: int, legs: tuple[LegOutcome, ...]) -> TieRollu
             home += 1
         elif leg.winning_side == 1:
             away += 1
-    decided = home >= threshold or away >= threshold or (
-        home + away >= games_per_tie and home != away
+    decided = (
+        home >= threshold or away >= threshold or (home + away >= games_per_tie and home != away)
     )
     winner: int | None = None
     if decided:

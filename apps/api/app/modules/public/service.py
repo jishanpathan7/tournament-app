@@ -22,7 +22,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import NotFoundError, ValidationError
 from app.db.enums import SkillLevel, TournamentStatus
-from app.db.models import Match, MatchResultEvent, Participant, Registration, Stage, Standing, Tournament
+from app.db.models import (
+    Match,
+    MatchResultEvent,
+    Participant,
+    Registration,
+    Stage,
+    Standing,
+    Tournament,
+)
 from app.db.session import set_org_context
 from app.modules.orgs import repository as orgs_repo
 from app.modules.public import repository as repo
@@ -153,7 +161,9 @@ async def submit_registration(
 ) -> Registration:
     if tournament.status != TournamentStatus.REGISTRATION.value:
         raise ValidationError("registration is not open", code="registration_closed")
-    division = await repo.get_division(session, tournament.organization_id, tournament.id, division_id)
+    division = await repo.get_division(
+        session, tournament.organization_id, tournament.id, division_id
+    )
     if division is None:
         raise NotFoundError("Division not found")
     owner_id = await orgs_repo.get_primary_owner_user_id(session, tournament.organization_id)
@@ -164,7 +174,9 @@ async def submit_registration(
         try:
             parsed_skill = SkillLevel(skill_level)
         except ValueError as exc:
-            raise ValidationError(f"invalid skill level {skill_level!r}", code="invalid_skill") from exc
+            raise ValidationError(
+                f"invalid skill level {skill_level!r}", code="invalid_skill"
+            ) from exc
     form_response: dict[str, str] = {"name": name.strip()}
     if email:
         form_response["email"] = email.strip()

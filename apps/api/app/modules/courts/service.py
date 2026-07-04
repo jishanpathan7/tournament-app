@@ -155,9 +155,7 @@ async def bulk_create_courts(
 
     if venue_id is None:
         if not new_venue_name or not new_venue_name.strip():
-            raise ValidationError(
-                "venue_id or new_venue_name is required", code="missing_venue"
-            )
+            raise ValidationError("venue_id or new_venue_name is required", code="missing_venue")
         venue = await repo.create_venue(
             session, Venue(organization_id=org_id, name=new_venue_name.strip(), address=None)
         )
@@ -170,18 +168,14 @@ async def bulk_create_courts(
     for i in range(count):
         name = f"{name_prefix}{start_number + i}"
         if len(name) > 80:
-            raise ValidationError(
-                f"Court name too long: {name!r}", code="court_name_too_long"
-            )
+            raise ValidationError(f"Court name too long: {name!r}", code="court_name_too_long")
         court = await repo.create_court(
             session, Court(organization_id=org_id, venue_id=venue.id, name=name)
         )
         court.venue = venue
         assignment = await repo.create_tournament_court(
             session,
-            TournamentCourt(
-                organization_id=org_id, tournament_id=tournament_id, court_id=court.id
-            ),
+            TournamentCourt(organization_id=org_id, tournament_id=tournament_id, court_id=court.id),
         )
         assignment.court = court
         created.append(assignment)

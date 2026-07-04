@@ -10,7 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.enums import ContestKind
-from app.db.models import Division, Match, MatchParticipant, Participant, Registration, RosterEntry, Team
+from app.db.models import (
+    Division,
+    Match,
+    MatchParticipant,
+    Participant,
+    Registration,
+    RosterEntry,
+    Team,
+)
 
 
 async def list_my_registrations(
@@ -63,9 +71,7 @@ async def list_matches_for_participants(
         .join(MatchParticipant, MatchParticipant.match_id == Match.id)
         .where(
             MatchParticipant.participant_id.in_(participant_ids),
-            Match.contest_kind.in_(
-                (ContestKind.STANDARD.value, ContestKind.LEG.value)
-            ),
+            Match.contest_kind.in_((ContestKind.STANDARD.value, ContestKind.LEG.value)),
         )
         .options(
             selectinload(Match.participants),

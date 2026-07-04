@@ -12,7 +12,9 @@ from app.modules.registrations.partner_resolution import (
 )
 
 
-def _reg(name: str, *, partner_name: str | None = None, partner_id: str | None = None) -> Registration:
+def _reg(
+    name: str, *, partner_name: str | None = None, partner_id: str | None = None
+) -> Registration:
     form: dict[str, str] = {"name": name}
     if partner_name:
         form["preferredPartnerName"] = partner_name

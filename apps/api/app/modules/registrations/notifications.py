@@ -203,7 +203,11 @@ async def notify_draw_published(
     recipient_emails: set[str],
     recipient_user_ids: set[uuid.UUID] | None = None,
 ) -> None:
-    data = {"name": "Player", "tournament_name": tournament.name, "tournament_slug": tournament.slug}
+    data = {
+        "name": "Player",
+        "tournament_name": tournament.name,
+        "tournament_slug": tournament.slug,
+    }
     for email in recipient_emails:
         await queue_email(
             session,

@@ -183,9 +183,7 @@ async def bulk_create_courts(
         name_prefix=body.name_prefix,
         start_number=body.start_number,
     )
-    return BulkCreateCourtsResponse(
-        created=[service.build_tournament_court_view(a) for a in rows]
-    )
+    return BulkCreateCourtsResponse(created=[service.build_tournament_court_view(a) for a in rows])
 
 
 @router.post(

@@ -12,7 +12,6 @@ from sqlalchemy.orm import selectinload
 from app.db.enums import RegistrationStatus
 from app.db.models import Division, Registration, SportProfile, Squad, SquadMember, Tournament, User
 
-
 _ACTIVE_REG = {
     RegistrationStatus.SUBMITTED.value,
     RegistrationStatus.WAITLISTED.value,
@@ -136,9 +135,7 @@ async def delete_tournament_squads(
         )
     )
     await session.execute(
-        delete(Squad).where(
-            Squad.tournament_id == tournament_id, Squad.organization_id == org_id
-        )
+        delete(Squad).where(Squad.tournament_id == tournament_id, Squad.organization_id == org_id)
     )
 
 

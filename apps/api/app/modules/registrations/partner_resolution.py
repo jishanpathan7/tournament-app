@@ -55,7 +55,9 @@ def resolve_preferred_partner_ids(registrations: Sequence[Registration]) -> int:
         form = dict(reg.form_response or {})
         if form.get("preferredPartnerRegistrationId") or not form.get("preferredPartnerName"):
             continue
-        partner_id = _lookup_partner_id(str(form["preferredPartnerName"]), self_id=reg.id, index=index)
+        partner_id = _lookup_partner_id(
+            str(form["preferredPartnerName"]), self_id=reg.id, index=index
+        )
         if partner_id is None:
             continue
         form["preferredPartnerRegistrationId"] = str(partner_id)

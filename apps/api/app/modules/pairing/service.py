@@ -85,9 +85,7 @@ async def generate(
     old draft is discarded."""
     ctx = await _load_context(session, org_id, division_id)
 
-    membership = await squad_membership_by_registration(
-        session, org_id, ctx.division.tournament_id
-    )
+    membership = await squad_membership_by_registration(session, org_id, ctx.division.tournament_id)
     if membership:
         cross_squad = cross_squad_forbidden_registration_pairs(
             membership, [r.id for r in ctx.entrants]

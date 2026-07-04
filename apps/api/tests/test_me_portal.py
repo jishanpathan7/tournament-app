@@ -58,7 +58,9 @@ async def _division(client: AsyncClient) -> tuple[str, str]:
         headers=_csrf(client),
     )
     assert div.status_code == 201, div.text
-    await client.post(f"{TOUR}/{tid}/status", json={"status": "registration"}, headers=_csrf(client))
+    await client.post(
+        f"{TOUR}/{tid}/status", json={"status": "registration"}, headers=_csrf(client)
+    )
     return tid, div.json()["id"]
 
 

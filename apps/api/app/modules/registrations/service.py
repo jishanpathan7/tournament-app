@@ -235,7 +235,9 @@ async def _build_participant(
             organization_id=org_id,
             division_id=division.id,
             kind=kind.value,
-            user_id=None if entrant_has_external_identity(registration) else registration.submitted_by,
+            user_id=(
+                None if entrant_has_external_identity(registration) else registration.submitted_by
+            ),
             display_name=entrant_display_name(
                 registration, account_name=user.name if user else None
             ),
