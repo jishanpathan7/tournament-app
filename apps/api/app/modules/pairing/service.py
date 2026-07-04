@@ -36,22 +36,22 @@ from app.engine import (
     field_max_dev,
     pairing_confidence,
 )
-from app.modules.registrations.partner_resolution import preferred_partner_id_for
-from app.modules.squads.repository import (
-    cross_squad_forbidden_registration_pairs,
-    squad_membership_by_registration,
-)
 from app.modules.pairing import events
 from app.modules.pairing import repository as repo
-from app.modules.registrations.entrant import (
-    entrant_display_name,
-    entrant_has_external_identity,
-)
 from app.modules.pairing.schemas import (
     EntrantView,
     PairingRunView,
     PairingSummary,
     ProposedTeamView,
+)
+from app.modules.registrations.entrant import (
+    entrant_display_name,
+    entrant_has_external_identity,
+)
+from app.modules.registrations.partner_resolution import preferred_partner_id_for
+from app.modules.squads.repository import (
+    cross_squad_forbidden_registration_pairs,
+    squad_membership_by_registration,
 )
 from app.realtime.channels import org_channel
 

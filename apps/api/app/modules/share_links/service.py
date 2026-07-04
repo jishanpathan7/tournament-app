@@ -340,8 +340,9 @@ async def build_checkin_session(session: AsyncSession, link: ShareLink) -> Check
 async def checkin_via_link(
     session: AsyncSession, *, link: ShareLink, participant_id: uuid.UUID
 ) -> None:
-    from app.modules.registration_ops import checkin_service, repository as reg_repo
     from app.db.enums import AttendanceStatus
+    from app.modules.registration_ops import checkin_service
+    from app.modules.registration_ops import repository as reg_repo
 
     if link.division_id is None:
         raise PermissionDeniedError("Invalid check-in link", code="invalid_link")

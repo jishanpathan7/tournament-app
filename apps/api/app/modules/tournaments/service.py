@@ -54,11 +54,11 @@ from app.engine import (
     WinnerOfRef,
     parse_source_refs,
 )
-from app.sports.config import merge_sport_config
-from app.modules.tournaments import events
-from app.modules.tournaments import repository as repo
 from app.modules.registrations import notifications as reg_notifications
 from app.modules.registrations import repository as registrations_repo
+from app.modules.tournaments import events
+from app.modules.tournaments import repository as repo
+from app.sports.config import merge_sport_config
 
 _TERMINAL_STATUSES = {
     MatchStatus.COMPLETED.value,

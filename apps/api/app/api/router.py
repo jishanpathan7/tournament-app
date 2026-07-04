@@ -11,6 +11,7 @@ from app.modules.auth.router import router as auth_router
 from app.modules.courts.router import router as courts_router
 from app.modules.files.router import router as files_router
 from app.modules.flags.router import router as flags_router
+from app.modules.franchise_ties.router import router as franchise_ties_router
 from app.modules.health.router import router as health_router
 from app.modules.me.router import router as me_router
 from app.modules.notifications.router import router as notifications_router
@@ -21,10 +22,9 @@ from app.modules.registration_ops.router import router as registration_ops_route
 from app.modules.registrations.router import router as registrations_router
 from app.modules.scheduling.router import router as scheduling_router
 from app.modules.scoring.router import router as scoring_router
-from app.modules.share_links.public_router import router as scorekeeper_public_router
 from app.modules.share_links.checkin_public_router import router as checkin_public_router
+from app.modules.share_links.public_router import router as scorekeeper_public_router
 from app.modules.share_links.router import router as share_links_router
-from app.modules.franchise_ties.router import router as franchise_ties_router
 from app.modules.squads.router import router as squads_router
 from app.modules.tournaments.router import router as tournaments_router
 from app.realtime.router import router as realtime_router

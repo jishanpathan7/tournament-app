@@ -38,6 +38,7 @@ from app.db.models import (
     Tournament,
 )
 from app.engine import ContractError, EngineValidationError, TerminalReason
+from app.modules.franchise_ties import service as franchise_ties_service
 from app.modules.notifications.service import notify
 from app.modules.notifications.templates import NotificationTemplate, register_template
 from app.modules.scoring import events
@@ -50,7 +51,6 @@ from app.modules.scoring.schemas import (
     StandingRowView,
     StandingsView,
 )
-from app.modules.franchise_ties import service as franchise_ties_service
 from app.modules.tournaments import repository as tournaments_repo
 from app.modules.tournaments import service as tournaments_service
 from app.realtime.channels import org_channel, tournament_channel

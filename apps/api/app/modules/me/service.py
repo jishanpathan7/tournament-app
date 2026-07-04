@@ -7,8 +7,8 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.enums import MatchStatus
-from app.modules.auth import repository as auth_repo
 from app.db.session import set_org_context
+from app.modules.auth import repository as auth_repo
 from app.modules.me import repository as repo
 from app.modules.me.schemas import (
     PortalHomeView,

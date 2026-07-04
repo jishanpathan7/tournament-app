@@ -25,7 +25,6 @@ from app.modules.registration_ops import events
 from app.modules.registration_ops import repository as repo
 from app.modules.registration_ops.importers import get_source, list_sources
 from app.modules.registration_ops.importers.base import ImportError_
-from app.modules.registrations.partner_resolution import resolve_preferred_partner_ids
 from app.modules.registration_ops.schemas import (
     ImportFieldInfo,
     ImportPreview,
@@ -34,6 +33,7 @@ from app.modules.registration_ops.schemas import (
     MappingTemplateView,
     PreviewRow,
 )
+from app.modules.registrations.partner_resolution import resolve_preferred_partner_ids
 from app.realtime.channels import org_channel
 
 # The canonical fields any source maps onto. Adding a field here is the only change

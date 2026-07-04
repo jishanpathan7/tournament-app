@@ -14,7 +14,8 @@ from app.core.factory import get_sport_registry
 from app.db.models import Registration, Squad, SquadMember
 from app.engine.squad_distribution import snake_distribute
 from app.modules.registrations.entrant import entrant_display_name
-from app.modules.squads import events, repository as repo
+from app.modules.squads import events
+from app.modules.squads import repository as repo
 from app.modules.squads.schemas import (
     AutoDistributeResponse,
     SquadMemberView,

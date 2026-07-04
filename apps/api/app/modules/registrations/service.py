@@ -24,8 +24,8 @@ from app.db.enums import (
 from app.db.models import Participant, Registration, RosterEntry, Team
 from app.engine import EngineValidationError
 from app.modules.registrations import events
-from app.modules.registrations import repository as repo
 from app.modules.registrations import notifications as reg_notifications
+from app.modules.registrations import repository as repo
 from app.modules.registrations.entrant import (
     entrant_display_name,
     entrant_has_external_identity,

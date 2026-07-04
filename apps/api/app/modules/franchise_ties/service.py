@@ -23,8 +23,8 @@ from app.modules.franchise_ties import repository as repo
 from app.modules.franchise_ties.schemas import (
     FranchiseDrawResponse,
     FranchiseDrawSummary,
-    FranchiseTieView,
     FranchiseTiesBoardView,
+    FranchiseTieView,
     TieLegView,
 )
 from app.modules.pairing import repository as pairing_repo

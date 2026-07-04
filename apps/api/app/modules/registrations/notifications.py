@@ -11,8 +11,8 @@ from app.db.models import Division, Registration, Tournament
 from app.modules.notifications.email_queue import queue_email
 from app.modules.notifications.service import notify
 from app.modules.notifications.templates import NotificationTemplate, register_template
-from app.modules.registrations.entrant import entrant_has_external_identity, form_entrant_name
 from app.modules.registrations import events
+from app.modules.registrations.entrant import entrant_has_external_identity, form_entrant_name
 
 NOTIFY_SUBMITTED = "registration.submitted"
 NOTIFY_APPROVED = "registration.approved"
