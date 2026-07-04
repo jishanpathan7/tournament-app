@@ -17,10 +17,15 @@ from app.api.deps import (
     get_request_session,
     require_permission,
 )
+from app.api.errors import ValidationError
 from app.core import authz
 from app.modules.courts import service
 from app.modules.courts.schemas import (
     AssignCourtRequest,
+    BulkCreateCourtsRequest,
+    BulkCreateCourtsResponse,
+    BulkRemoveCourtsRequest,
+    BulkRemoveCourtsResponse,
     CourtView,
     CreateCourtRequest,
     CreateVenueRequest,
@@ -152,3 +157,52 @@ async def unassign_court(
     await service.unassign_court(
         session, org_id=principal.organization_id, tournament_id=tournament_id, court_id=court_id
     )
+
+
+@router.post(
+    "/tournaments/{tournament_id}/courts/bulk-create",
+    response_model=BulkCreateCourtsResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(authed_csrf)],
+)
+async def bulk_create_courts(
+    tournament_id: uuid.UUID,
+    body: BulkCreateCourtsRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> BulkCreateCourtsResponse:
+    if body.venue_id is None and not body.new_venue_name:
+        raise ValidationError("venue_id or new_venue_name is required", code="missing_venue")
+    rows = await service.bulk_create_courts(
+        session,
+        org_id=principal.organization_id,
+        tournament_id=tournament_id,
+        venue_id=body.venue_id,
+        new_venue_name=body.new_venue_name,
+        count=body.count,
+        name_prefix=body.name_prefix,
+        start_number=body.start_number,
+    )
+    return BulkCreateCourtsResponse(
+        created=[service.build_tournament_court_view(a) for a in rows]
+    )
+
+
+@router.post(
+    "/tournaments/{tournament_id}/courts/bulk-remove",
+    response_model=BulkRemoveCourtsResponse,
+    dependencies=[Depends(authed_csrf)],
+)
+async def bulk_remove_courts(
+    tournament_id: uuid.UUID,
+    body: BulkRemoveCourtsRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> BulkRemoveCourtsResponse:
+    removed = await service.bulk_unassign_courts(
+        session,
+        org_id=principal.organization_id,
+        tournament_id=tournament_id,
+        court_ids=body.court_ids,
+    )
+    return BulkRemoveCourtsResponse(removed=removed)

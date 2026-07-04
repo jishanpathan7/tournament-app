@@ -1,102 +1,11 @@
 "use client";
 
-import type { DivisionReadinessView } from "@tournament/api-client";
 import { AlertTriangle, CheckCircle2, Circle, Shuffle } from "lucide-react";
-import Link from "next/link";
 
 import { ErrorState } from "@/components/common/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { useTournamentReadiness } from "@/features/registration-ops/use-registration-ops";
-
-function ReadinessRow({
-  view,
-  tournamentId,
-}: {
-  view: DivisionReadinessView;
-  tournamentId: string;
-}) {
-  const progressPct =
-    view.approved > 0 ? Math.round((view.checkedIn / view.approved) * 100) : 0;
-
-  return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="font-semibold">{view.divisionName}</p>
-          <p className="text-xs text-muted-foreground capitalize mt-0.5">{view.participantType}</p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {view.readyForStart ? (
-            <Badge tone="mint">Ready to start</Badge>
-          ) : view.readyForDraw ? (
-            <Badge tone="candy">Ready for draw</Badge>
-          ) : (
-            <Badge tone="muted">Not ready</Badge>
-          )}
-          {view.drawn && <Badge tone="ink">Draw done</Badge>}
-        </div>
-      </div>
-
-      {/* Check-in progress bar */}
-      <div className="flex items-center gap-3">
-        <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden">
-          <div
-            className="h-full rounded-full bg-mint transition-all"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-        <span className="text-xs text-muted-foreground tabular-nums w-16 text-right">
-          {view.checkedIn}/{view.approved} checked in
-        </span>
-      </div>
-
-      {/* Stat row */}
-      <div className="flex flex-wrap gap-4 text-sm">
-        <span>
-          <span className="font-medium">{view.approved}</span>{" "}
-          <span className="text-muted-foreground">approved</span>
-        </span>
-        <span className="text-mint font-medium">{view.checkedIn} in</span>
-        {view.pending > 0 && (
-          <span className="text-yellow-600 font-medium">{view.pending} pending</span>
-        )}
-        {view.absent > 0 && (
-          <span className="text-pink font-medium">{view.absent} absent</span>
-        )}
-        {view.unpairedEntrants > 0 && (
-          <span className="text-muted-foreground">
-            {view.unpairedEntrants} unpaired
-          </span>
-        )}
-      </div>
-
-      {/* Blockers */}
-      {view.blockers.length > 0 && (
-        <ul className="flex flex-col gap-1">
-          {view.blockers.map((b) => (
-            <li key={b} className="flex items-center gap-1.5 text-xs text-yellow-600">
-              <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
-              {b}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {/* Quick link to check-in */}
-      {!view.readyForStart && !view.drawn && (
-        <Button asChild size="sm" tone="paper" className="self-start">
-          <Link
-            href={`/console/tournaments/${tournamentId}/divisions/${view.divisionId}/attendance`}
-          >
-            Manage check-in
-          </Link>
-        </Button>
-      )}
-    </div>
-  );
-}
+import { ReadinessRow } from "@/features/registration-ops/components/readiness-row";
 
 export function ReadinessDashboard({ tournamentId }: { tournamentId: string }) {
   const readiness = useTournamentReadiness(tournamentId);

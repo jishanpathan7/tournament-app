@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -42,6 +42,7 @@ router = APIRouter(tags=["tournaments"])
 
 _manage = require_permission(authz.TOURNAMENT_UPDATE)
 _create = require_permission(authz.TOURNAMENT_CREATE)
+_delete = require_permission(authz.TOURNAMENT_DELETE)
 
 
 async def _tournament_response(session: AsyncSession, tournament: Tournament) -> TournamentResponse:
@@ -139,7 +140,7 @@ async def get_tournament(
 @router.get("/tournaments/{tournament_id}/activity", response_model=list[ActivityEventView])
 async def get_tournament_activity(
     tournament_id: uuid.UUID,
-    principal: Principal = Depends(get_principal),
+    principal: Principal = Depends(_manage),
     session: AsyncSession = Depends(get_request_session),
 ) -> list[ActivityEventView]:
     await service._require_tournament(session, principal.organization_id, tournament_id)
@@ -182,6 +183,25 @@ async def update_tournament(
         settings=body.settings,
     )
     return await _tournament_response(session, tournament)
+
+
+@router.delete(
+    "/tournaments/{tournament_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(authed_csrf)],
+)
+async def delete_tournament(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(_delete),
+    session: AsyncSession = Depends(get_request_session),
+) -> Response:
+    await service.delete_tournament(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        tournament_id=tournament_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.post(

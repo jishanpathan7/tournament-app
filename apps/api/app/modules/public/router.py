@@ -13,7 +13,7 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
@@ -26,7 +26,9 @@ from app.modules.public.schemas import (
     PublicDivisionView,
     PublicOrgView,
     PublicParticipantView,
+    PublicRegistrationSubmittedView,
     PublicStageView,
+    PublicSubmitRegistrationRequest,
     PublicTournamentSearchResult,
     PublicTournamentView,
 )
@@ -98,6 +100,34 @@ async def list_divisions(
         )
         for did, name, ptype, capacity, count in rows
     ]
+
+
+@router.post(
+    "/tournaments/{slug}/divisions/{division_id}/registrations",
+    response_model=PublicRegistrationSubmittedView,
+    status_code=status.HTTP_201_CREATED,
+)
+async def submit_registration(
+    slug: str,
+    division_id: uuid.UUID,
+    body: PublicSubmitRegistrationRequest,
+    session: AsyncSession = Depends(get_public_session),
+) -> PublicRegistrationSubmittedView:
+    tournament = await service.resolve_tournament(session, slug)
+    registration = await service.submit_registration(
+        session,
+        tournament=tournament,
+        division_id=division_id,
+        name=body.name,
+        email=body.email,
+        skill_level=body.skill_level,
+        preferred_partner_name=body.preferred_partner_name,
+    )
+    return PublicRegistrationSubmittedView(
+        id=registration.id,
+        status=registration.status,
+        division_id=registration.division_id,
+    )
 
 
 @router.get("/tournaments/{slug}/stages", response_model=list[PublicStageView])

@@ -37,6 +37,7 @@ async def get_tournament_by_slug(session: AsyncSession, slug: str) -> Tournament
         .where(
             Tournament.slug == slug,
             Tournament.visibility.in_([Visibility.PUBLIC.value, Visibility.UNLISTED.value]),
+            Tournament.deleted_at.is_(None),
         )
         .options(selectinload(Tournament.organization))
     )
@@ -53,6 +54,7 @@ async def search_tournaments(
         select(Tournament)
         .where(
             Tournament.visibility == Visibility.PUBLIC.value,
+            Tournament.deleted_at.is_(None),
             (Tournament.name.ilike(pattern) | Tournament.slug.ilike(pattern)),
         )
         .options(selectinload(Tournament.organization))
@@ -60,6 +62,17 @@ async def search_tournaments(
         .limit(limit)
     )
     return (await session.execute(stmt)).scalars().all()
+
+
+async def get_division(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID, did: uuid.UUID
+) -> Division | None:
+    stmt = select(Division).where(
+        Division.id == did,
+        Division.organization_id == org_id,
+        Division.tournament_id == tid,
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
 
 
 async def division_approved_counts(

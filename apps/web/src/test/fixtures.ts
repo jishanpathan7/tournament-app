@@ -141,6 +141,8 @@ export function makeMatch(overrides: Partial<MatchView> = {}): MatchView {
     courtId: overrides.courtId ?? null,
     scheduledAt: overrides.scheduledAt ?? null,
     updatedAt: overrides.updatedAt ?? "2026-01-01T00:00:00Z",
+    parentMatchId: overrides.parentMatchId ?? null,
+    contestKind: overrides.contestKind ?? "standard",
   };
 }
 

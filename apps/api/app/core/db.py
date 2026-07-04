@@ -24,7 +24,12 @@ def _init() -> None:
     global _engine, _sessionmaker
     settings = get_settings()
     if settings.database_url and _engine is None:
-        _engine = create_async_engine(settings.database_url, future=True, pool_pre_ping=True)
+        _engine = create_async_engine(
+            settings.database_url,
+            future=True,
+            pool_pre_ping=True,
+            connect_args={"statement_cache_size": 0},
+        )
         _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
 
 

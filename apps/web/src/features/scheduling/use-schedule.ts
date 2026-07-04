@@ -6,11 +6,15 @@ import type { BulkScheduleRequest, MatchView, ScheduleAssignRequest } from "@tou
 import * as schedulingApi from "@/features/scheduling/scheduling-api";
 import { queryKeys } from "@/lib/query-keys";
 
-export function useScheduleQueue(tournamentId: string, options?: { enabled?: boolean }) {
+export function useScheduleQueue(
+  tournamentId: string,
+  options?: { enabled?: boolean; refetchInterval?: number | false },
+) {
   return useQuery({
     queryKey: queryKeys.schedule.queue(tournamentId),
     queryFn: () => schedulingApi.getQueue(tournamentId),
     enabled: options?.enabled ?? true,
+    refetchInterval: options?.refetchInterval,
   });
 }
 

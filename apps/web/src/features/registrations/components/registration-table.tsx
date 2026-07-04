@@ -14,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RegistrationRowActions } from "@/features/registrations/components/registration-row-actions";
-import { entrantLabel, formResponseSummary, statusMeta } from "@/features/registrations/config";
+import { formResponseSummary, registrationEntrantLabel, statusMeta } from "@/features/registrations/config";
 
 function openOnKey(onOpen: () => void) {
   return (e: KeyboardEvent<HTMLTableRowElement>) => {
@@ -83,7 +83,7 @@ export function RegistrationTable({
               key={registration.id}
               tabIndex={0}
               role="button"
-              aria-label={`Open registration from ${entrantLabel(registration.submittedBy, membersById)}`}
+              aria-label={`Open registration from ${registrationEntrantLabel(registration, membersById)}`}
               className="focus-visible:bg-muted cursor-pointer outline-none"
               onClick={() => onOpen(registration)}
               onKeyDown={openOnKey(() => onOpen(registration))}
@@ -91,14 +91,14 @@ export function RegistrationTable({
               {canManage ? (
                 <TableCell onClick={(e) => e.stopPropagation()}>
                   <Checkbox
-                    aria-label={`Select registration from ${entrantLabel(registration.submittedBy, membersById)}`}
+                    aria-label={`Select registration from ${registrationEntrantLabel(registration, membersById)}`}
                     checked={selected.has(registration.id)}
                     onCheckedChange={() => onToggleSelect(registration.id)}
                   />
                 </TableCell>
               ) : null}
               <TableCell className="font-semibold">
-                {entrantLabel(registration.submittedBy, membersById)}
+                {registrationEntrantLabel(registration, membersById)}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {participant?.displayName ?? formResponseSummary(registration.formResponse) ?? "—"}

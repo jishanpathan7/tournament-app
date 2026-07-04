@@ -9,13 +9,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.enums import PairingRunStatus, RegistrationStatus
+from app.db.enums import PairingRunStatus, ParticipantKind, RegistrationStatus
 from app.db.models import (
     Division,
     PairingRun,
+    Participant,
     ProposedTeam,
     Registration,
     SportProfile,
+    Team,
     Tournament,
     User,
 )
@@ -43,6 +45,48 @@ async def get_sport_profile(session: AsyncSession, pid: uuid.UUID) -> SportProfi
 
 async def get_user(session: AsyncSession, uid: uuid.UUID) -> User | None:
     return await session.get(User, uid)
+
+
+async def get_latest_published_run(
+    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+) -> PairingRun | None:
+    stmt = (
+        select(PairingRun)
+        .where(
+            PairingRun.division_id == division_id,
+            PairingRun.organization_id == org_id,
+            PairingRun.status == PairingRunStatus.PUBLISHED.value,
+        )
+        .options(selectinload(PairingRun.proposed_teams))
+        .order_by(PairingRun.created_at.desc())
+    )
+    return (await session.execute(stmt)).scalars().first()
+
+
+async def list_pair_participants(
+    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+) -> Sequence[Participant]:
+    stmt = (
+        select(Participant)
+        .where(
+            Participant.division_id == division_id,
+            Participant.organization_id == org_id,
+            Participant.kind == ParticipantKind.PAIR.value,
+        )
+        .order_by(Participant.created_at, Participant.id)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def get_team_with_roster(
+    session: AsyncSession, org_id: uuid.UUID, team_id: uuid.UUID
+) -> Team | None:
+    stmt = (
+        select(Team)
+        .where(Team.id == team_id, Team.organization_id == org_id)
+        .options(selectinload(Team.roster_entries))
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
 
 
 async def list_eligible_registrations(

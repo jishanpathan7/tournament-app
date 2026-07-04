@@ -136,3 +136,76 @@ async def list_tournament_courts(
     session: AsyncSession, org_id: uuid.UUID, tournament_id: uuid.UUID
 ) -> Sequence[TournamentCourt]:
     return await repo.list_tournament_courts(session, org_id, tournament_id)
+
+
+async def bulk_create_courts(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    venue_id: uuid.UUID | None,
+    new_venue_name: str | None,
+    count: int,
+    name_prefix: str,
+    start_number: int,
+) -> list[TournamentCourt]:
+    tournament = await repo.get_tournament(session, org_id, tournament_id)
+    if tournament is None:
+        raise NotFoundError("Tournament not found")
+
+    if venue_id is None:
+        if not new_venue_name or not new_venue_name.strip():
+            raise ValidationError(
+                "venue_id or new_venue_name is required", code="missing_venue"
+            )
+        venue = await repo.create_venue(
+            session, Venue(organization_id=org_id, name=new_venue_name.strip(), address=None)
+        )
+    else:
+        venue = await repo.get_venue(session, org_id, venue_id)
+        if venue is None:
+            raise NotFoundError("Venue not found")
+
+    created: list[TournamentCourt] = []
+    for i in range(count):
+        name = f"{name_prefix}{start_number + i}"
+        if len(name) > 80:
+            raise ValidationError(
+                f"Court name too long: {name!r}", code="court_name_too_long"
+            )
+        court = await repo.create_court(
+            session, Court(organization_id=org_id, venue_id=venue.id, name=name)
+        )
+        court.venue = venue
+        assignment = await repo.create_tournament_court(
+            session,
+            TournamentCourt(
+                organization_id=org_id, tournament_id=tournament_id, court_id=court.id
+            ),
+        )
+        assignment.court = court
+        created.append(assignment)
+    return created
+
+
+async def bulk_unassign_courts(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    court_ids: list[uuid.UUID],
+) -> list[uuid.UUID]:
+    tournament = await repo.get_tournament(session, org_id, tournament_id)
+    if tournament is None:
+        raise NotFoundError("Tournament not found")
+
+    assignments: list[TournamentCourt] = []
+    for court_id in court_ids:
+        assignment = await repo.get_tournament_court(session, org_id, tournament_id, court_id)
+        if assignment is None:
+            raise NotFoundError("Court is not assigned to this tournament")
+        assignments.append(assignment)
+
+    for assignment in assignments:
+        await repo.delete_tournament_court(session, assignment)
+    return court_ids

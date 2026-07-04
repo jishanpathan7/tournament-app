@@ -18,7 +18,7 @@ from sqlalchemy.orm import selectinload
 
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster, get_sport_registry, get_standings_engine
-from app.db.enums import MatchStatus, ParticipantStatus
+from app.db.enums import ContestKind, MatchStatus, ParticipantKind, ParticipantStatus
 from app.db.models import (
     Division,
     Group,
@@ -81,15 +81,40 @@ async def recompute_standings(payload: dict, ctx: JobContext) -> None:
         .scalars()
         .all()
     )
-    # completed 2-sided matches only (byes/pending are excluded from standings)
-    completed = [
-        m
-        for m in matches
-        if m.status in _TERMINAL
-        and len(m.participants) == 2
-        and all(p.outcome for p in m.participants)
-    ]
-    participant_ids = await _division_participant_ids(session, stage.division_id)
+    franchise_mode = bool((stage.config or {}).get("franchiseMode"))
+    if franchise_mode:
+        completed = [
+            m
+            for m in matches
+            if m.contest_kind == ContestKind.TIE.value
+            and m.status in _TERMINAL
+            and len(m.participants) == 2
+            and all(p.outcome for p in m.participants)
+        ]
+        participant_ids = [
+            str(p.id)
+            for p in (
+                await session.execute(
+                    select(Participant).where(
+                        Participant.division_id == stage.division_id,
+                        Participant.kind == ParticipantKind.SQUAD.value,
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        ]
+    else:
+        # completed 2-sided matches only (byes/pending are excluded from standings)
+        completed = [
+            m
+            for m in matches
+            if m.contest_kind == ContestKind.STANDARD.value
+            and m.status in _TERMINAL
+            and len(m.participants) == 2
+            and all(p.outcome for p in m.participants)
+        ]
+        participant_ids = await _division_participant_ids(session, stage.division_id)
     groups = (
         (await session.execute(select(Group).where(Group.stage_id == stage_id))).scalars().all()
     )

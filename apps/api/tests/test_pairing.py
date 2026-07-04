@@ -257,6 +257,11 @@ async def test_publish_materializes_pair_participants(app, client):
     assert participants.status_code == 200
     pairs = [p for p in participants.json() if p["kind"] == "pair"]
     assert len(pairs) == 3
+    team = await client.get(f"/api/v1/teams/{pairs[0]['teamId']}")
+    assert team.status_code == 200
+    roster_names = {entry["externalName"] for entry in team.json()["roster"]}
+    assert len(roster_names) == 2
+    assert roster_names <= {"Adv One", "Adv Two", "Int One", "Int Two", "Beg One", "Beg Two"}
 
     # The run is published and no longer the active draft.
     active = await client.get(f"/api/v1/divisions/{did}/pairing")

@@ -33,6 +33,7 @@ export function applyRegistrationFilters(
     if (!q) return true;
     const member = membersById.get(r.submittedBy);
     const haystack = [
+      typeof r.formResponse?.name === "string" ? r.formResponse.name : "",
       member?.name ?? "",
       member?.email ?? "",
       r.skillLevel ?? "",

@@ -1,0 +1,8 @@
+{% extends "layouts/base.html" %}
+{% import "_button.html" as ui %}
+{% block content %}
+<p>Hi {{ name }},</p>
+<p>We received your registration for <strong>{{ division_name }}</strong> at {{ tournament_name }}.</p>
+<p>You'll get another email once an organizer reviews your entry.</p>
+{{ ui.button(frontend_url ~ "/t/" ~ tournament_slug, "View tournament") }}
+{% endblock %}

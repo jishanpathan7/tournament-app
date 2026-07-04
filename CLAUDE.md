@@ -4,7 +4,7 @@
 
 ## What this is
 
-A **multi-sport Tournament Management Platform** (SaaS). First real use case: an internal **SIBL badminton tournament** (target: last week of July 2026). The platform must run *that* event while being architected so any sport (cricket, football, table tennis, chess, hackathons, esports) is added later **without schema or engine changes**.
+A **multi-sport competition platform** branded **Playlane** (SaaS). First real use case: an internal **SIBL badminton tournament** (target: last week of July 2026). The platform must run *that* event while being architected so any sport (cricket, football, table tennis, chess, hackathons, esports) is added later **without schema or engine changes**.
 
 ## Current status (as of 2026-06)
 

@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from app.db.models.competition import Match, Standing
     from app.db.models.identity import Organization
     from app.db.models.participants import Participant, Registration
+    from app.db.models.squads import Squad
 
 
 class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDeleteMixin, Base):
@@ -65,6 +66,9 @@ class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelete
 
     organization: Mapped[Organization] = relationship(back_populates="tournaments")
     divisions: Mapped[list[Division]] = relationship(
+        back_populates="tournament", cascade="all, delete-orphan", passive_deletes=True
+    )
+    squads: Mapped[list[Squad]] = relationship(
         back_populates="tournament", cascade="all, delete-orphan", passive_deletes=True
     )
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Plus } from "lucide-react";
+import { LayoutGrid, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -8,6 +8,7 @@ import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select,
   SelectContent,
@@ -18,10 +19,12 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { BulkCreateCourtsDialog } from "@/features/courts/components/bulk-create-courts-dialog";
 import { CreateCourtDialog } from "@/features/courts/components/create-court-dialog";
 import { courtStatusMeta } from "@/features/courts/config";
 import {
   useAssignCourt,
+  useBulkRemoveCourts,
   useCourts,
   useTournamentCourts,
   useUnassignCourt,
@@ -39,13 +42,45 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
   const allCourts = useCourts();
   const updateCourt = useUpdateCourt();
   const unassignCourt = useUnassignCourt(tournamentId);
+  const bulkRemove = useBulkRemoveCourts(tournamentId);
   const assignCourt = useAssignCourt(tournamentId);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
   const [assignSelection, setAssignSelection] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const assignedCourtIds = new Set((assigned.data ?? []).map((a) => a.court.id));
   const unassignedCourts = (allCourts.data ?? []).filter((c) => !assignedCourtIds.has(c.id));
+
+  const toggleSelect = (courtId: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(courtId)) next.delete(courtId);
+      else next.add(courtId);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    const rows = assigned.data ?? [];
+    if (selected.size === rows.length && rows.length > 0) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(rows.map((r) => r.court.id)));
+    }
+  };
+
+  const handleBulkRemove = () => {
+    const courtIds = [...selected];
+    bulkRemove.mutate(courtIds, {
+      onSuccess: (result) => {
+        setSelected(new Set());
+        toast.success(`Removed ${result.removed.length} courts`);
+      },
+      onError: (e) => toast.error(errorMessage(e, "Couldn't remove courts")),
+    });
+  };
 
   if (assigned.isLoading) {
     return (
@@ -70,13 +105,44 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
         description="Courts assigned to this tournament — scheduling only places matches on courts listed here."
         actions={
           canManage ? (
-            <Button tone="candy" size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4" strokeWidth={2.25} />
-              Add court
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button tone="paper" size="sm" onClick={() => setBulkCreateOpen(true)}>
+                <Plus className="h-4 w-4" strokeWidth={2.25} />
+                Add in bulk
+              </Button>
+              <Button tone="candy" size="sm" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4" strokeWidth={2.25} />
+                Add court
+              </Button>
+            </div>
           ) : undefined
         }
       />
+
+      {canManage && selected.size > 0 ? (
+        <div className="border-ink bg-lavender/40 flex flex-wrap items-center gap-3 rounded-2xl border-2 p-4">
+          <span className="text-sm font-medium">
+            {selected.size} court{selected.size === 1 ? "" : "s"} selected
+          </span>
+          <Button
+            tone="ghost"
+            size="sm"
+            onClick={() => setSelected(new Set())}
+            disabled={bulkRemove.isPending}
+          >
+            Clear
+          </Button>
+          <Button
+            tone="paper"
+            size="sm"
+            onClick={handleBulkRemove}
+            disabled={bulkRemove.isPending}
+          >
+            <Trash2 className="h-4 w-4" />
+            Remove selected
+          </Button>
+        </div>
+      ) : null}
 
       {canManage && unassignedCourts.length > 0 ? (
         <div className="border-ink bg-card shadow-sticker-xs flex flex-wrap items-center gap-3 rounded-2xl border-2 p-4">
@@ -117,13 +183,19 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
           icon={LayoutGrid}
           eyebrow="No courts yet"
           title="Assign courts to schedule matches"
-          description="Add a court (and its venue) to start assigning matches to courts and times."
+          description="Add courts in bulk (e.g. Court 1–8) or one at a time to start scheduling matches."
           action={
             canManage ? (
-              <Button tone="candy" size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" strokeWidth={2.25} />
-                Add court
-              </Button>
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button tone="paper" size="sm" onClick={() => setBulkCreateOpen(true)}>
+                  <Plus className="h-4 w-4" strokeWidth={2.25} />
+                  Add in bulk
+                </Button>
+                <Button tone="candy" size="sm" onClick={() => setCreateOpen(true)}>
+                  <Plus className="h-4 w-4" strokeWidth={2.25} />
+                  Add court
+                </Button>
+              </div>
             ) : undefined
           }
         />
@@ -131,6 +203,15 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
         <Table>
           <TableHeader>
             <TableRow>
+              {canManage ? (
+                <TableHead className="w-10">
+                  <Checkbox
+                    checked={selected.size === rows.length && rows.length > 0}
+                    onCheckedChange={toggleAll}
+                    aria-label="Select all courts"
+                  />
+                </TableHead>
+              ) : null}
               <TableHead>Court</TableHead>
               <TableHead>Venue</TableHead>
               <TableHead>Status</TableHead>
@@ -142,6 +223,15 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
               const meta = courtStatusMeta(row.court.status);
               return (
                 <TableRow key={row.id}>
+                  {canManage ? (
+                    <TableCell>
+                      <Checkbox
+                        checked={selected.has(row.court.id)}
+                        onCheckedChange={() => toggleSelect(row.court.id)}
+                        aria-label={`Select ${row.court.name}`}
+                      />
+                    </TableCell>
+                  ) : null}
                   <TableCell className="font-medium">{row.court.name}</TableCell>
                   <TableCell className="text-muted-foreground">{row.court.venueName}</TableCell>
                   <TableCell>
@@ -180,6 +270,14 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
                         size="sm"
                         onClick={() => {
                           unassignCourt.mutate(row.court.id, {
+                            onSuccess: () => {
+                              setSelected((prev) => {
+                                if (!prev.has(row.court.id)) return prev;
+                                const next = new Set(prev);
+                                next.delete(row.court.id);
+                                return next;
+                              });
+                            },
                             onError: (e) =>
                               toast.error(errorMessage(e, "Couldn't remove court")),
                           });
@@ -197,6 +295,11 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
       )}
 
       <CreateCourtDialog tournamentId={tournamentId} open={createOpen} onOpenChange={setCreateOpen} />
+      <BulkCreateCourtsDialog
+        tournamentId={tournamentId}
+        open={bulkCreateOpen}
+        onOpenChange={setBulkCreateOpen}
+      />
     </div>
   );
 }

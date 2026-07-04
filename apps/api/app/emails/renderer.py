@@ -25,6 +25,12 @@ _SUBJECTS: dict[str, str] = {
     "verify_email": "Verify your {{ app_name }} email",
     "password_reset": "Reset your {{ app_name }} password",
     "org_invite": "You've been invited to {{ app_name }}",
+    "scorekeeper_invite": "Scorekeeper invite — {{ tournament_name }}",
+    "registration_received": "Registration received — {{ tournament_name }}",
+    "registration_approved": "You're in — {{ tournament_name }}",
+    "registration_rejected": "Registration update — {{ tournament_name }}",
+    "registration_waitlisted": "Waitlist — {{ tournament_name }}",
+    "draw_published": "Draw is live — {{ tournament_name }}",
 }
 
 _env = Environment(

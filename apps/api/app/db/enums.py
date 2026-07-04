@@ -39,6 +39,13 @@ class ParticipantKind(_StrEnum):
     INDIVIDUAL = "individual"
     PAIR = "pair"
     TEAM = "team"
+    SQUAD = "squad"  # franchise team — competes in team-vs-team ties
+
+
+class ContestKind(_StrEnum):
+    STANDARD = "standard"
+    TIE = "tie"  # squad-vs-squad container
+    LEG = "leg"  # doubles leg within a tie
 
 
 class MatchStatus(_StrEnum):
@@ -238,6 +245,7 @@ FEATURE_FLAG_SCOPE = pg_enum(FeatureFlagScope, "feature_flag_scope")  # 0006
 COURT_STATUS = pg_enum(CourtStatus, "court_status")  # 0010
 PAIRING_RUN_STATUS = pg_enum(PairingRunStatus, "pairing_run_status")  # 0011
 ATTENDANCE_STATUS = pg_enum(AttendanceStatus, "attendance_status")  # 0012
+CONTEST_KIND = pg_enum(ContestKind, "contest_kind")  # 0016
 
 # The 0001 baseline enum set. Consumed by the initial migration's
 # upgrade()/downgrade(). Order is irrelevant (no inter-enum dependencies).

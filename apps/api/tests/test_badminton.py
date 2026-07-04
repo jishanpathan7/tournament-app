@@ -150,6 +150,26 @@ def test_valid_normal_matches(games):
     _validate({"games": games})  # no raise
 
 
+def test_best_of_one_single_game_decides():
+    cfg = {"best_of": 1}
+    _validate({"games": [[21, 15]]}, cfg)
+    report = _derive({"games": [[21, 15]]}, cfg)
+    assert report.outcome.winner_id == "p0"
+
+
+def test_best_of_one_rejects_extra_games():
+    cfg = {"best_of": 1}
+    with pytest.raises(EngineValidationError):
+        _validate({"games": [[21, 15], [21, 10]]}, cfg)
+
+
+def test_best_of_five_needs_three_wins():
+    cfg = {"best_of": 5}
+    _validate({"games": [[21, 15], [21, 10], [21, 18]]}, cfg)
+    with pytest.raises(EngineValidationError):
+        _validate({"games": [[21, 15], [21, 10]]}, cfg)
+
+
 # ---- invalid scores ----
 
 

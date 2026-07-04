@@ -32,7 +32,7 @@ import {
   getSport,
 } from "@/features/tournaments/config";
 import { useCreateTournamentFlow } from "@/features/tournaments/use-tournaments";
-import { slugify, useTournamentDraft } from "@/features/tournaments/use-tournament-draft";
+import { slugify, useTournamentDraft, type DivisionParticipantKind } from "@/features/tournaments/use-tournament-draft";
 import {
   type BasicInfoValues,
   type DivisionsValues,
@@ -42,6 +42,10 @@ import {
   scheduleSchema,
 } from "@/features/tournaments/wizard-schemas";
 import { errorMessage } from "@/lib/problem";
+
+function divisionKinds(kinds: readonly string[]): DivisionParticipantKind[] {
+  return kinds.filter((k): k is DivisionParticipantKind => k !== "squad");
+}
 
 const STEPS = ["Basics", "Sport", "Format", "Divisions", "Schedule", "Review"];
 
@@ -173,7 +177,7 @@ function SportStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
     const sport = getSport(key);
     if (!sport || sport.comingSoon) return;
     // Keep divisions valid for the newly chosen sport.
-    const kinds = sport.participantKinds;
+    const kinds = divisionKinds(sport.participantKinds);
     const divisions = draft.divisions.map((d) =>
       kinds.includes(d.participantType) ? d : { ...d, participantType: kinds[0]! },
     );
@@ -262,7 +266,7 @@ function DivisionsStep({ onNext, onBack }: { onNext: () => void; onBack: () => v
   const draft = useTournamentDraft((s) => s.draft);
   const patch = useTournamentDraft((s) => s.patch);
   const sport = getSport(draft.sportKey);
-  const kinds = sport?.participantKinds ?? ["individual"];
+  const kinds = divisionKinds(sport?.participantKinds ?? ["individual"]);
 
   const {
     control,
@@ -352,7 +356,12 @@ function DivisionsStep({ onNext, onBack }: { onNext: () => void; onBack: () => v
         tone="paper"
         size="sm"
         className="self-start"
-        onClick={() => append({ name: "", participantType: kinds[0]! })}
+        onClick={() =>
+          append({
+            name: "",
+            participantType: (kinds[0] ?? "individual") as DivisionsValues["divisions"][number]["participantType"],
+          })
+        }
       >
         <Plus className="h-4 w-4" strokeWidth={2.5} />
         Add division

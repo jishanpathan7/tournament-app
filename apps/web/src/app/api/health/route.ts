@@ -12,8 +12,9 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const res = await fetch(`${env.apiUrl}/api/v1/health`, { cache: "no-store" });
-    const backend = await res.json();
-    return NextResponse.json({ proxied: true, backend });
+    const backend = (await res.json()) as Record<string, unknown>;
+    // Strip internal metadata (environment, version) — expose only liveness state.
+    return NextResponse.json({ proxied: true, status: backend.status ?? "unknown" });
   } catch {
     return NextResponse.json({ proxied: false, error: "backend unreachable" }, { status: 502 });
   }

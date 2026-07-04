@@ -40,6 +40,7 @@ from app.db.mixins import OrgScopedMixin, SoftDeleteMixin, TimestampMixin, UUIDP
 
 if TYPE_CHECKING:
     from app.db.models.competition import MatchParticipant, Standing
+    from app.db.models.squads import Squad
     from app.db.models.tournament import Division
 
 
@@ -75,8 +76,9 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
     __tablename__ = "participants"
     __table_args__ = (
         CheckConstraint(
-            "(kind = 'individual' AND user_id IS NOT NULL AND team_id IS NULL) "
-            "OR (kind IN ('pair', 'team') AND team_id IS NOT NULL AND user_id IS NULL)",
+            "(kind = 'individual' AND user_id IS NOT NULL AND team_id IS NULL AND squad_id IS NULL) "
+            "OR (kind IN ('pair', 'team') AND team_id IS NOT NULL AND user_id IS NULL AND squad_id IS NULL) "
+            "OR (kind = 'squad' AND squad_id IS NOT NULL AND user_id IS NULL AND team_id IS NULL)",
             name="participant_kind_refs",
         ),
         # No duplicate seeds within a division (when seeded).
@@ -103,6 +105,9 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
     team_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("teams.id", ondelete="RESTRICT"), nullable=True, index=True
     )
+    squad_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("squads.id", ondelete="RESTRICT"), nullable=True, index=True
+    )
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
     seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
     rating: Mapped[decimal.Decimal | None] = mapped_column(Numeric(8, 3), nullable=True)
@@ -119,6 +124,7 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
     )
 
     division: Mapped[Division] = relationship(back_populates="participants")
+    squad: Mapped[Squad | None] = relationship(viewonly=True)
     match_links: Mapped[list[MatchParticipant]] = relationship(
         back_populates="participant", cascade="all, delete-orphan", passive_deletes=True
     )

@@ -486,3 +486,20 @@ async def test_tournament_activity_requires_org_membership(app, client):
     async with _client(app) as other:
         await _new_org(other)
         assert (await other.get(f"{TOUR}/{tid}/activity")).status_code == 404
+
+
+async def test_delete_tournament_soft_hides_from_list(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    slug = (await client.get(f"{TOUR}/{tid}")).json()["slug"]
+
+    assert (await client.delete(f"{TOUR}/{tid}", headers=_csrf(client))).status_code == 204
+    assert (await client.get(f"{TOUR}/{tid}")).status_code == 404
+    ids = {t["id"] for t in (await client.get(TOUR)).json()}
+    assert tid not in ids
+
+    # Slug can be reused after soft delete.
+    resp = await client.post(
+        TOUR, json={"name": "Again", "slug": slug, "sportKey": "badminton"}, headers=_csrf(client)
+    )
+    assert resp.status_code == 201, resp.text

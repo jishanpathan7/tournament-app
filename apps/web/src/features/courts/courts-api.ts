@@ -1,5 +1,9 @@
 import type {
   AssignCourtRequest,
+  BulkCreateCourtsRequest,
+  BulkCreateCourtsResponse,
+  BulkRemoveCourtsRequest,
+  BulkRemoveCourtsResponse,
   CourtView,
   CreateCourtRequest,
   CreateVenueRequest,
@@ -49,4 +53,26 @@ export async function assignCourt(
 
 export async function unassignCourt(tournamentId: string, courtId: string): Promise<void> {
   await api.delete(`/tournaments/${tournamentId}/courts/${courtId}`);
+}
+
+export async function bulkCreateCourts(
+  tournamentId: string,
+  body: BulkCreateCourtsRequest,
+): Promise<BulkCreateCourtsResponse> {
+  const { data } = await api.post<BulkCreateCourtsResponse>(
+    `/tournaments/${tournamentId}/courts/bulk-create`,
+    body,
+  );
+  return data;
+}
+
+export async function bulkRemoveCourts(
+  tournamentId: string,
+  body: BulkRemoveCourtsRequest,
+): Promise<BulkRemoveCourtsResponse> {
+  const { data } = await api.post<BulkRemoveCourtsResponse>(
+    `/tournaments/${tournamentId}/courts/bulk-remove`,
+    body,
+  );
+  return data;
 }

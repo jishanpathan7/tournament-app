@@ -22,7 +22,7 @@ import { useUiStore } from "@/stores/ui-store";
 const NAV_COMMANDS = [
   { label: "Dashboard", href: "/console", icon: LayoutDashboard },
   { label: "Tournaments", href: "/console/tournaments", icon: Trophy },
-  { label: "People", href: "/console/people", icon: Users },
+  { label: "Staff", href: "/console/people", icon: Users },
   { label: "Settings", href: "/console/settings", icon: Settings },
 ];
 

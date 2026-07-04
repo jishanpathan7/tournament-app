@@ -36,6 +36,7 @@ from app.db.models.participants import (
     Team,
 )
 from app.db.models.sport import PointsRule, SportProfile, TiebreakRuleset
+from app.db.models.squads import Squad, SquadMember
 from app.db.models.tournament import Division, Group, Round, Stage, Tournament
 
 __all__ = [
@@ -65,6 +66,8 @@ __all__ = [
     "PairingRequest",
     "PairingRun",
     "ProposedTeam",
+    "Squad",
+    "SquadMember",
     # registration ops (imports)
     "MappingTemplate",
     "ImportBatch",

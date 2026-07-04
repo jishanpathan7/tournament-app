@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Tournament Platform API",
+    "title": "Playlane",
     "version": "0.1.0"
   },
   "paths": {
@@ -504,6 +504,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/portal": {
+      "get": {
+        "tags": [
+          "me"
+        ],
+        "summary": "Get Portal Home",
+        "operationId": "me_get_portal_home",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PortalHomeView"
                 }
               }
             }
@@ -1574,6 +1595,40 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "tournaments"
+        ],
+        "summary": "Delete Tournament",
+        "operationId": "tournaments_delete_tournament",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3133,6 +3188,531 @@
         }
       }
     },
+    "/api/v1/divisions/{division_id}/pairing/repair-rosters": {
+      "post": {
+        "tags": [
+          "pairing"
+        ],
+        "summary": "Repair Pairing Rosters",
+        "operationId": "pairing_repair_pairing_rosters",
+        "parameters": [
+          {
+            "name": "division_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Division Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RepairPairingResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/squads": {
+      "get": {
+        "tags": [
+          "squads"
+        ],
+        "summary": "Get Squads",
+        "operationId": "squads_get_squads",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TournamentSquadsView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "squads"
+        ],
+        "summary": "Create Squad",
+        "operationId": "squads_create_squad",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateSquadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SquadView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/squads/auto-distribute": {
+      "post": {
+        "tags": [
+          "squads"
+        ],
+        "summary": "Auto Distribute",
+        "operationId": "squads_auto_distribute",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AutoDistributeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutoDistributeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/squads/{squad_id}": {
+      "patch": {
+        "tags": [
+          "squads"
+        ],
+        "summary": "Update Squad",
+        "operationId": "squads_update_squad",
+        "parameters": [
+          {
+            "name": "squad_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Squad Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSquadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SquadView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "squads"
+        ],
+        "summary": "Delete Squad",
+        "operationId": "squads_delete_squad",
+        "parameters": [
+          {
+            "name": "squad_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Squad Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/squads/{squad_id}/members": {
+      "post": {
+        "tags": [
+          "squads"
+        ],
+        "summary": "Assign Member",
+        "operationId": "squads_assign_member",
+        "parameters": [
+          {
+            "name": "squad_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Squad Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignMemberRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SquadView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/squads/{squad_id}/members/{registration_id}": {
+      "delete": {
+        "tags": [
+          "squads"
+        ],
+        "summary": "Remove Member",
+        "operationId": "squads_remove_member",
+        "parameters": [
+          {
+            "name": "squad_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Squad Id"
+            }
+          },
+          {
+            "name": "registration_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Registration Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stages/{stage_id}/franchise-draw": {
+      "post": {
+        "tags": [
+          "franchise-ties"
+        ],
+        "summary": "Generate Franchise Draw",
+        "operationId": "franchise-ties_generate_franchise_draw",
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FranchiseDrawRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseDrawResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stages/{stage_id}/franchise-knockout-draw": {
+      "post": {
+        "tags": [
+          "franchise-ties"
+        ],
+        "summary": "Generate Franchise Knockout Draw",
+        "operationId": "franchise-ties_generate_franchise_knockout_draw",
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FranchiseKnockoutDrawRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseDrawResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stages/{stage_id}/franchise-ties": {
+      "get": {
+        "tags": [
+          "franchise-ties"
+        ],
+        "summary": "Get Franchise Ties Board",
+        "operationId": "franchise-ties_get_franchise_ties_board",
+        "parameters": [
+          {
+            "name": "stage_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Stage Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FranchiseTiesBoardView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/matches/{match_id}/score": {
       "post": {
         "tags": [
@@ -3445,6 +4025,485 @@
         }
       }
     },
+    "/api/v1/matches/{match_id}/scorekeeper-link": {
+      "get": {
+        "tags": [
+          "share-links"
+        ],
+        "summary": "Get Match Scorekeeper Link",
+        "operationId": "share-links_get_match_scorekeeper_link",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ScorekeeperLinkView"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Share-Links Get Match Scorekeeper Link"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "share-links"
+        ],
+        "summary": "Create Match Scorekeeper Link",
+        "operationId": "share-links_create_match_scorekeeper_link",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMatchScorekeeperLinkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScorekeeperLinkView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "share-links"
+        ],
+        "summary": "Revoke Match Scorekeeper Link",
+        "operationId": "share-links_revoke_match_scorekeeper_link",
+        "parameters": [
+          {
+            "name": "match_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Match Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/divisions/{division_id}/checkin-link": {
+      "get": {
+        "tags": [
+          "share-links"
+        ],
+        "summary": "Get Division Checkin Link",
+        "operationId": "share-links_get_division_checkin_link",
+        "parameters": [
+          {
+            "name": "division_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Division Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CheckInLinkView"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Share-Links Get Division Checkin Link"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "share-links"
+        ],
+        "summary": "Create Division Checkin Link",
+        "operationId": "share-links_create_division_checkin_link",
+        "parameters": [
+          {
+            "name": "division_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Division Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateDivisionCheckInLinkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInLinkView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/scorekeeper/session": {
+      "get": {
+        "tags": [
+          "public-scorekeeper"
+        ],
+        "summary": "Get Scorekeeper Session",
+        "operationId": "public-scorekeeper_get_scorekeeper_session",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ScorekeeperSessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/scorekeeper/score": {
+      "post": {
+        "tags": [
+          "public-scorekeeper"
+        ],
+        "summary": "Submit Scorekeeper Score",
+        "operationId": "public-scorekeeper_submit_scorekeeper_score",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          },
+          {
+            "name": "If-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScorekeeperScoreRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MatchView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/checkin/session": {
+      "get": {
+        "tags": [
+          "public-checkin"
+        ],
+        "summary": "Get Checkin Session",
+        "operationId": "public-checkin_get_checkin_session",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckInSessionView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/checkin/confirm": {
+      "post": {
+        "tags": [
+          "public-checkin"
+        ],
+        "summary": "Confirm Checkin",
+        "operationId": "public-checkin_confirm_checkin",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Token"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicCheckInRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/public/search": {
       "get": {
         "tags": [
@@ -3564,6 +4623,68 @@
                     "$ref": "#/components/schemas/PublicDivisionView"
                   },
                   "title": "Response Public List Divisions"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/public/tournaments/{slug}/divisions/{division_id}/registrations": {
+      "post": {
+        "tags": [
+          "public"
+        ],
+        "summary": "Submit Registration",
+        "operationId": "public_submit_registration",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Slug"
+            }
+          },
+          {
+            "name": "division_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Division Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicSubmitRegistrationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicRegistrationSubmittedView"
                 }
               }
             }
@@ -4297,6 +5418,112 @@
         }
       }
     },
+    "/api/v1/tournaments/{tournament_id}/courts/bulk-create": {
+      "post": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "Bulk Create Courts",
+        "operationId": "courts_bulk_create_courts",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCreateCourtsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkCreateCourtsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/tournaments/{tournament_id}/courts/bulk-remove": {
+      "post": {
+        "tags": [
+          "courts"
+        ],
+        "summary": "Bulk Remove Courts",
+        "operationId": "courts_bulk_remove_courts",
+        "parameters": [
+          {
+            "name": "tournament_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Tournament Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkRemoveCourtsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkRemoveCourtsResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/matches/{match_id}/schedule/check": {
       "post": {
         "tags": [
@@ -4678,6 +5905,72 @@
         ],
         "title": "AssignCourtRequest"
       },
+      "AssignMemberRequest": {
+        "properties": {
+          "registrationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Registrationid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registrationId"
+        ],
+        "title": "AssignMemberRequest"
+      },
+      "AutoDistributeRequest": {
+        "properties": {
+          "teamCount": {
+            "type": "integer",
+            "maximum": 32.0,
+            "minimum": 2.0,
+            "title": "Teamcount"
+          },
+          "divisionId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Divisionid"
+          },
+          "replaceExisting": {
+            "type": "boolean",
+            "title": "Replaceexisting",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "teamCount"
+        ],
+        "title": "AutoDistributeRequest"
+      },
+      "AutoDistributeResponse": {
+        "properties": {
+          "squads": {
+            "items": {
+              "$ref": "#/components/schemas/SquadView"
+            },
+            "type": "array",
+            "title": "Squads"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SquadSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "squads",
+          "summary"
+        ],
+        "title": "AutoDistributeResponse"
+      },
       "BulkCheckInRequest": {
         "properties": {
           "participantIds": {
@@ -4722,6 +6015,111 @@
           "attendance"
         ],
         "title": "BulkCheckInResult"
+      },
+      "BulkCreateCourtsRequest": {
+        "properties": {
+          "venueId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Venueid"
+          },
+          "newVenueName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Newvenuename"
+          },
+          "count": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Count"
+          },
+          "namePrefix": {
+            "type": "string",
+            "maxLength": 70,
+            "minLength": 1,
+            "title": "Nameprefix",
+            "default": "Court "
+          },
+          "startNumber": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Startnumber",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "count"
+        ],
+        "title": "BulkCreateCourtsRequest",
+        "description": "Create numbered courts at a venue and assign them to the tournament."
+      },
+      "BulkCreateCourtsResponse": {
+        "properties": {
+          "created": {
+            "items": {
+              "$ref": "#/components/schemas/TournamentCourtView"
+            },
+            "type": "array",
+            "title": "Created"
+          }
+        },
+        "type": "object",
+        "required": [
+          "created"
+        ],
+        "title": "BulkCreateCourtsResponse"
+      },
+      "BulkRemoveCourtsRequest": {
+        "properties": {
+          "courtIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Courtids"
+          }
+        },
+        "type": "object",
+        "required": [
+          "courtIds"
+        ],
+        "title": "BulkRemoveCourtsRequest"
+      },
+      "BulkRemoveCourtsResponse": {
+        "properties": {
+          "removed": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "title": "Removed"
+          }
+        },
+        "type": "object",
+        "required": [
+          "removed"
+        ],
+        "title": "BulkRemoveCourtsResponse"
       },
       "BulkScheduleItem": {
         "properties": {
@@ -4809,6 +6207,85 @@
         ],
         "title": "ChangePasswordRequest"
       },
+      "CheckInLinkView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "revoked": {
+            "type": "boolean",
+            "title": "Revoked"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "divisionId",
+          "tournamentId",
+          "expiresAt",
+          "revoked"
+        ],
+        "title": "CheckInLinkView"
+      },
+      "CheckInParticipantView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "attendance": {
+            "type": "string",
+            "title": "Attendance"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "displayName",
+          "attendance"
+        ],
+        "title": "CheckInParticipantView"
+      },
       "CheckInRequest": {
         "properties": {
           "status": {
@@ -4822,6 +6299,44 @@
         ],
         "title": "CheckInRequest",
         "description": "Set attendance for a single participant. ``status`` \u2208 pending|checked_in|absent."
+      },
+      "CheckInSessionView": {
+        "properties": {
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "tournamentName": {
+            "type": "string",
+            "title": "Tournamentname"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "divisionName": {
+            "type": "string",
+            "title": "Divisionname"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/CheckInParticipantView"
+            },
+            "type": "array",
+            "title": "Participants"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tournamentId",
+          "tournamentName",
+          "divisionId",
+          "divisionName",
+          "participants"
+        ],
+        "title": "CheckInSessionView"
       },
       "ConflictView": {
         "properties": {
@@ -4966,6 +6481,19 @@
         ],
         "title": "CreateCourtRequest"
       },
+      "CreateDivisionCheckInLinkRequest": {
+        "properties": {
+          "expiresInHours": {
+            "type": "integer",
+            "maximum": 8760.0,
+            "minimum": 1.0,
+            "title": "Expiresinhours",
+            "default": 168
+          }
+        },
+        "type": "object",
+        "title": "CreateDivisionCheckInLinkRequest"
+      },
       "CreateDivisionRequest": {
         "properties": {
           "name": {
@@ -5020,6 +6548,43 @@
         ],
         "title": "CreateInviteRequest"
       },
+      "CreateMatchScorekeeperLinkRequest": {
+        "properties": {
+          "expiresInHours": {
+            "type": "integer",
+            "maximum": 8760.0,
+            "minimum": 1.0,
+            "title": "Expiresinhours",
+            "default": 336
+          },
+          "recipientEmail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 320
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipientemail"
+          },
+          "recipientName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recipientname"
+          }
+        },
+        "type": "object",
+        "title": "CreateMatchScorekeeperLinkRequest"
+      },
       "CreateOrgRequest": {
         "properties": {
           "name": {
@@ -5042,6 +6607,21 @@
           "slug"
         ],
         "title": "CreateOrgRequest"
+      },
+      "CreateSquadRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 160,
+            "minLength": 1,
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "CreateSquadRequest"
       },
       "CreateStageRequest": {
         "properties": {
@@ -5651,6 +7231,197 @@
         ],
         "title": "FlagEnabledResponse"
       },
+      "FranchiseDrawRequest": {
+        "properties": {
+          "gamesPerTie": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gamespertie",
+            "description": "Doubles legs per squad-vs-squad tie; defaults to min pairs per squad"
+          }
+        },
+        "type": "object",
+        "title": "FranchiseDrawRequest"
+      },
+      "FranchiseDrawResponse": {
+        "properties": {
+          "stageId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stageid"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/FranchiseDrawSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stageId",
+          "summary"
+        ],
+        "title": "FranchiseDrawResponse"
+      },
+      "FranchiseDrawSummary": {
+        "properties": {
+          "ties": {
+            "type": "integer",
+            "title": "Ties"
+          },
+          "legs": {
+            "type": "integer",
+            "title": "Legs"
+          },
+          "gamesPerTie": {
+            "type": "integer",
+            "title": "Gamespertie"
+          },
+          "squadCount": {
+            "type": "integer",
+            "title": "Squadcount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ties",
+          "legs",
+          "gamesPerTie",
+          "squadCount"
+        ],
+        "title": "FranchiseDrawSummary"
+      },
+      "FranchiseKnockoutDrawRequest": {
+        "properties": {
+          "sourceStageId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sourcestageid",
+            "description": "Franchise RR stage whose squad standings seed the bracket"
+          },
+          "advanceCount": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 32.0,
+                "minimum": 2.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Advancecount",
+            "description": "Top N squads from source standings; defaults to all squads"
+          },
+          "gamesPerTie": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 9.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gamespertie"
+          }
+        },
+        "type": "object",
+        "title": "FranchiseKnockoutDrawRequest"
+      },
+      "FranchiseTieView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "homeSquadName": {
+            "type": "string",
+            "title": "Homesquadname"
+          },
+          "awaySquadName": {
+            "type": "string",
+            "title": "Awaysquadname"
+          },
+          "homeLegWins": {
+            "type": "integer",
+            "title": "Homelegwins"
+          },
+          "awayLegWins": {
+            "type": "integer",
+            "title": "Awaylegwins"
+          },
+          "gamesPerTie": {
+            "type": "integer",
+            "title": "Gamespertie"
+          },
+          "legs": {
+            "items": {
+              "$ref": "#/components/schemas/TieLegView"
+            },
+            "type": "array",
+            "title": "Legs"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "homeSquadName",
+          "awaySquadName",
+          "homeLegWins",
+          "awayLegWins",
+          "gamesPerTie",
+          "legs"
+        ],
+        "title": "FranchiseTieView"
+      },
+      "FranchiseTiesBoardView": {
+        "properties": {
+          "stageId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Stageid"
+          },
+          "gamesPerTie": {
+            "type": "integer",
+            "title": "Gamespertie"
+          },
+          "ties": {
+            "items": {
+              "$ref": "#/components/schemas/FranchiseTieView"
+            },
+            "type": "array",
+            "title": "Ties"
+          }
+        },
+        "type": "object",
+        "required": [
+          "stageId",
+          "gamesPerTie",
+          "ties"
+        ],
+        "title": "FranchiseTiesBoardView"
+      },
       "GeneratePairingRequest": {
         "properties": {
           "rngSeed": {
@@ -6247,6 +8018,33 @@
             "type": "string",
             "format": "date-time",
             "title": "Updatedat"
+          },
+          "sportConfig": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SportMatchConfigView"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "parentMatchId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentmatchid"
+          },
+          "contestKind": {
+            "type": "string",
+            "title": "Contestkind",
+            "default": "standard"
           }
         },
         "type": "object",
@@ -6669,7 +8467,8 @@
         "enum": [
           "individual",
           "pair",
-          "team"
+          "team",
+          "squad"
         ],
         "title": "ParticipantKind"
       },
@@ -6785,6 +8584,309 @@
           "email"
         ],
         "title": "PasswordResetRequest"
+      },
+      "PortalHomeView": {
+        "properties": {
+          "registrations": {
+            "items": {
+              "$ref": "#/components/schemas/PortalRegistrationView"
+            },
+            "type": "array",
+            "title": "Registrations"
+          },
+          "participations": {
+            "items": {
+              "$ref": "#/components/schemas/PortalParticipationView"
+            },
+            "type": "array",
+            "title": "Participations"
+          },
+          "upcomingMatches": {
+            "items": {
+              "$ref": "#/components/schemas/PortalMatchView"
+            },
+            "type": "array",
+            "title": "Upcomingmatches"
+          },
+          "recentMatches": {
+            "items": {
+              "$ref": "#/components/schemas/PortalMatchView"
+            },
+            "type": "array",
+            "title": "Recentmatches"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registrations",
+          "participations",
+          "upcomingMatches",
+          "recentMatches"
+        ],
+        "title": "PortalHomeView"
+      },
+      "PortalMatchView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "contestKind": {
+            "type": "string",
+            "title": "Contestkind"
+          },
+          "parentMatchId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parentmatchid"
+          },
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "tournamentName": {
+            "type": "string",
+            "title": "Tournamentname"
+          },
+          "tournamentSlug": {
+            "type": "string",
+            "title": "Tournamentslug"
+          },
+          "divisionName": {
+            "type": "string",
+            "title": "Divisionname"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organizationid"
+          },
+          "organizationName": {
+            "type": "string",
+            "title": "Organizationname"
+          },
+          "myParticipantId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Myparticipantid"
+          },
+          "opponentLabel": {
+            "type": "string",
+            "title": "Opponentlabel"
+          },
+          "roundLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roundlabel"
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduledat"
+          },
+          "scoreSummary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scoresummary"
+          },
+          "isMine": {
+            "type": "boolean",
+            "title": "Ismine",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "contestKind",
+          "parentMatchId",
+          "tournamentId",
+          "tournamentName",
+          "tournamentSlug",
+          "divisionName",
+          "organizationId",
+          "organizationName",
+          "myParticipantId",
+          "opponentLabel",
+          "roundLabel",
+          "scheduledAt",
+          "scoreSummary"
+        ],
+        "title": "PortalMatchView"
+      },
+      "PortalParticipationView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "kind": {
+            "type": "string",
+            "title": "Kind"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "attendance": {
+            "type": "string",
+            "title": "Attendance"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "divisionName": {
+            "type": "string",
+            "title": "Divisionname"
+          },
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "tournamentName": {
+            "type": "string",
+            "title": "Tournamentname"
+          },
+          "tournamentSlug": {
+            "type": "string",
+            "title": "Tournamentslug"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organizationid"
+          },
+          "organizationName": {
+            "type": "string",
+            "title": "Organizationname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "displayName",
+          "kind",
+          "status",
+          "attendance",
+          "divisionId",
+          "divisionName",
+          "tournamentId",
+          "tournamentName",
+          "tournamentSlug",
+          "organizationId",
+          "organizationName"
+        ],
+        "title": "PortalParticipationView"
+      },
+      "PortalRegistrationView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "skillLevel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skilllevel"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "divisionName": {
+            "type": "string",
+            "title": "Divisionname"
+          },
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "tournamentName": {
+            "type": "string",
+            "title": "Tournamentname"
+          },
+          "tournamentSlug": {
+            "type": "string",
+            "title": "Tournamentslug"
+          },
+          "organizationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organizationid"
+          },
+          "organizationName": {
+            "type": "string",
+            "title": "Organizationname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "skillLevel",
+          "divisionId",
+          "divisionName",
+          "tournamentId",
+          "tournamentName",
+          "tournamentSlug",
+          "organizationId",
+          "organizationName"
+        ],
+        "title": "PortalRegistrationView"
       },
       "PresignUploadRequest": {
         "properties": {
@@ -6940,6 +9042,20 @@
         ],
         "title": "ProposedTeamView"
       },
+      "PublicCheckInRequest": {
+        "properties": {
+          "participantId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Participantid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "participantId"
+        ],
+        "title": "PublicCheckInRequest"
+      },
       "PublicDivisionView": {
         "properties": {
           "id": {
@@ -7047,6 +9163,31 @@
         ],
         "title": "PublicParticipantView"
       },
+      "PublicRegistrationSubmittedView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "divisionId"
+        ],
+        "title": "PublicRegistrationSubmittedView"
+      },
       "PublicStageView": {
         "properties": {
           "id": {
@@ -7081,6 +9222,52 @@
           "drawn"
         ],
         "title": "PublicStageView"
+      },
+      "PublicSubmitRegistrationRequest": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "skillLevel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skilllevel"
+          },
+          "preferredPartnerName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferredpartnername"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "PublicSubmitRegistrationRequest"
       },
       "PublicTournamentSearchResult": {
         "properties": {
@@ -7382,6 +9569,19 @@
         ],
         "title": "RegistrationResponse"
       },
+      "RepairPairingResponse": {
+        "properties": {
+          "teamsRepaired": {
+            "type": "integer",
+            "title": "Teamsrepaired"
+          }
+        },
+        "type": "object",
+        "required": [
+          "teamsRepaired"
+        ],
+        "title": "RepairPairingResponse"
+      },
       "RosterEntryItem": {
         "properties": {
           "id": {
@@ -7594,6 +9794,191 @@
         "type": "object",
         "title": "ScoreRequest"
       },
+      "ScorekeeperLinkView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "matchId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Matchid"
+          },
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "expiresAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expiresat"
+          },
+          "revoked": {
+            "type": "boolean",
+            "title": "Revoked"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "matchId",
+          "tournamentId",
+          "expiresAt",
+          "revoked"
+        ],
+        "title": "ScorekeeperLinkView"
+      },
+      "ScorekeeperMatchCardView": {
+        "properties": {
+          "matchId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Matchid"
+          },
+          "sideLabels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sidelabels"
+          },
+          "matchStatus": {
+            "type": "string",
+            "title": "Matchstatus"
+          },
+          "roundLabel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Roundlabel"
+          },
+          "courtId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtid"
+          },
+          "courtName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Courtname"
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduledat"
+          },
+          "groupName": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Groupname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "matchId",
+          "sideLabels",
+          "matchStatus",
+          "roundLabel",
+          "courtId",
+          "scheduledAt",
+          "groupName"
+        ],
+        "title": "ScorekeeperMatchCardView"
+      },
+      "ScorekeeperScoreRequest": {
+        "properties": {
+          "payload": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Payload"
+          }
+        },
+        "type": "object",
+        "required": [
+          "payload"
+        ],
+        "title": "ScorekeeperScoreRequest"
+      },
+      "ScorekeeperSessionView": {
+        "properties": {
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "tournamentName": {
+            "type": "string",
+            "title": "Tournamentname"
+          },
+          "match": {
+            "$ref": "#/components/schemas/ScorekeeperMatchCardView"
+          },
+          "sportConfig": {
+            "$ref": "#/components/schemas/SportMatchConfigView"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tournamentId",
+          "tournamentName",
+          "match",
+          "sportConfig"
+        ],
+        "title": "ScorekeeperSessionView",
+        "description": "Public scorekeeper page \u2014 one match only, resolved from the token."
+      },
       "SessionItem": {
         "properties": {
           "id": {
@@ -7657,6 +10042,165 @@
           "advanced"
         ],
         "title": "SkillLevel"
+      },
+      "SportMatchConfigView": {
+        "properties": {
+          "bestOf": {
+            "type": "integer",
+            "title": "Bestof"
+          },
+          "pointsToWin": {
+            "type": "integer",
+            "title": "Pointstowin"
+          },
+          "winBy": {
+            "type": "integer",
+            "title": "Winby"
+          },
+          "pointCap": {
+            "type": "integer",
+            "title": "Pointcap"
+          }
+        },
+        "type": "object",
+        "required": [
+          "bestOf",
+          "pointsToWin",
+          "winBy",
+          "pointCap"
+        ],
+        "title": "SportMatchConfigView",
+        "description": "Resolved sport rules for this match (tournament defaults + stage overrides)."
+      },
+      "SquadMemberView": {
+        "properties": {
+          "registrationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Registrationid"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "skillLevel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skilllevel"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "divisionName": {
+            "type": "string",
+            "title": "Divisionname"
+          },
+          "skillWeight": {
+            "type": "number",
+            "title": "Skillweight"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registrationId",
+          "displayName",
+          "skillLevel",
+          "divisionId",
+          "divisionName",
+          "skillWeight"
+        ],
+        "title": "SquadMemberView"
+      },
+      "SquadSummary": {
+        "properties": {
+          "squadCount": {
+            "type": "integer",
+            "title": "Squadcount"
+          },
+          "assigned": {
+            "type": "integer",
+            "title": "Assigned"
+          },
+          "unassigned": {
+            "type": "integer",
+            "title": "Unassigned"
+          },
+          "eligible": {
+            "type": "integer",
+            "title": "Eligible"
+          }
+        },
+        "type": "object",
+        "required": [
+          "squadCount",
+          "assigned",
+          "unassigned",
+          "eligible"
+        ],
+        "title": "SquadSummary"
+      },
+      "SquadView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "title": "Sortorder"
+          },
+          "captainRegistrationId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captainregistrationid"
+          },
+          "memberCount": {
+            "type": "integer",
+            "title": "Membercount"
+          },
+          "totalSkillWeight": {
+            "type": "number",
+            "title": "Totalskillweight"
+          },
+          "members": {
+            "items": {
+              "$ref": "#/components/schemas/SquadMemberView"
+            },
+            "type": "array",
+            "title": "Members"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "sortOrder",
+          "captainRegistrationId",
+          "memberCount",
+          "totalSkillWeight",
+          "members"
+        ],
+        "title": "SquadView"
       },
       "StageFormat": {
         "type": "string",
@@ -7942,6 +10486,40 @@
         ],
         "title": "TeamResponse"
       },
+      "TieLegView": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "legIndex": {
+            "type": "integer",
+            "title": "Legindex"
+          },
+          "homePairName": {
+            "type": "string",
+            "title": "Homepairname"
+          },
+          "awayPairName": {
+            "type": "string",
+            "title": "Awaypairname"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "status",
+          "legIndex",
+          "homePairName",
+          "awayPairName"
+        ],
+        "title": "TieLegView"
+      },
       "TournamentCourtView": {
         "properties": {
           "id": {
@@ -7993,6 +10571,21 @@
           "totalPending": {
             "type": "integer",
             "title": "Totalpending"
+          },
+          "squadCount": {
+            "type": "integer",
+            "title": "Squadcount",
+            "default": 0
+          },
+          "unassignedSquadMembers": {
+            "type": "integer",
+            "title": "Unassignedsquadmembers",
+            "default": 0
+          },
+          "squadsReady": {
+            "type": "boolean",
+            "title": "Squadsready",
+            "default": true
           }
         },
         "type": "object",
@@ -8120,6 +10713,40 @@
         ],
         "title": "TournamentResponse"
       },
+      "TournamentSquadsView": {
+        "properties": {
+          "tournamentId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Tournamentid"
+          },
+          "squads": {
+            "items": {
+              "$ref": "#/components/schemas/SquadView"
+            },
+            "type": "array",
+            "title": "Squads"
+          },
+          "unassigned": {
+            "items": {
+              "$ref": "#/components/schemas/UnassignedRegistrationView"
+            },
+            "type": "array",
+            "title": "Unassigned"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/SquadSummary"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tournamentId",
+          "squads",
+          "unassigned",
+          "summary"
+        ],
+        "title": "TournamentSquadsView"
+      },
       "TournamentStatus": {
         "type": "string",
         "enum": [
@@ -8131,6 +10758,58 @@
           "archived"
         ],
         "title": "TournamentStatus"
+      },
+      "UnassignedRegistrationView": {
+        "properties": {
+          "registrationId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Registrationid"
+          },
+          "displayName": {
+            "type": "string",
+            "title": "Displayname"
+          },
+          "skillLevel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Skilllevel"
+          },
+          "divisionId": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Divisionid"
+          },
+          "divisionName": {
+            "type": "string",
+            "title": "Divisionname"
+          },
+          "skillWeight": {
+            "type": "number",
+            "title": "Skillweight"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "registrationId",
+          "displayName",
+          "skillLevel",
+          "divisionId",
+          "divisionName",
+          "skillWeight",
+          "status"
+        ],
+        "title": "UnassignedRegistrationView"
       },
       "UnreadCountResponse": {
         "properties": {
@@ -8263,6 +10942,42 @@
         },
         "type": "object",
         "title": "UpdateProposedTeamRequest"
+      },
+      "UpdateSquadRequest": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 160,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "captainRegistrationId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Captainregistrationid"
+          },
+          "clearCaptain": {
+            "type": "boolean",
+            "title": "Clearcaptain",
+            "default": false
+          }
+        },
+        "type": "object",
+        "title": "UpdateSquadRequest"
       },
       "UpdateTournamentRequest": {
         "properties": {

@@ -1,9 +1,9 @@
 """Default EmailChannel: renders the email to structured logs (no external dependency).
 
-Lets verification / reset / invite flows run end-to-end in dev and tests with no
-secret. The token-bearing data is logged so it can be picked up in tests; when
-settings are provided it also renders the subject through the shared renderer for
-a realistic dev view (best-effort — a template error never breaks the flow).
+Used in development and tests only — never deployed in production or staging (the
+real Resend channel requires RESEND_API_KEY). Sensitive fields (token, password_reset_url,
+verify_url, invite_url) are redacted before logging so that raw secrets never appear
+in log aggregators even if this channel is accidentally activated.
 """
 
 from __future__ import annotations
@@ -16,6 +16,14 @@ from app.emails.renderer import render
 
 logger = logging.getLogger("app.email")
 
+_REDACTED_FIELDS = frozenset(
+    {"token", "password_reset_url", "verify_url", "invite_url", "magic_link", "otp"}
+)
+
+
+def _redact(data: dict[str, Any]) -> dict[str, Any]:
+    return {k: "[REDACTED]" if k in _REDACTED_FIELDS else v for k, v in data.items()}
+
 
 class LogEmailChannel:
     def __init__(self, settings: Settings | None = None) -> None:
@@ -26,10 +34,10 @@ class LogEmailChannel:
         if self._settings is not None:
             try:
                 subject = render(template, data, settings=self._settings).subject
-            except Exception:  # dev log channel — never fail on a template/data issue
+            except Exception:
                 subject = None
         logger.info(
             "email.sent",
-            extra={"to": to, "template": template, "subject": subject, "data": data},
+            extra={"to": to, "template": template, "subject": subject, "data": _redact(data)},
         )
         return "logged"

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 const SEGMENT_LABELS: Record<string, string> = {
   console: "Dashboard",
   tournaments: "Tournaments",
-  people: "People",
+  people: "Staff",
   settings: "Settings",
   profile: "Profile",
 };

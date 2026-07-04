@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     environment: str = "development"
-    app_name: str = "Tournament Platform API"
+    app_name: str = "Playlane"
     version: str = "0.1.0"
     api_v1_prefix: str = "/api/v1"
 
@@ -22,6 +22,9 @@ class Settings(BaseSettings):
 
     jwt_secret: str = "dev-insecure-change-me"
     jwt_algorithm: str = "HS256"
+    # Separate secret for local-dev storage URL signing (never reuse jwt_secret for two purposes).
+    # Falls back to jwt_secret in dev for zero-config convenience; must be set independently in prod.
+    storage_signing_secret: str = ""
     access_token_ttl: int = 900  # 15m
     refresh_token_ttl: int = 2_592_000  # 30d server-side session lifetime
     email_verification_token_ttl: int = 86_400  # 24h
@@ -46,7 +49,7 @@ class Settings(BaseSettings):
 
     # Email — LogEmailChannel default until an API key is set.
     resend_api_key: str | None = None
-    email_from: str = "Tournament Platform <noreply@localhost>"
+    email_from: str = "Playlane <noreply@localhost>"
 
     # Object storage — Cloudflare R2 (S3 API) in prod; local disk fallback in dev.
     # When the four r2_* below are set the R2 backend is used automatically.
@@ -80,6 +83,12 @@ class Settings(BaseSettings):
 
     sentry_dsn: str | None = None
     log_level: str = "INFO"
+
+    @property
+    def effective_storage_signing_secret(self) -> str:
+        """Returns the dedicated storage signing secret, falling back to jwt_secret in dev.
+        In production, storage_signing_secret must be set explicitly."""
+        return self.storage_signing_secret or self.jwt_secret
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -128,6 +137,10 @@ class Settings(BaseSettings):
                 problems.append("DATABASE_URL must be set")
             if not self.cookie_secure:
                 problems.append("COOKIE_SECURE must be true")
+            if not self.resend_api_key:
+                problems.append("RESEND_API_KEY must be set (LogEmailChannel must not be used in production)")
+            if not self.storage_signing_secret:
+                problems.append("STORAGE_SIGNING_SECRET must be set (separate from JWT_SECRET)")
             if problems:
                 raise ValueError("Invalid production configuration: " + "; ".join(problems))
         return self

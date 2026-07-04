@@ -25,6 +25,7 @@ from app.modules.registration_ops import events
 from app.modules.registration_ops import repository as repo
 from app.modules.registration_ops.importers import get_source, list_sources
 from app.modules.registration_ops.importers.base import ImportError_
+from app.modules.registrations.partner_resolution import resolve_preferred_partner_ids
 from app.modules.registration_ops.schemas import (
     ImportFieldInfo,
     ImportPreview,
@@ -255,6 +256,11 @@ async def commit(
                 skipped += 1
         else:
             skipped += 1
+    await session.flush()
+
+    # Link partner-name columns to registration ids so Smart Pairing honors pre-formed pairs.
+    division_regs = await repo.list_registrations(session, org_id, division_id)
+    resolve_preferred_partner_ids(division_regs)
     await session.flush()
 
     batch = ImportBatch(

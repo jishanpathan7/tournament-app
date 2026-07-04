@@ -74,3 +74,7 @@ class PublishPairingResponse(ApiModel):
     run_id: uuid.UUID
     published_teams: int
     unpaired_count: int
+
+
+class RepairPairingResponse(ApiModel):
+    teams_repaired: int

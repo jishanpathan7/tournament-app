@@ -25,6 +25,15 @@ class MatchSideView(ApiModel):
     rank: int | None
 
 
+class SportMatchConfigView(ApiModel):
+    """Resolved sport rules for this match (tournament defaults + stage overrides)."""
+
+    best_of: int
+    points_to_win: int
+    win_by: int
+    point_cap: int
+
+
 class MatchView(ApiModel):
     id: uuid.UUID
     stage_id: uuid.UUID
@@ -45,6 +54,9 @@ class MatchView(ApiModel):
     court_id: uuid.UUID | None
     scheduled_at: datetime.datetime | None
     updated_at: datetime.datetime
+    sport_config: SportMatchConfigView | None = None
+    parent_match_id: uuid.UUID | None = None
+    contest_kind: str = "standard"
 
 
 class MatchResultEventView(ApiModel):

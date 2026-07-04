@@ -10,9 +10,12 @@ import { persist } from "zustand/middleware";
  * commit on Next; `reset()` runs after a successful create. Distinct from the API — this
  * is unsubmitted local state, hence Zustand rather than TanStack Query.
  */
+/** Division entrant shape at tournament creation — excludes franchise ``squad`` competitors. */
+export type DivisionParticipantKind = Exclude<ParticipantKind, "squad">;
+
 export interface DraftDivision {
   name: string;
-  participantType: ParticipantKind;
+  participantType: DivisionParticipantKind;
 }
 
 export interface TournamentDraft {

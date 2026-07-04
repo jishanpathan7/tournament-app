@@ -61,6 +61,7 @@ export type RosterEntryItem = Schemas["RosterEntryItem"];
 
 // ---- scoring / matches / standings ----
 export type MatchView = Schemas["MatchView"];
+export type SportMatchConfigView = Schemas["SportMatchConfigView"];
 export type MatchSideView = Schemas["MatchSideView"];
 export type ScoreRequest = Schemas["ScoreRequest"];
 export type MatchResultEventView = Schemas["MatchResultEventView"];
@@ -91,6 +92,10 @@ export type CreateCourtRequest = Schemas["CreateCourtRequest"];
 export type UpdateCourtRequest = Schemas["UpdateCourtRequest"];
 export type AssignCourtRequest = Schemas["AssignCourtRequest"];
 export type TournamentCourtView = Schemas["TournamentCourtView"];
+export type BulkCreateCourtsRequest = Schemas["BulkCreateCourtsRequest"];
+export type BulkCreateCourtsResponse = Schemas["BulkCreateCourtsResponse"];
+export type BulkRemoveCourtsRequest = Schemas["BulkRemoveCourtsRequest"];
+export type BulkRemoveCourtsResponse = Schemas["BulkRemoveCourtsResponse"];
 
 // ---- scheduling: assign/move a match, conflicts, bulk scheduling, the queue ----
 export type ScheduleAssignRequest = Schemas["ScheduleAssignRequest"];
@@ -140,6 +145,27 @@ export type BulkCheckInResult = Schemas["BulkCheckInResult"];
 export type ParticipantAttendanceView = Schemas["ParticipantAttendanceView"];
 export type DivisionReadinessView = Schemas["DivisionReadinessView"];
 export type TournamentReadinessView = Schemas["TournamentReadinessView"];
+
+// ---- participant portal ----
+export type PortalHomeView = Schemas["PortalHomeView"];
+export type PortalRegistrationView = Schemas["PortalRegistrationView"];
+export type PortalParticipationView = Schemas["PortalParticipationView"];
+export type PortalMatchView = Schemas["PortalMatchView"];
+
+// ---- share links (check-in, scorekeeper) ----
+export type CheckInLinkView = Schemas["CheckInLinkView"];
+export type CheckInSessionView = Schemas["CheckInSessionView"];
+export type CheckInParticipantView = Schemas["CheckInParticipantView"];
+export type ScorekeeperLinkView = Schemas["ScorekeeperLinkView"];
+
+// ---- franchise team ties ----
+export type FranchiseDrawRequest = Schemas["FranchiseDrawRequest"];
+export type FranchiseKnockoutDrawRequest = Schemas["FranchiseKnockoutDrawRequest"];
+export type FranchiseDrawResponse = Schemas["FranchiseDrawResponse"];
+export type FranchiseDrawSummary = Schemas["FranchiseDrawSummary"];
+export type FranchiseTieView = Schemas["FranchiseTieView"];
+export type FranchiseTiesBoardView = Schemas["FranchiseTiesBoardView"];
+export type TieLegView = Schemas["TieLegView"];
 
 // ---- health / errors ----
 export type HealthResponse = Schemas["HealthResponse"];

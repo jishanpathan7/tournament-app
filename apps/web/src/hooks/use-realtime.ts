@@ -52,6 +52,7 @@ export function useRealtime(
         }
         void queryClient.invalidateQueries({ queryKey: ["stages"] });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
       },
       [REALTIME_EVENTS.BRACKET_UPDATED]: (data) => {
         if (typeof data.stageId === "string") {
@@ -103,6 +104,7 @@ export function useRealtime(
       void queryClient.invalidateQueries({
         queryKey: queryKeys.divisions.participants(data.divisionId),
       });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     }
 
     const listeners: Array<[string, (e: MessageEvent) => void]> = [];

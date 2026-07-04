@@ -51,6 +51,16 @@ export function entrantLabel(submittedBy: string, membersById: Map<string, Membe
   return member?.name || member?.email || `Entrant ${submittedBy.slice(0, 8)}`;
 }
 
+/** Prefer the imported/self-declared name in formResponse over the submitter account. */
+export function registrationEntrantLabel(
+  registration: RegistrationResponse,
+  membersById: Map<string, MemberItem>,
+): string {
+  const fromForm = registration.formResponse?.name;
+  if (typeof fromForm === "string" && fromForm.trim()) return fromForm.trim();
+  return entrantLabel(registration.submittedBy, membersById);
+}
+
 /** Team/player names from the opaque `formResponse`, without assuming a sport-specific shape. */
 export function formResponseSummary(formResponse: Record<string, unknown>): string | null {
   const teamName = typeof formResponse.teamName === "string" ? formResponse.teamName : null;
@@ -80,7 +90,7 @@ export function registrationsToCsv(
     "Submitted at",
   ];
   const rows = registrations.map((r) => [
-    entrantLabel(r.submittedBy, membersById),
+    registrationEntrantLabel(r, membersById),
     statusMeta(r.status).label,
     r.skillLevel ?? "",
     formResponseSummary(r.formResponse) ?? "",

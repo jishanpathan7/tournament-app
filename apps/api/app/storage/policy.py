@@ -14,7 +14,6 @@ from app.db.enums import FileKind
 _MB = 1024 * 1024
 
 _IMAGE = frozenset({"image/png", "image/jpeg", "image/webp"})
-_IMAGE_VECTOR = _IMAGE | {"image/svg+xml"}
 
 
 @dataclass(frozen=True)
@@ -28,8 +27,8 @@ class KindPolicy:
 
 POLICIES: dict[FileKind, KindPolicy] = {
     FileKind.AVATAR: KindPolicy(_IMAGE, 2 * _MB, public=True),
-    FileKind.ORG_LOGO: KindPolicy(_IMAGE_VECTOR, 2 * _MB, public=True),
-    FileKind.TOURNAMENT_LOGO: KindPolicy(_IMAGE_VECTOR, 5 * _MB, public=True),
+    FileKind.ORG_LOGO: KindPolicy(_IMAGE, 2 * _MB, public=True),
+    FileKind.TOURNAMENT_LOGO: KindPolicy(_IMAGE, 5 * _MB, public=True),
     FileKind.RULES_DOC: KindPolicy(frozenset({"application/pdf"}), 20 * _MB, public=False),
     FileKind.EXPORT: KindPolicy(
         frozenset(

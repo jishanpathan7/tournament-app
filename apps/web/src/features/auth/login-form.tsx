@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/sonner";
 import { useLogin } from "@/features/auth/use-auth-actions";
 import { type LoginValues, loginSchema } from "@/features/auth/schemas";
 import { errorMessage } from "@/lib/problem";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 export function LoginForm() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export function LoginForm() {
 
   const onSubmit = handleSubmit((values) => {
     login.mutate(values, {
-      onSuccess: () => router.replace(next || "/console"),
+      onSuccess: () => router.replace(safeRedirectPath(next, "/console")),
       onError: (error) => toast.error(errorMessage(error, "Sign in failed")),
     });
   });
@@ -62,7 +63,7 @@ export function LoginForm() {
       </label>
       <Button type="submit" tone="candy" disabled={login.isPending} className="mt-1 w-full">
         {login.isPending ? <Spinner className="text-white" /> : null}
-        Sign in
+        Sign in →
       </Button>
       <p className="text-muted-foreground text-center text-sm">
         New here?{" "}

@@ -52,3 +52,25 @@ class TournamentCourtView(ApiModel):
     tournament_id: uuid.UUID
     court: CourtView
     created_at: datetime.datetime
+
+
+class BulkCreateCourtsRequest(ApiModel):
+    """Create numbered courts at a venue and assign them to the tournament."""
+
+    venue_id: uuid.UUID | None = None
+    new_venue_name: str | None = Field(default=None, min_length=1, max_length=200)
+    count: int = Field(ge=1, le=50)
+    name_prefix: str = Field(default="Court ", min_length=1, max_length=70)
+    start_number: int = Field(default=1, ge=1)
+
+
+class BulkCreateCourtsResponse(ApiModel):
+    created: list[TournamentCourtView]
+
+
+class BulkRemoveCourtsRequest(ApiModel):
+    court_ids: list[uuid.UUID] = Field(min_length=1)
+
+
+class BulkRemoveCourtsResponse(ApiModel):
+    removed: list[uuid.UUID]

@@ -36,8 +36,17 @@ from app.engine import (
     field_max_dev,
     pairing_confidence,
 )
+from app.modules.registrations.partner_resolution import preferred_partner_id_for
+from app.modules.squads.repository import (
+    cross_squad_forbidden_registration_pairs,
+    squad_membership_by_registration,
+)
 from app.modules.pairing import events
 from app.modules.pairing import repository as repo
+from app.modules.registrations.entrant import (
+    entrant_display_name,
+    entrant_has_external_identity,
+)
 from app.modules.pairing.schemas import (
     EntrantView,
     PairingRunView,
@@ -75,6 +84,15 @@ async def generate(
     carried over verbatim (as forced groups) and the rest is re-folded around them; the
     old draft is discarded."""
     ctx = await _load_context(session, org_id, division_id)
+
+    membership = await squad_membership_by_registration(
+        session, org_id, ctx.division.tournament_id
+    )
+    if membership:
+        cross_squad = cross_squad_forbidden_registration_pairs(
+            membership, [r.id for r in ctx.entrants]
+        )
+        forbidden_pairs = forbidden_pairs + [list(pair) for pair in cross_squad]
 
     prior = await repo.get_active_run(session, org_id, division_id)
     carried_locked, carried_names = _carry_locked(prior)
@@ -271,6 +289,66 @@ async def publish(
     return published, unpaired
 
 
+async def repair_published_rosters(
+    session: AsyncSession, *, org_id: uuid.UUID, division_id: uuid.UUID
+) -> int:
+    """Backfill team + roster display names from registration form_response.
+
+    Needed when pairings were published before imported entrant names were honored
+    (organizer account was written onto every roster row).
+    """
+    await _load_context(session, org_id, division_id)
+    run = await repo.get_latest_published_run(session, org_id, division_id)
+    if run is None:
+        raise NotFoundError("No published pairing run found for this division")
+
+    proposed = sorted(run.proposed_teams, key=lambda t: (t.created_at, t.id))
+    participants = list(await repo.list_pair_participants(session, org_id, division_id))
+    if len(proposed) != len(participants):
+        raise ValidationError(
+            "published pairing no longer matches materialized participants; regenerate pairing",
+            code="stale_pairing",
+        )
+
+    repaired = 0
+    for proposed_team, participant in zip(proposed, participants, strict=True):
+        regs: list[Registration] = []
+        for member_id in proposed_team.member_ids:
+            reg = await session.get(Registration, uuid.UUID(str(member_id)))
+            if reg is None or reg.organization_id != org_id:
+                raise ValidationError(
+                    f"registration {member_id} not found for this division",
+                    code="stale_pairing",
+                )
+            regs.append(reg)
+
+        if participant.team_id is None:
+            raise ValidationError("pair participant has no team", code="stale_pairing")
+        team = await repo.get_team_with_roster(session, org_id, participant.team_id)
+        if team is None:
+            raise NotFoundError("Team not found")
+
+        names = [_entrant_name(reg) for reg in regs]
+        team_name = proposed_team.team_name or (" / ".join(names) if names else team.name)
+        team.name = team_name
+        participant.display_name = team_name
+
+        entries = sorted(team.roster_entries, key=lambda e: (e.created_at, e.id))
+        if len(entries) != len(regs):
+            raise ValidationError(
+                "roster size does not match pairing members", code="stale_pairing"
+            )
+        for entry, reg in zip(entries, regs, strict=True):
+            user = await repo.get_user(session, reg.submitted_by)
+            account_name = user.name if user else None
+            entry.external_name = entrant_display_name(reg, account_name=account_name)
+            entry.user_id = None if entrant_has_external_identity(reg) else reg.submitted_by
+        repaired += 1
+
+    await session.flush()
+    return repaired
+
+
 async def _materialize_team(
     session: AsyncSession,
     org_id: uuid.UUID,
@@ -278,19 +356,23 @@ async def _materialize_team(
     team: ProposedTeam,
     regs: list[Registration],
 ) -> None:
-    name = team.team_name or f"Team {str(team.id)[:8]}"
+    member_names = [_entrant_name(reg) for reg in regs]
+    name = team.team_name or (
+        " / ".join(member_names) if member_names else f"Team {str(team.id)[:8]}"
+    )
     captain = regs[0].submitted_by if regs else None
     team_row = Team(organization_id=org_id, name=name, captain_user_id=captain)
     session.add(team_row)
     await session.flush()
     for reg in regs:
         user = await repo.get_user(session, reg.submitted_by)
+        account_name = user.name if user else None
         session.add(
             RosterEntry(
                 organization_id=org_id,
                 team_id=team_row.id,
-                user_id=reg.submitted_by,
-                external_name=user.name if user else None,
+                user_id=None if entrant_has_external_identity(reg) else reg.submitted_by,
+                external_name=entrant_display_name(reg, account_name=account_name),
             )
         )
     participant = Participant(
@@ -337,8 +419,7 @@ async def _load_context(
 def _engine_entrants(ctx: _Context) -> list[PairingEntrant]:
     out: list[PairingEntrant] = []
     for reg in ctx.entrants:
-        pref = reg.form_response.get("preferredPartnerRegistrationId")
-        pref_id = str(pref) if pref and str(pref) in ctx.by_id else None
+        pref_id = preferred_partner_id_for(reg, by_id=ctx.by_id)
         out.append(
             PairingEntrant(
                 id=str(reg.id),
@@ -472,10 +553,8 @@ def _entrant_name(reg: Registration) -> str:
 
 
 def _pref_uuid(reg: Registration, ctx: _Context) -> uuid.UUID | None:
-    pref = reg.form_response.get("preferredPartnerRegistrationId")
-    if pref and str(pref) in ctx.by_id:
-        return uuid.UUID(str(pref))
-    return None
+    pref_id = preferred_partner_id_for(reg, by_id=ctx.by_id)
+    return uuid.UUID(pref_id) if pref_id else None
 
 
 async def _emit(

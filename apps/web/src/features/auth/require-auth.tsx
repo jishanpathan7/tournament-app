@@ -5,6 +5,7 @@ import * as React from "react";
 
 import { LoadingPanel } from "@/components/common/loading";
 import { useSession } from "@/features/auth/use-session";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 /**
  * Client auth gate. While the session resolves, shows a calm loader; if unauthenticated,
@@ -40,7 +41,7 @@ export function RedirectIfAuthenticated({ children }: { children: React.ReactNod
 
   React.useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.replace(searchParams.get("next") || "/console");
+      router.replace(safeRedirectPath(searchParams.get("next"), "/console"));
     }
   }, [isLoading, isAuthenticated, searchParams, router]);
 

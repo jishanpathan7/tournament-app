@@ -69,3 +69,16 @@ class PublicTournamentSearchResult(ApiModel):
     status: str
     organization_name: str
     organization_slug: str
+
+
+class PublicSubmitRegistrationRequest(ApiModel):
+    name: str
+    email: str | None = None
+    skill_level: str | None = None
+    preferred_partner_name: str | None = None
+
+
+class PublicRegistrationSubmittedView(ApiModel):
+    id: uuid.UUID
+    status: str
+    division_id: uuid.UUID

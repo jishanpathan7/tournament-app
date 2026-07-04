@@ -1,6 +1,7 @@
 import type { MatchView, ParticipantResponse, StageResponse } from "@tournament/api-client";
 
 import { MATCH_STATUS } from "@/features/draws/config";
+import { BADMINTON_DEFAULTS } from "@/features/matches/badminton-scoring";
 import { getFormat } from "@/features/tournaments/config";
 
 /**
@@ -164,13 +165,10 @@ export interface ScoreFormValues {
   retiredSide: 0 | 1 | null; // retirement
 }
 
-export function emptyScoreForm(): ScoreFormValues {
+export function emptyScoreForm(gameSlots: number = BADMINTON_DEFAULTS.bestOf): ScoreFormValues {
   return {
     resultType: "normal",
-    games: [
-      { a: null, b: null },
-      { a: null, b: null },
-    ],
+    games: Array.from({ length: gameSlots }, () => ({ a: null, b: null })),
     winnerSide: null,
     retiredSide: null,
   };
