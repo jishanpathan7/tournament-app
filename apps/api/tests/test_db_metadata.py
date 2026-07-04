@@ -27,6 +27,8 @@ EXPECTED_TABLES = {
     # participants
     "teams",
     "roster_entries",
+    "squads",
+    "squad_members",
     "participants",
     "registrations",
     "pairing_requests",
@@ -89,7 +91,9 @@ def test_rls_classification_is_exhaustive_and_disjoint():
 
 def test_enum_type_names_unique():
     names = [e.name for e in ALL_PG_ENUMS]
-    assert len(names) == len(set(names)) == 18
+    assert (
+        len(names) == len(set(names)) == 18
+    )  # baseline enums (non-baseline added by later migrations)
 
 
 def test_drift_prone_fields_are_generated_columns():

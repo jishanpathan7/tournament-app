@@ -32,9 +32,11 @@ class Squad(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDeleteMixin
     )
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     sort_order: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    # use_alter breaks the participants ↔ squads ↔ registrations cycle so
+    # create_all can build the tables without a circular FK deadlock.
     captain_registration_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
-        ForeignKey("registrations.id", ondelete="SET NULL"),
+        ForeignKey("registrations.id", ondelete="SET NULL", use_alter=True),
         nullable=True,
     )
 

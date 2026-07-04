@@ -11,7 +11,7 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -29,7 +29,14 @@ if TYPE_CHECKING:
 class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "tournaments"
     __table_args__ = (
-        UniqueConstraint("organization_id", "slug"),
+        # Partial so the slug is freed when a tournament is soft-deleted.
+        Index(
+            "uq_tournaments_organization_id_slug",
+            "organization_id",
+            "slug",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
         Index("ix_tournaments_organization_id_status", "organization_id", "status"),
     )
 

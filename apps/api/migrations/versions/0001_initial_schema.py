@@ -28,7 +28,7 @@ from alembic import op
 import app.db.models  # noqa: F401  # registers every table on Base.metadata
 from app.db import rls, triggers
 from app.db.base import Base
-from app.db.enums import ALL_PG_ENUMS
+from app.db.enums import ALL_PG_ENUMS, CONTEST_KIND
 
 MIN_PG_VERSION_NUM = 150000  # standings UNIQUE ... NULLS NOT DISTINCT requires PG 15+
 
@@ -38,14 +38,19 @@ branch_labels = None
 depends_on = None
 
 
-# The 33 tables this baseline owns. Pinned explicitly: Base.metadata is shared/live,
+# The 35 tables this baseline owns. Pinned explicitly: Base.metadata is shared/live,
 # so create_all() must be restricted to these or it would also build tables added by
-# LATER migrations. Never extend this list — new tables belong to their own migration.
+# LATER migrations.
+# squads/squad_members are included here (not in 0014) because participants.squad_id
+# has a FK → squads.id, so squads must exist before participants is created on a
+# fresh database. Migration 0014 uses checkfirst=True / if_not_exists, so it is safe
+# for both paths (fresh DB and incremental upgrade).
 BASELINE_TABLES = (
     "users", "organizations", "memberships", "identities", "auth_sessions", "org_invites",
     "sport_profiles", "points_rules", "tiebreak_rulesets",
     "tournaments", "divisions", "stages", "groups", "rounds",
-    "teams", "roster_entries", "participants", "registrations", "pairing_requests",
+    "teams", "roster_entries", "squads", "squad_members",
+    "participants", "registrations", "pairing_requests",
     "matches", "match_participants", "match_result_events", "standings",
     "venues", "courts", "schedule_slots", "assignments",
     "share_links", "files", "notifications", "outbox", "audit_logs", "idempotency_keys",
@@ -66,6 +71,10 @@ def upgrade() -> None:
     # 1. ENUM types first (columns reference them with create_type=False).
     for enum_type in ALL_PG_ENUMS:
         enum_type.create(bind, checkfirst=True)
+    # contest_kind is owned by migration 0016 but referenced by matches (a baseline
+    # table) — create it here so create_all succeeds on a completely fresh database.
+    # Migration 0016 uses checkfirst=True, so the two-step creation is idempotent.
+    CONTEST_KIND.create(bind, checkfirst=True)
     # 2. Baseline tables, FKs, indexes, generated/unique/check constraints.
     Base.metadata.create_all(bind, tables=tables)
     # 3. Row-Level Security: ENABLE + FORCE + org-isolation policies.

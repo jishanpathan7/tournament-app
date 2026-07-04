@@ -7,7 +7,6 @@ Create Date: 2026-07-03
 
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
 
@@ -18,79 +17,69 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # PG cannot use a newly added enum label in the same transaction (CHECK below).
+    # PG cannot use a newly added enum label in the same transaction.
+    # IF NOT EXISTS is idempotent: on fresh DBs the value was already added
+    # by migration 0001 (which creates the current model with 'squad' in the enum).
     with op.get_context().autocommit_block():
-        op.execute("ALTER TYPE participant_kind ADD VALUE IF NOT EXISTS 'squad'")
+        op.execute(
+            "ALTER TYPE participant_kind ADD VALUE IF NOT EXISTS 'squad'"
+        )
 
+    # Create the contest_kind PG enum type if it does not already exist.
+    # On incremental upgrades (DB at 0012) the type does not exist yet.
+    # On fresh DBs migration 0001 creates the matches table which references this
+    # type — SQLAlchemy emits it with create_type=False, so it is *not* created
+    # by create_all; migration 0016 is responsible for creating it.
     contest_kind = postgresql.ENUM(
         "standard", "tie", "leg", name="contest_kind", create_type=True
     )
     contest_kind.create(op.get_bind(), checkfirst=True)
 
-    # participants.squad_id
-    op.add_column(
-        "participants",
-        sa.Column("squad_id", postgresql.UUID(as_uuid=True), nullable=True),
-    )
-    op.create_foreign_key(
-        "fk_participants_squad_id",
-        "participants",
-        "squads",
-        ["squad_id"],
-        ["id"],
-        ondelete="RESTRICT",
-    )
-    op.create_index("ix_participants_squad_id", "participants", ["squad_id"])
+    # Note: squad_id on participants and the participant_kind_refs check constraint
+    # are handled entirely by migration 0014 (squads).  Doing it there avoids a
+    # circular dependency between 0014 (which creates squads) and 0016 (which adds
+    # squad participants), and keeps each migration self-contained.
 
-    op.drop_constraint("participant_kind_refs", "participants", type_="check")
-    op.create_check_constraint(
-        "participant_kind_refs",
-        "participants",
-        "(kind = 'individual' AND user_id IS NOT NULL AND team_id IS NULL AND squad_id IS NULL) "
-        "OR (kind IN ('pair', 'team') AND team_id IS NOT NULL AND user_id IS NULL AND squad_id IS NULL) "
-        "OR (kind = 'squad' AND squad_id IS NOT NULL AND user_id IS NULL AND team_id IS NULL)",
+    # matches.contest_kind — NOT NULL with a server default so it back-fills existing rows.
+    op.execute(
+        "ALTER TABLE matches ADD COLUMN IF NOT EXISTS "
+        "contest_kind contest_kind NOT NULL DEFAULT 'standard'"
     )
-
-    # matches.parent_match_id + contest_kind
-    op.add_column(
-        "matches",
-        sa.Column(
-            "contest_kind",
-            sa.Enum("standard", "tie", "leg", name="contest_kind", create_type=False),
-            nullable=False,
-            server_default="standard",
-        ),
+    # matches.parent_match_id — self-referencing FK for tie-legs inside a parent match.
+    op.execute(
+        "ALTER TABLE matches ADD COLUMN IF NOT EXISTS parent_match_id UUID"
     )
-    op.add_column(
-        "matches",
-        sa.Column("parent_match_id", postgresql.UUID(as_uuid=True), nullable=True),
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_matches_parent_match_id "
+        "ON matches(parent_match_id)"
     )
-    op.create_foreign_key(
-        "fk_matches_parent_match_id",
-        "matches",
-        "matches",
-        ["parent_match_id"],
-        ["id"],
-        ondelete="CASCADE",
-    )
-    op.create_index("ix_matches_parent_match_id", "matches", ["parent_match_id"])
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'fk_matches_parent_match_id'
+            ) THEN
+                ALTER TABLE matches
+                    ADD CONSTRAINT fk_matches_parent_match_id
+                    FOREIGN KEY (parent_match_id) REFERENCES matches(id) ON DELETE CASCADE;
+            END IF;
+        END $$
+    """)
 
 
 def downgrade() -> None:
-    op.drop_index("ix_matches_parent_match_id", table_name="matches")
-    op.drop_constraint("fk_matches_parent_match_id", "matches", type_="foreignkey")
-    op.drop_column("matches", "parent_match_id")
-    op.drop_column("matches", "contest_kind")
+    op.execute("DROP INDEX IF EXISTS ix_matches_parent_match_id")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'fk_matches_parent_match_id'
+            ) THEN
+                ALTER TABLE matches DROP CONSTRAINT fk_matches_parent_match_id;
+            END IF;
+        END $$
+    """)
+    op.execute("ALTER TABLE matches DROP COLUMN IF EXISTS parent_match_id")
+    op.execute("ALTER TABLE matches DROP COLUMN IF EXISTS contest_kind")
     op.execute("DROP TYPE IF EXISTS contest_kind")
-
-    op.drop_constraint("participant_kind_refs", "participants", type_="check")
-    op.create_check_constraint(
-        "participant_kind_refs",
-        "participants",
-        "(kind = 'individual' AND user_id IS NOT NULL AND team_id IS NULL) "
-        "OR (kind IN ('pair', 'team') AND team_id IS NOT NULL AND user_id IS NULL)",
-    )
-    op.drop_index("ix_participants_squad_id", table_name="participants")
-    op.drop_constraint("fk_participants_squad_id", "participants", type_="foreignkey")
-    op.drop_column("participants", "squad_id")
-    # participant_kind 'squad' value is left in place (PG enums are append-only)
+    # participant_kind 'squad' value is intentionally left in place — PG enums are append-only.

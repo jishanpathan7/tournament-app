@@ -10,9 +10,7 @@ Create Date: 2026-07-03
 
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.dialects import postgresql
 
 revision = "0013_scorekeeper_link"
 down_revision = "0012_registration_ops"
@@ -21,40 +19,68 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "share_links",
-        sa.Column("match_id", postgresql.UUID(as_uuid=True), nullable=True),
+    # IF NOT EXISTS makes every step idempotent: on a fresh DB, migration 0001
+    # already created share_links with the current model (all columns included).
+    op.execute("ALTER TABLE share_links ADD COLUMN IF NOT EXISTS match_id UUID")
+    op.execute(
+        "ALTER TABLE share_links ADD COLUMN IF NOT EXISTS recipient_email VARCHAR(320)"
     )
-    op.add_column("share_links", sa.Column("recipient_email", sa.String(320), nullable=True))
-    op.add_column("share_links", sa.Column("recipient_name", sa.String(200), nullable=True))
-    op.add_column(
-        "share_links",
-        sa.Column("created_by", postgresql.UUID(as_uuid=True), nullable=True),
+    op.execute(
+        "ALTER TABLE share_links ADD COLUMN IF NOT EXISTS recipient_name VARCHAR(200)"
     )
-    op.create_foreign_key(
-        "fk_share_links_match_id",
-        "share_links",
-        "matches",
-        ["match_id"],
-        ["id"],
-        ondelete="CASCADE",
+    op.execute("ALTER TABLE share_links ADD COLUMN IF NOT EXISTS created_by UUID")
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_share_links_match_id ON share_links(match_id)"
     )
-    op.create_foreign_key(
-        "fk_share_links_created_by",
-        "share_links",
-        "users",
-        ["created_by"],
-        ["id"],
-        ondelete="SET NULL",
-    )
-    op.create_index("ix_share_links_match_id", "share_links", ["match_id"])
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'fk_share_links_match_id'
+            ) THEN
+                ALTER TABLE share_links
+                    ADD CONSTRAINT fk_share_links_match_id
+                    FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE;
+            END IF;
+        END $$
+    """)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'fk_share_links_created_by'
+            ) THEN
+                ALTER TABLE share_links
+                    ADD CONSTRAINT fk_share_links_created_by
+                    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL;
+            END IF;
+        END $$
+    """)
 
 
 def downgrade() -> None:
-    op.drop_index("ix_share_links_match_id", table_name="share_links")
-    op.drop_constraint("fk_share_links_created_by", "share_links", type_="foreignkey")
-    op.drop_constraint("fk_share_links_match_id", "share_links", type_="foreignkey")
-    op.drop_column("share_links", "created_by")
-    op.drop_column("share_links", "recipient_name")
-    op.drop_column("share_links", "recipient_email")
-    op.drop_column("share_links", "match_id")
+    op.execute("DROP INDEX IF EXISTS ix_share_links_match_id")
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'fk_share_links_created_by'
+            ) THEN
+                ALTER TABLE share_links DROP CONSTRAINT fk_share_links_created_by;
+            END IF;
+        END $$
+    """)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (
+                SELECT 1 FROM pg_constraint WHERE conname = 'fk_share_links_match_id'
+            ) THEN
+                ALTER TABLE share_links DROP CONSTRAINT fk_share_links_match_id;
+            END IF;
+        END $$
+    """)
+    op.execute("ALTER TABLE share_links DROP COLUMN IF EXISTS created_by")
+    op.execute("ALTER TABLE share_links DROP COLUMN IF EXISTS recipient_name")
+    op.execute("ALTER TABLE share_links DROP COLUMN IF EXISTS recipient_email")
+    op.execute("ALTER TABLE share_links DROP COLUMN IF EXISTS match_id")
