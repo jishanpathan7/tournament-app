@@ -93,8 +93,9 @@ def _enable_force(table: str) -> list[str]:
 
 
 def _tenant_policy(table: str) -> str:
+    # CREATE OR REPLACE POLICY is idempotent (PG 15+ which we require).
     return (
-        f"CREATE POLICY {table}_org_isolation ON {table} "
+        f"CREATE OR REPLACE POLICY {table}_org_isolation ON {table} "
         f"USING (organization_id = {_ORG}) "
         f"WITH CHECK (organization_id = {_ORG});"
     )
@@ -102,7 +103,7 @@ def _tenant_policy(table: str) -> str:
 
 def _tenant_or_global_policy(table: str) -> str:
     return (
-        f"CREATE POLICY {table}_org_isolation ON {table} "
+        f"CREATE OR REPLACE POLICY {table}_org_isolation ON {table} "
         f"USING (organization_id IS NULL OR organization_id = {_ORG}) "
         f"WITH CHECK (organization_id = {_ORG});"
     )

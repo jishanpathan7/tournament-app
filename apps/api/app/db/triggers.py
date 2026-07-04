@@ -26,9 +26,9 @@ def _trigger_name(table: str) -> str:
 
 
 def create_trigger(table: str) -> str:
-    """One CREATE TRIGGER (assumes the shared set_updated_at() function exists)."""
+    """One CREATE OR REPLACE TRIGGER (idempotent; PG 14+ / we require 15+)."""
     return (
-        f"CREATE TRIGGER {_trigger_name(table)} BEFORE UPDATE ON {table} "
+        f"CREATE OR REPLACE TRIGGER {_trigger_name(table)} BEFORE UPDATE ON {table} "
         f"FOR EACH ROW EXECUTE FUNCTION set_updated_at();"
     )
 
