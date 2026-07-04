@@ -1,26 +1,21 @@
 import { Suspense } from "react";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { AuthFormShell } from "@/features/marketing/components/auth-form-shell";
 import { LoginForm } from "@/features/auth/login-form";
+import { SITE, siteTitle } from "@/lib/site";
 
-export const metadata = { title: "Sign in · Tournament Platform" };
+export const metadata = { title: siteTitle("Sign in") };
 
 export default function LoginPage() {
   return (
-    <Card>
-      <CardHeader>
-        <p className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.28em]">
-          Welcome back
-        </p>
-        <CardTitle className="text-2xl">Sign in</CardTitle>
-        <CardDescription>Manage your tournaments and live scoring.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* LoginForm reads `next` via useSearchParams — needs a Suspense boundary. */}
-        <Suspense>
-          <LoginForm />
-        </Suspense>
-      </CardContent>
-    </Card>
+    <AuthFormShell
+      eyebrow="Welcome back"
+      title="Sign in to Playlane"
+      description={SITE.authDescription}
+    >
+      <Suspense>
+        <LoginForm />
+      </Suspense>
+    </AuthFormShell>
   );
 }

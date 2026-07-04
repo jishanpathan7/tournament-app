@@ -1,0 +1,198 @@
+"use client";
+
+import Link from "next/link";
+import { Swords, Trophy } from "lucide-react";
+
+import { EmptyState } from "@/components/common/empty-state";
+import { ErrorState } from "@/components/common/error-state";
+import { PageHeader } from "@/components/common/page-header";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "@/components/ui/sonner";
+import {
+  useFranchiseTiesBoard,
+  useGenerateFranchiseDraw,
+  useGenerateFranchiseKnockoutDraw,
+} from "@/features/franchise-ties/use-franchise-ties";
+import { useDivisions, useStages } from "@/features/tournaments/use-tournaments";
+import { useCan } from "@/hooks/use-permissions";
+import { ACTIONS } from "@/lib/permissions";
+import { errorMessage } from "@/lib/problem";
+
+const STATUS_TONE: Record<string, "mint" | "candy" | "yellow" | "muted"> = {
+  completed: "mint",
+  scheduled: "yellow",
+  live: "candy",
+};
+
+export function FranchiseTiesBoard({
+  tournamentId,
+  stageId,
+  mode = "round_robin",
+  sourceStageId,
+  advanceCount,
+}: {
+  tournamentId: string;
+  stageId: string;
+  mode?: "round_robin" | "knockout";
+  sourceStageId?: string;
+  advanceCount?: number;
+}) {
+  const can = useCan();
+  const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
+  const board = useFranchiseTiesBoard(stageId);
+  const generate = useGenerateFranchiseDraw(stageId, tournamentId);
+  const generateKo = useGenerateFranchiseKnockoutDraw(stageId, tournamentId, sourceStageId);
+  const isKnockout = mode === "knockout";
+
+  const onGenerate = () => {
+    const mutation = isKnockout ? generateKo : generate;
+    mutation.mutate(isKnockout ? advanceCount : undefined, {
+      onSuccess: (res) =>
+        toast.success(
+          isKnockout
+            ? `Created ${res.summary.ties} knockout team ties`
+            : `Created ${res.summary.ties} team ties (${res.summary.legs} doubles legs)`,
+        ),
+      onError: (e) => toast.error(errorMessage(e, "Couldn't generate team ties")),
+    });
+  };
+
+  return (
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Franchise format"
+        title={isKnockout ? "Knockout finals" : "Team ties"}
+        description={
+          isKnockout
+            ? "Single-elimination squad ties. Legs expand when both squads are known; winners advance to the next round."
+            : "Squad-vs-squad round robin. Each tie is a series of doubles legs — score legs in Match Center; the tie winner is the squad with more leg wins."
+        }
+        actions={
+          canManage && board.data?.ties.length === 0 ? (
+            <Button
+              tone="mint"
+              size="sm"
+              onClick={onGenerate}
+              disabled={generate.isPending || generateKo.isPending}
+            >
+              <Trophy className="h-4 w-4" />
+              {isKnockout ? "Generate knockout finals" : "Generate team tie draw"}
+            </Button>
+          ) : null
+        }
+      />
+
+      {board.isLoading ? (
+        <Skeleton className="h-40 rounded-2xl" />
+      ) : board.isError ? (
+        <ErrorState error={board.error} onRetry={() => board.refetch()} />
+      ) : !board.data?.ties.length ? (
+        <EmptyState
+          icon={Trophy}
+          title={isKnockout ? "No knockout ties yet" : "No team ties yet"}
+          description={
+            isKnockout
+              ? "Finish the round-robin stage, then generate single-elimination squad finals seeded from standings."
+              : "Assign franchise teams, publish doubles pairings, then generate the squad round-robin."
+          }
+        />
+      ) : (
+        <div className="flex flex-col gap-4">
+          {board.data.ties.map((tie) => (
+            <Card key={tie.id}>
+              <CardHeader className="flex flex-row items-start justify-between gap-4">
+                <div>
+                  <CardTitle className="text-lg">
+                    {tie.homeSquadName}{" "}
+                    <span className="text-muted-foreground font-normal">vs</span> {tie.awaySquadName}
+                  </CardTitle>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    Legs won {tie.homeLegWins}–{tie.awayLegWins} (best of {tie.gamesPerTie})
+                  </p>
+                </div>
+                <Badge tone={STATUS_TONE[tie.status] ?? "muted"} className="capitalize">
+                  {tie.status}
+                </Badge>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                {tie.legs.map((leg) => (
+                  <div
+                    key={leg.id}
+                    className="border-ink/10 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
+                  >
+                    <span>
+                      Leg {leg.legIndex + 1}: {leg.homePairName} vs {leg.awayPairName}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Badge tone={STATUS_TONE[leg.status] ?? "muted"} className="capitalize">
+                        {leg.status}
+                      </Badge>
+                      <Button asChild tone="ghost" size="sm">
+                        <Link href={`/console/tournaments/${tournamentId}/matches?match=${leg.id}`}>
+                          <Swords className="h-3.5 w-3.5" />
+                          Score
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function FranchiseTiesPage({ tournamentId }: { tournamentId: string }) {
+  const divisions = useDivisions(tournamentId);
+  const firstDivision = divisions.data?.[0];
+  const stages = useStages(firstDivision?.id ?? "", { enabled: !!firstDivision?.id });
+  const rrStage = stages.data?.find((s) => s.type === "round_robin") ?? stages.data?.[0];
+  const koStage = stages.data?.find((s) => s.type === "single_elim" && s.id !== rrStage?.id);
+
+  if (divisions.isLoading || stages.isLoading) return <Skeleton className="h-40 rounded-2xl" />;
+  if (divisions.isError) {
+    return <ErrorState error={divisions.error} onRetry={() => divisions.refetch()} />;
+  }
+  if (!firstDivision) {
+    return (
+      <EmptyState
+        icon={Trophy}
+        title="Add a division first"
+        description="Create a division before generating franchise team ties."
+      />
+    );
+  }
+  if (stages.isError) {
+    return <ErrorState error={stages.error} onRetry={() => stages.refetch()} />;
+  }
+  if (!rrStage) {
+    return (
+      <EmptyState
+        icon={Trophy}
+        title="Add a stage first"
+        description="Create a division stage before generating franchise team ties."
+      />
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-10">
+      <FranchiseTiesBoard tournamentId={tournamentId} stageId={rrStage.id} mode="round_robin" />
+      {koStage ? (
+        <FranchiseTiesBoard
+          tournamentId={tournamentId}
+          stageId={koStage.id}
+          mode="knockout"
+          sourceStageId={rrStage.id}
+          advanceCount={4}
+        />
+      ) : null}
+    </div>
+  );
+}

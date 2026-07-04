@@ -26,6 +26,7 @@ from app.modules.pairing.schemas import (
     PairingRunView,
     ProposedTeamView,
     PublishPairingResponse,
+    RepairPairingResponse,
     SwapMembersRequest,
     UpdateProposedTeamRequest,
 )
@@ -142,3 +143,21 @@ async def publish_pairing(
         run_id=run_id,
     )
     return PublishPairingResponse(run_id=run_id, published_teams=published, unpaired_count=unpaired)
+
+
+@router.post(
+    "/divisions/{division_id}/pairing/repair-rosters",
+    response_model=RepairPairingResponse,
+    dependencies=[Depends(authed_csrf)],
+)
+async def repair_pairing_rosters(
+    division_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> RepairPairingResponse:
+    repaired = await service.repair_published_rosters(
+        session,
+        org_id=principal.organization_id,
+        division_id=division_id,
+    )
+    return RepairPairingResponse(teams_repaired=repaired)

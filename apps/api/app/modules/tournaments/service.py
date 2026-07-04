@@ -54,8 +54,11 @@ from app.engine import (
     WinnerOfRef,
     parse_source_refs,
 )
+from app.modules.registrations import notifications as reg_notifications
+from app.modules.registrations import repository as registrations_repo
 from app.modules.tournaments import events
 from app.modules.tournaments import repository as repo
+from app.sports.config import merge_sport_config
 
 _TERMINAL_STATUSES = {
     MatchStatus.COMPLETED.value,
@@ -142,12 +145,39 @@ async def update_tournament(
     if ends_at is not None:
         tournament.ends_at = ends_at
     if settings is not None:
+        profile = get_sport_registry().get(await _sport_key(session, tournament))
+        merged = merge_sport_config(profile, tournament_settings=settings)
+        try:
+            profile.validate_config(merged)
+        except EngineValidationError as exc:
+            raise ValidationError(str(exc), code="invalid_sport_config") from exc
         tournament.settings = settings
     if tournament.starts_at and tournament.ends_at and tournament.starts_at > tournament.ends_at:
         raise ValidationError("starts_at must be on or before ends_at")
     await session.flush()
     await _audit_event(session, org_id, actor_id, events.TOURNAMENT_UPDATED, tournament.id)
     return tournament
+
+
+async def delete_tournament(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+) -> None:
+    """Soft-delete — hides the tournament from console and public surfaces."""
+    tournament = await _require_tournament(session, org_id, tournament_id)
+    tournament.deleted_at = _now()
+    await session.flush()
+    await _audit_event(
+        session,
+        org_id,
+        actor_id,
+        events.TOURNAMENT_DELETED,
+        tournament.id,
+        before={"name": tournament.name, "slug": tournament.slug, "status": tournament.status},
+    )
 
 
 async def transition_status(
@@ -203,6 +233,33 @@ async def publish(
         tournament.id,
         after={"artifacts": artifacts},
     )
+    if "draw" in artifacts:
+        registrations = await registrations_repo.list_registrations_for_tournament(
+            session, org_id, tournament.id
+        )
+        emails: set[str] = set()
+        user_ids: set[uuid.UUID] = set()
+        for reg in registrations:
+            form = reg.form_response or {}
+            email = form.get("email")
+            if email and str(email).strip():
+                emails.add(str(email).strip().lower())
+            if reg.submitted_by is not None:
+                user_ids.add(reg.submitted_by)
+        participants = await registrations_repo.list_participants_for_tournament(
+            session, org_id, tournament.id
+        )
+        for p in participants:
+            if p.user_id is not None:
+                user_ids.add(p.user_id)
+        if emails or user_ids:
+            await reg_notifications.notify_draw_published(
+                session,
+                org_id=org_id,
+                tournament=tournament,
+                recipient_emails=emails,
+                recipient_user_ids=user_ids,
+            )
     return tournament
 
 
@@ -267,6 +324,17 @@ async def create_stage(
         registry.get(fmt).validate_config(config)
     except EngineValidationError as exc:
         raise ValidationError(str(exc), code="invalid_stage_config") from exc
+    tournament = await _require_tournament(session, org_id, division.tournament_id)
+    profile = get_sport_registry().get(await _sport_key(session, tournament))
+    sport_cfg = merge_sport_config(
+        profile,
+        tournament_settings=tournament.settings or {},
+        stage_config=config,
+    )
+    try:
+        profile.validate_config(sport_cfg)
+    except EngineValidationError as exc:
+        raise ValidationError(str(exc), code="invalid_sport_config") from exc
     stage = Stage(
         organization_id=org_id,
         division_id=division.id,

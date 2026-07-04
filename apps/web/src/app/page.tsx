@@ -1,6 +1,6 @@
-import { redirect } from "next/navigation";
+import { LandingRedirect } from "@/features/marketing/components/landing-redirect";
 
-/** Entry point → the console. Unauthenticated users are bounced to /login by the guard. */
+/** Entry point — marketing landing for guests; authenticated users redirect to console. */
 export default function RootPage() {
-  redirect("/console");
+  return <LandingRedirect />;
 }

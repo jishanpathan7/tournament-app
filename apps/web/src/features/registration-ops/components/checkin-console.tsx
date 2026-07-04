@@ -20,6 +20,7 @@ import {
   useBulkSetAttendance,
   useSetAttendance,
 } from "@/features/registration-ops/use-registration-ops";
+import { CheckInLinkPanel } from "@/features/registration-ops/components/checkin-link-panel";
 import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
@@ -150,6 +151,8 @@ export function CheckInConsole({
         title={`Check-in — ${division?.name ?? "…"}`}
         description="Mark participants as checked in, absent, or pending. Keyboard: C = checked in, A = absent, P = pending."
       />
+
+      {canManage ? <CheckInLinkPanel divisionId={divisionId} /> : null}
 
       {/* Counts */}
       <div className="grid grid-cols-3 gap-3">

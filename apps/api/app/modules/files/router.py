@@ -69,7 +69,7 @@ async def local_upload(
 ) -> Response:
     _require_local_backend()
     settings = get_settings()
-    if not verify_signature(settings.jwt_secret, "PUT", key, expires, sig):
+    if not verify_signature(settings.effective_storage_signing_secret, "PUT", key, expires, sig):
         raise PermissionDeniedError("Invalid or expired upload signature", code="signature_invalid")
     data = await request.body()
     if len(data) > settings.storage_max_upload_size:
@@ -88,7 +88,7 @@ async def local_download(
 ) -> Response:
     _require_local_backend()
     settings = get_settings()
-    if not verify_signature(settings.jwt_secret, "GET", key, expires, sig):
+    if not verify_signature(settings.effective_storage_signing_secret, "GET", key, expires, sig):
         raise PermissionDeniedError(
             "Invalid or expired download signature", code="signature_invalid"
         )

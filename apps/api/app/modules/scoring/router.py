@@ -60,7 +60,7 @@ async def score_match(
         idempotency_key=idem_key,
     )
     response.headers["ETag"] = service.match_etag(match)
-    return service.build_match_view(match)
+    return await service.build_match_view_for_org(session, principal.organization_id, match)
 
 
 @router.get("/stages/{stage_id}/matches", response_model=list[MatchView])
@@ -70,7 +70,7 @@ async def list_stage_matches(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[MatchView]:
     rows = await repo.list_stage_matches(session, principal.organization_id, stage_id)
-    return [service.build_match_view(m) for m in rows]
+    return await service.build_match_views_for_org(session, principal.organization_id, rows)
 
 
 @router.get("/tournaments/{tournament_id}/matches", response_model=list[MatchView])
@@ -80,7 +80,7 @@ async def list_tournament_matches(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[MatchView]:
     rows = await repo.list_tournament_matches(session, principal.organization_id, tournament_id)
-    return [service.build_match_view(m) for m in rows]
+    return await service.build_match_views_for_org(session, principal.organization_id, rows)
 
 
 @router.get("/matches/{match_id}", response_model=MatchView)
@@ -94,7 +94,7 @@ async def get_match(
     if match is None:
         raise NotFoundError("Match not found")
     response.headers["ETag"] = service.match_etag(match)
-    return service.build_match_view(match)
+    return await service.build_match_view_for_org(session, principal.organization_id, match)
 
 
 @router.get("/matches/{match_id}/events", response_model=list[MatchResultEventView])

@@ -11,7 +11,7 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint, text
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, text
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -23,12 +23,20 @@ if TYPE_CHECKING:
     from app.db.models.competition import Match, Standing
     from app.db.models.identity import Organization
     from app.db.models.participants import Participant, Registration
+    from app.db.models.squads import Squad
 
 
 class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDeleteMixin, Base):
     __tablename__ = "tournaments"
     __table_args__ = (
-        UniqueConstraint("organization_id", "slug"),
+        # Partial so the slug is freed when a tournament is soft-deleted.
+        Index(
+            "uq_tournaments_organization_id_slug",
+            "organization_id",
+            "slug",
+            unique=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
         Index("ix_tournaments_organization_id_status", "organization_id", "status"),
     )
 
@@ -65,6 +73,9 @@ class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelete
 
     organization: Mapped[Organization] = relationship(back_populates="tournaments")
     divisions: Mapped[list[Division]] = relationship(
+        back_populates="tournament", cascade="all, delete-orphan", passive_deletes=True
+    )
+    squads: Mapped[list[Squad]] = relationship(
         back_populates="tournament", cascade="all, delete-orphan", passive_deletes=True
     )
 

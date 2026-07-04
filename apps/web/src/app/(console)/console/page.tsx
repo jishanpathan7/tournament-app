@@ -56,7 +56,7 @@ export default function ConsolePage() {
       <PageHeader
         eyebrow="Console"
         title={firstName ? `Welcome, ${firstName}` : "Welcome"}
-        description="Your organizer home. Create tournaments, manage registrations, and run live scoring."
+        description="Your Playlane organizer home. Create tournaments, manage registrations, and run live scoring."
         actions={newButton}
       />
 

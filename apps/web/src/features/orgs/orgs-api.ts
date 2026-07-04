@@ -1,5 +1,7 @@
 import type {
   CreateOrgRequest,
+  CreateInviteRequest,
+  InviteItem,
   MeResponse,
   MemberItem,
   OrgResponse,
@@ -19,6 +21,15 @@ export function listOrgs(): Promise<OrgSummary[]> {
 /** Members of the active org — used to resolve a registration's `submittedBy` to a name/email. */
 export function listMembers(): Promise<MemberItem[]> {
   return apiGet<MemberItem[]>("/orgs/active/members");
+}
+
+export function listInvites(): Promise<InviteItem[]> {
+  return apiGet<InviteItem[]>("/orgs/active/invites");
+}
+
+export async function createInvite(body: CreateInviteRequest): Promise<InviteItem> {
+  const { data } = await api.post<InviteItem>("/orgs/active/invites", body);
+  return data;
 }
 
 export async function createOrg(body: CreateOrgRequest): Promise<MeResponse> {

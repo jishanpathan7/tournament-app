@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   entrantLabel,
   formResponseSummary,
+  registrationEntrantLabel,
   registrationsToCsv,
   statusMeta,
 } from "@/features/registrations/config";
@@ -34,6 +35,19 @@ describe("entrantLabel", () => {
     const label = entrantLabel("019f1e73-d022-7a75-ac84-4d1f76764f2a", new Map());
     expect(label).not.toContain("019f1e73-d022-7a75-ac84-4d1f76764f2a");
     expect(label).toMatch(/^Entrant /);
+  });
+});
+
+describe("registrationEntrantLabel", () => {
+  it("prefers the imported name in formResponse over the submitter account", () => {
+    const member = makeMember({ userId: "u-org", name: "Jishan Pathan", email: "j@example.com" });
+    const registration = makeRegistration({
+      submittedBy: "u-org",
+      formResponse: { name: "Mihir Tuli", email: "m@example.com" },
+    });
+    expect(registrationEntrantLabel(registration, new Map([["u-org", member]]))).toBe(
+      "Mihir Tuli",
+    );
   });
 });
 

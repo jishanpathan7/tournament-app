@@ -26,7 +26,7 @@ export const ORG_NAV: NavItem[] = [
     matchPrefix: true,
   },
   {
-    label: "People",
+    label: "Staff",
     href: "/console/people",
     icon: Users,
     requiredAction: ACTIONS.MEMBER_READ,

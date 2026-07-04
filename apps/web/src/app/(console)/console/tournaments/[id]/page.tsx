@@ -1,10 +1,12 @@
-import { TournamentDetail } from "@/features/tournaments/components/detail/tournament-detail";
+import { TournamentDashboard } from "@/features/tournaments/dashboard/tournament-dashboard";
 
-export default async function TournamentDetailPage({
+export const metadata = { title: "Dashboard · Console" };
+
+export default async function TournamentDashboardPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  return <TournamentDetail id={id} />;
+  return <TournamentDashboard tournamentId={id} />;
 }

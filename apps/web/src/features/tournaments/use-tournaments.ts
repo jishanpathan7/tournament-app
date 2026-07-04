@@ -190,3 +190,14 @@ export function useClearDraw(stageId: string, divisionId: string) {
     },
   });
 }
+
+export function useDeleteTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: tournamentsApi.deleteTournament,
+    onSuccess: (_data, id) => {
+      queryClient.removeQueries({ queryKey: queryKeys.tournaments.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.list() });
+    },
+  });
+}

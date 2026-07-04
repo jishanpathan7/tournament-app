@@ -52,7 +52,7 @@ export function UserMenu() {
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          onSelect={() => logout.mutate(undefined, { onSuccess: () => router.replace("/login") })}
+          onSelect={() => logout.mutate(undefined, { onSuccess: () => router.replace("/") })}
           className="text-pink-dark focus:bg-pink-tint focus:text-pink-dark"
         >
           <LogOut className="h-4 w-4" strokeWidth={2.25} />

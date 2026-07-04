@@ -55,9 +55,11 @@ const ROW_STATUS_META: Record<
 export function ImportWizard({
   tournamentId,
   divisionId,
+  embedded = false,
 }: {
   tournamentId: string;
   divisionId: string;
+  embedded?: boolean;
 }) {
   const sources = useImportSources();
   const [step, setStep] = useState<Step>("upload");
@@ -181,19 +183,23 @@ export function ImportWizard({
   if (sources.isLoading) return <Skeleton className="h-64 rounded-2xl" />;
 
   return (
-    <div className="flex flex-col gap-6">
-      <Button asChild tone="ghost" size="sm" className="text-muted-foreground -ml-2 self-start">
-        <Link href={`/console/tournaments/${tournamentId}/divisions/${divisionId}/registrations`}>
-          <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
-          Back to registrations
-        </Link>
-      </Button>
+    <div className={embedded ? "flex flex-col gap-4" : "flex flex-col gap-6"}>
+      {!embedded ? (
+        <Button asChild tone="ghost" size="sm" className="text-muted-foreground -ml-2 self-start">
+          <Link href={`/console/tournaments/${tournamentId}/players`}>
+            <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
+            Back to players
+          </Link>
+        </Button>
+      ) : null}
 
-      <PageHeader
-        eyebrow="Import registrations"
-        title="CSV Import"
-        description="Upload a CSV export, map columns, preview rows, and commit to the division."
-      />
+      {!embedded ? (
+        <PageHeader
+          eyebrow="Import registrations"
+          title="CSV Import"
+          description="Upload a CSV export, map columns, preview rows, and commit to the division."
+        />
+      ) : null}
 
       {/* Steps */}
       <div className="flex items-center gap-2 text-sm text-muted-foreground select-none">

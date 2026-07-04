@@ -10,6 +10,7 @@ import type {
 } from "@tournament/api-client";
 
 import { env } from "@/lib/env";
+import { safeErrorMessage } from "@/lib/safe-error-message";
 
 /**
  * Transport for the public microsite — plain `fetch`, not the console's `api` axios
@@ -39,8 +40,7 @@ export class PublicApiError extends Error {
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { next: { revalidate: 30 } });
   if (!res.ok) {
-    const body = await res.text();
-    throw new PublicApiError(res.status, body || res.statusText);
+    throw new PublicApiError(res.status, safeErrorMessage(res.status));
   }
   return (await res.json()) as T;
 }
@@ -97,4 +97,45 @@ export function getStandings(slug: string, stageId: string): Promise<StandingsVi
 
 export function searchTournaments(query: string): Promise<PublicTournamentSearchResult[]> {
   return getJson(`/search?q=${encodeURIComponent(query)}`);
+}
+
+export interface PublicRegistrationSubmitBody {
+  name: string;
+  email?: string | null;
+  skillLevel?: string | null;
+  preferredPartnerName?: string | null;
+}
+
+export interface PublicRegistrationSubmitted {
+  id: string;
+  status: string;
+  divisionId: string;
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    throw new PublicApiError(res.status, safeErrorMessage(res.status));
+  }
+  return (await res.json()) as T;
+}
+
+export function submitRegistration(
+  slug: string,
+  divisionId: string,
+  body: PublicRegistrationSubmitBody,
+): Promise<PublicRegistrationSubmitted> {
+  return postJson(
+    `/tournaments/${encodeURIComponent(slug)}/divisions/${encodeURIComponent(divisionId)}/registrations`,
+    {
+      name: body.name,
+      email: body.email,
+      skillLevel: body.skillLevel,
+      preferredPartnerName: body.preferredPartnerName,
+    },
+  );
 }

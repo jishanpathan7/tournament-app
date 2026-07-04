@@ -13,6 +13,7 @@ import { toast } from "@/components/ui/sonner";
 import { type RegisterValues, registerSchema } from "@/features/auth/schemas";
 import { useRegister } from "@/features/auth/use-auth-actions";
 import { errorMessage } from "@/lib/problem";
+import { safeRedirectPath } from "@/lib/safe-redirect";
 
 export function RegisterForm() {
   const router = useRouter();
@@ -32,7 +33,7 @@ export function RegisterForm() {
   const onSubmit = handleSubmit((values) => {
     registerMut.mutate(values, {
       // Honor an invite (next), else send new accounts to org onboarding.
-      onSuccess: () => router.replace(next || "/onboarding"),
+      onSuccess: () => router.replace(safeRedirectPath(next, "/onboarding")),
       onError: (error) => toast.error(errorMessage(error, "Could not create account")),
     });
   });

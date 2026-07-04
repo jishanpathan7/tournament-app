@@ -20,10 +20,23 @@ from collections.abc import Sequence
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.errors import NotFoundError
-from app.db.models import Match, MatchResultEvent, Participant, Stage, Standing, Tournament
+from app.api.errors import NotFoundError, ValidationError
+from app.db.enums import SkillLevel, TournamentStatus
+from app.db.models import (
+    Match,
+    MatchResultEvent,
+    Participant,
+    Registration,
+    Stage,
+    Standing,
+    Tournament,
+)
 from app.db.session import set_org_context
+from app.modules.orgs import repository as orgs_repo
 from app.modules.public import repository as repo
+from app.modules.registrations import repository as registrations_repo
+from app.modules.registrations import service as registrations_service
+from app.modules.registrations.partner_resolution import resolve_preferred_partner_ids
 from app.modules.scoring import repository as scoring_repo
 from app.modules.scoring.schemas import MatchView
 from app.modules.tournaments import repository as tournaments_repo
@@ -134,3 +147,52 @@ async def get_standings(
     if stage is None:
         raise NotFoundError("Stage not found")
     return await scoring_repo.stage_standings(session, tournament.organization_id, stage.id)
+
+
+async def submit_registration(
+    session: AsyncSession,
+    *,
+    tournament: Tournament,
+    division_id: uuid.UUID,
+    name: str,
+    email: str | None,
+    skill_level: str | None,
+    preferred_partner_name: str | None,
+) -> Registration:
+    if tournament.status != TournamentStatus.REGISTRATION.value:
+        raise ValidationError("registration is not open", code="registration_closed")
+    division = await repo.get_division(
+        session, tournament.organization_id, tournament.id, division_id
+    )
+    if division is None:
+        raise NotFoundError("Division not found")
+    owner_id = await orgs_repo.get_primary_owner_user_id(session, tournament.organization_id)
+    if owner_id is None:
+        raise ValidationError("organization is not ready for registrations", code="no_owner")
+    parsed_skill: SkillLevel | None = None
+    if skill_level:
+        try:
+            parsed_skill = SkillLevel(skill_level)
+        except ValueError as exc:
+            raise ValidationError(
+                f"invalid skill level {skill_level!r}", code="invalid_skill"
+            ) from exc
+    form_response: dict[str, str] = {"name": name.strip()}
+    if email:
+        form_response["email"] = email.strip()
+    if preferred_partner_name:
+        form_response["preferredPartnerName"] = preferred_partner_name.strip()
+    registration = await registrations_service.submit_registration(
+        session,
+        org_id=tournament.organization_id,
+        user_id=owner_id,
+        division_id=division_id,
+        form_response=form_response,
+        skill_level=parsed_skill,
+    )
+    division_regs = await registrations_repo.list_registrations(
+        session, tournament.organization_id, division_id
+    )
+    resolve_preferred_partner_ids(division_regs)
+    await session.flush()
+    return registration

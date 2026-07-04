@@ -1,1 +1,1 @@
-"""Tournament Platform API."""
+"""Playlane API."""

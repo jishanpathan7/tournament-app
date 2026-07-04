@@ -189,6 +189,80 @@ async def test_unassign_court_not_assigned_is_404(app, client):
     assert resp.status_code == 404
 
 
+async def test_bulk_create_courts(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    venue_id = await _venue(client)
+
+    resp = await client.post(
+        f"{TOUR}/{tid}/courts/bulk-create",
+        json={"venueId": venue_id, "count": 4, "namePrefix": "Court ", "startNumber": 1},
+        headers=_csrf(client),
+    )
+    assert resp.status_code == 201, resp.text
+    body = resp.json()
+    assert len(body["created"]) == 4
+    names = [c["court"]["name"] for c in body["created"]]
+    assert names == ["Court 1", "Court 2", "Court 3", "Court 4"]
+
+    listed = await client.get(f"{TOUR}/{tid}/courts")
+    assert len(listed.json()) == 4
+
+
+async def test_bulk_create_courts_with_new_venue(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+
+    resp = await client.post(
+        f"{TOUR}/{tid}/courts/bulk-create",
+        json={"newVenueName": "Sports Hall", "count": 2, "namePrefix": "C", "startNumber": 5},
+        headers=_csrf(client),
+    )
+    assert resp.status_code == 201, resp.text
+    names = [c["court"]["name"] for c in resp.json()["created"]]
+    assert names == ["C5", "C6"]
+    assert resp.json()["created"][0]["court"]["venueName"] == "Sports Hall"
+
+
+async def test_bulk_remove_courts(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    venue_id = await _venue(client)
+
+    created = await client.post(
+        f"{TOUR}/{tid}/courts/bulk-create",
+        json={"venueId": venue_id, "count": 3, "namePrefix": "Court ", "startNumber": 1},
+        headers=_csrf(client),
+    )
+    court_ids = [c["court"]["id"] for c in created.json()["created"]]
+
+    resp = await client.post(
+        f"{TOUR}/{tid}/courts/bulk-remove",
+        json={"courtIds": court_ids[:2]},
+        headers=_csrf(client),
+    )
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["removed"] == court_ids[:2]
+
+    listed = await client.get(f"{TOUR}/{tid}/courts")
+    assert len(listed.json()) == 1
+    assert listed.json()[0]["court"]["id"] == court_ids[2]
+
+
+async def test_bulk_remove_courts_not_assigned_is_404(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    venue_id = await _venue(client)
+    court_id = await _court(client, venue_id)
+
+    resp = await client.post(
+        f"{TOUR}/{tid}/courts/bulk-remove",
+        json={"courtIds": [court_id]},
+        headers=_csrf(client),
+    )
+    assert resp.status_code == 404
+
+
 # ---- permissions + isolation ----
 
 

@@ -160,7 +160,7 @@ async def delete_mapping_template(
 @router.get("/divisions/{division_id}/attendance", response_model=list[ParticipantAttendanceView])
 async def list_attendance(
     division_id: uuid.UUID,
-    principal: Principal = Depends(get_principal),
+    principal: Principal = Depends(_manage),
     session: AsyncSession = Depends(get_request_session),
 ) -> list[ParticipantAttendanceView]:
     rows = await checkin_service.list_attendance(session, principal.organization_id, division_id)

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,6 +31,10 @@ from app.db.models import (
 )
 
 
+def _not_deleted() -> Any:
+    return Tournament.deleted_at.is_(None)
+
+
 async def stage_matches_with_participants(
     session: AsyncSession, org_id: uuid.UUID, stage_id: uuid.UUID
 ) -> Sequence[Match]:
@@ -45,21 +50,29 @@ async def stage_matches_with_participants(
 async def get_tournament(
     session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
 ) -> Tournament | None:
-    stmt = select(Tournament).where(Tournament.id == tid, Tournament.organization_id == org_id)
+    stmt = select(Tournament).where(
+        Tournament.id == tid,
+        Tournament.organization_id == org_id,
+        _not_deleted(),
+    )
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
 async def get_tournament_by_slug(
     session: AsyncSession, org_id: uuid.UUID, slug: str
 ) -> Tournament | None:
-    stmt = select(Tournament).where(Tournament.slug == slug, Tournament.organization_id == org_id)
+    stmt = select(Tournament).where(
+        Tournament.slug == slug,
+        Tournament.organization_id == org_id,
+        _not_deleted(),
+    )
     return (await session.execute(stmt)).scalar_one_or_none()
 
 
 async def list_tournaments(session: AsyncSession, org_id: uuid.UUID) -> Sequence[Tournament]:
     stmt = (
         select(Tournament)
-        .where(Tournament.organization_id == org_id)
+        .where(Tournament.organization_id == org_id, _not_deleted())
         .order_by(Tournament.created_at.desc())
     )
     return (await session.execute(stmt)).scalars().all()

@@ -130,3 +130,69 @@ export function groupByBucket(
   for (const m of matches) buckets[fixtureBucket(m, now)].push(m);
   return buckets;
 }
+
+/** Franchise ties with nested legs; standard matches pass through unchanged. */
+export interface FixtureRow {
+  kind: "standard" | "tie";
+  match: MatchView;
+  legs?: MatchView[];
+}
+
+export function nestFranchiseFixtures(matches: MatchView[]): FixtureRow[] {
+  const legsByParent = new Map<string, MatchView[]>();
+  const rows: FixtureRow[] = [];
+
+  for (const m of matches) {
+    if (m.contestKind === "leg" && m.parentMatchId) {
+      const list = legsByParent.get(m.parentMatchId) ?? [];
+      list.push(m);
+      legsByParent.set(m.parentMatchId, list);
+    }
+  }
+
+  for (const m of matches) {
+    if (m.contestKind === "leg") continue;
+    if (m.contestKind === "tie") {
+      const legs = (legsByParent.get(m.id) ?? []).sort(
+        (a, b) => (a.roundSeq ?? 0) - (b.roundSeq ?? 0),
+      );
+      rows.push({ kind: "tie", match: m, legs });
+    } else {
+      rows.push({ kind: "standard", match: m });
+    }
+  }
+  return rows;
+}
+
+export function applyFixtureRowFilters(
+  rows: FixtureRow[],
+  filters: FixtureFilters,
+  participantsById: Map<string, PublicParticipantView>,
+): FixtureRow[] {
+  const search = filters.search.trim().toLowerCase();
+  return rows.filter(({ match, legs }) => {
+    if (filters.stageId !== ALL && match.stageId !== filters.stageId) return false;
+    if (filters.roundId !== ALL && match.roundId !== filters.roundId) return false;
+    if (search) {
+      const names = [
+        ...match.sides.map((s) => participantName(s.participantId, participantsById)),
+        ...(legs ?? []).flatMap((leg) =>
+          leg.sides.map((s) => participantName(s.participantId, participantsById)),
+        ),
+      ]
+        .join(" ")
+        .toLowerCase();
+      if (!names.includes(search)) return false;
+    }
+    return true;
+  });
+}
+
+export function groupRowsByBucket(
+  rows: FixtureRow[],
+  now: Date = new Date(),
+): Record<FixtureBucket, FixtureRow[]> {
+  const buckets: Record<FixtureBucket, FixtureRow[]> = { today: [], upcoming: [], completed: [] };
+  for (const row of rows) buckets[fixtureBucket(row.match, now)].push(row);
+  return buckets;
+}

@@ -5,6 +5,7 @@ import { CalendarDays, MapPin, Trophy, Users } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePublicTournamentContext } from "@/features/public/components/public-tournament-provider";
@@ -55,6 +56,11 @@ export function PublicOverview({ slug }: { slug: string }) {
             </Badge>
           </div>
         </div>
+        {isRegistrationOpen(tournament.status) ? (
+          <Button asChild tone="mint">
+            <Link href={`/t/${slug}/register`}>Register</Link>
+          </Button>
+        ) : null}
       </section>
 
       <Card>

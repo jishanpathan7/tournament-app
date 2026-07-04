@@ -508,6 +508,52 @@ async def test_bulk_set_attendance(app, client):
 
 
 # ============================================================
+# QR self check-in (share links)
+# ============================================================
+
+
+def _token_from_checkin_url(url: str) -> str:
+    return url.rstrip("/").rsplit("/", 1)[-1]
+
+
+async def test_checkin_link_public_self_checkin(app, client):
+    await _new_org(client)
+    _tid, did = await _individual_division(client)
+    pid = await _approved_participant(client, did)
+
+    link_resp = await client.post(
+        f"/api/v1/divisions/{did}/checkin-link",
+        json={"expiresInHours": 24},
+        headers=_csrf(client),
+    )
+    assert link_resp.status_code == 201, link_resp.text
+    url = link_resp.json()["url"]
+    assert url is not None
+    token = _token_from_checkin_url(url)
+
+    session = await client.get(f"/api/v1/public/checkin/session?token={token}")
+    assert session.status_code == 200, session.text
+    body = session.json()
+    assert body["divisionName"] == "Singles"
+    assert any(p["id"] == pid for p in body["participants"])
+
+    confirm = await client.post(
+        f"/api/v1/public/checkin/confirm?token={token}",
+        json={"participantId": pid},
+    )
+    assert confirm.status_code == 204, confirm.text
+
+    attendance = await client.get(f"/api/v1/divisions/{did}/attendance")
+    row = next(p for p in attendance.json() if p["id"] == pid)
+    assert row["attendance"] == "checked_in"
+
+
+async def test_checkin_link_invalid_token_rejected(app, client):
+    resp = await client.get("/api/v1/public/checkin/session?token=not-a-real-token")
+    assert resp.status_code == 403
+
+
+# ============================================================
 # Readiness dashboard
 # ============================================================
 
@@ -520,6 +566,9 @@ async def test_readiness_no_participants_not_ready(app, client):
     assert resp.status_code == 200
     body = resp.json()
     assert len(body["divisions"]) == 1
+    assert body["squadCount"] == 0
+    assert body["unassignedSquadMembers"] == 0
+    assert body["squadsReady"] is True
     div = body["divisions"][0]
     assert div["readyForDraw"] is False
     assert div["readyForStart"] is False

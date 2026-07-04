@@ -21,6 +21,7 @@ import {
   type ScoreFormValues,
   validateScoreForm,
 } from "@/features/matches/config";
+import { rulesFromSportConfig } from "@/features/matches/badminton-scoring";
 import { ApiError, errorMessage } from "@/lib/problem";
 
 /**
@@ -40,11 +41,16 @@ export function ScoreEntryForm({
   participantsById: Map<string, ParticipantResponse>;
   onSuccess?: () => void;
 }) {
-  const [values, setValues] = useState<ScoreFormValues>(emptyScoreForm());
+  const rules = rulesFromSportConfig(match.sportConfig);
+  const [values, setValues] = useState<ScoreFormValues>(() => emptyScoreForm(rules.bestOf));
   const [etag, setEtag] = useState<string | null>(null);
   const [fetchingEtag, setFetchingEtag] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const score = useScoreMatch(match.id, tournamentId);
+
+  useEffect(() => {
+    setValues(emptyScoreForm(rules.bestOf));
+  }, [match.id, rules.bestOf]);
 
   useEffect(() => {
     let alive = true;
@@ -71,7 +77,12 @@ export function ScoreEntryForm({
     }));
   };
 
-  const addGame = () => setValues((s) => ({ ...s, games: [...s.games, { a: null, b: null }] }));
+  const addGame = () =>
+    setValues((s) =>
+      s.games.length >= rules.bestOf
+        ? s
+        : { ...s, games: [...s.games, { a: null, b: null }] },
+    );
   const removeGame = (index: number) =>
     setValues((s) => ({ ...s, games: s.games.filter((_, i) => i !== index) }));
 
@@ -167,7 +178,14 @@ export function ScoreEntryForm({
               ) : null}
             </div>
           ))}
-          <Button type="button" tone="paper" size="sm" onClick={addGame} className="self-start">
+          <Button
+            type="button"
+            tone="paper"
+            size="sm"
+            onClick={addGame}
+            className="self-start"
+            disabled={values.games.length >= rules.bestOf}
+          >
             <Plus className="h-4 w-4" strokeWidth={2.25} />
             Add game
           </Button>

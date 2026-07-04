@@ -53,6 +53,10 @@ export async function publishTournament(
   return data;
 }
 
+export async function deleteTournament(id: string): Promise<void> {
+  await api.delete(`/tournaments/${id}`);
+}
+
 export function listDivisions(tournamentId: string): Promise<DivisionResponse[]> {
   return apiGet<DivisionResponse[]>(`/tournaments/${tournamentId}/divisions`);
 }

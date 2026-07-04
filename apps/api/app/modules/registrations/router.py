@@ -12,6 +12,7 @@ import uuid
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+import app.modules.registrations.notifications  # noqa: F401 — register email templates
 from app.api.deps import (
     Principal,
     authed_csrf,

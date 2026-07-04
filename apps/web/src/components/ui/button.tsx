@@ -14,8 +14,9 @@ const buttonVariants = cva(
   {
     variants: {
       tone: {
+        // Cobalt-deep shadow per Candy Sticker spec §5 — press animation reads depth under cobalt
         candy:
-          "bg-candy text-white shadow-sticker hover:shadow-sticker-md active:shadow-sticker-xs",
+          "bg-candy text-white shadow-sticker-candy hover:shadow-sticker-candy-md active:shadow-sticker-candy-xs",
         paper: "bg-card text-ink shadow-sticker hover:shadow-sticker-md active:shadow-sticker-xs",
         pink: "bg-pink text-ink shadow-sticker hover:shadow-sticker-md active:shadow-sticker-xs",
         yellow:

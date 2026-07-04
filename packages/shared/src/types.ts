@@ -5,7 +5,7 @@
 
 export type SkillLevel = "beginner" | "intermediate" | "advanced";
 
-export type ParticipantKind = "individual" | "pair" | "team";
+export type ParticipantKind = "individual" | "pair" | "team" | "squad";
 
 export type MatchStatus = "scheduled" | "live" | "completed" | "walkover" | "no_show" | "cancelled";
 

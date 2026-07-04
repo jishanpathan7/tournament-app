@@ -30,7 +30,11 @@ from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.enums import MATCH_OUTCOME, MATCH_STATUS
+from app.db.enums import (
+    CONTEST_KIND,
+    MATCH_OUTCOME,
+    MATCH_STATUS,
+)
 from app.db.mixins import OrgScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
@@ -72,6 +76,15 @@ class Match(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     # schedule timeline; null until a duration is assigned (defaults applied by the
     # scheduling service, not the column).
     duration_minutes: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    contest_kind: Mapped[str] = mapped_column(
+        CONTEST_KIND, nullable=False, server_default=text("'standard'")
+    )
+    parent_match_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("matches.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     result_payload: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
@@ -90,6 +103,14 @@ class Match(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     )
     result_events: Mapped[list[MatchResultEvent]] = relationship(
         back_populates="match", cascade="all, delete-orphan", passive_deletes=True
+    )
+    parent_match: Mapped[Match | None] = relationship(
+        remote_side="Match.id", foreign_keys=[parent_match_id], viewonly=True
+    )
+    leg_matches: Mapped[list[Match]] = relationship(
+        "Match",
+        foreign_keys="Match.parent_match_id",
+        viewonly=True,
     )
 
 

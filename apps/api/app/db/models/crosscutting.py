@@ -50,9 +50,26 @@ class ShareLink(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
         nullable=True,
         index=True,
     )
+    match_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("matches.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
+    division_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("divisions.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
     scope: Mapped[str] = mapped_column(SHARE_LINK_SCOPE, nullable=False)
     shortcode: Mapped[str] = mapped_column(String(32), nullable=False, unique=True)
     token_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    recipient_email: Mapped[str | None] = mapped_column(String(320), nullable=True)
+    recipient_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    created_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
     expires_at: Mapped[datetime.datetime | None] = mapped_column(nullable=True)
     revoked: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default=text("false"))
 

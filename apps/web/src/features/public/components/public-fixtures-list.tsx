@@ -1,7 +1,7 @@
 "use client";
 
 import type { MatchView, PublicParticipantView, PublicStageView } from "@tournament/api-client";
-import { CalendarDays, Search, X } from "lucide-react";
+import { CalendarDays, ChevronDown, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -17,12 +17,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { matchStatusMeta } from "@/features/draws/config";
 import {
   ALL,
-  applyFixtureFilters,
+  applyFixtureRowFilters,
   DEFAULT_FIXTURE_FILTERS,
   type FixtureBucket,
-  groupByBucket,
+  type FixtureRow,
+  groupRowsByBucket,
+  nestFranchiseFixtures,
   participantName,
 } from "@/features/public/config";
 import {
@@ -30,7 +33,6 @@ import {
   usePublicParticipants,
   usePublicStages,
 } from "@/features/public/use-public-tournament";
-import { matchStatusMeta } from "@/features/draws/config";
 import { getFormat } from "@/features/tournaments/config";
 
 const BUCKET_LABELS: Record<FixtureBucket, string> = {
@@ -39,47 +41,107 @@ const BUCKET_LABELS: Record<FixtureBucket, string> = {
   completed: "Completed",
 };
 
-function FixtureCard({
-  slug,
+function MatchSides({
   match,
   participantsById,
 }: {
-  slug: string;
   match: MatchView;
   participantsById: Map<string, PublicParticipantView>;
 }) {
-  const status = matchStatusMeta(match.status);
   const [a, b] = match.sides;
   return (
-    <Link
-      href={`/t/${slug}/matches/${match.id}`}
-      className="border-ink bg-card shadow-sticker-xs hover:shadow-sticker-md ease-bouncy flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm transition-[transform,box-shadow] hover:-translate-y-0.5"
-    >
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="truncate">
-          <span className={a?.outcome === "win" ? "font-bold" : ""}>
-            {participantName(a?.participantId, participantsById)}
-          </span>
-          <span className="text-muted-foreground"> vs </span>
-          <span className={b?.outcome === "win" ? "font-bold" : ""}>
-            {participantName(b?.participantId, participantsById)}
-          </span>
-        </span>
-        <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.14em]">
-          {match.roundLabel ?? "Round"}
-          {match.groupName ? ` · ${match.groupName}` : ""}
-        </span>
-      </div>
-      <Badge tone={status.tone} className="shrink-0">
-        {status.label}
-      </Badge>
-    </Link>
+    <span className="truncate">
+      <span className={a?.outcome === "win" ? "font-bold" : ""}>
+        {participantName(a?.participantId, participantsById)}
+      </span>
+      <span className="text-muted-foreground"> vs </span>
+      <span className={b?.outcome === "win" ? "font-bold" : ""}>
+        {participantName(b?.participantId, participantsById)}
+      </span>
+    </span>
   );
 }
 
-/** Today's / upcoming / completed matches, filterable by stage, round, and
- * participant (court filtering is scoped out — no scheduling data exists yet, see
- * `courtId` on `MatchView`, always null today). */
+function FixtureCard({
+  slug,
+  row,
+  participantsById,
+}: {
+  slug: string;
+  row: FixtureRow;
+  participantsById: Map<string, PublicParticipantView>;
+}) {
+  const { match, legs } = row;
+  const status = matchStatusMeta(match.status);
+  const [open, setOpen] = useState(false);
+  const isTie = row.kind === "tie" && (legs?.length ?? 0) > 0;
+
+  if (!isTie) {
+    return (
+      <Link
+        href={`/t/${slug}/matches/${match.id}`}
+        className="border-ink bg-card shadow-sticker-xs hover:shadow-sticker-md ease-bouncy flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm transition-[transform,box-shadow] hover:-translate-y-0.5"
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <MatchSides match={match} participantsById={participantsById} />
+          <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.14em]">
+            {match.roundLabel ?? "Round"}
+            {match.groupName ? ` · ${match.groupName}` : ""}
+          </span>
+        </div>
+        <Badge tone={status.tone} className="shrink-0">
+          {status.label}
+        </Badge>
+      </Link>
+    );
+  }
+
+  return (
+    <div className="border-ink bg-card shadow-sticker-xs rounded-2xl border-2 text-sm">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="hover:bg-muted/40 flex w-full items-center gap-3 px-4 py-3 text-left"
+      >
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <MatchSides match={match} participantsById={participantsById} />
+          <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.14em]">
+            Team tie · {match.roundLabel ?? "Round"}
+            {legs?.length ? ` · ${legs.length} legs` : ""}
+          </span>
+        </div>
+        <Badge tone={status.tone} className="shrink-0 capitalize">
+          {status.label}
+        </Badge>
+        <ChevronDown
+          className={`text-muted-foreground h-4 w-4 shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+          strokeWidth={2.25}
+        />
+      </button>
+      {open ? (
+        <div className="border-ink/10 flex flex-col gap-1 border-t px-3 py-2">
+          {legs!.map((leg) => {
+            const legStatus = matchStatusMeta(leg.status);
+            return (
+              <Link
+                key={leg.id}
+                href={`/t/${slug}/matches/${leg.id}`}
+                className="hover:bg-muted/40 flex items-center justify-between gap-3 rounded-xl px-2 py-2"
+              >
+                <MatchSides match={leg} participantsById={participantsById} />
+                <Badge tone={legStatus.tone} className="shrink-0 capitalize">
+                  {legStatus.label}
+                </Badge>
+              </Link>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+/** Today's / upcoming / completed matches, filterable by stage, round, and participant. */
 export function PublicFixturesList({ slug }: { slug: string }) {
   const matches = usePublicMatches(slug);
   const stages = usePublicStages(slug);
@@ -90,15 +152,20 @@ export function PublicFixturesList({ slug }: { slug: string }) {
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
-  const filtered = useMemo(
-    () => applyFixtureFilters(matches.data ?? [], filters, participantsById),
-    [matches.data, filters, participantsById],
+  const rows = useMemo(
+    () => nestFranchiseFixtures(matches.data ?? []),
+    [matches.data],
   );
-  const buckets = useMemo(() => groupByBucket(filtered), [filtered]);
+  const filtered = useMemo(
+    () => applyFixtureRowFilters(rows, filters, participantsById),
+    [rows, filters, participantsById],
+  );
+  const buckets = useMemo(() => groupRowsByBucket(filtered), [filtered]);
 
   const rounds = useMemo(() => {
     const seen = new Map<string, { seq: number; label: string }>();
     for (const m of matches.data ?? []) {
+      if (m.contestKind === "leg") continue;
       if (m.roundId && !seen.has(m.roundId)) {
         seen.set(m.roundId, { seq: m.roundSeq ?? 0, label: m.roundLabel ?? "Round" });
       }
@@ -190,8 +257,13 @@ export function PublicFixturesList({ slug }: { slug: string }) {
               {BUCKET_LABELS[bucket]}
             </h2>
             <div className="flex flex-col gap-2">
-              {buckets[bucket].map((match) => (
-                <FixtureCard key={match.id} slug={slug} match={match} participantsById={participantsById} />
+              {buckets[bucket].map((row) => (
+                <FixtureCard
+                  key={row.match.id}
+                  slug={slug}
+                  row={row}
+                  participantsById={participantsById}
+                />
               ))}
             </div>
           </div>

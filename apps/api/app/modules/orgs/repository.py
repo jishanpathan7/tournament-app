@@ -51,6 +51,17 @@ async def count_owners(session: AsyncSession, org_id: uuid.UUID) -> int:
     return int((await session.execute(stmt)).scalar_one())
 
 
+async def get_primary_owner_user_id(session: AsyncSession, org_id: uuid.UUID) -> uuid.UUID | None:
+    """First owner membership — used as ``submitted_by`` for anonymous public registrations."""
+    stmt = (
+        select(Membership.user_id)
+        .where(Membership.organization_id == org_id, Membership.org_role == OrgRole.OWNER)
+        .order_by(Membership.created_at)
+        .limit(1)
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def get_invite_by_token(session: AsyncSession, token_hash: str) -> OrgInvite | None:
     stmt = select(OrgInvite).where(OrgInvite.token_hash == token_hash)
     return (await session.execute(stmt)).scalar_one_or_none()

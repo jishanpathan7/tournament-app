@@ -9,6 +9,7 @@ import { matchStatusMeta } from "@/features/draws/config";
 import { courtLabel, isScoreable } from "@/features/matches/config";
 import { MatchHistoryList } from "@/features/matches/components/match-history-list";
 import { ScoreEntryForm } from "@/features/matches/components/score-entry-form";
+import { ScorekeeperMatchLinkPanel } from "@/features/scoring/components/scorekeeper-match-link-panel";
 import { getFormat } from "@/features/tournaments/config";
 
 function MetaItem({ label, value }: { label: string; value: string }) {
@@ -111,6 +112,7 @@ export function MatchDetailDialog({
         {canManage && isScoreable(match.status) ? (
           <>
             <Separator />
+            <ScorekeeperMatchLinkPanel matchId={match.id} />
             <div className="flex flex-col gap-3">
               <h3 className="font-serif text-lg font-semibold tracking-tight">
                 {match.status === "scheduled" ? "Enter result" : "Correct result"}

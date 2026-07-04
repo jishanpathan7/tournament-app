@@ -1,4 +1,4 @@
-# Tournament Platform
+# Playlane
 
 A multi-sport tournament management platform (SaaS). It runs real competitions end-to-end — registration, fair draws, scheduling, live scoring, standings, and public sharing — and is architected so **any sport** can be added by writing a *Sport Profile*, not by changing the system.
 

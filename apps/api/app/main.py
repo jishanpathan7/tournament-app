@@ -63,9 +63,16 @@ def create_app() -> FastAPI:
     register_exception_handlers(app)
     # Pure-ASGI request-id/correlation context (runs around every request).
     app.add_middleware(RequestContextMiddleware)
+    cors_origins = settings.cors_origin_list
+    if "*" in cors_origins:
+        raise ValueError(
+            "CORS_ORIGINS must not contain '*' when allow_credentials=True — "
+            "browsers reject credentialed CORS against wildcard origins. "
+            "Set explicit HTTPS origins instead."
+        )
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origin_list,
+        allow_origins=cors_origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

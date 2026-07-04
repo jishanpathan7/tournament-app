@@ -19,7 +19,13 @@ function formatTime(iso: string | null): string | null {
 
 /** Compact organizer-facing view of "what's happening right now": each court's
  * current/next match and whether it's running late, plus who's waiting for a court. */
-export function QueuePanel({ tournamentId }: { tournamentId: string }) {
+export function QueuePanel({
+  tournamentId,
+  compact,
+}: {
+  tournamentId: string;
+  compact?: boolean;
+}) {
   const queue = useScheduleQueue(tournamentId);
   const participants = useTournamentParticipants(tournamentId);
   const participantsById = useMemo(
@@ -49,11 +55,15 @@ export function QueuePanel({ tournamentId }: { tournamentId: string }) {
       {data.courts.length === 0 ? (
         <EmptyState icon={Clock} title="No courts assigned" description="Assign a court to see the live queue." />
       ) : (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {data.courts.map((c) => (
+        <div className={compact ? "flex flex-col gap-2" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
+          {(compact ? data.courts.slice(0, 4) : data.courts).map((c) => (
             <div
               key={c.court.id}
-              className="border-ink bg-card shadow-sticker-xs flex flex-col gap-2 rounded-2xl border-2 p-4"
+              className={
+                compact
+                  ? "border-border flex flex-col gap-1 rounded-xl border px-3 py-2"
+                  : "border-ink bg-card shadow-sticker-xs flex flex-col gap-2 rounded-2xl border-2 p-4"
+              }
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{c.court.name}</span>
@@ -86,9 +96,13 @@ export function QueuePanel({ tournamentId }: { tournamentId: string }) {
               ) : null}
             </div>
           ))}
+          {compact && data.courts.length > 4 ? (
+            <p className="text-muted-foreground text-xs">+{data.courts.length - 4} more courts</p>
+          ) : null}
         </div>
       )}
 
+      {!compact ? (
       <section className="flex flex-col gap-3">
         <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
           <Users className="h-4 w-4" strokeWidth={2.25} />
@@ -112,6 +126,7 @@ export function QueuePanel({ tournamentId }: { tournamentId: string }) {
           </ul>
         )}
       </section>
+      ) : null}
     </div>
   );
 }

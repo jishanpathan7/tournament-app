@@ -142,3 +142,6 @@ class TournamentReadinessView(ApiModel):
     divisions: list[DivisionReadinessView]
     total_checked_in: int
     total_pending: int
+    squad_count: int = 0
+    unassigned_squad_members: int = 0
+    squads_ready: bool = True

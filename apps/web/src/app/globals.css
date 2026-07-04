@@ -2,25 +2,43 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Candy Sticker tokens — see docs/DESIGN-SYSTEM.md §17 */
+/**
+ * Candy Sticker — Court Cobalt edition.
+ * CSS custom properties mirror the Tailwind preset tokens so inline styles and
+ * non-Tailwind contexts can reference them. Source of truth: packages/config/design-tokens.js.
+ * See docs/DESIGN-SYSTEM.md §17 / SETMATCH_THEME.md for the full spec.
+ */
 :root {
-  --background: #fffdf5;
-  --foreground: #1e293b;
-  --card: #ffffff;
-  --border: #e2e8f0;
-  --muted: #f1f5f9;
+  /* ── App surface ── */
+  --background:       #fffdf5;
+  --foreground:       #1e293b;
+  --card:             #ffffff;
+  --border:           #e2e8f0;
+  --muted:            #f1f5f9;
   --muted-foreground: #475569;
-  --candy: #8b5cf6;
-  --candy-dark: #6d28d9;
-  --candy-tint: #ede9fe;
-  --pink: #f472b6;
-  --pink-dark: #db2777;
-  --pink-tint: #fce7f3;
-  --yellow: #fbbf24;
+
+  /* ── Primary — Court Cobalt ── */
+  --candy:       #4f6bf6;
+  --candy-dark:  #3a4fd8;
+  --candy-tint:  #e5e9fe;
+  --candy-ink:   #9db0fb;  /* primary on dark surfaces */
+
+  /* ── Extended neutrals ── */
+  --ink-2:       #28324a;  /* raised panels on dark surfaces */
+  --ink-border:  #3a4760;  /* borders inside dark surfaces */
+  --faint:       #94a3b8;  /* tertiary / meta text */
+  --tick:        #64748b;  /* placeholder text */
+
+  /* ── Status ── */
+  --mint:        #34d399;
+  --mint-dark:   #10b981;
+  --mint-tint:   #d1fae5;
+  --yellow:      #fbbf24;
   --yellow-tint: #fef3c7;
-  --mint: #34d399;
-  --mint-dark: #10b981;
-  --mint-tint: #d1fae5;
+  --pink:        #f472b6;
+  --pink-dark:   #db2777;
+  --pink-tint:   #fce7f3;
+
   --radius: 1rem;
 }
 
@@ -28,28 +46,39 @@
   * {
     @apply border-border;
   }
+
   body {
     background: var(--background);
     color: var(--foreground);
     font-feature-settings: "ss01", "cv11";
     -webkit-font-smoothing: antialiased;
   }
+
   h1,
   h2 {
     @apply font-serif font-semibold tracking-tight;
   }
+
+  /* Text selection — warm yellow highlight, on-brand */
   ::selection {
-    background: #fbbf24;
-    color: #1e293b;
+    background: var(--yellow);
+    color: var(--foreground);
   }
-  /* Keyboard focus ring (form fields show a candy border instead — see Button/inputs) */
+
+  /**
+   * Global keyboard focus ring (§3 pop-focus token).
+   * Form fields override this with a colored border — see Input/Button.
+   * border-radius matches the focused element's own radius via JS-independent override.
+   */
   :focus-visible {
     outline: 0;
     box-shadow:
-      0 0 0 3px #fffdf5,
-      0 0 0 5px #8b5cf6;
+      0 0 0 3px var(--background),
+      0 0 0 5px var(--candy);
     border-radius: 10px;
   }
+
+  /* Form fields use border instead of box-shadow for the focus indicator */
   input:focus-visible,
   textarea:focus-visible,
   select:focus-visible {
@@ -58,6 +87,7 @@
   }
 }
 
+/* Respect reduced-motion — halve all durations, keep layout transitions */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -133,6 +133,7 @@ export const PARTICIPANT_KINDS: Record<ParticipantKind, string> = {
   individual: "Singles",
   pair: "Doubles",
   team: "Team",
+  squad: "Franchise squad",
 };
 
 // ---- visibility ----

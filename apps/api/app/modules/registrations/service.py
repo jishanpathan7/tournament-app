@@ -24,7 +24,13 @@ from app.db.enums import (
 from app.db.models import Participant, Registration, RosterEntry, Team
 from app.engine import EngineValidationError
 from app.modules.registrations import events
+from app.modules.registrations import notifications as reg_notifications
 from app.modules.registrations import repository as repo
+from app.modules.registrations.entrant import (
+    entrant_display_name,
+    entrant_has_external_identity,
+    form_entrant_name,
+)
 from app.realtime.channels import org_channel
 
 _APPROVABLE = {RegistrationStatus.SUBMITTED.value, RegistrationStatus.WAITLISTED.value}
@@ -61,6 +67,15 @@ async def submit_registration(
     await _audit_event(
         session, org_id, user_id, events.REGISTRATION_SUBMITTED, registration.id, division.id
     )
+    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+    if tournament is not None:
+        await reg_notifications.notify_submitted(
+            session,
+            org_id=org_id,
+            registration=registration,
+            tournament=tournament,
+            division=division,
+        )
     return registration
 
 
@@ -86,6 +101,15 @@ async def approve_registration(
                 registration.id,
                 division.id,
             )
+            tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+            if tournament is not None:
+                await reg_notifications.notify_waitlisted(
+                    session,
+                    org_id=org_id,
+                    registration=registration,
+                    tournament=tournament,
+                    division=division,
+                )
             return registration, None
 
     participant = await _build_participant(session, org_id, division, registration)
@@ -101,6 +125,15 @@ async def approve_registration(
         division.id,
         after={"participantId": str(participant.id)},
     )
+    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+    if tournament is not None:
+        await reg_notifications.notify_approved(
+            session,
+            org_id=org_id,
+            registration=registration,
+            tournament=tournament,
+            division=division,
+        )
     return registration, participant
 
 
@@ -120,6 +153,15 @@ async def waitlist_registration(
     await _audit_event(
         session, org_id, actor_id, events.REGISTRATION_WAITLISTED, registration.id, division.id
     )
+    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+    if tournament is not None:
+        await reg_notifications.notify_waitlisted(
+            session,
+            org_id=org_id,
+            registration=registration,
+            tournament=tournament,
+            division=division,
+        )
     return registration
 
 
@@ -139,6 +181,16 @@ async def reject_registration(
         registration.id,
         registration.division_id,
     )
+    division = await _require_division(session, org_id, registration.division_id)
+    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+    if tournament is not None:
+        await reg_notifications.notify_rejected(
+            session,
+            org_id=org_id,
+            registration=registration,
+            tournament=tournament,
+            division=division,
+        )
     return registration
 
 
@@ -175,15 +227,20 @@ async def _build_participant(
     profile = await _sport_profile(session, org_id, division)
 
     if kind is ParticipantKind.INDIVIDUAL:
-        roster_ids = [str(registration.submitted_by)]
-        _validate_roster(profile, kind, roster_ids)
         user = await repo.get_user(session, registration.submitted_by)
+        identity = form_entrant_name(registration) or str(registration.submitted_by)
+        roster_ids = [identity]
+        _validate_roster(profile, kind, roster_ids)
         participant = Participant(
             organization_id=org_id,
             division_id=division.id,
             kind=kind.value,
-            user_id=registration.submitted_by,
-            display_name=user.name if user else "Player",
+            user_id=(
+                None if entrant_has_external_identity(registration) else registration.submitted_by
+            ),
+            display_name=entrant_display_name(
+                registration, account_name=user.name if user else None
+            ),
             skill_level=registration.skill_level,
             status=ParticipantStatus.APPROVED.value,
         )

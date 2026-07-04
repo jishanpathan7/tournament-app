@@ -41,6 +41,8 @@ TENANT_STRICT_TABLES = [
     "rounds",
     "teams",
     "roster_entries",
+    "squads",
+    "squad_members",
     "participants",
     "registrations",
     "pairing_requests",

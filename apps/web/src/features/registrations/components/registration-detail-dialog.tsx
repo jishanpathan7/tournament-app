@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { RegistrationRowActions } from "@/features/registrations/components/registration-row-actions";
 import { SubmittedDetails } from "@/features/registrations/components/submitted-details";
 import { TeamRoster } from "@/features/registrations/components/team-roster";
-import { entrantLabel, statusMeta } from "@/features/registrations/config";
+import { registrationEntrantLabel, statusMeta } from "@/features/registrations/config";
 
 function MetaItem({ label, value }: { label: string; value: string }) {
   return (
@@ -53,7 +53,7 @@ export function RegistrationDetailDialog({
         <DialogHeader>
           <div className="flex items-center gap-3">
             <DialogTitle className="text-xl">
-              {entrantLabel(registration.submittedBy, membersById)}
+              {registrationEntrantLabel(registration, membersById)}
             </DialogTitle>
             <Badge tone={meta.tone}>{meta.label}</Badge>
           </div>

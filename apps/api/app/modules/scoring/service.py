@@ -12,7 +12,7 @@ import datetime
 import hashlib
 import json
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from decimal import Decimal
 from typing import Any
 
@@ -22,9 +22,23 @@ from app.api.errors import ConflictError, NotFoundError, PreconditionFailedError
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster, get_sport_registry
-from app.db.enums import IdempotencyStatus, MatchOutcome, MatchStatus, NotificationChannel
-from app.db.models import IdempotencyKey, Match, MatchParticipant, MatchResultEvent, Standing
+from app.db.enums import (
+    ContestKind,
+    IdempotencyStatus,
+    MatchOutcome,
+    MatchStatus,
+    NotificationChannel,
+)
+from app.db.models import (
+    IdempotencyKey,
+    Match,
+    MatchParticipant,
+    MatchResultEvent,
+    Standing,
+    Tournament,
+)
 from app.engine import ContractError, EngineValidationError, TerminalReason
+from app.modules.franchise_ties import service as franchise_ties_service
 from app.modules.notifications.service import notify
 from app.modules.notifications.templates import NotificationTemplate, register_template
 from app.modules.scoring import events
@@ -33,12 +47,14 @@ from app.modules.scoring.schemas import (
     MatchResultEventView,
     MatchSideView,
     MatchView,
+    SportMatchConfigView,
     StandingRowView,
     StandingsView,
 )
 from app.modules.tournaments import repository as tournaments_repo
 from app.modules.tournaments import service as tournaments_service
 from app.realtime.channels import org_channel, tournament_channel
+from app.sports.config import merge_sport_config, sport_config_view
 
 register_template(
     NotificationTemplate(
@@ -79,7 +95,9 @@ def _ordered_sides(match: Match) -> list[MatchParticipant]:
     )
 
 
-def build_match_view(match: Match) -> MatchView:
+def build_match_view(
+    match: Match, *, sport_config: SportMatchConfigView | None = None
+) -> MatchView:
     """The one place a `Match` ORM row becomes a `MatchView` — shared by the
     authenticated scoring router and the public microsite so the shape (and the
     score-against cross-referencing) never drifts between the two."""
@@ -112,7 +130,60 @@ def build_match_view(match: Match) -> MatchView:
         court_id=match.court_id,
         scheduled_at=match.scheduled_at,
         updated_at=match.updated_at,
+        sport_config=sport_config,
+        parent_match_id=match.parent_match_id,
+        contest_kind=match.contest_kind,
     )
+
+
+def to_sport_match_config_view(config: Mapping[str, Any]) -> SportMatchConfigView:
+    return SportMatchConfigView(**sport_config_view(config))
+
+
+async def resolve_stage_sport_config(
+    session: AsyncSession, org_id: uuid.UUID, stage_id: uuid.UUID
+) -> dict[str, Any]:
+    stage = await repo.get_stage(session, org_id, stage_id)
+    if stage is None:
+        raise NotFoundError("Stage not found")
+    division = await repo.get_division(session, org_id, stage.division_id)
+    if division is None:  # pragma: no cover
+        raise NotFoundError("Division not found")
+    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+    if tournament is None:  # pragma: no cover
+        raise NotFoundError("Tournament not found")
+    profile = get_sport_registry().get(await _sport_key_for_tournament(session, tournament))
+    return merge_sport_config(
+        profile,
+        tournament_settings=tournament.settings or {},
+        stage_config=stage.config or {},
+    )
+
+
+async def resolve_match_sport_config(
+    session: AsyncSession, org_id: uuid.UUID, match: Match
+) -> dict[str, Any]:
+    return await resolve_stage_sport_config(session, org_id, match.stage_id)
+
+
+async def build_match_view_for_org(
+    session: AsyncSession, org_id: uuid.UUID, match: Match
+) -> MatchView:
+    cfg = await resolve_match_sport_config(session, org_id, match)
+    return build_match_view(match, sport_config=to_sport_match_config_view(cfg))
+
+
+async def build_match_views_for_org(
+    session: AsyncSession, org_id: uuid.UUID, matches: Sequence[Match]
+) -> list[MatchView]:
+    cache: dict[uuid.UUID, SportMatchConfigView] = {}
+    views: list[MatchView] = []
+    for match in matches:
+        if match.stage_id not in cache:
+            cfg = await resolve_stage_sport_config(session, org_id, match.stage_id)
+            cache[match.stage_id] = to_sport_match_config_view(cfg)
+        views.append(build_match_view(match, sport_config=cache[match.stage_id]))
+    return views
 
 
 def build_match_event_view(event: MatchResultEvent, *, include_actor: bool) -> MatchResultEventView:
@@ -155,7 +226,7 @@ async def score_match(
     session: AsyncSession,
     *,
     org_id: uuid.UUID,
-    actor_id: uuid.UUID,
+    actor_id: uuid.UUID | None,
     match_id: uuid.UUID,
     payload: dict[str, Any],
     if_match: str | None,
@@ -176,7 +247,14 @@ async def score_match(
                 raise ConflictError(
                     "Idempotency-Key reused with a different request", code="idempotency_conflict"
                 )
-            return match  # replay: the score was already applied; return current state
+            if existing.status == IdempotencyStatus.STARTED.value:
+                # First request is still in-flight. The caller should back off and retry.
+                raise ConflictError(
+                    "Score submission already in progress; retry in a moment",
+                    code="idempotency_in_flight",
+                )
+            # status == COMPLETED: safe replay — score was fully committed.
+            return match
         session.add(
             IdempotencyKey(
                 organization_id=org_id,
@@ -199,7 +277,7 @@ async def score_match(
     )
 
     profile = get_sport_registry().get(await _sport_key(session, org_id, match))
-    config = profile.default_config()
+    config = await resolve_match_sport_config(session, org_id, match)
     side_ids = [str(mp.participant_id) for mp in sides]
     try:
         profile.validate_result(payload, config)
@@ -252,13 +330,28 @@ async def score_match(
             idem.response_snapshot = {"matchId": str(match.id), "status": match.status}
 
     await _emit(session, org_id, actor_id, match, was_terminal)
+    if match.contest_kind == ContestKind.LEG.value and match.parent_match_id:
+        tie_decided = await franchise_ties_service.rollup_leg_to_tie(
+            session, org_id=org_id, leg_match=match
+        )
+        if tie_decided:
+            await emit_event(
+                session,
+                aggregate="standings",
+                event_type=events.STANDINGS_RECOMPUTE,
+                payload={"stageId": str(match.stage_id), "organizationId": str(org_id)},
+            )
     await _broadcast(org_id, match)
     await _notify(session, org_id, match, advancement.get("scheduled", []))
     return match
 
 
 async def _emit(
-    session: AsyncSession, org_id: uuid.UUID, actor_id: uuid.UUID, match: Match, was_terminal: bool
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID | None,
+    match: Match,
+    was_terminal: bool,
 ) -> None:
     action = events.MATCH_CORRECTED if was_terminal else events.MATCH_COMPLETED
     audit.record(
@@ -349,6 +442,13 @@ async def participant_user(
     return None
 
 
+async def _sport_key_for_tournament(session: AsyncSession, tournament: Tournament) -> str:
+    sport_profile = await repo.get_sport_profile(session, tournament.sport_profile_id)
+    if sport_profile is None:  # pragma: no cover
+        raise NotFoundError("Sport profile not found")
+    return sport_profile.key
+
+
 async def _sport_key(session: AsyncSession, org_id: uuid.UUID, match: Match) -> str:
     stage = await repo.get_stage(session, org_id, match.stage_id)
     if stage is None:  # pragma: no cover
@@ -359,10 +459,7 @@ async def _sport_key(session: AsyncSession, org_id: uuid.UUID, match: Match) -> 
     tournament = await repo.get_tournament(session, org_id, division.tournament_id)
     if tournament is None:  # pragma: no cover
         raise NotFoundError("Tournament not found")
-    profile = await repo.get_sport_profile(session, tournament.sport_profile_id)
-    if profile is None:  # pragma: no cover
-        raise NotFoundError("Sport profile not found")
-    return profile.key
+    return await _sport_key_for_tournament(session, tournament)
 
 
 def _now() -> datetime.datetime:

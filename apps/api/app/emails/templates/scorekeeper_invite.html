@@ -1,0 +1,9 @@
+{% extends "layouts/base.html" %}
+{% import "_button.html" as ui %}
+{% block content %}
+<p>Hi {{ name }},</p>
+<p>You've been invited to keep score for a match at <strong>{{ tournament_name }}</strong>.</p>
+<p>Open the link below on your phone at the court — no account needed.</p>
+{{ ui.button(url, "Open scorekeeper") }}
+<p style="color:#8a8a8a;font-size:12px">This link expires soon. If you weren't expecting this, ignore this email.</p>
+{% endblock %}

@@ -41,6 +41,18 @@ async def list_registrations(
     return (await session.execute(stmt)).scalars().all()
 
 
+async def list_registrations_for_tournament(
+    session: AsyncSession, org_id: uuid.UUID, tournament_id: uuid.UUID
+) -> Sequence[Registration]:
+    stmt = (
+        select(Registration)
+        .join(Division, Registration.division_id == Division.id)
+        .where(Division.tournament_id == tournament_id, Registration.organization_id == org_id)
+        .order_by(Registration.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
 async def count_approved(session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID) -> int:
     stmt = select(func.count()).where(
         Participant.division_id == division_id,
@@ -56,6 +68,18 @@ async def list_participants(
     stmt = (
         select(Participant)
         .where(Participant.division_id == division_id, Participant.organization_id == org_id)
+        .order_by(Participant.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
+async def list_participants_for_tournament(
+    session: AsyncSession, org_id: uuid.UUID, tournament_id: uuid.UUID
+) -> Sequence[Participant]:
+    stmt = (
+        select(Participant)
+        .join(Division, Participant.division_id == Division.id)
+        .where(Division.tournament_id == tournament_id, Participant.organization_id == org_id)
         .order_by(Participant.created_at)
     )
     return (await session.execute(stmt)).scalars().all()

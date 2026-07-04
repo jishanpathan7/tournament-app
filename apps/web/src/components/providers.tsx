@@ -11,7 +11,7 @@ import { AUTH_EXPIRED_EVENT } from "@/lib/api";
 import { createQueryClient } from "@/lib/query-client";
 import { queryKeys } from "@/lib/query-keys";
 
-/** Reacts to an unrecoverable session (refresh failed) by clearing it and bouncing to login. */
+/** Reacts to an unrecoverable session (refresh failed) by clearing it and returning to home. */
 function AuthExpiredListener({ onExpire }: { onExpire: () => void }) {
   useEffect(() => {
     window.addEventListener(AUTH_EXPIRED_EVENT, onExpire);
@@ -38,7 +38,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           <AuthExpiredListener
             onExpire={() => {
               queryClient.setQueryData(queryKeys.session, null);
-              router.replace("/login");
+              router.replace("/");
             }}
           />
         </TooltipProvider>

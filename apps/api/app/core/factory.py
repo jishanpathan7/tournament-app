@@ -178,6 +178,6 @@ def get_storage() -> Storage:
     return LocalStorage(
         root=settings.storage_local_dir,
         base_url=f"{settings.app_base_url}{settings.api_v1_prefix}",
-        secret=settings.jwt_secret,
+        secret=settings.effective_storage_signing_secret,
         presign_ttl=settings.storage_presign_ttl,
     )
