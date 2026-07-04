@@ -79,6 +79,6 @@ def preferred_partner_id_for(
     partner_name = form.get("preferredPartnerName")
     if not partner_name:
         return None
-    index = _name_index(by_id.values())
+    index = _name_index(list(by_id.values()))
     partner_id = _lookup_partner_id(str(partner_name), self_id=reg.id, index=index)
     return str(partner_id) if partner_id else None

@@ -42,7 +42,7 @@ async def submit_scorekeeper_score(
     session: AsyncSession = Depends(get_public_session),
     if_match: str | None = Header(default=None, alias="If-Match"),
     idem_key: str | None = Depends(idempotency_key),
-):
+) -> MatchView:
     link = await service.resolve_scorekeeper_token(session, token)
     match = await service.score_via_link(
         session,

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -30,7 +31,7 @@ from app.db.models import (
 )
 
 
-def _not_deleted():
+def _not_deleted() -> Any:
     return Tournament.deleted_at.is_(None)
 
 

@@ -76,9 +76,12 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
     __tablename__ = "participants"
     __table_args__ = (
         CheckConstraint(
-            "(kind = 'individual' AND user_id IS NOT NULL AND team_id IS NULL AND squad_id IS NULL) "
-            "OR (kind IN ('pair', 'team') AND team_id IS NOT NULL AND user_id IS NULL AND squad_id IS NULL) "
-            "OR (kind = 'squad' AND squad_id IS NOT NULL AND user_id IS NULL AND team_id IS NULL)",
+            "(kind = 'individual' AND user_id IS NOT NULL"
+            " AND team_id IS NULL AND squad_id IS NULL)"
+            " OR (kind IN ('pair', 'team') AND team_id IS NOT NULL"
+            " AND user_id IS NULL AND squad_id IS NULL)"
+            " OR (kind = 'squad' AND squad_id IS NOT NULL"
+            " AND user_id IS NULL AND team_id IS NULL)",
             name="participant_kind_refs",
         ),
         # No duplicate seeds within a division (when seeded).

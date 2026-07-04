@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.enums import MatchStatus
+
+if TYPE_CHECKING:
+    from app.db.models.competition import Match, MatchParticipant
 from app.db.session import set_org_context
 from app.modules.auth import repository as auth_repo
 from app.modules.me import repository as repo
@@ -29,7 +33,7 @@ _UPCOMING = {
 }
 
 
-def _score_summary(match, my_mp) -> str | None:
+def _score_summary(match: Match, my_mp: MatchParticipant) -> str | None:
     if match.status not in _TERMINAL:
         return None
     if my_mp.score is not None:
@@ -45,9 +49,9 @@ def _score_summary(match, my_mp) -> str | None:
 
 
 def _build_match_view(
-    match,
+    match: Match,
     *,
-    my_mp,
+    my_mp: MatchParticipant,
     opponent_label: str,
     part_view: PortalParticipationView,
     org_id: uuid.UUID,
@@ -169,7 +173,7 @@ async def get_portal_home(session: AsyncSession, user_id: uuid.UUID) -> PortalHo
                 if opp:
                     opponent_label = opp.display_name
 
-            view = _build_match_view(
+            match_view = _build_match_view(
                 match,
                 my_mp=my_mp,
                 opponent_label=opponent_label,
@@ -178,9 +182,9 @@ async def get_portal_home(session: AsyncSession, user_id: uuid.UUID) -> PortalHo
                 org_name=org_name,
             )
             if match.status in _TERMINAL:
-                recent.append(view)
+                recent.append(match_view)
             elif match.status in _UPCOMING:
-                upcoming.append(view)
+                upcoming.append(match_view)
 
     upcoming.sort(key=lambda m: (m.scheduled_at is None, m.scheduled_at or ""))
     recent.sort(key=lambda m: m.scheduled_at or "", reverse=True)

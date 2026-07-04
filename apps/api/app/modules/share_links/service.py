@@ -49,8 +49,8 @@ def scorekeeper_url(raw_token: str) -> str:
 def link_view(link: ShareLink, *, url: str | None = None) -> ScorekeeperLinkView:
     return ScorekeeperLinkView(
         id=link.id,
-        match_id=link.match_id,  # type: ignore[arg-type]
-        tournament_id=link.tournament_id,  # type: ignore[arg-type]
+        match_id=link.match_id,
+        tournament_id=link.tournament_id,
         expires_at=link.expires_at,
         revoked=link.revoked,
         url=url,
@@ -292,8 +292,8 @@ async def get_division_checkin_link(
         return None
     return CheckInLinkView(
         id=link.id,
-        division_id=link.division_id,  # type: ignore[arg-type]
-        tournament_id=link.tournament_id,  # type: ignore[arg-type]
+        division_id=link.division_id,
+        tournament_id=link.tournament_id,
         expires_at=link.expires_at,
         revoked=link.revoked,
     )

@@ -160,9 +160,10 @@ async def bulk_create_courts(
             session, Venue(organization_id=org_id, name=new_venue_name.strip(), address=None)
         )
     else:
-        venue = await repo.get_venue(session, org_id, venue_id)
-        if venue is None:
+        _found = await repo.get_venue(session, org_id, venue_id)
+        if _found is None:
             raise NotFoundError("Venue not found")
+        venue = _found
 
     created: list[TournamentCourt] = []
     for i in range(count):

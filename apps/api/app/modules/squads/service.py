@@ -158,9 +158,7 @@ async def assign_member(
     if squad is None:
         raise NotFoundError("Team not found")
 
-    registration = await _eligible_registration(
-        session, org_id, squad.tournament_id, registration_id
-    )
+    await _eligible_registration(session, org_id, squad.tournament_id, registration_id)
     existing = await repo.get_member_by_registration(session, org_id, registration_id)
     if existing is not None:
         if existing.squad_id == squad_id:
@@ -279,6 +277,8 @@ async def auto_distribute(
         squad.captain_registration_id = None
     await session.flush()
 
+    if profile is None:
+        raise ValidationError("Sport profile not configured for this tournament")
     weights = {str(r.id): profile.skill_weight(r.skill_level) for r in registrations}
     ordered = sorted(
         (str(r.id) for r in registrations),

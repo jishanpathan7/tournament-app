@@ -31,21 +31,14 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
 from app.db.enums import (
-    ATTENDANCE_STATUS,
     CONTEST_KIND,
     MATCH_OUTCOME,
     MATCH_STATUS,
-    PAIRING_RUN_STATUS,
-    PARTICIPANT_KIND,
-    PARTICIPANT_STATUS,
-    REGISTRATION_STATUS,
-    SKILL_LEVEL,
 )
 from app.db.mixins import OrgScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
     from app.db.models.participants import Participant
-    from app.db.models.squads import Squad
     from app.db.models.tournament import Group, Round, Stage
 
 

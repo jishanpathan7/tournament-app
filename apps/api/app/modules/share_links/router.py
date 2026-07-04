@@ -119,8 +119,8 @@ async def create_division_checkin_link(
     )
     return CheckInLinkView(
         id=link.id,
-        division_id=link.division_id,  # type: ignore[arg-type]
-        tournament_id=link.tournament_id,  # type: ignore[arg-type]
+        division_id=link.division_id,
+        tournament_id=link.tournament_id,
         expires_at=link.expires_at,
         revoked=link.revoked,
         url=service.checkin_url(raw),

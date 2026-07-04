@@ -23,7 +23,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-insecure-change-me"
     jwt_algorithm: str = "HS256"
     # Separate secret for local-dev storage URL signing (never reuse jwt_secret for two purposes).
-    # Falls back to jwt_secret in dev for zero-config convenience; must be set independently in prod.
+    # Falls back to jwt_secret in dev for convenience; must be set independently in prod.
     storage_signing_secret: str = ""
     access_token_ttl: int = 900  # 15m
     refresh_token_ttl: int = 2_592_000  # 30d server-side session lifetime

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections import defaultdict
+from decimal import Decimal
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -664,7 +665,6 @@ async def rollup_leg_to_tie(
             leg_outcomes.append(LegOutcome(None))
             continue
         leg_refs = leg.source_refs or {}
-        home_pid = leg_refs.get("homeSquadParticipantId")
         sides = leg_refs.get("sides") or []
         home_pair_id = sides[0].get("participant") if sides else None
         away_pair_id = sides[1].get("participant") if len(sides) > 1 else None
@@ -684,8 +684,8 @@ async def rollup_leg_to_tie(
 
     ordered = _tie_side_participants(tie)
     if len(ordered) >= 2:
-        ordered[0].score = state.home_leg_wins
-        ordered[1].score = state.away_leg_wins
+        ordered[0].score = Decimal(state.home_leg_wins)
+        ordered[1].score = Decimal(state.away_leg_wins)
 
     if not state.decided:
         await session.flush()
