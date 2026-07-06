@@ -6,11 +6,19 @@ import {
   makePublicDivision,
   makePublicParticipant,
   makePublicStage,
+  makePublicTournament,
 } from "@/test/fixtures";
 import { renderWithProviders, screen } from "@/test/test-utils";
 
 vi.mock("@/features/public/public-api");
 import * as publicApi from "@/features/public/public-api";
+
+vi.mock("@/features/public/components/public-tournament-provider", () => ({
+  usePublicTournamentContext: () => ({
+    tournament: makePublicTournament({ slug: SLUG }),
+    slug: SLUG,
+  }),
+}));
 
 const SLUG = "sibl-open";
 

@@ -343,6 +343,22 @@ async def score_match(
             )
     await _broadcast(org_id, match)
     await _notify(session, org_id, match, advancement.get("scheduled", []))
+
+    # Auto-schedule: when enabled and a court is now free, assign next waiting match.
+    freed_court_id = match.court_id
+    if freed_court_id is not None and not was_terminal:
+        tournament_row = await repo.get_tournament(session, org_id, match.tournament_id)
+        if tournament_row is not None and tournament_row.settings.get("auto_schedule"):
+            from app.modules.scheduling import service as scheduling_service  # noqa: PLC0415
+
+            await scheduling_service.auto_schedule_next(
+                session,
+                org_id=org_id,
+                actor_id=actor_id,
+                tournament=tournament_row,
+                freed_court_id=freed_court_id,
+            )
+
     return match
 
 

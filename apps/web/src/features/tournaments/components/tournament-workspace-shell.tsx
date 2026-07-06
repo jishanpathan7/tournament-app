@@ -4,14 +4,13 @@ import type { TournamentResponse } from "@tournament/api-client";
 import {
   ArrowLeft,
   CalendarClock,
-  ClipboardCheck,
   LayoutGrid,
   LayoutDashboard,
   Pencil,
   Radio,
+  Shuffle,
   Smartphone,
   Swords,
-  Trophy,
   UserRound,
   Users,
 } from "lucide-react";
@@ -27,22 +26,28 @@ import { TournamentActions } from "@/features/tournaments/components/detail/tour
 import { TournamentStatusBadge } from "@/features/tournaments/components/tournament-status-badge";
 import { getSport } from "@/features/tournaments/config";
 import { useTournament } from "@/features/tournaments/use-tournaments";
+import { useTournamentReadiness } from "@/features/registration-ops/use-registration-ops";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { ApiError } from "@/lib/problem";
 import { cn } from "@/lib/utils";
 
+type TournamentNavStatus = "draft" | "registration" | "seeding" | "live" | "completed" | "archived";
+
+const PREP: TournamentNavStatus[] = ["registration", "seeding"];
+const AFTER: TournamentNavStatus[] = ["completed", "archived"];
+const ALL: TournamentNavStatus[] = ["draft", ...PREP, "live", ...AFTER];
+
 const NAV = [
-  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, suffix: "" },
-  { key: "live", label: "Live", icon: Radio, suffix: "/live" },
-  { key: "players", label: "Players", icon: UserRound, suffix: "/players" },
-  { key: "teams", label: "Teams", icon: Users, suffix: "/teams" },
-  { key: "team-ties", label: "Team ties", icon: Trophy, suffix: "/team-ties" },
-  { key: "matches", label: "Match Center", icon: Swords, suffix: "/matches" },
-  { key: "schedule", label: "Schedule", icon: CalendarClock, suffix: "/schedule" },
-  { key: "scorekeeper", label: "Scorekeeper", icon: Smartphone, suffix: "/scorekeeper" },
-  { key: "courts", label: "Courts", icon: LayoutGrid, suffix: "/courts" },
-  { key: "readiness", label: "Readiness", icon: ClipboardCheck, suffix: "/readiness" },
+  { key: "dashboard",   label: "Dashboard",   icon: LayoutDashboard, suffix: "",             showIn: ALL },
+  { key: "players",     label: "Players",      icon: UserRound,       suffix: "/players",     showIn: ["draft", ...PREP] as TournamentNavStatus[] },
+  { key: "teams",       label: "Teams",        icon: Users,           suffix: "/teams",        showIn: PREP },
+  { key: "draws",       label: "Draws",        icon: Shuffle,         suffix: "/draws",        showIn: PREP },
+  { key: "courts",      label: "Courts",       icon: LayoutGrid,      suffix: "/courts",       showIn: [...PREP, "live"] as TournamentNavStatus[] },
+  { key: "schedule",    label: "Schedule",     icon: CalendarClock,   suffix: "/schedule",     showIn: PREP },
+  { key: "matches",     label: "Match Center", icon: Swords,          suffix: "/matches",      showIn: ["live", ...AFTER] as TournamentNavStatus[] },
+  { key: "scorekeeper", label: "Scorekeeper",  icon: Smartphone,      suffix: "/scorekeeper",  showIn: ["live"] as TournamentNavStatus[] },
+  { key: "live",        label: "Live",         icon: Radio,           suffix: "/live",         showIn: ["live"] as TournamentNavStatus[] },
 ] as const;
 
 function navHref(tournamentId: string, suffix: string) {
@@ -68,6 +73,10 @@ export function TournamentWorkspaceShell({
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
   const [editOpen, setEditOpen] = useState(false);
 
+  const showPending = tournament?.status === "registration" || tournament?.status === "seeding";
+  const readiness = useTournamentReadiness(tournamentId, { enabled: showPending && canManage });
+  const pendingCount = showPending && canManage ? (readiness.data?.totalPending ?? 0) : 0;
+
   if (isLoading) return <LoadingPanel label="Loading tournament" />;
   if (isError || !tournament) {
     const notFound = error instanceof ApiError && error.isNotFound;
@@ -85,6 +94,7 @@ export function TournamentWorkspaceShell({
       tournament={tournament}
       pathname={pathname}
       canManage={canManage}
+      pendingCount={pendingCount}
       editOpen={editOpen}
       onEditOpen={setEditOpen}
     >
@@ -97,6 +107,7 @@ function WorkspaceChrome({
   tournament,
   pathname,
   canManage,
+  pendingCount,
   editOpen,
   onEditOpen,
   children,
@@ -104,6 +115,7 @@ function WorkspaceChrome({
   tournament: TournamentResponse;
   pathname: string;
   canManage: boolean;
+  pendingCount: number;
   editOpen: boolean;
   onEditOpen: (open: boolean) => void;
   children: React.ReactNode;
@@ -145,8 +157,8 @@ function WorkspaceChrome({
         className="border-ink flex flex-wrap gap-1 border-b-2 pb-0"
         aria-label="Tournament workspace"
       >
-        {NAV.map(({ key, label, icon: Icon, suffix }) => {
-          if (key === "readiness" && !canManage) return null;
+        {NAV.map(({ key, label, icon: Icon, suffix, showIn }) => {
+          if (!showIn.includes(tournament.status as TournamentNavStatus)) return null;
           const active = isActive(pathname, tournament.id, suffix);
           return (
             <Link
@@ -161,6 +173,11 @@ function WorkspaceChrome({
             >
               <Icon className="h-4 w-4" strokeWidth={2.25} />
               {label}
+              {key === "players" && pendingCount > 0 ? (
+                <span className="bg-candy text-white ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-[10px] font-bold leading-none">
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              ) : null}
             </Link>
           );
         })}

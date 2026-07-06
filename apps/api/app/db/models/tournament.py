@@ -22,6 +22,7 @@ from app.db.mixins import OrgScopedMixin, SoftDeleteMixin, TimestampMixin, UUIDP
 if TYPE_CHECKING:
     from app.db.models.competition import Match, Standing
     from app.db.models.identity import Organization
+    from app.db.models.logistics import Venue
     from app.db.models.participants import Participant, Registration
     from app.db.models.squads import Squad
 
@@ -60,6 +61,9 @@ class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelete
     settings: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
     )
+    venue_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("venues.id", ondelete="SET NULL"), nullable=True, index=True
+    )
     # Per-artifact publication gates for the public plane.
     draw_published_at: Mapped[datetime.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
@@ -72,6 +76,7 @@ class Tournament(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelete
     )
 
     organization: Mapped[Organization] = relationship(back_populates="tournaments")
+    venue: Mapped[Venue | None] = relationship(foreign_keys=[venue_id], lazy="selectin")
     divisions: Mapped[list[Division]] = relationship(
         back_populates="tournament", cascade="all, delete-orphan", passive_deletes=True
     )

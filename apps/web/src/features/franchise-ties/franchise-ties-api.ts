@@ -35,6 +35,27 @@ export interface FranchiseDrawResponse {
   };
 }
 
+export interface SquadStandingRow {
+  rank: number;
+  squadName: string;
+  played: number;
+  won: number;
+  lost: number;
+  drawn: number;
+  legWins: number;
+  legLosses: number;
+  points: number;
+}
+
+export interface SquadStandingsView {
+  stageId: string;
+  rows: SquadStandingRow[];
+}
+
+export function getFranchiseStandings(stageId: string): Promise<SquadStandingsView> {
+  return apiGet<SquadStandingsView>(`/stages/${stageId}/franchise-standings`);
+}
+
 export function getFranchiseTiesBoard(stageId: string): Promise<FranchiseTiesBoardView> {
   return apiGet<FranchiseTiesBoardView>(`/stages/${stageId}/franchise-ties`);
 }

@@ -5,7 +5,6 @@ import { CircleDot, FileText, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
-import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { CardGridSkeleton } from "@/components/common/loading";
 import { PageHeader } from "@/components/common/page-header";
@@ -13,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/features/auth/use-session";
 import { TournamentCard } from "@/features/tournaments/components/tournament-card";
+import { WelcomeGuide } from "@/features/tournaments/components/welcome-guide";
 import { useTournaments } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
@@ -69,15 +69,7 @@ export default function ConsolePage() {
           title="Couldn't load your tournaments"
         />
       ) : (data?.length ?? 0) === 0 ? (
-        <Card className="p-2">
-          <EmptyState
-            icon={Trophy}
-            eyebrow="Get started"
-            title="Run your first tournament"
-            description="Create a tournament, open registration, generate the draw, and score matches live."
-            action={newButton ?? undefined}
-          />
-        </Card>
+        <WelcomeGuide name={firstName} />
       ) : (
         <>
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">

@@ -21,6 +21,79 @@ import type { RegistrationResponse } from "@tournament/api-client";
 
 export type DashboardPhase = "before" | "during" | "after";
 
+export type TournamentStep = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10;
+
+export interface StepSignals {
+  hasApproved: boolean;
+  squadsReady: boolean;
+  pairingPublished: boolean;
+  checkInReady: boolean;
+  drawComplete: boolean;
+  courtsReady: boolean;
+}
+
+export const STEP_META: Record<
+  TournamentStep,
+  { label: string; description: string; phase: DashboardPhase }
+> = {
+  1:  { label: "Tournament Setup",     description: "Configure your tournament — venue, format, divisions.",          phase: "before" },
+  2:  { label: "Player Registration",  description: "Import participants and approve them.",                          phase: "before" },
+  3:  { label: "Team Creation",        description: "Divide players into franchise teams.",                           phase: "before" },
+  4:  { label: "Pair Generation",      description: "Generate balanced doubles pairs within each team.",              phase: "before" },
+  5:  { label: "Check-in & Readiness", description: "Mark attendance and confirm everyone is ready.",                 phase: "before" },
+  6:  { label: "Draw Generation",      description: "Generate the bracket or round-robin draw for each division.",   phase: "before" },
+  7:  { label: "Court Scheduling",     description: "Configure courts and assign matches to them.",                   phase: "before" },
+  8:  { label: "Tournament Live",      description: "Monitor courts, score matches, track standings in real time.",  phase: "during" },
+  9:  { label: "Tournament Results",   description: "Review results, publish standings, and export data.",           phase: "after"  },
+  10: { label: "Tournament Archive",   description: "Read-only historical record of the tournament.",                phase: "after"  },
+};
+
+export function deriveTournamentStep(
+  status: TournamentStatus,
+  signals: StepSignals,
+): TournamentStep {
+  if (status === "archived") return 10;
+  if (status === "completed") return 9;
+  if (status === "live") return 8;
+  if (status === "draft") return 1;
+
+  // registration | seeding — walk through sub-steps in order
+  if (!signals.hasApproved) return 2;
+  if (!signals.squadsReady) return 3;
+  if (!signals.pairingPublished) return 4;
+  if (!signals.checkInReady) return 5;
+  if (!signals.drawComplete) return 6;
+  if (!signals.courtsReady) return 7;
+  return 7;
+}
+
+export function deriveStepSignals(
+  readiness: TournamentReadinessView | undefined,
+  registrationTotals: RegistrationTotals,
+  drawProgress: { drawn: number; total: number },
+  queue: ScheduleQueueView | undefined,
+): StepSignals {
+  const squadsReady =
+    (readiness?.squadsReady ?? true) && (readiness?.unassignedSquadMembers ?? 0) === 0;
+  const pairingPublished =
+    readiness
+      ? readiness.divisions.every((d) => d.unpairedEntrants === 0)
+      : true;
+  const checkInReady =
+    readiness
+      ? readiness.divisions.every((d) => d.readyForDraw || d.readyForStart)
+      : false;
+
+  return {
+    hasApproved: registrationTotals.approved > 0,
+    squadsReady,
+    pairingPublished,
+    checkInReady,
+    drawComplete: drawProgress.total > 0 && drawProgress.drawn === drawProgress.total,
+    courtsReady: (queue?.courts.length ?? 0) > 0 && (queue?.unscheduled.length ?? 0) === 0,
+  };
+}
+
 export type AlertTone = "warning" | "info" | "error";
 
 export interface DashboardAlert {

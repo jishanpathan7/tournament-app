@@ -69,6 +69,21 @@ export async function createDivision(
   return data;
 }
 
+export type UpdateDivisionBody = {
+  name?: string;
+  participantType?: "individual" | "pair" | "team";
+  capacity?: number;
+  clearCapacity?: boolean;
+};
+
+export async function updateDivision(
+  divisionId: string,
+  body: UpdateDivisionBody,
+): Promise<DivisionResponse> {
+  const { data } = await api.patch<DivisionResponse>(`/divisions/${divisionId}`, body);
+  return data;
+}
+
 export function listStages(divisionId: string): Promise<StageResponse[]> {
   return apiGet<StageResponse[]>(`/divisions/${divisionId}/stages`);
 }
@@ -81,6 +96,18 @@ export async function createStage(
   return data;
 }
 
+export async function updateStageConfig(
+  divisionId: string,
+  stageId: string,
+  config: Record<string, unknown>,
+): Promise<StageResponse> {
+  const { data } = await api.patch<StageResponse>(
+    `/divisions/${divisionId}/stages/${stageId}/config`,
+    { config },
+  );
+  return data;
+}
+
 export async function generateDraw(stageId: string, body: DrawRequest): Promise<DrawResponse> {
   const { data } = await api.post<DrawResponse>(`/stages/${stageId}/draw`, body);
   return data;
@@ -88,4 +115,25 @@ export async function generateDraw(stageId: string, body: DrawRequest): Promise<
 
 export async function clearDraw(stageId: string): Promise<void> {
   await api.delete(`/stages/${stageId}/draw`);
+}
+
+export interface AdvanceToKnockoutBody {
+  take: number;
+  rng_seed?: number | null;
+}
+
+export interface AdvanceToKnockoutResult {
+  stage_id: string;
+  format: string;
+  matches: number;
+  scheduled: number;
+  pending: number;
+}
+
+export async function advanceToKnockout(
+  stageId: string,
+  body: AdvanceToKnockoutBody,
+): Promise<AdvanceToKnockoutResult> {
+  const { data } = await api.post<AdvanceToKnockoutResult>(`/stages/${stageId}/advance`, body);
+  return data;
 }

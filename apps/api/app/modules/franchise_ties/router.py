@@ -21,6 +21,7 @@ from app.modules.franchise_ties.schemas import (
     FranchiseDrawResponse,
     FranchiseKnockoutDrawRequest,
     FranchiseTiesBoardView,
+    SquadStandingsView,
 )
 
 router = APIRouter(tags=["franchise-ties"])
@@ -82,5 +83,19 @@ async def get_franchise_ties_board(
     session: AsyncSession = Depends(get_request_session),
 ) -> FranchiseTiesBoardView:
     return await service.get_ties_board(
+        session, org_id=principal.organization_id, stage_id=stage_id
+    )
+
+
+@router.get(
+    "/stages/{stage_id}/franchise-standings",
+    response_model=SquadStandingsView,
+)
+async def get_franchise_standings(
+    stage_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> SquadStandingsView:
+    return await service.get_squad_standings(
         session, org_id=principal.organization_id, stage_id=stage_id
     )

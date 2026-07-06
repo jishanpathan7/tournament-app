@@ -93,8 +93,9 @@ export function TournamentActions({ tournament }: { tournament: TournamentRespon
                   <DropdownMenuItem disabled>No actions available</DropdownMenuItem>
                 ) : null}
                 {forward.map((t) => (
-                  <DropdownMenuItem key={t.to} onSelect={() => setPending(t)}>
-                    {t.label}
+                  <DropdownMenuItem key={t.to} onSelect={() => setPending(t)} className="flex flex-col items-start gap-0.5">
+                    <span className="font-semibold">{t.label}</span>
+                    <span className="text-muted-foreground text-xs font-normal leading-snug whitespace-normal">{t.description}</span>
                   </DropdownMenuItem>
                 ))}
                 {archive ? (
@@ -131,11 +132,7 @@ export function TournamentActions({ tournament }: { tournament: TournamentRespon
         open={!!pending}
         onOpenChange={(open) => !open && setPending(null)}
         title={pending?.label ?? ""}
-        description={
-          pending?.to === "archived"
-            ? "Archiving makes the tournament read-only. This can't be undone."
-            : `Move this tournament to “${pending?.to}”?`
-        }
+        description={pending?.description ?? ""}
         confirmLabel={pending?.label ?? "Confirm"}
         confirmTone={pending?.regressive ? "pink" : "candy"}
         loading={transition.isPending}

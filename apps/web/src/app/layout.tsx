@@ -12,8 +12,8 @@ const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", displ
 
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://playlane.app",
-  ),
+    process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  ), 
   title: {
     default: SITE.name,
     template: SITE.titleTemplate,

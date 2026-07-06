@@ -19,6 +19,7 @@ class Venue(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
 
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     address: Mapped[str | None] = mapped_column(Text, nullable=True)
+    maps_url: Mapped[str | None] = mapped_column(Text, nullable=True)
 
     courts: Mapped[list[Court]] = relationship(
         back_populates="venue", cascade="all, delete-orphan", passive_deletes=True

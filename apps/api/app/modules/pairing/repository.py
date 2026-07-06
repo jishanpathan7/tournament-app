@@ -105,6 +105,23 @@ async def list_eligible_registrations(
     return (await session.execute(stmt)).scalars().all()
 
 
+async def list_approved_registrations(
+    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+) -> Sequence[Registration]:
+    """Approved individual registrations — eligible for pairing in franchise-ties flow
+    where players register individually then get paired into doubles pairs."""
+    stmt = (
+        select(Registration)
+        .where(
+            Registration.division_id == division_id,
+            Registration.organization_id == org_id,
+            Registration.status == RegistrationStatus.APPROVED.value,
+        )
+        .order_by(Registration.created_at, Registration.id)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
 async def get_active_run(
     session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
 ) -> PairingRun | None:

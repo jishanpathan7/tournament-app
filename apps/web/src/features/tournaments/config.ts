@@ -144,6 +144,18 @@ export const VISIBILITIES: { value: Visibility; label: string; description: stri
   { value: "public", label: "Public", description: "Listed publicly and discoverable." },
 ];
 
+// ---- match format (best-of) ----
+
+export const MATCH_FORMATS: { value: 1 | 3 | 5; label: string; description: string }[] = [
+  { value: 1, label: "Best of 1", description: "Single game decides the winner." },
+  { value: 3, label: "Best of 3", description: "First to win 2 games." },
+  { value: 5, label: "Best of 5", description: "First to win 3 games." },
+];
+
+export function getMatchFormat(bestOf: number): (typeof MATCH_FORMATS)[number] | undefined {
+  return MATCH_FORMATS.find((f) => f.value === bestOf);
+}
+
 // ---- status ----
 
 export interface StatusMeta {
@@ -167,22 +179,64 @@ export const TOURNAMENT_STATUS: Record<TournamentStatus, StatusMeta> = {
 export interface StatusTransition {
   to: TournamentStatus;
   label: string;
+  description: string;
   /** A forward step vs. a rollback (affects button tone). */
   regressive?: boolean;
 }
 
 export const STATUS_TRANSITIONS: Record<TournamentStatus, StatusTransition[]> = {
-  draft: [{ to: "registration", label: "Open registration" }],
+  draft: [
+    {
+      to: "registration",
+      label: "Open registration",
+      description:
+        "Players will be able to self-register via the public page. You'll get a link to share.",
+    },
+  ],
   registration: [
-    { to: "seeding", label: "Start seeding" },
-    { to: "draft", label: "Back to draft", regressive: true },
+    {
+      to: "seeding",
+      label: "Start seeding",
+      description:
+        "Closes registration. You can now approve entries, resolve pairings, and generate the draw.",
+    },
+    {
+      to: "draft",
+      label: "Back to draft",
+      description: "Hides the tournament from the public page. Registration entries are kept.",
+      regressive: true,
+    },
   ],
   seeding: [
-    { to: "live", label: "Go live" },
-    { to: "registration", label: "Reopen registration", regressive: true },
+    {
+      to: "live",
+      label: "Go live",
+      description:
+        "Starts the event. Match scoring becomes active and live results are visible to players.",
+    },
+    {
+      to: "registration",
+      label: "Reopen registration",
+      description: "Re-opens the public registration form. Use if you need to accept late entries.",
+      regressive: true,
+    },
   ],
-  live: [{ to: "completed", label: "Mark complete" }],
-  completed: [{ to: "archived", label: "Archive", regressive: true }],
+  live: [
+    {
+      to: "completed",
+      label: "Mark complete",
+      description:
+        "Closes scoring and publishes final results. The bracket and standings stay visible.",
+    },
+  ],
+  completed: [
+    {
+      to: "archived",
+      label: "Archive",
+      description: "Moves to read-only archive. Hides from active lists.",
+      regressive: true,
+    },
+  ],
   archived: [],
 };
 

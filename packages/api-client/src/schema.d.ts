@@ -3407,6 +3407,13 @@ export interface components {
             startsAt: string | null;
             /** Endsat */
             endsAt: string | null;
+            /** Venuename */
+            venueName: string | null;
+            venue: {
+                name: string;
+                address: string | null;
+                mapsUrl: string | null;
+            } | null;
             /** Drawpublishedat */
             drawPublishedAt: string | null;
             /** Schedulepublishedat */
@@ -3956,6 +3963,15 @@ export interface components {
             settings: {
                 [key: string]: unknown;
             };
+            /** Venuename */
+            venueName: string | null;
+            venue: {
+                /** Id */
+                id: string;
+                name: string;
+                address: string | null;
+                mapsUrl: string | null;
+            } | null;
             /** Drawpublishedat */
             drawPublishedAt: string | null;
             /** Schedulepublishedat */
@@ -4076,6 +4092,12 @@ export interface components {
             settings?: {
                 [key: string]: unknown;
             } | null;
+            /** Autoschedule */
+            autoSchedule?: boolean | null;
+            /** Venueid */
+            venueId?: string | null;
+            /** Clearvenue */
+            clearVenue?: boolean;
         };
         /**
          * UploadTarget

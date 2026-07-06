@@ -46,10 +46,25 @@ export function PublicOverview({ slug }: { slug: string }) {
           </h1>
           <div className="flex flex-wrap items-center gap-2">
             {status ? <Badge tone={status.tone}>{status.label}</Badge> : null}
-            <Badge tone="muted">
-              <MapPin className="h-3 w-3" strokeWidth={2.5} />
-              Venue TBA
-            </Badge>
+            {tournament.venue?.mapsUrl ? (
+              <a
+                href={tournament.venue.mapsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex"
+              >
+                <Badge tone="muted" className="hover:bg-muted transition-colors">
+                  <MapPin className="h-3 w-3" strokeWidth={2.5} />
+                  {tournament.venue.name}
+                  {tournament.venue.address ? ` · ${tournament.venue.address}` : ""}
+                </Badge>
+              </a>
+            ) : (
+              <Badge tone="muted">
+                <MapPin className="h-3 w-3" strokeWidth={2.5} />
+                {tournament.venueName ?? "Venue TBA"}
+              </Badge>
+            )}
             <Badge tone="muted">
               <Users className="h-3 w-3" strokeWidth={2.5} />
               {totalParticipants} participants
@@ -58,7 +73,15 @@ export function PublicOverview({ slug }: { slug: string }) {
         </div>
         {isRegistrationOpen(tournament.status) ? (
           <Button asChild tone="mint">
-            <Link href={`/t/${slug}/register`}>Register</Link>
+            <Link href={`/t/${slug}/register`}>Register now</Link>
+          </Button>
+        ) : tournament.status === "draft" ? (
+          <p className="text-muted-foreground rounded-xl border-2 border-dashed px-4 py-2 text-sm">
+            Registration not open yet
+          </p>
+        ) : tournament.status === "seeding" || tournament.status === "live" || tournament.status === "completed" || tournament.status === "archived" ? (
+          <Button asChild tone="paper">
+            <Link href={`/t/${slug}/bracket`}>See bracket →</Link>
           </Button>
         ) : null}
       </section>

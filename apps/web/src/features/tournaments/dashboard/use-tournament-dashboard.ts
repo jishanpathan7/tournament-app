@@ -23,8 +23,11 @@ import {
   deriveDrawProgress,
   deriveDuringStats,
   deriveRegistrationTotals,
+  deriveStepSignals,
+  deriveTournamentStep,
   getDashboardPhase,
   type DashboardPhase,
+  type TournamentStep,
 } from "@/features/tournaments/dashboard/config";
 import { useDivisions, useTournament } from "@/features/tournaments/use-tournaments";
 import { queryKeys } from "@/lib/query-keys";
@@ -165,6 +168,20 @@ export function useTournamentDashboard(tournamentId: string) {
     divisions.data,
   ]);
 
+  const stepSignals = useMemo(
+    () => deriveStepSignals(readiness.data, registrationTotals, drawProgress, queue.data),
+    [readiness.data, registrationTotals, drawProgress, queue.data],
+  );
+
+  const step: TournamentStep = useMemo(
+    () =>
+      deriveTournamentStep(
+        (tournament.data?.status ?? "draft") as TournamentStatus,
+        stepSignals,
+      ),
+    [tournament.data?.status, stepSignals],
+  );
+
   const isLoadingCore =
     tournament.isLoading ||
     divisions.isLoading ||
@@ -174,6 +191,8 @@ export function useTournamentDashboard(tournamentId: string) {
   return {
     tournament,
     phase,
+    step,
+    stepSignals,
     divisions,
     readiness,
     matches,

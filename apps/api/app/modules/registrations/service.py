@@ -249,8 +249,28 @@ async def _build_participant(
         return participant
 
     # pair / team → a Team + roster, referenced by the Participant.
+    # If the registration has no pre-formed roster (single-player import for a franchise
+    # doubles event), approve as an Individual so the pairing engine can pair them later.
     players = registration.form_response.get("players", [])
     roster_ids = [_player_identity(p) for p in players] if isinstance(players, list) else []
+    if not roster_ids:
+        user = await repo.get_user(session, registration.submitted_by)
+        participant = Participant(
+            organization_id=org_id,
+            division_id=division.id,
+            kind=ParticipantKind.INDIVIDUAL.value,
+            user_id=(
+                None if entrant_has_external_identity(registration) else registration.submitted_by
+            ),
+            display_name=entrant_display_name(
+                registration, account_name=user.name if user else None
+            ),
+            skill_level=registration.skill_level,
+            status=ParticipantStatus.APPROVED.value,
+        )
+        session.add(participant)
+        await session.flush()
+        return participant
     _validate_roster(profile, kind, roster_ids)
 
     team_name = registration.form_response.get("teamName") or f"Team {str(registration.id)[:8]}"

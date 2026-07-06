@@ -156,10 +156,34 @@ export function useCreateDivision(tournamentId: string) {
   });
 }
 
+export function useUpdateDivision(tournamentId: string, divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: tournamentsApi.UpdateDivisionBody) =>
+      tournamentsApi.updateDivision(divisionId, body),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.tournaments.divisions(tournamentId),
+      });
+    },
+  });
+}
+
 export function useCreateStage(divisionId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: tournamentsApi.createStage.bind(null, divisionId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
+    },
+  });
+}
+
+export function useUpdateStageConfig(stageId: string, divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (config: Record<string, unknown>) =>
+      tournamentsApi.updateStageConfig(divisionId, stageId, config),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
     },
@@ -187,6 +211,16 @@ export function useClearDraw(stageId: string, divisionId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(stageId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stages.standings(stageId) });
+    },
+  });
+}
+
+export function useAdvanceToKnockout(stageId: string, divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (take: number) => tournamentsApi.advanceToKnockout(stageId, { take }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
     },
   });
 }

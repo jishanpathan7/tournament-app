@@ -50,7 +50,7 @@ describe("TournamentActions", () => {
     renderWithProviders(<TournamentActions tournament={tournament} />);
 
     await user.click(screen.getByRole("button", { name: /actions/i }));
-    await user.click(await screen.findByRole("menuitem", { name: "Open registration" }));
+    await user.click(await screen.findByRole("menuitem", { name: /open registration/i }));
 
     // Confirm dialog shows the action; confirm calls the API with the target status.
     const confirm = await screen.findByRole("button", { name: "Open registration" });

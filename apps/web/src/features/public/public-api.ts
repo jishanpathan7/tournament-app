@@ -99,6 +99,50 @@ export function searchTournaments(query: string): Promise<PublicTournamentSearch
   return getJson(`/search?q=${encodeURIComponent(query)}`);
 }
 
+export interface PublicCourtMatchView {
+  id: string;
+  status: string;
+  courtId: string | null;
+  scheduledAt: string | null;
+  sides: { participantId: string; outcome: string | null }[];
+}
+
+export interface PublicCourtQueueView {
+  court: { id: string; name: string; status: string; venueName: string };
+  currentMatch: PublicCourtMatchView | null;
+  nextMatch: PublicCourtMatchView | null;
+  isDelayed: boolean;
+}
+
+export interface PublicScheduleQueueView {
+  courts: PublicCourtQueueView[];
+  unscheduled: PublicCourtMatchView[];
+  pending: PublicCourtMatchView[];
+}
+
+export function getCourts(slug: string): Promise<PublicScheduleQueueView> {
+  return getJson(`/tournaments/${encodeURIComponent(slug)}/courts`);
+}
+
+export interface PlayerStatRow {
+  participantId: string;
+  displayName: string;
+  played: number;
+  won: number;
+  lost: number;
+  drawn: number;
+  winRate: number;
+  squadName: string | null;
+}
+
+export interface PlayerStatsView {
+  rows: PlayerStatRow[];
+}
+
+export function getPlayerStats(slug: string): Promise<PlayerStatsView> {
+  return getJson(`/tournaments/${encodeURIComponent(slug)}/player-stats`);
+}
+
 export interface PublicRegistrationSubmitBody {
   name: string;
   email?: string | null;

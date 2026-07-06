@@ -16,6 +16,7 @@ import {
   useGenerateFranchiseDraw,
   useGenerateFranchiseKnockoutDraw,
 } from "@/features/franchise-ties/use-franchise-ties";
+import { SquadStandings } from "@/features/franchise-ties/components/squad-standings";
 import { useDivisions, useStages } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
@@ -183,6 +184,7 @@ export function FranchiseTiesPage({ tournamentId }: { tournamentId: string }) {
 
   return (
     <div className="flex flex-col gap-10">
+      <SquadStandings stageId={rrStage.id} />
       <FranchiseTiesBoard tournamentId={tournamentId} stageId={rrStage.id} mode="round_robin" />
       {koStage ? (
         <FranchiseTiesBoard

@@ -67,6 +67,7 @@ class ParticipantKind(str, enum.Enum):
     INDIVIDUAL = "individual"
     PAIR = "pair"
     TEAM = "team"
+    SQUAD = "squad"
 
 
 class TerminalReason(str, enum.Enum):

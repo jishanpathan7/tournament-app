@@ -15,5 +15,7 @@ export const publicQueryKeys = {
     ["public", "tournament", slug, "matches", matchId, "events"] as const,
   standings: (slug: string, stageId: string) =>
     ["public", "tournament", slug, "stages", stageId, "standings"] as const,
+  courts: (slug: string) => ["public", "tournament", slug, "courts"] as const,
+  playerStats: (slug: string) => ["public", "tournament", slug, "player-stats"] as const,
   search: (query: string) => ["public", "search", query] as const,
 } as const;

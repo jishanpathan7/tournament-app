@@ -11,6 +11,7 @@ export function OptionCard({
   selected,
   disabled,
   comingSoon,
+  recommended,
   onSelect,
 }: {
   icon?: LucideIcon;
@@ -19,6 +20,7 @@ export function OptionCard({
   selected: boolean;
   disabled?: boolean;
   comingSoon?: boolean;
+  recommended?: boolean;
   onSelect: () => void;
 }) {
   return (
@@ -49,6 +51,7 @@ export function OptionCard({
         <span className="flex items-center gap-2">
           <span className="font-semibold">{label}</span>
           {comingSoon ? <Badge tone="muted">Soon</Badge> : null}
+          {recommended && !comingSoon ? <Badge tone="mint">Recommended</Badge> : null}
         </span>
         {description ? <span className="text-muted-foreground text-sm">{description}</span> : null}
       </span>

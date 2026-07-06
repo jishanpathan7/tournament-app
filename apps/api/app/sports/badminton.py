@@ -94,7 +94,7 @@ class BadmintonProfile:
     # --- capabilities ---
 
     def supported_participant_kinds(self) -> frozenset[ParticipantKind]:
-        return frozenset({ParticipantKind.INDIVIDUAL, ParticipantKind.PAIR})
+        return frozenset({ParticipantKind.INDIVIDUAL, ParticipantKind.PAIR, ParticipantKind.SQUAD})
 
     def supported_formats(self) -> frozenset[FormatKey]:
         return frozenset(

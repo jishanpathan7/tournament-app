@@ -23,6 +23,12 @@ class PublicOrgView(ApiModel):
     branding: dict[str, Any]
 
 
+class PublicVenueView(ApiModel):
+    name: str
+    address: str | None
+    maps_url: str | None
+
+
 class PublicTournamentView(ApiModel):
     id: uuid.UUID
     slug: str
@@ -32,6 +38,8 @@ class PublicTournamentView(ApiModel):
     visibility: str
     starts_at: datetime.datetime | None
     ends_at: datetime.datetime | None
+    venue_name: str | None
+    venue: PublicVenueView | None
     draw_published_at: datetime.datetime | None
     schedule_published_at: datetime.datetime | None
     results_published_at: datetime.datetime | None
@@ -82,3 +90,18 @@ class PublicRegistrationSubmittedView(ApiModel):
     id: uuid.UUID
     status: str
     division_id: uuid.UUID
+
+
+class PlayerStatRow(ApiModel):
+    participant_id: uuid.UUID
+    display_name: str
+    played: int
+    won: int
+    lost: int
+    drawn: int
+    win_rate: float
+    squad_name: str | None
+
+
+class PlayerStatsView(ApiModel):
+    rows: list[PlayerStatRow]

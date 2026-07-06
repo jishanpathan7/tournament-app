@@ -51,6 +51,7 @@ from app.modules.registrations.entrant import (
 from app.modules.registrations.partner_resolution import preferred_partner_id_for
 from app.modules.squads.repository import (
     cross_squad_forbidden_registration_pairs,
+    list_squads,
     squad_membership_by_registration,
 )
 from app.realtime.channels import org_channel
@@ -408,9 +409,15 @@ async def _load_context(
         raise NotFoundError("Sport profile not found")
     profile = get_sport_registry().get(profile_row.key)
     policy = profile.pairing_policy({"participantType": division.participant_type})
-    if not policy.supports_pairing:
-        raise ValidationError("this division does not use team pairing", code="pairing_unsupported")
-    entrants = list(await repo.list_eligible_registrations(session, org_id, division_id))
+    # Squad (franchise) and individual divisions register players as individuals then pair
+    # them into doubles within squads. Both use approved registrations and override to the
+    # doubles pairing policy.
+    is_franchise = division.participant_type in ("individual", "squad")
+    if not policy.supports_pairing or is_franchise:
+        policy = profile.pairing_policy({"participantType": "pair"})
+        entrants = list(await repo.list_approved_registrations(session, org_id, division_id))
+    else:
+        entrants = list(await repo.list_eligible_registrations(session, org_id, division_id))
     return _Context(division, profile, policy, entrants)
 
 
@@ -502,6 +509,14 @@ async def build_run_view(
     if loaded is not None:
         run = loaded
     ctx = await _load_context(session, org_id, run.division_id)
+
+    # Build reg_id → squad_name map for display
+    squads = await list_squads(session, org_id, ctx.division.tournament_id)
+    reg_to_squad_name: dict[str, str] = {}
+    for squad in squads:
+        for member in squad.members:
+            reg_to_squad_name[str(member.registration_id)] = squad.name
+
     entrants = [
         EntrantView(
             registration_id=r.id,
@@ -509,6 +524,7 @@ async def build_run_view(
             skill_level=r.skill_level,
             weight=float(ctx.profile.skill_weight(r.skill_level)),
             preferred_partner_id=_pref_uuid(r, ctx),
+            squad_name=reg_to_squad_name.get(str(r.id)),
         )
         for r in ctx.entrants
     ]

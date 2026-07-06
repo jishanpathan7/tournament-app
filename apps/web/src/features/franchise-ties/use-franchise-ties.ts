@@ -2,6 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as api from "@/features/franchise-ties/franchise-ties-api";
 
+export function useFranchiseStandings(stageId: string | undefined) {
+  return useQuery({
+    queryKey: ["franchise-standings", stageId],
+    queryFn: () => api.getFranchiseStandings(stageId!),
+    enabled: !!stageId,
+  });
+}
+
 export function useFranchiseTiesBoard(stageId: string | undefined) {
   return useQuery({
     queryKey: ["franchise-ties", stageId],

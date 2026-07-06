@@ -24,16 +24,18 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/sonner";
-import { VISIBILITIES } from "@/features/tournaments/config";
+import { MATCH_FORMATS, VISIBILITIES } from "@/features/tournaments/config";
 import { useUpdateTournament } from "@/features/tournaments/use-tournaments";
 import { errorMessage } from "@/lib/problem";
 
 const editSchema = z
   .object({
     name: z.string().min(1, "Name is required").max(200),
+    venueName: z.string().max(300),
     visibility: z.enum(["public", "unlisted", "private"]),
     startsAt: z.string(),
     endsAt: z.string(),
+    bestOf: z.union([z.literal(1), z.literal(3), z.literal(5)]),
   })
   .refine((v) => !v.startsAt || !v.endsAt || v.endsAt >= v.startsAt, {
     message: "End date can't be before the start date",
@@ -66,19 +68,29 @@ export function EditTournamentDialog({
     resolver: zodResolver(editSchema),
     defaultValues: {
       name: tournament.name,
+      venueName: tournament.venueName ?? "",
       visibility: tournament.visibility as EditValues["visibility"],
       startsAt: dateInput(tournament.startsAt),
       endsAt: dateInput(tournament.endsAt),
+      bestOf: ((tournament.settings?.sportConfig as { bestOf?: number } | undefined)?.bestOf ??
+        3) as 1 | 3 | 5,
     },
   });
 
   const onSubmit = handleSubmit((values) => {
+    const existingSettings = (tournament.settings ?? {}) as Record<string, unknown>;
+    const existingSportConfig = (existingSettings.sportConfig ?? {}) as Record<string, unknown>;
     update.mutate(
       {
         name: values.name,
         visibility: values.visibility,
         startsAt: toIso(values.startsAt),
         endsAt: toIso(values.endsAt),
+        settings: {
+          ...existingSettings,
+          sportConfig: { ...existingSportConfig, bestOf: values.bestOf },
+          venue_name: values.venueName || null,
+        },
       },
       {
         onSuccess: () => {
@@ -100,6 +112,14 @@ export function EditTournamentDialog({
           <Field label="Name" htmlFor="edit-name" error={errors.name?.message}>
             <Input id="edit-name" aria-invalid={!!errors.name} {...register("name")} />
           </Field>
+          <Field label="Venue" htmlFor="edit-venue" error={errors.venueName?.message}>
+            <Input
+              id="edit-venue"
+              placeholder="e.g. Badminton Hall, 123 Main St"
+              aria-invalid={!!errors.venueName}
+              {...register("venueName")}
+            />
+          </Field>
           <Field label="Visibility" htmlFor="edit-visibility">
             <Select
               value={watch("visibility")}
@@ -112,6 +132,23 @@ export function EditTournamentDialog({
                 {VISIBILITIES.map((v) => (
                   <SelectItem key={v.value} value={v.value}>
                     {v.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Match format" htmlFor="edit-best-of">
+            <Select
+              value={String(watch("bestOf"))}
+              onValueChange={(v) => setValue("bestOf", Number(v) as 1 | 3 | 5)}
+            >
+              <SelectTrigger id="edit-best-of">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {MATCH_FORMATS.map((f) => (
+                  <SelectItem key={f.value} value={String(f.value)}>
+                    {f.label}
                   </SelectItem>
                 ))}
               </SelectContent>

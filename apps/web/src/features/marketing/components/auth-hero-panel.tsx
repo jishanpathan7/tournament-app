@@ -64,9 +64,8 @@ export function AuthHeroPanel() {
         <p className="text-yellow mt-10 font-mono text-xs font-semibold uppercase tracking-[0.28em]">
           Tournament operating system
         </p>
-        <h1 className="font-serif mt-4 max-w-lg text-3xl font-semibold leading-tight tracking-tight md:text-4xl lg:text-[2.75rem]">
-          Run any tournament like a{" "}
-          <span className="text-candy italic">pro.</span>
+        <h1 className="mt-4 max-w-lg font-serif text-3xl font-semibold leading-tight tracking-tight md:text-4xl lg:text-[2.75rem]">
+          Run any tournament like a <span className="text-candy italic">pro.</span>
         </h1>
         <p className="text-paper/75 mt-5 max-w-md text-base leading-relaxed">
           {SITE.description} From badminton today to every sport tomorrow — one platform for
@@ -83,10 +82,6 @@ export function AuthHeroPanel() {
             </span>
           ))}
         </div>
-      </div>
-
-      <div className="mt-10 hidden md:block">
-        <MarketingBottomNav />
       </div>
     </div>
   );
