@@ -1,6 +1,9 @@
 "use client";
 
-import { Users, Wand2 } from "lucide-react";
+import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
+import { Dices, Users, Wand2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -39,6 +42,59 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const updateSquad = useUpdateSquad(tournamentId);
 
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  function onDragStart(e: DragStartEvent) {
+    setDraggingId(String(e.active.id));
+  }
+
+  function onDragEnd(e: DragEndEvent) {
+    setDraggingId(null);
+    const registrationId = String(e.active.id);
+    const targetId = e.over?.id ? String(e.over.id) : null;
+    if (!targetId) return;
+
+    const board = squads.data;
+    if (!board) return;
+
+    const currentSquad = board.squads.find((s) =>
+      s.members.some((m) => m.registrationId === registrationId),
+    );
+
+    if (targetId === "unassigned") {
+      if (currentSquad) {
+        remove.mutate(
+          { squadId: currentSquad.id, registrationId },
+          { onError: (e) => toast.error(errorMessage(e, "Couldn't remove player")) },
+        );
+      }
+      return;
+    }
+
+    // Dropped on a squad column
+    if (currentSquad?.id === targetId) return; // no change
+    if (currentSquad) {
+      // move: remove then assign
+      remove.mutate(
+        { squadId: currentSquad.id, registrationId },
+        {
+          onSuccess: () =>
+            assign.mutate(
+              { squadId: targetId, registrationId },
+              { onError: (e) => toast.error(errorMessage(e, "Couldn't assign player")) },
+            ),
+          onError: (e) => toast.error(errorMessage(e, "Couldn't move player")),
+        },
+      );
+    } else {
+      assign.mutate(
+        { squadId: targetId, registrationId },
+        { onError: (e) => toast.error(errorMessage(e, "Couldn't assign player")) },
+      );
+    }
+  }
 
   const busy =
     createSquad.isPending ||
@@ -78,6 +134,16 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
 
   const actions = canManage ? (
     <div className="flex flex-wrap items-center gap-2">
+      <Link href={`/console/tournaments/${tournamentId}/draft-ceremony`}>
+        <Button
+          tone="paper"
+          size="sm"
+          disabled={busy || !squads.data || squads.data.unassigned.length === 0}
+        >
+          <Dices className="h-4 w-4" />
+          Draft Ceremony
+        </Button>
+      </Link>
       {TEAM_COUNT_PRESETS.map((count) => (
         <Button
           key={count}
@@ -178,49 +244,66 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
           description="Import or approve registrations first, then auto-assign teams or add them manually."
         />
       ) : (
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-          <UnassignedPool
-            entries={board.unassigned}
-            selectedId={selectedRegistrationId}
-            onSelect={canManage ? onSelectRegistration : undefined}
-          />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
-            {board.squads.map((squad) => (
-              <SquadColumn
-                key={squad.id}
-                squad={squad}
-                canManage={canManage}
-                highlightAssign={!!selectedRegistrationId}
-                onAssign={() => onAssignToSquad(squad.id)}
-                onRemove={(registrationId) =>
-                  remove.mutate(
-                    { squadId: squad.id, registrationId },
-                    {
-                      onError: (e) => toast.error(errorMessage(e, "Couldn't remove player")),
-                    },
-                  )
-                }
-                onSetCaptain={(registrationId) =>
-                  updateSquad.mutate(
-                    { squadId: squad.id, captainRegistrationId: registrationId },
-                    {
-                      onSuccess: () => toast.success("Captain updated"),
-                      onError: (e) => toast.error(errorMessage(e, "Couldn't set captain")),
-                    },
-                  )
-                }
-                onRename={(name) =>
-                  updateSquad.mutate(
-                    { squadId: squad.id, name },
-                    {
-                      onError: (e) => toast.error(errorMessage(e, "Couldn't rename team")),
-                    },
-                  )
-                }
-              />
-            ))}
+        <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
+            <UnassignedPool
+              entries={board.unassigned}
+              selectedId={selectedRegistrationId}
+              onSelect={canManage ? onSelectRegistration : undefined}
+            />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
+              {board.squads.map((squad) => (
+                <SquadColumn
+                  key={squad.id}
+                  squad={squad}
+                  canManage={canManage}
+                  highlightAssign={!!selectedRegistrationId}
+                  onAssign={() => onAssignToSquad(squad.id)}
+                  onRemove={(registrationId) =>
+                    remove.mutate(
+                      { squadId: squad.id, registrationId },
+                      {
+                        onError: (e) => toast.error(errorMessage(e, "Couldn't remove player")),
+                      },
+                    )
+                  }
+                  onSetCaptain={(registrationId) =>
+                    updateSquad.mutate(
+                      { squadId: squad.id, captainRegistrationId: registrationId },
+                      {
+                        onSuccess: () => toast.success("Captain updated"),
+                        onError: (e) => toast.error(errorMessage(e, "Couldn't set captain")),
+                      },
+                    )
+                  }
+                  onRename={(name) =>
+                    updateSquad.mutate(
+                      { squadId: squad.id, name },
+                      {
+                        onError: (e) => toast.error(errorMessage(e, "Couldn't rename team")),
+                      },
+                    )
+                  }
+                />
+              ))}
+            </div>
           </div>
-        </div>
+          <DragOverlay>
+            {draggingId ? (
+              <div className="bg-card border-candy shadow-sticker-candy rounded-xl border-2 px-3 py-2 text-sm font-semibold opacity-90">
+                {(() => {
+                  const all = [
+                    ...board.unassigned.map((u) => ({ id: u.registrationId, name: u.displayName })),
+                    ...board.squads.flatMap((s) =>
+                      s.members.map((m) => ({ id: m.registrationId, name: m.displayName })),
+                    ),
+                  ];
+                  return all.find((p) => p.id === draggingId)?.name ?? draggingId;
+                })()}
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
       )}
 
       {board.squads.length === 0 && board.unassigned.length > 0 ? (

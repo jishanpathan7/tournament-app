@@ -37,6 +37,8 @@ export function makeTournament(overrides: Partial<TournamentResponse> = {}): Tou
     startsAt: overrides.startsAt ?? null,
     endsAt: overrides.endsAt ?? null,
     settings: overrides.settings ?? {},
+    venueName: overrides.venueName ?? null,
+    venue: overrides.venue ?? null,
     drawPublishedAt: overrides.drawPublishedAt ?? null,
     schedulePublishedAt: overrides.schedulePublishedAt ?? null,
     resultsPublishedAt: overrides.resultsPublishedAt ?? null,
@@ -189,6 +191,8 @@ export function makePublicTournament(
     visibility: overrides.visibility ?? "public",
     startsAt: overrides.startsAt ?? null,
     endsAt: overrides.endsAt ?? null,
+    venueName: overrides.venueName ?? null,
+    venue: overrides.venue ?? null,
     drawPublishedAt: overrides.drawPublishedAt ?? null,
     schedulePublishedAt: overrides.schedulePublishedAt ?? null,
     resultsPublishedAt: overrides.resultsPublishedAt ?? null,
@@ -286,6 +290,7 @@ export function makeEntrant(overrides: Partial<EntrantView> = {}): EntrantView {
     skillLevel: overrides.skillLevel ?? "intermediate",
     weight: overrides.weight ?? 2,
     preferredPartnerId: overrides.preferredPartnerId ?? null,
+    squadName: overrides.squadName ?? null,
   };
 }
 

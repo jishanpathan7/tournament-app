@@ -10,6 +10,8 @@ import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/sonner";
 import { TableSkeleton } from "@/components/common/loading";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { BulkActionBar } from "@/features/registrations/components/bulk-action-bar";
@@ -24,7 +26,11 @@ import {
   DEFAULT_REGISTRATION_FILTERS,
   applyRegistrationFilters,
 } from "@/features/registrations/filter";
-import { useParticipants, useRegistrations } from "@/features/registrations/use-registrations";
+import {
+  useParticipants,
+  useRegistrations,
+  useBulkApproveRegistrations,
+} from "@/features/registrations/use-registrations";
 import { useOrgMembers } from "@/features/orgs/use-orgs";
 import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
@@ -50,6 +56,8 @@ export function RegistrationManagement({
   const registrations = useRegistrations(divisionId, { enabled: canManage });
   const participants = useParticipants(divisionId);
   const members = useOrgMembers({ enabled: canManage });
+
+  const bulkApprove = useBulkApproveRegistrations(divisionId);
 
   const [filters, setFilters] = useState(DEFAULT_REGISTRATION_FILTERS);
   const [page, setPage] = useState(1);
@@ -151,6 +159,37 @@ export function RegistrationManagement({
                 setPage(1);
               }}
             />
+
+            {(() => {
+              const allPendingIds = (registrations.data ?? [])
+                .filter((r) => r.status === "submitted")
+                .map((r) => r.id);
+              return selected.size === 0 && allPendingIds.length > 0 ? (
+                <div className="border-candy bg-candy-tint flex items-center justify-between gap-4 rounded-2xl border-2 px-4 py-3">
+                  <p className="text-sm font-semibold">
+                    {allPendingIds.length} pending registration
+                    {allPendingIds.length !== 1 ? "s" : ""}
+                  </p>
+                  <Button
+                    tone="candy"
+                    size="sm"
+                    disabled={bulkApprove.isPending}
+                    onClick={() =>
+                      bulkApprove.mutate(allPendingIds, {
+                        onSuccess: () =>
+                          toast.success(
+                            `Approved ${allPendingIds.length} registration${allPendingIds.length !== 1 ? "s" : ""}`,
+                          ),
+                        onError: () => toast.error("Couldn't approve all — try again"),
+                      })
+                    }
+                  >
+                    {bulkApprove.isPending ? <Spinner /> : null}
+                    Approve all
+                  </Button>
+                </div>
+              ) : null;
+            })()}
 
             {selected.size > 0 ? (
               <BulkActionBar

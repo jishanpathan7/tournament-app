@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import NotFoundError, ValidationError
-from app.db.enums import SkillLevel, TournamentStatus
+from app.db.enums import MatchOutcome, MatchStatus, SkillLevel, TournamentStatus
 from app.db.models import (
     Match,
     MatchResultEvent,
@@ -34,11 +34,14 @@ from app.db.models import (
 from app.db.session import set_org_context
 from app.modules.orgs import repository as orgs_repo
 from app.modules.public import repository as repo
+from app.modules.public.schemas import PlayerStatRow, PlayerStatsView
 from app.modules.registrations import repository as registrations_repo
 from app.modules.registrations import service as registrations_service
 from app.modules.registrations.partner_resolution import resolve_preferred_partner_ids
 from app.modules.scoring import repository as scoring_repo
+from app.modules.scoring import service as scoring_service
 from app.modules.scoring.schemas import MatchView
+from app.modules.squads import repository as squads_repo
 from app.modules.tournaments import repository as tournaments_repo
 
 
@@ -196,3 +199,70 @@ async def submit_registration(
     resolve_preferred_partner_ids(division_regs)
     await session.flush()
     return registration
+
+
+_TERMINAL = {MatchStatus.COMPLETED.value, MatchStatus.WALKOVER.value}
+
+
+async def get_player_stats(session: AsyncSession, tournament: Tournament) -> PlayerStatsView:
+    """Aggregate per-participant W/L stats from completed matches."""
+    org_id = tournament.organization_id
+    matches = await scoring_repo.list_tournament_matches(session, org_id, tournament.id)
+    participants = await repo.list_participants(session, org_id, tournament.id)
+
+    # squad name lookup: participant_id → squad name (via squad_id on participant)
+    squad_names: dict[uuid.UUID, str] = {}
+    squads = await squads_repo.list_squads(session, org_id, tournament.id)
+    squad_map = {s.id: s.name for s in squads}
+    for p in participants:
+        if p.squad_id and p.squad_id in squad_map:
+            squad_names[p.id] = squad_map[p.squad_id]
+
+    stats: dict[uuid.UUID, dict[str, int]] = {}
+
+    def _row(pid: uuid.UUID) -> dict[str, int]:
+        if pid not in stats:
+            stats[pid] = {"played": 0, "won": 0, "lost": 0, "drawn": 0}
+        return stats[pid]
+
+    for match in matches:
+        if match.status not in _TERMINAL:
+            continue
+        if match.contest_kind == "tie":
+            continue  # only count leg/standard matches
+        view = scoring_service.build_match_view(match)
+        for side in view.sides:
+            pid = side.participant_id
+            r = _row(pid)
+            r["played"] += 1
+            if side.outcome == MatchOutcome.WIN.value:
+                r["won"] += 1
+            elif side.outcome == MatchOutcome.LOSS.value:
+                r["lost"] += 1
+            else:
+                r["drawn"] += 1
+
+    part_map = {p.id: p for p in participants}
+    rows: list[PlayerStatRow] = []
+    for pid, s in stats.items():
+        participant = part_map.get(pid)
+        if participant is None:
+            continue
+        p = participant
+        played = s["played"]
+        win_rate = s["won"] / played if played > 0 else 0.0
+        rows.append(
+            PlayerStatRow(
+                participant_id=pid,
+                display_name=p.display_name or str(pid),
+                played=played,
+                won=s["won"],
+                lost=s["lost"],
+                drawn=s["drawn"],
+                win_rate=round(win_rate, 3),
+                squad_name=squad_names.get(pid),
+            )
+        )
+
+    rows.sort(key=lambda r: (-r.won, -r.played, r.display_name))
+    return PlayerStatsView(rows=rows)

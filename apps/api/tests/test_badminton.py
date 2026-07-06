@@ -45,7 +45,7 @@ def _derive(payload, config=None, ids=IDS):
 def test_capabilities():
     assert PROFILE.key == "badminton"
     assert PROFILE.supported_participant_kinds() == frozenset(
-        {ParticipantKind.INDIVIDUAL, ParticipantKind.PAIR}
+        {ParticipantKind.INDIVIDUAL, ParticipantKind.PAIR, ParticipantKind.SQUAD}
     )
     assert FormatKey.SINGLE_ELIM in PROFILE.supported_formats()
     assert PROFILE.tiebreak_criteria()[0] == "match_wins"

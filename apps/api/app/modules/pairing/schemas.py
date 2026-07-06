@@ -27,6 +27,7 @@ class EntrantView(ApiModel):
     skill_level: str | None
     weight: float
     preferred_partner_id: uuid.UUID | None
+    squad_name: str | None = None
 
 
 class ProposedTeamView(ApiModel):

@@ -7,9 +7,12 @@ stages, and draws are addressable resources under their own paths.
 
 from __future__ import annotations
 
+import csv
+import io
 import uuid
 
 from fastapi import APIRouter, Depends, Response, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -21,10 +24,14 @@ from app.api.deps import (
 )
 from app.core import authz
 from app.db.models import Division, Stage, Tournament
+from app.modules.registrations import repository as registrations_repo
+from app.modules.scoring import repository as scoring_repo
 from app.modules.tournaments import repository as repo
 from app.modules.tournaments import service
 from app.modules.tournaments.schemas import (
     ActivityEventView,
+    AdvanceToKnockoutRequest,
+    AdvanceToKnockoutResponse,
     CreateDivisionRequest,
     CreateStageRequest,
     CreateTournamentRequest,
@@ -35,8 +42,11 @@ from app.modules.tournaments.schemas import (
     StageResponse,
     StatusTransitionRequest,
     TournamentResponse,
+    UpdateDivisionRequest,
+    UpdateStageConfigRequest,
     UpdateTournamentRequest,
 )
+from app.modules.venues.schemas import VenueResponse
 
 router = APIRouter(tags=["tournaments"])
 
@@ -57,6 +67,19 @@ async def _tournament_response(session: AsyncSession, tournament: Tournament) ->
         starts_at=tournament.starts_at,
         ends_at=tournament.ends_at,
         settings=tournament.settings,
+        venue_name=(
+            tournament.venue.name if tournament.venue else tournament.settings.get("venue_name")
+        ),
+        venue=(
+            VenueResponse(
+                id=tournament.venue.id,
+                name=tournament.venue.name,
+                address=tournament.venue.address,
+                maps_url=tournament.venue.maps_url,
+            )
+            if tournament.venue
+            else None
+        ),
         draw_published_at=tournament.draw_published_at,
         schedule_published_at=tournament.schedule_published_at,
         results_published_at=tournament.results_published_at,
@@ -181,6 +204,9 @@ async def update_tournament(
         starts_at=body.starts_at,
         ends_at=body.ends_at,
         settings=body.settings,
+        auto_schedule=body.auto_schedule,
+        venue_id=body.venue_id,
+        clear_venue=body.clear_venue,
     )
     return await _tournament_response(session, tournament)
 
@@ -284,6 +310,30 @@ async def list_divisions(
     return [_division_response(d) for d in rows]
 
 
+@router.patch(
+    "/divisions/{division_id}",
+    response_model=DivisionResponse,
+    dependencies=[Depends(authed_csrf)],
+)
+async def update_division(
+    division_id: uuid.UUID,
+    body: UpdateDivisionRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> DivisionResponse:
+    division = await service.update_division(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        division_id=division_id,
+        name=body.name,
+        participant_type=body.participant_type,
+        capacity=body.capacity,
+        clear_capacity=body.clear_capacity,
+    )
+    return _division_response(division)
+
+
 # ---- stages ----
 
 
@@ -331,6 +381,31 @@ async def list_stages(
     return result
 
 
+@router.patch(
+    "/divisions/{division_id}/stages/{stage_id}/config",
+    response_model=StageResponse,
+    dependencies=[Depends(authed_csrf)],
+)
+async def update_stage_config(
+    division_id: uuid.UUID,
+    stage_id: uuid.UUID,
+    body: UpdateStageConfigRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> StageResponse:
+    stage = await service.update_stage_config(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        division_id=division_id,
+        stage_id=stage_id,
+        config=body.config,
+    )
+    locked = await repo.stage_has_scored_matches(session, principal.organization_id, stage.id)
+    drawn = await repo.stage_match_count(session, principal.organization_id, stage.id) > 0
+    return _stage_response(stage, drawn=drawn, locked=locked)
+
+
 @router.post(
     "/stages/{stage_id}/draw",
     response_model=DrawResponse,
@@ -370,3 +445,137 @@ async def clear_draw(
         actor_id=principal.user_id,
         stage_id=stage_id,
     )
+
+
+@router.post(
+    "/stages/{stage_id}/advance",
+    response_model=AdvanceToKnockoutResponse,
+    status_code=201,
+)
+async def advance_to_knockout(
+    stage_id: uuid.UUID,
+    body: AdvanceToKnockoutRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> AdvanceToKnockoutResponse:
+    ko_stage, summary = await service.advance_to_knockout(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        source_stage_id=stage_id,
+        take=body.take,
+        rng_seed=body.rng_seed,
+    )
+    return AdvanceToKnockoutResponse(
+        stage_id=ko_stage.id,
+        format=ko_stage.type,
+        matches=summary["matches"],
+        scheduled=summary["scheduled"],
+        pending=summary["pending"],
+    )
+
+
+# ---- exports ----
+
+
+def _csv_response(rows: list[list[str]], filename: str) -> StreamingResponse:
+    buf = io.StringIO()
+    csv.writer(buf).writerows(rows)
+    buf.seek(0)
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/tournaments/{tournament_id}/export/registrations.csv")
+async def export_registrations(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> StreamingResponse:
+    await service._require_tournament(session, principal.organization_id, tournament_id)
+    regs = await registrations_repo.list_registrations_for_tournament(
+        session, principal.organization_id, tournament_id
+    )
+    header = ["id", "status", "name", "email", "division_id", "submitted_at"]
+    rows: list[list[str]] = [header]
+    for r in regs:
+        form = r.form_response or {}
+        rows.append(
+            [
+                str(r.id),
+                r.status,
+                str(form.get("name", form.get("display_name", ""))),
+                str(form.get("email", "")),
+                str(r.division_id),
+                r.created_at.isoformat() if r.created_at else "",
+            ]
+        )
+    return _csv_response(rows, "registrations.csv")
+
+
+@router.get("/tournaments/{tournament_id}/export/matches.csv")
+async def export_matches(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> StreamingResponse:
+    await service._require_tournament(session, principal.organization_id, tournament_id)
+    matches = await scoring_repo.list_tournament_matches(
+        session, principal.organization_id, tournament_id
+    )
+    header = ["match_id", "status", "round", "side_a", "side_b", "winner", "score", "scheduled_at"]
+    rows: list[list[str]] = [header]
+    for m in matches:
+        sides = list(m.participants)
+        side_a = sides[0].participant_id if len(sides) > 0 else ""
+        side_b = sides[1].participant_id if len(sides) > 1 else ""
+        winner_id = next((str(mp.participant_id) for mp in sides if mp.outcome == "win"), "")
+        score = str(m.result_payload) if m.result_payload else ""
+        rows.append(
+            [
+                str(m.id),
+                m.status,
+                (m.round.label or "") if m.round else "",
+                str(side_a),
+                str(side_b),
+                winner_id,
+                score,
+                m.scheduled_at.isoformat() if m.scheduled_at else "",
+            ]
+        )
+    return _csv_response(rows, "matches.csv")
+
+
+@router.get("/tournaments/{tournament_id}/export/standings.csv")
+async def export_standings(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> StreamingResponse:
+    await service._require_tournament(session, principal.organization_id, tournament_id)
+    divisions = await repo.list_divisions(session, principal.organization_id, tournament_id)
+    header = ["stage_id", "participant_id", "rank", "played", "won", "drawn", "lost", "points"]
+    rows: list[list[str]] = [header]
+    for division in divisions:
+        stages = await repo.list_stages(session, principal.organization_id, division.id)
+        for stage in stages:
+            standings = await scoring_repo.stage_standings(
+                session, principal.organization_id, stage.id
+            )
+            for s in standings:
+                rows.append(
+                    [
+                        str(stage.id),
+                        str(s.participant_id),
+                        str(s.rank) if s.rank is not None else "",
+                        str(s.played),
+                        str(s.won),
+                        str(s.drawn),
+                        str(s.lost),
+                        str(s.points),
+                    ]
+                )
+    return _csv_response(rows, "standings.csv")

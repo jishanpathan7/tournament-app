@@ -106,6 +106,7 @@ export function DrawOverview({
         divisionId={divisionId}
         approvedCount={approvedCount}
         canManage={canManage}
+        tournamentSlug={tournament.data.slug}
       />
 
       {!stage.drawn ? (

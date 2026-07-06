@@ -23,9 +23,10 @@ from app.core.audit import record as audit_record
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster
 from app.db.enums import CourtStatus, MatchStatus, NotificationChannel
-from app.db.models import Match, Tournament
+from app.db.models import Match, Registration, Tournament
 from app.modules.courts import repository as courts_repo
 from app.modules.courts import service as courts_service
+from app.modules.notifications.email_queue import queue_email
 from app.modules.notifications.service import notify
 from app.modules.notifications.templates import NotificationTemplate, register_template
 from app.modules.scheduling import events
@@ -405,10 +406,32 @@ async def _broadcast(org_id: uuid.UUID, match: Match) -> None:
         await broadcaster.publish(channel, events.RT_MATCH_SCHEDULED, match_data)
 
 
+async def _participant_email(
+    session: AsyncSession, org_id: uuid.UUID, participant_id: uuid.UUID
+) -> str | None:
+    """Look up participant's email via their approved registration form_response."""
+    from sqlalchemy import select
+
+    stmt = (
+        select(Registration)
+        .where(
+            Registration.participant_id == participant_id,
+            Registration.organization_id == org_id,
+        )
+        .limit(1)
+    )
+    reg = (await session.execute(stmt)).scalars().first()
+    if reg is None:
+        return None
+    email = (reg.form_response or {}).get("email")
+    return str(email).strip() if email else None
+
+
 async def _notify(
     session: AsyncSession, org_id: uuid.UUID, match: Match, *, rescheduled: bool
 ) -> None:
     notif_type = events.NOTIFY_MATCH_RESCHEDULED if rescheduled else events.NOTIFY_MATCH_SCHEDULED
+    email_template = "match_rescheduled" if rescheduled else "match_scheduled"
     for mp in match.participants:
         user_id = await scoring_service.participant_user(session, org_id, mp.participant_id)
         if user_id is not None:
@@ -419,6 +442,74 @@ async def _notify(
                 type=notif_type,
                 data={"matchId": str(match.id), "tournamentId": str(match.tournament_id)},
             )
+        email = await _participant_email(session, org_id, mp.participant_id)
+        if email:
+            await queue_email(
+                session,
+                to=email,
+                template=email_template,
+                data={"matchId": str(match.id)},
+                organization_id=org_id,
+            )
+
+
+async def auto_schedule_next(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID | None,
+    tournament: Tournament,
+    freed_court_id: uuid.UUID,
+) -> Match | None:
+    """Called post-match-completion when tournament.settings['auto_schedule'] is true.
+
+    Finds the next schedulable unscheduled match and assigns it to the freed court
+    starting now. Returns the newly scheduled match or None if the queue is empty.
+    Soft conflicts (overlap warnings) are logged and silently ignored — auto-scheduling
+    never blocks on warnings.
+    """
+    matches = await repo.list_tournament_matches_with_participants(session, org_id, tournament.id)
+    _TERMINAL = frozenset(
+        {
+            MatchStatus.COMPLETED.value,
+            MatchStatus.WALKOVER.value,
+            MatchStatus.NO_SHOW.value,
+            MatchStatus.CANCELLED.value,
+        }
+    )
+    candidates = sorted(
+        [
+            m
+            for m in matches
+            if m.status not in _TERMINAL
+            and m.status != MatchStatus.PENDING.value
+            and (m.court_id is None or m.scheduled_at is None)
+        ],
+        key=lambda m: (m.round.seq if m.round else 0, m.created_at),
+    )
+    if not candidates:
+        return None
+
+    next_match = candidates[0]
+    scheduled_at = _now()
+    duration = next_match.duration_minutes or DEFAULT_DURATION_MINUTES
+    _system_actor = actor_id or tournament.organization_id
+
+    try:
+        await _do_assign(
+            session,
+            org_id=org_id,
+            actor_id=_system_actor,
+            match=next_match,
+            tournament=tournament,
+            court_id=freed_court_id,
+            scheduled_at=scheduled_at,
+            duration_minutes=duration,
+        )
+    except ValidationError:
+        return None
+
+    return next_match
 
 
 async def build_queue(

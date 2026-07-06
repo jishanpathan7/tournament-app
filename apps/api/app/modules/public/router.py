@@ -23,6 +23,7 @@ from app.core.factory import get_broadcaster, get_connection_manager, get_transp
 from app.db.models import Tournament
 from app.modules.public import service
 from app.modules.public.schemas import (
+    PlayerStatsView,
     PublicDivisionView,
     PublicOrgView,
     PublicParticipantView,
@@ -31,7 +32,10 @@ from app.modules.public.schemas import (
     PublicSubmitRegistrationRequest,
     PublicTournamentSearchResult,
     PublicTournamentView,
+    PublicVenueView,
 )
+from app.modules.scheduling import service as scheduling_service
+from app.modules.scheduling.schemas import ScheduleQueueView
 from app.modules.scoring import service as scoring_service
 from app.modules.scoring.schemas import MatchResultEventView, MatchView, StandingsView
 from app.realtime.channels import tournament_channel
@@ -49,6 +53,18 @@ def _tournament_view(tournament: Tournament, sport_key: str) -> PublicTournament
         visibility=tournament.visibility,
         starts_at=tournament.starts_at,
         ends_at=tournament.ends_at,
+        venue_name=(
+            tournament.venue.name if tournament.venue else tournament.settings.get("venue_name")
+        ),
+        venue=(
+            PublicVenueView(
+                name=tournament.venue.name,
+                address=tournament.venue.address,
+                maps_url=tournament.venue.maps_url,
+            )
+            if tournament.venue
+            else None
+        ),
         draw_published_at=tournament.draw_published_at,
         schedule_published_at=tournament.schedule_published_at,
         results_published_at=tournament.results_published_at,
@@ -171,6 +187,22 @@ async def get_participant(
     return PublicParticipantView(
         id=p.id, division_id=p.division_id, kind=p.kind, display_name=p.display_name, seed=p.seed
     )
+
+
+@router.get("/tournaments/{slug}/player-stats", response_model=PlayerStatsView)
+async def get_player_stats(
+    slug: str, session: AsyncSession = Depends(get_public_session)
+) -> PlayerStatsView:
+    tournament = await service.resolve_tournament(session, slug)
+    return await service.get_player_stats(session, tournament)
+
+
+@router.get("/tournaments/{slug}/courts", response_model=ScheduleQueueView)
+async def get_courts(
+    slug: str, session: AsyncSession = Depends(get_public_session)
+) -> ScheduleQueueView:
+    tournament = await service.resolve_tournament(session, slug)
+    return await scheduling_service.build_queue(session, tournament.organization_id, tournament.id)
 
 
 @router.get("/tournaments/{slug}/matches", response_model=list[MatchView])

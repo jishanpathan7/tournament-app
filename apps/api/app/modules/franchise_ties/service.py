@@ -26,6 +26,8 @@ from app.modules.franchise_ties.schemas import (
     FranchiseDrawSummary,
     FranchiseTiesBoardView,
     FranchiseTieView,
+    SquadStandingRow,
+    SquadStandingsView,
     TieLegView,
 )
 from app.modules.pairing import repository as pairing_repo
@@ -765,3 +767,72 @@ async def get_ties_board(
         )
 
     return FranchiseTiesBoardView(stage_id=stage_id, games_per_tie=games_per_tie, ties=views)
+
+
+async def get_squad_standings(
+    session: AsyncSession, *, org_id: uuid.UUID, stage_id: uuid.UUID
+) -> SquadStandingsView:
+    board = await get_ties_board(session, org_id=org_id, stage_id=stage_id)
+
+    # Accumulate per-squad stats from completed ties.
+    stats: dict[str, dict[str, int]] = {}
+
+    def _row(name: str) -> dict[str, int]:
+        if name not in stats:
+            stats[name] = {
+                "played": 0,
+                "won": 0,
+                "lost": 0,
+                "drawn": 0,
+                "leg_wins": 0,
+                "leg_losses": 0,
+            }
+        return stats[name]
+
+    for tie in board.ties:
+        if tie.status not in ("completed", "walkover"):
+            # still count leg wins even for in-progress ties
+            pass
+        home = _row(tie.home_squad_name)
+        away = _row(tie.away_squad_name)
+        h, a = tie.home_leg_wins, tie.away_leg_wins
+        home["leg_wins"] += h
+        home["leg_losses"] += a
+        away["leg_wins"] += a
+        away["leg_losses"] += h
+        if tie.status in ("completed", "walkover"):
+            home["played"] += 1
+            away["played"] += 1
+            if h > a:
+                home["won"] += 1
+                away["lost"] += 1
+            elif a > h:
+                away["won"] += 1
+                home["lost"] += 1
+            else:
+                home["drawn"] += 1
+                away["drawn"] += 1
+
+    # Points: 2 per win, 1 per draw, 0 per loss.
+    rows: list[SquadStandingRow] = []
+    for name, s in stats.items():
+        points = s["won"] * 2 + s["drawn"]
+        rows.append(
+            SquadStandingRow(
+                rank=0,
+                squad_name=name,
+                played=s["played"],
+                won=s["won"],
+                lost=s["lost"],
+                drawn=s["drawn"],
+                leg_wins=s["leg_wins"],
+                leg_losses=s["leg_losses"],
+                points=points,
+            )
+        )
+
+    rows.sort(key=lambda r: (-r.points, -r.leg_wins, r.squad_name))
+    for i, row in enumerate(rows):
+        row.rank = i + 1
+
+    return SquadStandingsView(stage_id=stage_id, rows=rows)

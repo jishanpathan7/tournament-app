@@ -1,12 +1,13 @@
 "use client";
 
 import type { MatchView, ParticipantResponse } from "@tournament/api-client";
-import { ArrowLeft, Check, Minus, Plus, RotateCcw } from "lucide-react";
+import { ArrowLeft, Check, Flag, Minus, Plus, RotateCcw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { MATCH_STATUS } from "@/features/draws/config";
@@ -16,6 +17,7 @@ import {
   type ScoreFormValues,
   validateScoreForm,
 } from "@/features/matches/config";
+import { rulesFromSportConfig, type BadmintonRules } from "@/features/matches/badminton-scoring";
 import * as scoringApi from "@/features/scoring/scoring-api";
 import { useScoreMatch } from "@/features/scoring/use-matches";
 import {
@@ -26,10 +28,11 @@ import { useTournament } from "@/features/tournaments/use-tournaments";
 import { ApiError, errorMessage } from "@/lib/problem";
 import { cn } from "@/lib/utils";
 
-const WINNING_SCORE = 21;
-const GAMES_TO_WIN = 2;
-
-function sideLabel(match: MatchView, side: 0 | 1, participantsById: Map<string, ParticipantResponse>) {
+function sideLabel(
+  match: MatchView,
+  side: 0 | 1,
+  participantsById: Map<string, ParticipantResponse>,
+) {
   const id = match.sides[side]?.participantId;
   return participantsById.get(id ?? "")?.displayName ?? `Side ${side + 1}`;
 }
@@ -37,6 +40,10 @@ function sideLabel(match: MatchView, side: 0 | 1, participantsById: Map<string, 
 function gamesWon(games: GameScore[], side: keyof GameScore) {
   const other: keyof GameScore = side === "a" ? "b" : "a";
   return games.filter((g) => (g[side] ?? 0) > (g[other] ?? 0)).length;
+}
+
+function majority(bestOf: number) {
+  return Math.floor(bestOf / 2) + 1;
 }
 
 function emptyLiveGame(): GameScore {
@@ -55,8 +62,7 @@ export function MobileScorekeeper({ tournamentId }: { tournamentId: string }) {
   );
 
   const scorable = useMemo(
-    () =>
-      (matches.data ?? []).filter((m) => ["scheduled", "live", "pending"].includes(m.status)),
+    () => (matches.data ?? []).filter((m) => ["scheduled", "live", "pending"].includes(m.status)),
     [matches.data],
   );
 
@@ -138,11 +144,15 @@ function MobileScorekeeperMatch({
   participantsById: Map<string, ParticipantResponse>;
   onBack: () => void;
 }) {
+  const rules: BadmintonRules = rulesFromSportConfig(match.sportConfig);
+  const gamesRequired = majority(rules.bestOf);
+
   const [completedGames, setCompletedGames] = useState<GameScore[]>([]);
   const [liveGame, setLiveGame] = useState<GameScore>(emptyLiveGame());
   const [activeGameIndex, setActiveGameIndex] = useState(0);
   const [etag, setEtag] = useState<string | null>(null);
   const [fetchingEtag, setFetchingEtag] = useState(true);
+  const [walkoverOpen, setWalkoverOpen] = useState(false);
   const score = useScoreMatch(match.id, tournamentId);
 
   useEffect(() => {
@@ -163,7 +173,7 @@ function MobileScorekeeperMatch({
   const labelB = sideLabel(match, 1, participantsById);
   const winsA = gamesWon(completedGames, "a");
   const winsB = gamesWon(completedGames, "b");
-  const matchDecided = winsA >= GAMES_TO_WIN || winsB >= GAMES_TO_WIN;
+  const matchDecided = winsA >= gamesRequired || winsB >= gamesRequired;
 
   const bump = (side: keyof GameScore, delta: number) => {
     setLiveGame((g) => {
@@ -179,8 +189,8 @@ function MobileScorekeeperMatch({
       toast.error("Enter a winner for this game.");
       return;
     }
-    if (Math.max(a, b) < WINNING_SCORE) {
-      toast.error(`A side must reach at least ${WINNING_SCORE} to finish the game.`);
+    if (Math.max(a, b) < rules.pointsToWin) {
+      toast.error(`A side must reach at least ${rules.pointsToWin} to finish the game.`);
       return;
     }
     const nextGames = [...completedGames, { a, b }];
@@ -196,6 +206,34 @@ function MobileScorekeeperMatch({
     setCompletedGames((g) => g.slice(0, -1));
     setLiveGame(restored);
     setActiveGameIndex(Math.max(0, completedGames.length - 1));
+  };
+
+  const submitWalkover = (side: 0 | 1) => {
+    score.mutate(
+      {
+        payload: buildScorePayload({
+          resultType: "walkover",
+          games: [],
+          winnerSide: side,
+          retiredSide: null,
+        }),
+        ifMatch: etag,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Walkover recorded");
+          setWalkoverOpen(false);
+          onBack();
+        },
+        onError: (err) => {
+          if (err instanceof ApiError && err.status === 412) {
+            toast.error("Score changed elsewhere — reopen this match.");
+            return;
+          }
+          toast.error(errorMessage(err));
+        },
+      },
+    );
   };
 
   const submitMatch = () => {
@@ -238,13 +276,15 @@ function MobileScorekeeperMatch({
           <p className="truncate font-semibold">
             {labelA} vs {labelB}
           </p>
-          <p className="text-muted-foreground truncate text-xs">{match.roundLabel ?? "Live match"}</p>
+          <p className="text-muted-foreground truncate text-xs">
+            {match.roundLabel ?? "Live match"}
+          </p>
         </div>
         <Badge tone="candy">Live</Badge>
       </div>
 
       <div className="flex gap-1 px-4 pt-3">
-        {[0, 1, 2].map((i) => {
+        {Array.from({ length: rules.bestOf }, (_, i) => {
           const done = completedGames[i];
           const active = i === activeGameIndex && !matchDecided;
           return (
@@ -264,8 +304,19 @@ function MobileScorekeeperMatch({
       </div>
 
       <div className="border-ink grid flex-1 grid-cols-2 border-y-2">
-        <ScoreSide label={labelA} score={liveGame.a ?? 0} onMinus={() => bump("a", -1)} onPlus={() => bump("a", 1)} accent />
-        <ScoreSide label={labelB} score={liveGame.b ?? 0} onMinus={() => bump("b", -1)} onPlus={() => bump("b", 1)} />
+        <ScoreSide
+          label={labelA}
+          score={liveGame.a ?? 0}
+          onMinus={() => bump("a", -1)}
+          onPlus={() => bump("a", 1)}
+          accent
+        />
+        <ScoreSide
+          label={labelB}
+          score={liveGame.b ?? 0}
+          onMinus={() => bump("b", -1)}
+          onPlus={() => bump("b", 1)}
+        />
       </div>
 
       <div className="flex flex-col gap-3 p-4">
@@ -288,15 +339,61 @@ function MobileScorekeeperMatch({
           </Button>
         )}
         <div className="flex gap-3">
-          <Button type="button" tone="paper" className="flex-1" onClick={undoGame} disabled={completedGames.length === 0}>
+          <Button
+            type="button"
+            tone="paper"
+            className="flex-1"
+            onClick={undoGame}
+            disabled={completedGames.length === 0}
+          >
             <RotateCcw className="h-4 w-4" />
             Undo
+          </Button>
+          <Button
+            type="button"
+            tone="pink"
+            className="flex-1"
+            onClick={() => setWalkoverOpen(true)}
+          >
+            <Flag className="h-4 w-4" />
+            Walkover
           </Button>
         </div>
         <p className="text-muted-foreground text-center font-mono text-[10px] uppercase tracking-wider">
           Saved when you complete the match
         </p>
       </div>
+
+      <Dialog open={walkoverOpen} onOpenChange={setWalkoverOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Record walkover</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            Which side wins by walkover? The other side forfeits.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button
+              tone="candy"
+              className="flex-1"
+              disabled={score.isPending}
+              onClick={() => submitWalkover(0)}
+            >
+              {score.isPending ? <Spinner className="h-4 w-4" /> : null}
+              {labelA}
+            </Button>
+            <Button
+              tone="candy"
+              className="flex-1"
+              disabled={score.isPending}
+              onClick={() => submitWalkover(1)}
+            >
+              {score.isPending ? <Spinner className="h-4 w-4" /> : null}
+              {labelB}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -333,7 +430,7 @@ function ScoreSide({
           type="button"
           aria-label={`Minus ${label}`}
           onClick={onMinus}
-          className="border-ink shadow-sticker-sm grid h-16 w-16 place-items-center rounded-full border-2 bg-card text-2xl font-bold active:translate-x-0.5 active:translate-y-0.5"
+          className="border-ink shadow-sticker-sm bg-card grid h-16 w-16 place-items-center rounded-full border-2 text-2xl font-bold active:translate-x-0.5 active:translate-y-0.5"
         >
           <Minus className="h-6 w-6" />
         </button>

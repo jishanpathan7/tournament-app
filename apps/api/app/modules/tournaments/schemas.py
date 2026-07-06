@@ -10,6 +10,7 @@ from pydantic import Field
 
 from app.api.schemas import ApiModel
 from app.db.enums import ParticipantKind, StageFormat, TournamentStatus, Visibility
+from app.modules.venues.schemas import VenueResponse
 
 
 class CreateTournamentRequest(ApiModel):
@@ -25,6 +26,9 @@ class UpdateTournamentRequest(ApiModel):
     starts_at: datetime.datetime | None = None
     ends_at: datetime.datetime | None = None
     settings: dict[str, Any] | None = None
+    auto_schedule: bool | None = None
+    venue_id: uuid.UUID | None = None
+    clear_venue: bool = False
 
 
 class StatusTransitionRequest(ApiModel):
@@ -45,6 +49,8 @@ class TournamentResponse(ApiModel):
     starts_at: datetime.datetime | None
     ends_at: datetime.datetime | None
     settings: dict[str, Any]
+    venue_name: str | None
+    venue: VenueResponse | None
     draw_published_at: datetime.datetime | None
     schedule_published_at: datetime.datetime | None
     results_published_at: datetime.datetime | None
@@ -56,6 +62,13 @@ class CreateDivisionRequest(ApiModel):
     participant_type: ParticipantKind
     capacity: int | None = Field(default=None, ge=1)
     reg_form: dict[str, Any] = Field(default_factory=dict)
+
+
+class UpdateDivisionRequest(ApiModel):
+    name: str | None = Field(default=None, min_length=1, max_length=160)
+    participant_type: ParticipantKind | None = None
+    capacity: int | None = Field(default=None, ge=1)
+    clear_capacity: bool = False
 
 
 class DivisionResponse(ApiModel):
@@ -75,6 +88,14 @@ class CreateStageRequest(ApiModel):
     points_rule_id: uuid.UUID | None = None
     tiebreak_ruleset_id: uuid.UUID | None = None
     advances_n: int | None = Field(default=None, ge=1)
+
+
+class UpdateStageConfigRequest(ApiModel):
+    """Partial sport-config override for a stage (e.g. ``{"bestOf": 1}``).
+    Only allowed before the stage is locked (first scored result). Snake_case and
+    camelCase keys are both accepted; unknown keys are ignored."""
+
+    config: dict[str, Any]
 
 
 class StageResponse(ApiModel):
@@ -105,6 +126,19 @@ class DrawResponse(ApiModel):
     matches: int
     scheduled: int  # matches ready to play (all sides known)
     pending: int  # matches awaiting bracket resolution
+
+
+class AdvanceToKnockoutRequest(ApiModel):
+    take: int = Field(ge=2, le=64, description="Number of top-ranked participants to advance")
+    rng_seed: int | None = None
+
+
+class AdvanceToKnockoutResponse(ApiModel):
+    stage_id: uuid.UUID
+    format: str
+    matches: int
+    scheduled: int
+    pending: int
 
 
 class ActivityEventView(ApiModel):

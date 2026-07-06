@@ -38,6 +38,21 @@ export function usePublicDivisions(slug: string, initialData?: PublicDivisionVie
   });
 }
 
+export function usePublicPlayerStats(slug: string) {
+  return useQuery({
+    queryKey: publicQueryKeys.playerStats(slug),
+    queryFn: () => publicApi.getPlayerStats(slug),
+  });
+}
+
+export function usePublicCourts(slug: string) {
+  return useQuery({
+    queryKey: publicQueryKeys.courts(slug),
+    queryFn: () => publicApi.getCourts(slug),
+    refetchInterval: 30_000,
+  });
+}
+
 export function usePublicStages(slug: string, initialData?: PublicStageView[]) {
   return useQuery({
     queryKey: publicQueryKeys.stages(slug),

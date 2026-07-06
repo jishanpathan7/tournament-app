@@ -2,9 +2,9 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
 import { useFieldArray, useForm } from "react-hook-form";
 
 import { PageHeader } from "@/components/common/page-header";
@@ -42,6 +42,7 @@ import {
   scheduleSchema,
 } from "@/features/tournaments/wizard-schemas";
 import { errorMessage } from "@/lib/problem";
+import { cn } from "@/lib/utils";
 
 function divisionKinds(kinds: readonly string[]): DivisionParticipantKind[] {
   return kinds.filter((k): k is DivisionParticipantKind => k !== "squad");
@@ -138,12 +139,17 @@ function BasicInfoStep({ onNext }: { onNext: () => void }) {
         <Input id="name" aria-invalid={!!errors.name} {...register("name")} />
       </Field>
       <Field
-        label="URL slug"
+        label="Your tournament's web address"
         htmlFor="slug"
         error={errors.slug?.message}
-        helper="Used in public links; lowercase letters, numbers, hyphens."
       >
         <Input id="slug" aria-invalid={!!errors.slug} {...register("slug")} />
+        {watch("slug") ? (
+          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="font-mono">{process.env.NEXT_PUBLIC_APP_URL}/t/</span>
+            <span className="font-mono font-semibold text-foreground">{watch("slug")}</span>
+          </p>
+        ) : null}
       </Field>
       <Field label="Visibility" htmlFor="visibility" error={errors.visibility?.message}>
         <Select
@@ -215,9 +221,31 @@ function SportStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
 
 // ---- step 3: format ----
 
+type PlayerRange = "small" | "medium" | "large";
+
+const PLAYER_RANGES: { key: PlayerRange; label: string; sublabel: string }[] = [
+  { key: "small",  label: "Up to 16",  sublabel: "players / pairs" },
+  { key: "medium", label: "17 – 32",   sublabel: "players / pairs" },
+  { key: "large",  label: "33 or more", sublabel: "players / pairs" },
+];
+
+function recommendedFormat(range: PlayerRange | null): string | null {
+  if (!range) return null;
+  if (range === "small") return "round_robin";
+  return "single_elim";
+}
+
+function recommendationLabel(range: PlayerRange): string {
+  if (range === "small")
+    return "Round Robin works great for smaller groups — everyone gets to play everyone.";
+  return "Single Elimination handles large fields quickly and keeps the bracket clean.";
+}
+
 function FormatStep({ onNext, onBack }: { onNext: () => void; onBack: () => void }) {
   const draft = useTournamentDraft((s) => s.draft);
   const patch = useTournamentDraft((s) => s.patch);
+  const [range, setRange] = useState<PlayerRange | null>(null);
+  const rec = recommendedFormat(range);
 
   const select = (key: string) => {
     const format = getFormat(key);
@@ -229,6 +257,39 @@ function FormatStep({ onNext, onBack }: { onNext: () => void; onBack: () => void
   return (
     <div className="flex flex-col gap-5">
       <p className="text-muted-foreground text-sm">How should matches be structured?</p>
+
+      {/* Player count picker */}
+      <div className="flex flex-col gap-2">
+        <p className="text-2xs font-mono font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+          How many players do you expect?
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {PLAYER_RANGES.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              onClick={() => setRange(r.key)}
+              className={cn(
+                "flex flex-col rounded-xl border-2 px-4 py-2 text-left transition-colors",
+                range === r.key
+                  ? "border-candy bg-candy-tint text-candy-dark"
+                  : "border-border hover:border-candy/50",
+              )}
+            >
+              <span className="text-sm font-semibold">{r.label}</span>
+              <span className="text-2xs text-muted-foreground">{r.sublabel}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Recommendation callout */}
+      {range && (
+        <p className="rounded-xl border-2 border-mint bg-mint-tint px-4 py-2.5 text-sm text-mint-dark font-medium">
+          {recommendationLabel(range)}
+        </p>
+      )}
+
       <div role="radiogroup" aria-label="Format" className="flex flex-col gap-3">
         {FORMATS.map((format) => (
           <OptionCard
@@ -239,6 +300,7 @@ function FormatStep({ onNext, onBack }: { onNext: () => void; onBack: () => void
             selected={draft.format === format.key}
             disabled={format.comingSoon}
             comingSoon={format.comingSoon}
+            recommended={rec === format.key}
             onSelect={() => select(format.key)}
           />
         ))}
@@ -442,7 +504,7 @@ function ReviewStep({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col gap-4">
       <div className="divide-border divide-y">
         <ReviewRow label="Name" value={draft.name || "—"} />
-        <ReviewRow label="Slug" value={draft.slug || "—"} />
+        <ReviewRow label="Web address" value={draft.slug ? `${process.env.NEXT_PUBLIC_APP_URL}/t/${draft.slug}` : "—"} />
         <ReviewRow label="Visibility" value={draft.visibility} />
         <ReviewRow label="Sport" value={getSport(draft.sportKey)?.label ?? draft.sportKey} />
         <ReviewRow label="Format" value={getFormat(draft.format)?.label ?? draft.format} />

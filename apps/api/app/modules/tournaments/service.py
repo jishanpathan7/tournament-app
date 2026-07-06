@@ -56,6 +56,7 @@ from app.engine import (
 )
 from app.modules.registrations import notifications as reg_notifications
 from app.modules.registrations import repository as registrations_repo
+from app.modules.scoring import repository as scoring_repo
 from app.modules.tournaments import events
 from app.modules.tournaments import repository as repo
 from app.sports.config import merge_sport_config
@@ -134,6 +135,9 @@ async def update_tournament(
     starts_at: datetime.datetime | None,
     ends_at: datetime.datetime | None,
     settings: dict[str, Any] | None,
+    auto_schedule: bool | None = None,
+    venue_id: uuid.UUID | None = None,
+    clear_venue: bool = False,
 ) -> Tournament:
     tournament = await _require_tournament(session, org_id, tournament_id)
     if name is not None:
@@ -144,6 +148,8 @@ async def update_tournament(
         tournament.starts_at = starts_at
     if ends_at is not None:
         tournament.ends_at = ends_at
+    if auto_schedule is not None:
+        tournament.settings = {**(tournament.settings or {}), "auto_schedule": auto_schedule}
     if settings is not None:
         profile = get_sport_registry().get(await _sport_key(session, tournament))
         merged = merge_sport_config(profile, tournament_settings=settings)
@@ -152,9 +158,14 @@ async def update_tournament(
         except EngineValidationError as exc:
             raise ValidationError(str(exc), code="invalid_sport_config") from exc
         tournament.settings = settings
+    if clear_venue:
+        tournament.venue_id = None
+    elif venue_id is not None:
+        tournament.venue_id = venue_id
     if tournament.starts_at and tournament.ends_at and tournament.starts_at > tournament.ends_at:
         raise ValidationError("starts_at must be on or before ends_at")
     await session.flush()
+    await session.refresh(tournament, attribute_names=["venue"])
     await _audit_event(session, org_id, actor_id, events.TOURNAMENT_UPDATED, tournament.id)
     return tournament
 
@@ -206,6 +217,23 @@ async def transition_status(
         before={"status": current.value},
         after={"status": new_status.value},
     )
+    if new_status is TournamentStatus.LIVE:
+        registrations = await registrations_repo.list_registrations_for_tournament(
+            session, org_id, tournament.id
+        )
+        approved_emails = {
+            str(r.form_response.get("email", "")).strip()
+            for r in registrations
+            if r.status == "approved" and r.form_response.get("email")
+        }
+        approved_emails.discard("")
+        if approved_emails:
+            await reg_notifications.notify_draw_published(
+                session,
+                org_id=org_id,
+                tournament=tournament,
+                recipient_emails=approved_emails,
+            )
     return tournament
 
 
@@ -300,6 +328,38 @@ async def create_division(
     return division
 
 
+async def update_division(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    division_id: uuid.UUID,
+    name: str | None,
+    participant_type: ParticipantKind | None,
+    capacity: int | None,
+    clear_capacity: bool,
+) -> Division:
+    division = await _require_division(session, org_id, division_id)
+    if name is not None:
+        division.name = name
+    if participant_type is not None:
+        tournament = await _require_tournament(session, org_id, division.tournament_id)
+        profile = get_sport_registry().get(await _sport_key(session, tournament))
+        if participant_type not in profile.supported_participant_kinds():
+            raise ValidationError(
+                f"{profile.key} does not support {participant_type.value}",
+                code="unsupported_participant_type",
+            )
+        division.participant_type = participant_type.value
+    if clear_capacity:
+        division.capacity = None
+    elif capacity is not None:
+        division.capacity = capacity
+    await session.flush()
+    await _audit_event(session, org_id, actor_id, events.DIVISION_CREATED, division.id)
+    return division
+
+
 async def create_stage(
     session: AsyncSession,
     *,
@@ -346,6 +406,43 @@ async def create_stage(
         advances_n=advances_n,
     )
     session.add(stage)
+    await session.flush()
+    await _audit_event(session, org_id, actor_id, events.STAGE_CREATED, stage.id)
+    return stage
+
+
+async def update_stage_config(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    division_id: uuid.UUID,
+    stage_id: uuid.UUID,
+    config: dict[str, Any],
+) -> Stage:
+    """Merge new sport-config keys into stage.config. Blocked once any match result exists."""
+    stage = await _require_stage(session, org_id, stage_id)
+    if stage.division_id != division_id:
+        raise NotFoundError("Stage not found in this division")
+    if await repo.stage_has_scored_matches(session, org_id, stage.id):
+        raise ConflictError(
+            "stage config is locked once a match result has been recorded",
+            code="stage_locked",
+        )
+    division = await _require_division(session, org_id, stage.division_id)
+    tournament = await _require_tournament(session, org_id, division.tournament_id)
+    profile = get_sport_registry().get(await _sport_key(session, tournament))
+    merged_config = {**(stage.config or {}), **config}
+    sport_cfg = merge_sport_config(
+        profile,
+        tournament_settings=tournament.settings or {},
+        stage_config=merged_config,
+    )
+    try:
+        profile.validate_config(sport_cfg)
+    except EngineValidationError as exc:
+        raise ValidationError(str(exc), code="invalid_sport_config") from exc
+    stage.config = merged_config
     await session.flush()
     await _audit_event(session, org_id, actor_id, events.STAGE_CREATED, stage.id)
     return stage
@@ -409,6 +506,80 @@ async def generate_draw(
     await resolve_bracket(session, org_id, stage)  # resolve byes into walkovers immediately
     await _audit_event(session, org_id, actor_id, events.STAGE_GENERATED, stage.id, after=summary)
     return stage, summary
+
+
+async def advance_to_knockout(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    source_stage_id: uuid.UUID,
+    take: int,
+    rng_seed: int | None = None,
+) -> tuple[Stage, dict[str, Any]]:
+    """Take the top-``take`` ranked participants from a completed stage's standings and
+    create + draw a new single-elimination stage in the same division."""
+    source_stage = await _require_stage(session, org_id, source_stage_id)
+    division = await _require_division(session, org_id, source_stage.division_id)
+
+    if take < 2:
+        raise ValidationError("take must be at least 2", code="invalid_take")
+
+    standings = await scoring_repo.stage_standings(session, org_id, source_stage_id)
+    ranked = sorted(
+        [s for s in standings if s.rank is not None],
+        key=lambda s: (s.rank, s.participant_id),
+    )
+    top_ids = {str(s.participant_id) for s in ranked[:take]}
+    if len(top_ids) < 2:
+        raise ValidationError(
+            "not enough ranked participants in standings — run standings first",
+            code="too_few_ranked",
+        )
+
+    participants = list(await repo.approved_participants(session, org_id, division.id))
+    ko_participants = [p for p in participants if str(p.id) in top_ids]
+    if len(ko_participants) < 2:
+        raise ValidationError(
+            "could not find participant records for top-ranked entrants",
+            code="participants_not_found",
+        )
+
+    next_seq = (source_stage.seq or 0) + 1
+    ko_stage = Stage(
+        organization_id=org_id,
+        division_id=division.id,
+        type=FormatKey.SINGLE_ELIM.value,
+        seq=next_seq,
+        config={},
+        advances_n=None,
+    )
+    session.add(ko_stage)
+    await session.flush()
+
+    if rng_seed is not None:
+        random.Random(rng_seed).shuffle(ko_participants)
+
+    refs = tuple(ParticipantRef(id=str(p.id), seed=p.seed) for p in ko_participants)
+    fmt = FormatKey.SINGLE_ELIM
+    try:
+        plan = (
+            get_format_registry()
+            .get(fmt)
+            .generate(GenerateRequest(format=fmt, participants=refs, config={}, rng_seed=None))
+        )
+    except EngineValidationError as exc:
+        raise ValidationError(str(exc), code="draw_failed") from exc
+
+    tournament = await _require_tournament(session, org_id, division.tournament_id)
+    summary = await _persist_structure(
+        session, org_id, tournament.id, ko_stage, plan, ko_participants
+    )
+    await resolve_bracket(session, org_id, ko_stage)
+    await _audit_event(
+        session, org_id, actor_id, events.STAGE_GENERATED, ko_stage.id, after=summary
+    )
+    return ko_stage, summary
 
 
 async def clear_draw(

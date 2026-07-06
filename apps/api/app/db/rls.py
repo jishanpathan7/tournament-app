@@ -92,21 +92,24 @@ def _enable_force(table: str) -> list[str]:
     ]
 
 
-def _tenant_policy(table: str) -> str:
-    # CREATE OR REPLACE POLICY is idempotent (PG 15+ which we require).
-    return (
-        f"CREATE OR REPLACE POLICY {table}_org_isolation ON {table} "
+def _tenant_policy(table: str) -> list[str]:
+    name = f"{table}_org_isolation"
+    return [
+        f"DROP POLICY IF EXISTS {name} ON {table};",
+        f"CREATE POLICY {name} ON {table} "
         f"USING (organization_id = {_ORG}) "
-        f"WITH CHECK (organization_id = {_ORG});"
-    )
+        f"WITH CHECK (organization_id = {_ORG});",
+    ]
 
 
-def _tenant_or_global_policy(table: str) -> str:
-    return (
-        f"CREATE OR REPLACE POLICY {table}_org_isolation ON {table} "
+def _tenant_or_global_policy(table: str) -> list[str]:
+    name = f"{table}_org_isolation"
+    return [
+        f"DROP POLICY IF EXISTS {name} ON {table};",
+        f"CREATE POLICY {name} ON {table} "
         f"USING (organization_id IS NULL OR organization_id = {_ORG}) "
-        f"WITH CHECK (organization_id = {_ORG});"
-    )
+        f"WITH CHECK (organization_id = {_ORG});",
+    ]
 
 
 def upgrade_statements(tables: Container[str] | None = None) -> list[str]:
@@ -127,10 +130,10 @@ def upgrade_statements(tables: Container[str] | None = None) -> list[str]:
     stmts: list[str] = []
     for table in strict:
         stmts.extend(_enable_force(table))
-        stmts.append(_tenant_policy(table))
+        stmts.extend(_tenant_policy(table))
     for table in glob:
         stmts.extend(_enable_force(table))
-        stmts.append(_tenant_or_global_policy(table))
+        stmts.extend(_tenant_or_global_policy(table))
     return stmts
 
 
@@ -151,7 +154,7 @@ def tenant_table_upgrade_statements(table: str) -> list[str]:
     migration (i.e. not part of the 0001 baseline's ``upgrade_statements()`` sweep).
     ``table`` must also be added to ``TENANT_STRICT_TABLES`` so the classification
     stays exhaustive (see ``tests/test_db_metadata.py``)."""
-    return [*_enable_force(table), _tenant_policy(table)]
+    return [*_enable_force(table), *_tenant_policy(table)]
 
 
 def tenant_table_downgrade_statements(table: str) -> list[str]:

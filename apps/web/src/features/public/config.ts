@@ -3,6 +3,7 @@ import {
   BarChart3,
   CalendarDays,
   Home,
+  LayoutGrid,
   Network,
   Radio,
   Users,
@@ -17,7 +18,7 @@ import {
  */
 
 export interface PublicTab {
-  key: "overview" | "participants" | "fixtures" | "bracket" | "standings" | "live";
+  key: "overview" | "participants" | "fixtures" | "bracket" | "standings" | "live" | "courts" | "stats";
   label: string;
   icon: LucideIcon;
 }
@@ -31,6 +32,9 @@ export const PUBLIC_TABS: PublicTab[] = [
 ];
 
 export const LIVE_TAB: PublicTab = { key: "live", label: "Live", icon: Radio };
+export const COURTS_TAB: PublicTab = { key: "courts", label: "Courts", icon: LayoutGrid };
+
+export const STATS_TAB: PublicTab = { key: "stats", label: "Stats", icon: BarChart3 };
 
 export function formatDateRange(
   startsAt: string | null,

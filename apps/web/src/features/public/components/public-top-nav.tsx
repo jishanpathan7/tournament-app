@@ -7,7 +7,7 @@ import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
-import { LIVE_TAB, PUBLIC_TABS } from "@/features/public/config";
+import { COURTS_TAB, LIVE_TAB, PUBLIC_TABS, STATS_TAB } from "@/features/public/config";
 import { cn } from "@/lib/utils";
 
 function LiveDot() {
@@ -31,7 +31,10 @@ export function PublicTopNav({
 }) {
   const pathname = usePathname();
   const base = `/t/${slug}`;
-  const tabs = tournament.status === "live" ? [...PUBLIC_TABS, LIVE_TAB] : PUBLIC_TABS;
+  const tabs =
+    tournament.status === "live"
+      ? [...PUBLIC_TABS, STATS_TAB, LIVE_TAB, COURTS_TAB]
+      : [...PUBLIC_TABS, STATS_TAB];
 
   const tabHref = (key: string) => (key === "overview" ? base : `${base}/${key}`);
 

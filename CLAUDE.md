@@ -1,6 +1,8 @@
-# CLAUDE.md — project context
+# CLAUDE.md
 
-> Auto-loaded context for Claude Code sessions. Keep it short, current, and link out to the canonical docs rather than duplicating them.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+> Keep it short and current. Link out to canonical docs rather than duplicating them.
 
 ## What this is
 
@@ -74,6 +76,53 @@ Each top-level folder has its own `README.md`. Backend modules are vertical slic
 | `docs/INTERFACES.md` | Swappable infra contracts (the free→paid seam) |
 | `Tournament-Playbook.md` | The badminton event's organizing rules + fairness engine |
 | `SIBL-Badminton-2026-Workbook.xlsx` | Live templates for running the July event |
+
+## Dev commands
+
+**Backend** (run from `apps/api`, venv active):
+```bash
+python3.13 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env          # edit DATABASE_URL if using a local DB
+uvicorn app.main:app --reload --port 8000   # http://127.0.0.1:8000/api/v1/health
+
+# Quality gate (must pass before PR)
+black --check app tests && isort --check-only app tests && flake8 app tests && mypy app && pytest
+
+# Single test
+pytest tests/path/to/test_file.py::test_name -v
+
+# Migrations
+alembic upgrade head
+alembic revision --autogenerate -m "describe change"
+```
+
+**Frontend** (run from repo root):
+```bash
+yarn install
+cp apps/web/.env.local.example apps/web/.env.local
+yarn --cwd apps/web dev        # http://localhost:3000
+
+# Quality gate
+yarn --cwd apps/web typecheck && yarn --cwd apps/web lint && yarn --cwd apps/web build
+yarn format:check
+```
+
+**Local DB** (if not using Neon):
+```bash
+# If port 5432 is already in use by a local Postgres, skip docker compose.
+createdb tournament
+# Set in apps/api/.env:
+# DATABASE_URL=postgresql+asyncpg://<your-os-user>@localhost:5432/tournament
+alembic upgrade head
+```
+
+## Known local gotchas
+
+- **`CREATE OR REPLACE POLICY` does not exist in PostgreSQL** (any version). `app/db/rls.py` uses `DROP POLICY IF EXISTS … ; CREATE POLICY …` for idempotency. Do not revert to `OR REPLACE`.
+- **Use `127.0.0.1`, not `localhost`**, for the API URL locally — Node may resolve `localhost` to IPv6 `::1` while uvicorn binds IPv4.
+- **asyncpg + prepared statements**: if connecting via Neon's pooled endpoint, add `connect_args={"statement_cache_size": 0}` to the engine. Not needed for direct connections (local dev default).
+- **Migrations always use `DIRECT_URL`** (not the pooled endpoint) — set separately in production.
 
 ## Notes for future sessions
 

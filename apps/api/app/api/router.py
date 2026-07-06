@@ -27,6 +27,7 @@ from app.modules.share_links.public_router import router as scorekeeper_public_r
 from app.modules.share_links.router import router as share_links_router
 from app.modules.squads.router import router as squads_router
 from app.modules.tournaments.router import router as tournaments_router
+from app.modules.venues.router import router as venues_router
 from app.realtime.router import router as realtime_router
 
 api_router = APIRouter(prefix=get_settings().api_v1_prefix)
@@ -50,4 +51,5 @@ api_router.include_router(scorekeeper_public_router)
 api_router.include_router(checkin_public_router)
 api_router.include_router(public_router)
 api_router.include_router(courts_router)
+api_router.include_router(venues_router)
 api_router.include_router(scheduling_router)

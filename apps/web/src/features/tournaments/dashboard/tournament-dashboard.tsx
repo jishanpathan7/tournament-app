@@ -10,6 +10,8 @@ import { AlertsPanel } from "@/features/tournaments/dashboard/components/alerts-
 import { BeforePanel } from "@/features/tournaments/dashboard/components/before-panel";
 import { DashboardStatRow } from "@/features/tournaments/dashboard/components/dashboard-stat-row";
 import { DuringPanel } from "@/features/tournaments/dashboard/components/during-panel";
+import { PhaseHeroCard } from "@/features/tournaments/dashboard/components/phase-hero-card";
+import { TournamentStepTracker } from "@/features/tournaments/dashboard/components/step-tracker";
 import { useTournamentDashboard } from "@/features/tournaments/dashboard/use-tournament-dashboard";
 import { TOURNAMENT_STATUS } from "@/features/tournaments/config";
 import { useCan } from "@/hooks/use-permissions";
@@ -40,15 +42,26 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
   const tournament = data.tournament.data;
   const statusMeta = TOURNAMENT_STATUS[tournament.status as keyof typeof TOURNAMENT_STATUS];
 
+  const showStepTracker = data.phase !== "during";
+
   return (
     <div className="flex flex-col gap-6">
       <p className="text-muted-foreground text-sm">{statusMeta.description}</p>
 
       <DashboardStatRow stats={data.stats} />
-      <AlertsPanel alerts={data.alerts} />
 
-      <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <div className="flex min-w-0 flex-col gap-6">
+          <PhaseHeroCard
+            tournamentId={tournamentId}
+            step={data.step}
+            signals={data.stepSignals}
+            canManage={canManage}
+            resultsPublishedAt={tournament.resultsPublishedAt}
+          />
+
+          <AlertsPanel alerts={data.alerts} />
+
           {data.phase === "before" ? (
             <BeforePanel tournamentId={tournamentId} data={data} canManage={canManage} />
           ) : null}
@@ -60,6 +73,9 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
           ) : null}
         </div>
         <aside className="flex min-w-0 flex-col gap-6">
+          {showStepTracker ? (
+            <TournamentStepTracker tournamentId={tournamentId} step={data.step} />
+          ) : null}
           <ActivityFeedPanel tournamentId={tournamentId} />
           <OverviewPanel tournament={tournament} />
         </aside>

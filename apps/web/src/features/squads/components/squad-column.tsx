@@ -1,12 +1,14 @@
 "use client";
 
+import { useDroppable } from "@dnd-kit/core";
 import { Crown, UserMinus } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { SquadView } from "@/features/squads/types";
+import { DraggablePlayerCard } from "@/features/squads/components/draggable-player-card";
 import { squadTint } from "@/features/squads/config";
+import type { SquadView } from "@/features/squads/types";
 import { cn } from "@/lib/utils";
 
 export function SquadColumn({
@@ -30,6 +32,8 @@ export function SquadColumn({
   const [name, setName] = useState(squad.name);
   const tint = squadTint(squad.sortOrder);
 
+  const { setNodeRef, isOver } = useDroppable({ id: squad.id });
+
   function commitRename() {
     const trimmed = name.trim();
     if (trimmed && trimmed !== squad.name) onRename(trimmed);
@@ -39,8 +43,9 @@ export function SquadColumn({
   return (
     <div
       className={cn(
-        "border-ink flex flex-col rounded-2xl border-2 shadow-sticker-xs",
+        "border-ink flex flex-col rounded-2xl border-2 shadow-sticker-xs transition-colors",
         tint,
+        isOver && "ring-candy ring-2 ring-offset-2",
         highlightAssign && canManage && "ring-candy ring-2 ring-offset-2",
       )}
     >
@@ -64,7 +69,10 @@ export function SquadColumn({
           ) : (
             <button
               type="button"
-              className={cn("font-serif text-left text-lg font-semibold", canManage && "hover:underline")}
+              className={cn(
+                "font-serif text-left text-lg font-semibold",
+                canManage && "hover:underline",
+              )}
               onClick={() => canManage && setEditing(true)}
               disabled={!canManage}
             >
@@ -82,49 +90,44 @@ export function SquadColumn({
         ) : null}
       </div>
 
-      <ul className="flex min-h-[120px] flex-1 flex-col gap-1 p-2">
+      <ul
+        ref={setNodeRef}
+        className="flex min-h-[120px] flex-1 flex-col gap-1 p-2"
+      >
         {squad.members.map((member) => {
           const isCaptain = squad.captainRegistrationId === member.registrationId;
           return (
-            <li
+            <DraggablePlayerCard
               key={member.registrationId}
-              className="bg-card/80 border-ink/10 flex items-center gap-2 rounded-xl border px-2 py-2 text-sm"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  {isCaptain ? (
-                    <Crown className="text-yellow h-3.5 w-3.5 shrink-0" strokeWidth={2.25} />
-                  ) : null}
-                  <span className="truncate font-semibold">{member.displayName}</span>
-                </div>
-                <span className="text-muted-foreground truncate text-xs">
-                  {member.divisionName}
-                  {member.skillLevel ? ` · ${member.skillLevel}` : ""}
-                </span>
-              </div>
-              {canManage ? (
-                <div className="flex shrink-0 gap-0.5">
-                  {!isCaptain ? (
+              registrationId={member.registrationId}
+              displayName={member.displayName}
+              subtitle={[member.divisionName, member.skillLevel].filter(Boolean).join(" · ")}
+              isCaptain={isCaptain}
+              actions={
+                canManage ? (
+                  <div className="flex shrink-0 gap-0.5">
+                    {!isCaptain ? (
+                      <Button
+                        tone="ghost"
+                        size="icon-sm"
+                        title="Make captain"
+                        onClick={() => onSetCaptain(member.registrationId)}
+                      >
+                        <Crown className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      </Button>
+                    ) : null}
                     <Button
                       tone="ghost"
                       size="icon-sm"
-                      title="Make captain"
-                      onClick={() => onSetCaptain(member.registrationId)}
+                      title="Remove from team"
+                      onClick={() => onRemove(member.registrationId)}
                     >
-                      <Crown className="h-3.5 w-3.5" strokeWidth={2.25} />
+                      <UserMinus className="h-3.5 w-3.5" strokeWidth={2.25} />
                     </Button>
-                  ) : null}
-                  <Button
-                    tone="ghost"
-                    size="icon-sm"
-                    title="Remove from team"
-                    onClick={() => onRemove(member.registrationId)}
-                  >
-                    <UserMinus className="h-3.5 w-3.5" strokeWidth={2.25} />
-                  </Button>
-                </div>
-              ) : null}
-            </li>
+                  </div>
+                ) : null
+              }
+            />
           );
         })}
       </ul>

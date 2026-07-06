@@ -5,12 +5,30 @@ import type { KeyboardEvent } from "react";
 import { useEffect, useRef } from "react";
 
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { matchStatusMeta } from "@/features/draws/config";
 import { courtLabel, stepFocusId } from "@/features/matches/config";
 import { getFormat } from "@/features/tournaments/config";
 import { useMatchCenterStore } from "@/stores/match-center-store";
 import { cn } from "@/lib/utils";
+
+function formatScore(match: MatchView): string | null {
+  if (match.status === "walkover" || match.status === "no_show") return "Walkover";
+  if (match.status !== "completed") return null;
+  const games = (match.resultPayload as Record<string, unknown>).games;
+  if (!Array.isArray(games) || games.length === 0) return null;
+  return (games as number[][])
+    .filter((g) => Array.isArray(g) && g.length === 2)
+    .map(([a, b]) => `${a}–${b}`)
+    .join(", ");
+}
 
 function participantNames(
   match: MatchView,
@@ -70,6 +88,7 @@ export function MatchQueueTable({
           <TableHead>Group</TableHead>
           <TableHead>Court</TableHead>
           <TableHead>Participants</TableHead>
+          <TableHead>Score</TableHead>
           <TableHead>Status</TableHead>
         </TableRow>
       </TableHeader>
@@ -98,13 +117,18 @@ export function MatchQueueTable({
               onKeyDown={(e) => onKeyDown(e, match.id)}
             >
               <TableCell className="text-muted-foreground">
-                {stage ? `${getFormat(stage.type)?.label ?? stage.type} · Stage ${stage.seq + 1}` : "—"}
+                {stage
+                  ? `${getFormat(stage.type)?.label ?? stage.type} · Stage ${stage.seq + 1}`
+                  : "—"}
               </TableCell>
               <TableCell className="text-muted-foreground">{match.roundLabel ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground">{match.groupName ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground">{courtLabel(match.courtId)}</TableCell>
               <TableCell className="font-semibold">
                 {participantNames(match, participantsById)}
+              </TableCell>
+              <TableCell className="font-mono text-sm">
+                {formatScore(match) ?? <span className="text-muted-foreground">—</span>}
               </TableCell>
               <TableCell>
                 <Badge tone={status.tone}>{status.label}</Badge>

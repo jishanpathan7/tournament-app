@@ -182,8 +182,46 @@ export function ImportWizard({
 
   if (sources.isLoading) return <Skeleton className="h-64 rounded-2xl" />;
 
+  const d = embedded
+    ? {
+        root: "flex flex-col gap-4",
+        stepBar: "flex items-center gap-2 text-sm text-white/40 select-none",
+        stepActive: "text-white font-semibold",
+        label: "text-white/70 text-xs font-mono uppercase tracking-widest",
+        uploadIcon: "text-white/40",
+        uploadText: "text-white/70",
+        dropZone: (enabled: boolean) =>
+          `flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${enabled ? "cursor-pointer hover:border-white/40 hover:bg-white/5" : "cursor-not-allowed opacity-40"} border-white/20`,
+        selectTrigger: "border-white/20 bg-white/10 text-white",
+        fieldLabel: "text-white/80",
+        infoText: "text-white/50",
+        templateBtn: "text-white/50 hover:text-white",
+        templatePill: "border-white/20 bg-white/5 text-white",
+        templateInput:
+          "border border-white/20 bg-white/10 text-white placeholder:text-white/40 rounded-xl px-3 py-1.5 text-sm flex-1 max-w-xs outline-none focus:ring-2 focus:ring-candy",
+        mapHeader: "text-sm font-medium text-white/80",
+      }
+    : {
+        root: "flex flex-col gap-6",
+        stepBar: "flex items-center gap-2 text-sm text-muted-foreground select-none",
+        stepActive: "text-ink font-semibold",
+        label: "",
+        uploadIcon: "text-muted-foreground",
+        uploadText: "text-muted-foreground",
+        dropZone: (enabled: boolean) =>
+          `flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${enabled ? "cursor-pointer hover:border-candy hover:bg-candy-tint" : "cursor-not-allowed opacity-50"} border-border`,
+        selectTrigger: "max-w-xs",
+        fieldLabel: "",
+        infoText: "text-muted-foreground",
+        templateBtn: "text-muted-foreground",
+        templatePill: "border-border",
+        templateInput:
+          "border border-border rounded-xl px-3 py-1.5 text-sm flex-1 max-w-xs outline-none focus:ring-2 focus:ring-candy",
+        mapHeader: "text-sm font-medium",
+      };
+
   return (
-    <div className={embedded ? "flex flex-col gap-4" : "flex flex-col gap-6"}>
+    <div className={d.root}>
       {!embedded ? (
         <Button asChild tone="ghost" size="sm" className="text-muted-foreground -ml-2 self-start">
           <Link href={`/console/tournaments/${tournamentId}/players`}>
@@ -202,14 +240,14 @@ export function ImportWizard({
       ) : null}
 
       {/* Steps */}
-      <div className="flex items-center gap-2 text-sm text-muted-foreground select-none">
+      <div className={d.stepBar}>
         {(["upload", "map", "preview", "done"] as Step[]).map((s, i) => (
           <span key={s} className="flex items-center gap-2">
             {i > 0 && <ChevronRight className="h-3.5 w-3.5" />}
             <span
               className={
                 step === s
-                  ? "text-ink font-semibold"
+                  ? d.stepActive
                   : i < (["upload", "map", "preview", "done"] as Step[]).indexOf(step)
                     ? "text-mint"
                     : ""
@@ -225,9 +263,9 @@ export function ImportWizard({
       {step === "upload" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label>Import source</Label>
+            <Label className={d.fieldLabel}>Import source</Label>
             <Select value={sourceKey} onValueChange={setSourceKey}>
-              <SelectTrigger className="max-w-xs">
+              <SelectTrigger className={d.selectTrigger}>
                 <SelectValue placeholder="Choose source…" />
               </SelectTrigger>
               <SelectContent>
@@ -244,23 +282,19 @@ export function ImportWizard({
             onDrop={handleDrop}
             onDragOver={(e) => e.preventDefault()}
             onClick={() => sourceKey && fileRef.current?.click()}
-            className={`flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-12 text-center transition-colors ${
-              sourceKey
-                ? "cursor-pointer hover:border-candy hover:bg-candy-tint"
-                : "cursor-not-allowed opacity-50"
-            } border-border`}
+            className={d.dropZone(!!sourceKey)}
           >
             {detecting ? (
               <Spinner />
             ) : (
               <>
-                <Upload className="h-8 w-8 text-muted-foreground" strokeWidth={1.5} />
+                <Upload className={`h-8 w-8 ${d.uploadIcon}`} strokeWidth={1.5} />
                 <div>
                   <p className="text-sm font-medium">
                     {fileName || "Drop file here or click to browse"}
                   </p>
                   {!fileName && (
-                    <p className="text-xs text-muted-foreground mt-0.5">
+                    <p className={`text-xs mt-0.5 ${d.uploadText}`}>
                       {selectedSource ? selectedSource.label : "Select a source first"}
                     </p>
                   )}
@@ -288,12 +322,12 @@ export function ImportWizard({
           {/* Saved templates */}
           {(templates.data?.length ?? 0) > 0 && (
             <div className="flex flex-col gap-2">
-              <p className="text-sm font-medium">Saved templates</p>
+              <p className={d.mapHeader}>Saved templates</p>
               <div className="flex flex-wrap gap-2">
                 {templates.data?.map((t) => (
                   <div
                     key={t.id}
-                    className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-sm"
+                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-sm ${d.templatePill}`}
                   >
                     <button
                       onClick={() => applyTemplate(t)}
@@ -319,11 +353,11 @@ export function ImportWizard({
 
           {/* Field mapping */}
           <div className="flex flex-col gap-3">
-            <p className="text-sm font-medium">Map columns → fields</p>
+            <p className={d.mapHeader}>Map columns → fields</p>
             <div className="grid gap-3 sm:grid-cols-2">
               {selectedSource.targetFields?.map((field: ImportFieldInfo) => (
                 <div key={field.key} className="flex flex-col gap-1">
-                  <Label>
+                  <Label className={d.fieldLabel}>
                     {field.label}
                     {field.required && <span className="text-pink ml-0.5">*</span>}
                   </Label>
@@ -338,7 +372,7 @@ export function ImportWizard({
                       })
                     }
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className={d.selectTrigger}>
                       <SelectValue placeholder="— not mapped —" />
                     </SelectTrigger>
                     <SelectContent>
@@ -360,7 +394,9 @@ export function ImportWizard({
               checked={updateExisting}
               onCheckedChange={(v) => setUpdateExisting(!!v)}
             />
-            <Label htmlFor="update-existing">Update existing registrations (matched by email)</Label>
+            <Label htmlFor="update-existing" className={d.fieldLabel}>
+              Update existing registrations (matched by email)
+            </Label>
           </div>
 
           {/* Save template */}
@@ -368,7 +404,7 @@ export function ImportWizard({
             {showSaveTemplate ? (
               <div className="flex items-center gap-2">
                 <input
-                  className="border border-border rounded-xl px-3 py-1.5 text-sm flex-1 max-w-xs outline-none focus:ring-2 focus:ring-candy"
+                  className={d.templateInput}
                   placeholder="Template name…"
                   value={templateName}
                   onChange={(e) => setTemplateName(e.target.value)}
@@ -397,7 +433,7 @@ export function ImportWizard({
               <Button
                 size="sm"
                 tone="ghost"
-                className="self-start text-muted-foreground"
+                className={`self-start ${d.templateBtn}`}
                 onClick={() => setShowSaveTemplate(true)}
               >
                 <BookMarked className="h-3.5 w-3.5" strokeWidth={2.25} />

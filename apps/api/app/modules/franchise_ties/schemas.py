@@ -67,3 +67,20 @@ class FranchiseTiesBoardView(ApiModel):
     stage_id: uuid.UUID
     games_per_tie: int
     ties: list[FranchiseTieView]
+
+
+class SquadStandingRow(ApiModel):
+    rank: int
+    squad_name: str
+    played: int
+    won: int
+    lost: int
+    drawn: int
+    leg_wins: int
+    leg_losses: int
+    points: int
+
+
+class SquadStandingsView(ApiModel):
+    stage_id: uuid.UUID
+    rows: list[SquadStandingRow]

@@ -39,13 +39,18 @@ export function ProposedTeamCard({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col">
-          <span className="text-2xs font-mono uppercase tracking-[0.14em] text-muted-foreground">
-            Team {index + 1}
-          </span>
+        <div className="flex flex-col gap-1">
           <span className="font-serif text-lg font-semibold tracking-tight">
-            {team.teamName ?? `Team ${index + 1}`}
+            {team.teamName ?? `Pair ${index + 1}`}
           </span>
+          {(() => {
+            const squadName = entrants.get(team.memberIds[0] ?? "")?.squadName;
+            return squadName ? (
+              <Badge tone="ink" className="w-fit text-2xs">
+                {squadName}
+              </Badge>
+            ) : null;
+          })()}
         </div>
         {canManage ? (
           <Button
