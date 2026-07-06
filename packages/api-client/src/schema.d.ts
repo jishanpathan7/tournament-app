@@ -2469,6 +2469,8 @@ export interface components {
             weight: number;
             /** Preferredpartnerid */
             preferredPartnerId: string | null;
+            /** Squadname */
+            squadName: string | null;
         };
         /** FeatureFlagResource */
         FeatureFlagResource: {

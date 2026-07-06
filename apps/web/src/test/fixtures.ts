@@ -290,6 +290,7 @@ export function makeEntrant(overrides: Partial<EntrantView> = {}): EntrantView {
     skillLevel: overrides.skillLevel ?? "intermediate",
     weight: overrides.weight ?? 2,
     preferredPartnerId: overrides.preferredPartnerId ?? null,
+    squadName: overrides.squadName ?? null,
   };
 }
 

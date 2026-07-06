@@ -71,7 +71,7 @@ export async function createDivision(
 
 export type UpdateDivisionBody = {
   name?: string;
-  participantType?: "individual" | "pair" | "team";
+  participantType?: "individual" | "pair" | "team" | "squad";
   capacity?: number;
   clearCapacity?: boolean;
 };
