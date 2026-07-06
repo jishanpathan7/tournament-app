@@ -1,7 +1,14 @@
+"use client";
+
+import { useEffect, useRef } from "react";
 import Link from "next/link";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 import { Brand } from "@/components/shell/brand";
 import { Button } from "@/components/ui/button";
+import { registerScrollTrigger } from "@/lib/motion";
+registerScrollTrigger();
 
 const NAV_ITEMS = [
   { label: "Features", href: "#features" },
@@ -11,8 +18,32 @@ const NAV_ITEMS = [
 ] as const;
 
 export function MarketingNav() {
+  const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const ctx = gsap.context(() => {
+      ScrollTrigger.create({
+        start: "top -60",
+        onUpdate(self) {
+          const progress = Math.min(self.scroll() / 120, 1);
+          gsap.set(el, {
+            boxShadow: `0 ${progress * 8}px ${progress * 24}px rgba(0,0,0,${progress * 0.08})`,
+          });
+        },
+      });
+    });
+
+    return () => ctx.revert();
+  }, []);
+
   return (
-    <header className="border-ink/10 bg-paper/90 sticky top-0 z-50 border-b backdrop-blur-md">
+    <header
+      ref={headerRef}
+      className="border-ink/10 bg-paper/90 sticky top-0 z-50 border-b backdrop-blur-md"
+    >
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 md:px-8">
         <Brand href="/" />
         <nav className="hidden items-center gap-6 md:flex" aria-label="Marketing">
