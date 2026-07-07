@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/components/ui/sonner";
 import { PUBLISH_ARTIFACTS, VISIBILITIES, getSport } from "@/features/tournaments/config";
+import { env } from "@/lib/env";
 
 function fmt(iso: string | null): string {
   return iso
@@ -31,11 +32,9 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL;
-
 async function copyLink(url: string) {
   try {
-    await navigator.clipboard.writeText(`https://${url}`);
+    await navigator.clipboard.writeText(url);
     toast.success("Link copied");
   } catch {
     toast.error("Couldn't copy");
@@ -45,9 +44,9 @@ async function copyLink(url: string) {
 async function shareLink(url: string, title: string) {
   if (navigator.share) {
     try {
-      await navigator.share({ title, url: `https://${url}` });
+      await navigator.share({ title, url });
     } catch {
-      // cancelled
+      // cancelled by user
     }
   } else {
     await copyLink(url);
@@ -59,7 +58,7 @@ export function OverviewPanel({ tournament }: { tournament: TournamentResponse }
   const sport = getSport(tournament.sportKey);
   const visibility = VISIBILITIES.find((v) => v.value === tournament.visibility);
 
-  const regUrl = `${BASE_URL}/t/${tournament.slug}/register`;
+  const regUrl = `${env.appUrl}/t/${tournament.slug}/register`;
 
   return (
     <div className="flex flex-col gap-4">

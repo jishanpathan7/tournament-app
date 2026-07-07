@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { env } from "@/lib/env";
 import {
   Select,
   SelectContent,
@@ -42,7 +43,7 @@ function WinnerShareDialog({
   tournamentName: string;
   slug: string;
 }) {
-  const url = `${process.env.NEXT_PUBLIC_APP_URL}/t/${slug}/bracket`;
+  const url = `${env.appUrl}/t/${slug}/bracket`;
   const shareText = `🏆 ${championName} wins ${divisionName} at ${tournamentName}! See the full bracket at ${url}`;
 
   const copyToClipboard = async () => {

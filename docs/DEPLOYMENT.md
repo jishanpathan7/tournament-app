@@ -32,60 +32,77 @@ Render's free web service cold-starts (~30–60s) and drops idle WebSocket/SSE c
 
 ## Environment variables
 
-### Backend (`apps/api` — set in Railway/Render)
+### Backend (`apps/api` — set in Railway)
 ```
 ENVIRONMENT=production
-APP_BASE_URL=https://api.example.com          # used for share links + QR + cookie scheme
+APP_BASE_URL=https://app.example.com          # public frontend URL (used in share links + emails)
 FRONTEND_URL=https://app.example.com
 CORS_ORIGINS=https://app.example.com
 
 # Database (Neon)
-DATABASE_URL=postgresql+asyncpg://...         # pooled, for the app
-DIRECT_URL=postgresql://...                   # direct, for Alembic migrations
+DATABASE_URL=postgresql+asyncpg://...         # pooled endpoint — used by the app at runtime
+DIRECT_URL=postgresql+asyncpg://...           # direct (non-pooled) endpoint — used by Alembic migrations
+                                              # Run migrations as: alembic upgrade head
+                                              # (migrations/env.py reads DIRECT_URL automatically)
 
 # Auth / security (cookie-based JWT)
-JWT_SECRET=...                                # signing key (rotate-able)
+JWT_SECRET=...                                # 32+ byte random secret: openssl rand -hex 32
+STORAGE_SIGNING_SECRET=...                    # separate 32+ byte secret for presigned storage URLs
+COOKIE_SECURE=true
 ACCESS_TOKEN_TTL=900                          # seconds (15 min)
 REFRESH_TOKEN_TTL=2592000                     # seconds (30 days)
-ADMIN_EMAIL=...                               # idempotent admin seed on startup
-ADMIN_PASSWORD=...
 
-# Object storage (Cloudflare R2 — S3-compatible)
-S3_ENDPOINT=https://<accountid>.r2.cloudflarestorage.com
-S3_ACCESS_KEY_ID=...
-S3_SECRET_ACCESS_KEY=...
-S3_BUCKET=tournament-prod
-S3_PUBLIC_BASE_URL=https://cdn.example.com    # public read host / image CDN
+# Object storage (Cloudflare R2)
+R2_ACCOUNT_ID=...
+R2_ACCESS_KEY_ID=...
+R2_SECRET_ACCESS_KEY=...
+R2_BUCKET=playlane-prod
+R2_PUBLIC_BASE_URL=https://cdn.example.com    # public bucket URL or custom CDN domain
 
 # Email (Resend)
 RESEND_API_KEY=...
-EMAIL_FROM="SIBL Badminton <noreply@example.com>"
+EMAIL_FROM="Playlane <noreply@example.com>"
+
+# Workers (set false on API replicas if running more than one instance)
+WORKER_ENABLED=true
 
 # Observability
 SENTRY_DSN=...
 
-# --- Added only when scaling past one instance ---
-# REDIS_URL=rediss://...                       # Upstash
-# REALTIME_PROVIDER=ably|pusher                # managed realtime
-# ABLY_API_KEY=... / PUSHER_APP_ID=... etc.
+# ── Added only when scaling past one instance ──────────────────────────────
+# REDIS_URL=rediss://...                       # Upstash — enables distributed throttle/pubsub/cache
 ```
 
 ### Frontend (`apps/web` — set in Vercel)
+
+The recommended pattern is **same-origin proxy**: the Vercel frontend proxies
+`/api/v1/*` to the Railway backend via Next.js rewrites. This means auth cookies
+work at the same origin with no `COOKIE_DOMAIN` or CORS complexity.
+
 ```
-NEXT_PUBLIC_API_URL=https://api.example.com
+# Leave empty — frontend uses same-origin /api/v1 proxy (next.config.mjs rewrite)
+NEXT_PUBLIC_API_URL=
+
+# Internal Railway URL for Server Components / SSR to reach the API directly.
+# Use Railway's private networking URL (e.g. https://api.railway.internal).
+API_INTERNAL_URL=https://your-service.railway.internal
+
+# Public app URL — used for OG metadata, share links, tournament registration URLs.
 NEXT_PUBLIC_APP_URL=https://app.example.com
+
+# Frontend error tracking
 NEXT_PUBLIC_SENTRY_DSN=...
 ```
 
 ## Deploy order
 
-1. **Neon** — create project, copy `DATABASE_URL` + `DIRECT_URL`.
-2. **Cloudflare R2** — create bucket, API token, optional public domain → S3 vars.
-3. **Resend** — verify sending domain, create API key.
-4. **Backend (Railway/Render)** — deploy `apps/api` container (`railway.toml`: bind `$PORT`, healthcheck `GET /api/v1/health`); set env; run Alembic migrations (`DIRECT_URL`); the in-process outbox/worker loop starts with the app.
-5. **Vercel** — import `apps/web`; set `NEXT_PUBLIC_*`; deploy.
-6. **DNS** — `app.*` → Vercel, `api.*` → Railway/Render, `cdn.*` → R2.
-7. **Sentry + UptimeRobot** — wire DSNs; add keep-alive ping if on Render.
+1. **Neon** — create project, copy the pooled URL as `DATABASE_URL` and the direct URL as `DIRECT_URL`.
+2. **Cloudflare R2** — create bucket, generate API token (`Object Read & Write`), optional public domain → set `R2_*` vars.
+3. **Resend** — verify sending domain (SPF/DKIM/DMARC), create API key.
+4. **Backend (Railway)** — deploy `apps/api` (nixpacks auto-detects Python); set all env vars from the table above; run migrations once: `alembic upgrade head` (reads `DIRECT_URL`); the in-process outbox/worker loop starts automatically with the app.
+5. **Vercel** — import `apps/web`; set `API_INTERNAL_URL` to Railway's private URL, `NEXT_PUBLIC_APP_URL`, `NEXT_PUBLIC_SENTRY_DSN`; leave `NEXT_PUBLIC_API_URL` empty.
+6. **DNS** — `app.*` → Vercel; `cdn.*` → R2 public bucket (no separate `api.*` needed with same-origin proxy).
+7. **Sentry + UptimeRobot** — wire DSNs; add keep-alive ping if on Render (Railway Hobby has no spin-down).
 
 ## Database connection & RLS notes (read before going live)
 

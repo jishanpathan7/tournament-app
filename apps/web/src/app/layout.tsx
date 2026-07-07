@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 
 import { Providers } from "@/components/providers";
+import { env } from "@/lib/env";
 import { SITE } from "@/lib/site";
 
 import "./globals.css";
@@ -11,7 +12,7 @@ const serif = Fraunces({ subsets: ["latin"], variable: "--font-serif", display: 
 const mono = JetBrains_Mono({ subsets: ["latin"], variable: "--font-mono", display: "swap" });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(env.appUrl),
   title: {
     default: SITE.name,
     template: SITE.titleTemplate,
