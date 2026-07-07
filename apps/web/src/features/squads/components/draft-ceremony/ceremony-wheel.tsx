@@ -6,14 +6,14 @@ import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import type { UnassignedRegistrationView } from "@/features/squads/types";
 
 const WHEEL_COLORS = [
-  "#4F6BF6", // Cobalt
-  "#34D399", // Mint
-  "#F43F5E", // Rose
-  "#FBBF24", // Amber
-  "#F472B6", // Pink
-  "#FB923C", // Orange
-  "#A78BFA", // Violet
-  "#22D3EE", // Cyan
+  "#4f6bf6", // --candy
+  "#34d399", // --mint
+  "#fbbf24", // --yellow
+  "#f472b6", // --pink
+  "#3a4fd8", // --candy-dark
+  "#10b981", // --mint-dark
+  "#9db0fb", // --candy-ink
+  "#db2777", // --pink-dark
 ];
 
 function segColor(i: number) {
@@ -268,14 +268,14 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                 <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.8" />
               </filter>
               <radialGradient id="hub-grad" cx="50%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#6B8AFB" />
-                <stop offset="100%" stopColor="#3A57E0" />
+                <stop offset="0%" stopColor="#9db0fb" />
+                <stop offset="100%" stopColor="#3a4fd8" />
               </radialGradient>
             </defs>
 
             <g filter="url(#wheel-drop)">
               {n === 0 ? (
-                <circle cx={CX} cy={CY} r={R} fill="#1C2A44" />
+                <circle cx={CX} cy={CY} r={R} fill="#28324a" />
               ) : (
                 players.map((player, i) => {
                   const start = i * segAngle;
@@ -289,7 +289,7 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                       <path
                         d={segmentPath(start, end)}
                         fill={color}
-                        stroke="#0B1120"
+                        stroke="#1e293b"
                         strokeWidth={2.5}
                         opacity={isHL ? 1 : highlightIndex !== null ? 0.55 : 0.9}
                         style={{ transition: "opacity 0.3s ease" }}
@@ -323,7 +323,7 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
               )}
 
               {/* Outer rim */}
-              <circle cx={CX} cy={CY} r={R}     fill="none" stroke="#0B1120" strokeWidth={4} />
+              <circle cx={CX} cy={CY} r={R}     fill="none" stroke="#1e293b" strokeWidth={4} />
               {/* Inner ring accent */}
               <circle cx={CX} cy={CY} r={HUB+2} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
               {/* Hub */}

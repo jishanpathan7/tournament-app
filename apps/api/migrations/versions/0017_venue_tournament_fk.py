@@ -17,16 +17,15 @@ depends_on = None
 
 
 def upgrade() -> None:
-    op.add_column("venues", sa.Column("maps_url", sa.Text(), nullable=True))
-    op.add_column(
-        "tournaments",
-        sa.Column(
-            "venue_id",
-            sa.dialects.postgresql.UUID(as_uuid=True),
-            sa.ForeignKey("venues.id", ondelete="SET NULL"),
-            nullable=True,
-            index=True,
-        ),
+    # 0001_initial_schema builds tables from live ORM metadata, so on a fresh DB
+    # these columns already exist. Use IF NOT EXISTS for idempotency.
+    op.execute("ALTER TABLE venues ADD COLUMN IF NOT EXISTS maps_url TEXT")
+    op.execute(
+        "ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS"
+        " venue_id UUID REFERENCES venues(id) ON DELETE SET NULL"
+    )
+    op.execute(
+        "CREATE INDEX IF NOT EXISTS ix_tournaments_venue_id ON tournaments(venue_id)"
     )
 
 

@@ -14,14 +14,21 @@ import type { SquadView, UnassignedRegistrationView } from "@/features/squads/ty
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const VICTORY_SOUND_URL = "/sounds/victory-fanfare.mp3";
-const BG = "#0B1120";
-const BG_SIDEBAR = "#111827";
+const BG = "#1e293b";         // --foreground (dark surface)
+const BG_SIDEBAR = "#28324a"; // --ink-2 (raised panel on dark)
 
+// Only design-token colors — candy / mint / yellow / pink + their variants
 const SQUAD_ACCENTS = [
-  "#4F6BF6", "#34D399", "#F43F5E", "#FBBF24",
-  "#F472B6", "#FB923C", "#A78BFA", "#22D3EE",
+  "#4f6bf6", // --candy
+  "#34d399", // --mint
+  "#fbbf24", // --yellow
+  "#f472b6", // --pink
+  "#3a4fd8", // --candy-dark
+  "#10b981", // --mint-dark
+  "#9db0fb", // --candy-ink
+  "#db2777", // --pink-dark
 ];
-const CONFETTI_COLORS = ["#4F6BF6", "#34D399", "#F43F5E", "#FBBF24", "#F472B6", "#FB923C", "#FFFDF5"];
+const CONFETTI_COLORS = ["#4f6bf6", "#34d399", "#fbbf24", "#f472b6", "#9db0fb", "#fffdf5"];
 
 function squadAccent(i: number) { return SQUAD_ACCENTS[i % SQUAD_ACCENTS.length]!; }
 
@@ -173,7 +180,7 @@ function RevealOverlay({
         ref={cardRef}
         className="flex flex-col items-center gap-4 rounded-3xl px-14 py-10 text-center shadow-2xl backdrop-blur-md"
         style={{
-          background: `linear-gradient(135deg, ${info.squadColor}22 0%, #1E293B/95 100%)`,
+          background: `linear-gradient(135deg, ${info.squadColor}22 0%, rgba(30,41,59,0.95) 100%)`,
           border: `2px solid ${info.squadColor}55`,
           boxShadow: `0 0 60px ${info.squadColor}33, 0 20px 60px rgba(0,0,0,0.6)`,
         }}
@@ -448,7 +455,7 @@ function SpinButton({
       style={{
         background: disabled
           ? "rgba(255,255,255,0.12)"
-          : "linear-gradient(135deg, #4F6BF6 0%, #6B8AFB 100%)",
+          : "linear-gradient(135deg, #4f6bf6 0%, #9db0fb 100%)",
         boxShadow: disabled ? "none" : "0 8px 32px rgba(79,107,246,0.4)",
       }}
     >
@@ -531,7 +538,7 @@ function IntroScreen({
           onClick={onStart}
           className="intro-item mt-2 flex h-14 items-center gap-3 rounded-full px-10 text-lg font-black text-white shadow-2xl transition-transform hover:scale-[1.03] active:scale-[0.98]"
           style={{
-            background: "linear-gradient(135deg, #4F6BF6 0%, #6B8AFB 100%)",
+            background: "linear-gradient(135deg, #4f6bf6 0%, #9db0fb 100%)",
             boxShadow: "0 12px 40px rgba(79,107,246,0.45)",
           }}
         >
@@ -658,7 +665,7 @@ function CompletionScreen({
             <Link
               href={`/console/tournaments/${tournamentId}/draws`}
               className="flex h-10 items-center gap-2 rounded-full px-6 text-sm font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #4F6BF6 0%, #6B8AFB 100%)" }}
+              style={{ background: "linear-gradient(135deg, #4f6bf6 0%, #9db0fb 100%)" }}
             >
               <Trophy className="h-4 w-4" />
               Continue to Draws
