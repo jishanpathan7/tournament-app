@@ -3,14 +3,14 @@
 import asyncio
 import os
 from logging.config import fileConfig
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from alembic import context
 from sqlalchemy.ext.asyncio import create_async_engine
 
+import app.db.models  # noqa: F401  # registers all tables on Base.metadata
 from app.core.config import get_settings
 from app.db.base import Base
-
-import app.db.models  # noqa: F401  # registers all tables on Base.metadata
 
 config = context.config
 if config.config_file_name:
@@ -21,27 +21,37 @@ target_metadata = Base.metadata
 _LOCAL_DEFAULT = "postgresql+asyncpg://tournament:tournament@localhost:5432/tournament"
 
 
-def _url() -> str:
-    """Return the migration connection URL.
+def _url() -> tuple[str, dict]:
+    """Return (clean_url, connect_args) for the migration engine.
 
-    Migrations must run against the **direct** (non-pooled) Neon endpoint
-    to avoid PgBouncer prepared-statement conflicts.  Set ``DIRECT_URL`` in
-    production (Railway env); the app's pooled ``DATABASE_URL`` is used as a
-    fallback in dev/CI where a connection pooler is not in the path.
+    Migrations run against the **direct** (non-pooled) Neon endpoint to avoid
+    PgBouncer prepared-statement conflicts.  Set ``DIRECT_URL`` in Railway;
+    ``DATABASE_URL`` is the fallback in dev/CI.
 
-    Neon direct URLs use the ``postgresql://`` scheme; we normalise to
-    ``postgresql+asyncpg://`` so SQLAlchemy's async engine accepts them.
+    Neon URLs include libpq params (``sslmode``, ``channel_binding``) that
+    asyncpg rejects.  We strip them and translate sslmode → ssl connect_arg.
     """
     url = os.environ.get("DIRECT_URL") or get_settings().database_url or _LOCAL_DEFAULT
-    # Normalise bare postgresql:// → postgresql+asyncpg:// for the async engine.
     if url.startswith("postgresql://"):
-        url = "postgresql+asyncpg://" + url[len("postgresql://"):]
-    return url
+        url = "postgresql+asyncpg://" + url[len("postgresql://") :]
+
+    parsed = urlparse(url)
+    params = parse_qs(parsed.query, keep_blank_values=True)
+    sslmode = params.pop("sslmode", ["disable"])[0]
+    params.pop("channel_binding", None)
+    clean_url = urlunparse(parsed._replace(query=urlencode({k: v[0] for k, v in params.items()})))
+
+    connect_args: dict = {"statement_cache_size": 0}
+    if sslmode in {"require", "verify-ca", "verify-full"}:
+        connect_args["ssl"] = True
+
+    return clean_url, connect_args
 
 
 def run_migrations_offline() -> None:
+    clean_url, _ = _url()
     context.configure(
-        url=_url(),
+        url=clean_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
@@ -58,7 +68,8 @@ def _do_run_migrations(connection) -> None:
 
 
 async def run_migrations_online() -> None:
-    engine = create_async_engine(_url())
+    clean_url, connect_args = _url()
+    engine = create_async_engine(clean_url, connect_args=connect_args)
     async with engine.connect() as connection:
         await connection.run_sync(_do_run_migrations)
     await engine.dispose()
