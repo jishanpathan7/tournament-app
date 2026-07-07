@@ -13,12 +13,13 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
 from app.api.deps import get_public_session
 from app.core.config import get_settings
+from app.core.limiter import limiter
 from app.core.factory import get_broadcaster, get_connection_manager, get_transport
 from app.db.models import Tournament
 from app.modules.public import service
@@ -77,7 +78,9 @@ def _tournament_view(tournament: Tournament, sport_key: str) -> PublicTournament
 
 
 @router.get("/search", response_model=list[PublicTournamentSearchResult])
+@limiter.limit("30/minute")
 async def search_tournaments(
+    request: Request,
     q: str = Query(..., min_length=1, max_length=200),
     session: AsyncSession = Depends(get_public_session),
 ) -> list[PublicTournamentSearchResult]:
@@ -123,10 +126,12 @@ async def list_divisions(
     response_model=PublicRegistrationSubmittedView,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("5/minute")
 async def submit_registration(
     slug: str,
     division_id: uuid.UUID,
     body: PublicSubmitRegistrationRequest,
+    request: Request,
     session: AsyncSession = Depends(get_public_session),
 ) -> PublicRegistrationSubmittedView:
     tournament = await service.resolve_tournament(session, slug)

@@ -6,6 +6,7 @@
 fastapi>=0.115.0
 uvicorn>=0.30.0
 python-multipart>=0.0.9
+slowapi>=0.1.9             # HTTP rate limiting (in-memory at MVP; swap to Redis storage later)
 
 # Validation / models / config
 pydantic>=2.9.0

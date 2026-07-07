@@ -13,6 +13,7 @@ import logging
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from slowapi.errors import RateLimitExceeded as SlowAPIRateLimitExceeded
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.schemas import ApiModel
@@ -131,6 +132,16 @@ def _problem(
 
 
 def register_exception_handlers(app: FastAPI) -> None:
+    @app.exception_handler(SlowAPIRateLimitExceeded)
+    async def _rate_limited(request: Request, exc: SlowAPIRateLimitExceeded) -> JSONResponse:
+        return _problem(
+            request,
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "Too Many Requests",
+            detail=str(exc.detail),
+            code="rate_limited",
+        )
+
     @app.exception_handler(AppError)
     async def _app_error(request: Request, exc: AppError) -> JSONResponse:
         return _problem(

@@ -22,6 +22,7 @@ from app.core import oauth, security
 from app.core.config import Settings, get_settings
 from app.core.db import get_session
 from app.core.factory import get_email_channel, get_login_throttle
+from app.core.limiter import limiter
 from app.core.ports import EmailChannel, LoginThrottle
 from app.modules.auth import repository as repo
 from app.modules.auth import service
@@ -62,6 +63,7 @@ def _apply_bundle(response: Response, request: Request, bundle: service.TokenBun
 
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/minute")
 async def register(
     body: RegisterRequest,
     request: Request,
@@ -87,6 +89,7 @@ async def register(
 
 
 @router.post("/login")
+@limiter.limit("20/minute")
 async def login(
     body: LoginRequest,
     request: Request,
@@ -206,15 +209,20 @@ async def request_email_verification(
 
 
 @router.post("/verify-email/confirm", status_code=status.HTTP_204_NO_CONTENT)
+@limiter.limit("10/minute")
 async def confirm_email(
-    body: VerifyEmailConfirmRequest, session: AsyncSession = Depends(get_tx_session)
+    body: VerifyEmailConfirmRequest,
+    request: Request,
+    session: AsyncSession = Depends(get_tx_session),
 ) -> None:
     await service.confirm_email(session, raw_token=body.token)
 
 
 @router.post("/password-reset/request", status_code=status.HTTP_202_ACCEPTED)
+@limiter.limit("5/minute")
 async def request_password_reset(
     body: PasswordResetRequest,
+    request: Request,
     session: AsyncSession = Depends(get_tx_session),
     email_channel: EmailChannel = Depends(get_email_channel),
 ) -> None:

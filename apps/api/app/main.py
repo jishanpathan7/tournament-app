@@ -8,6 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
+from slowapi.middleware import SlowAPIMiddleware
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.api import api_router
@@ -15,6 +16,7 @@ from app.api.errors import register_exception_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.core.config import get_settings
 from app.core.db import check_rls_enforcement
+from app.core.limiter import limiter
 from app.core.logging import configure_logging
 
 logger = logging.getLogger("app")
@@ -67,7 +69,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
         generate_unique_id_function=_operation_id,
     )
+    app.state.limiter = limiter
     register_exception_handlers(app)
+    app.add_middleware(SlowAPIMiddleware)
     # Honour X-Forwarded-For / X-Real-IP set by Railway/Render's load balancer so
     # the login throttle and audit logs see the actual client IP, not the proxy.
     # trusted_hosts="*" is safe here: Railway terminates TLS and strips/rewrites
