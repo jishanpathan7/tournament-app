@@ -145,7 +145,11 @@ async def get_active_run(
     division_id: uuid.UUID,
     squad_id: uuid.UUID | None = None,
 ) -> PairingRun | None:
-    """The current draft run for a division (or a specific squad within it)."""
+    """The current *draft* run for a division (or squad within it).
+
+    Used by generate / swap / publish — callers that need a mutable run.
+    For read-only display (GET endpoint) use ``get_current_run`` instead.
+    """
     stmt = (
         select(PairingRun)
         .where(
@@ -158,18 +162,64 @@ async def get_active_run(
     )
     runs = (await session.execute(stmt)).scalars().all()
     if squad_id is None:
-        # Division-wide run: config has no squadId key.
         return next((r for r in runs if not (r.config or {}).get("squadId")), None)
     target = str(squad_id)
     return next((r for r in runs if (r.config or {}).get("squadId") == target), None)
 
 
-async def get_run(session: AsyncSession, org_id: uuid.UUID, run_id: uuid.UUID) -> PairingRun | None:
+async def get_current_run(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    division_id: uuid.UUID,
+    squad_id: uuid.UUID | None = None,
+) -> PairingRun | None:
+    """Draft-first, published-fallback run for a division (or squad).
+
+    Returns the active draft when one exists; otherwise returns the most-recent published
+    run for the same scope.  This lets the GET endpoint surface the "N pairs locked"
+    state without a separate endpoint — while ``get_active_run`` (draft-only) stays safe
+    for generate/edit flows that would otherwise discard a published run.
+    """
+    stmt = (
+        select(PairingRun)
+        .where(
+            PairingRun.division_id == division_id,
+            PairingRun.organization_id == org_id,
+            PairingRun.status.in_([PairingRunStatus.DRAFT.value, PairingRunStatus.PUBLISHED.value]),
+        )
+        .options(selectinload(PairingRun.proposed_teams))
+        .order_by(PairingRun.created_at.desc())
+    )
+    runs = list((await session.execute(stmt)).scalars().all())
+
+    if squad_id is None:
+        scoped = [r for r in runs if not (r.config or {}).get("squadId")]
+    else:
+        target = str(squad_id)
+        scoped = [r for r in runs if (r.config or {}).get("squadId") == target]
+
+    draft = next((r for r in scoped if r.status == PairingRunStatus.DRAFT.value), None)
+    return (
+        draft
+        if draft is not None
+        else next((r for r in scoped if r.status == PairingRunStatus.PUBLISHED.value), None)
+    )
+
+
+async def get_run(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    run_id: uuid.UUID,
+    *,
+    for_update: bool = False,
+) -> PairingRun | None:
     stmt = (
         select(PairingRun)
         .where(PairingRun.id == run_id, PairingRun.organization_id == org_id)
         .options(selectinload(PairingRun.proposed_teams))
     )
+    if for_update:
+        stmt = stmt.with_for_update()
     return (await session.execute(stmt)).scalar_one_or_none()
 
 

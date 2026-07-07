@@ -85,8 +85,16 @@ async def list_participants_for_tournament(
     return (await session.execute(stmt)).scalars().all()
 
 
-async def get_division(session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID) -> Division | None:
+async def get_division(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    did: uuid.UUID,
+    *,
+    for_update: bool = False,
+) -> Division | None:
     stmt = select(Division).where(Division.id == did, Division.organization_id == org_id)
+    if for_update:
+        stmt = stmt.with_for_update()
     return (await session.execute(stmt)).scalar_one_or_none()
 
 

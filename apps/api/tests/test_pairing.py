@@ -263,9 +263,12 @@ async def test_publish_materializes_pair_participants(app, client):
     assert len(roster_names) == 2
     assert roster_names <= {"Adv One", "Adv Two", "Int One", "Int Two", "Beg One", "Beg Two"}
 
-    # The run is published and no longer the active draft.
+    # After publishing, GET /pairing returns the published run (draft-first,
+    # published-fallback) so the UI can show "N pairs locked".  There is no
+    # active draft, so status must be "published" and not "draft".
     active = await client.get(f"/api/v1/divisions/{did}/pairing")
-    assert active.json() is None
+    assert active.json() is not None
+    assert active.json()["status"] == "published"
 
 
 async def test_cannot_edit_a_published_run(app, client):

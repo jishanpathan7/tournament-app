@@ -21,7 +21,7 @@ from app.api.deps import (
     get_tx_session,
     require_permission,
 )
-from app.api.errors import NotFoundError
+from app.api.errors import NotFoundError, PermissionDeniedError
 from app.core import authz, security
 from app.core.config import Settings, get_settings
 from app.core.db import get_session
@@ -143,8 +143,14 @@ async def accept_invite(
     current: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_tx_session),
 ) -> MeResponse:
+    current_user = await auth_repo.get_user_by_id(session, current.user_id)
+    if current_user is None:
+        raise PermissionDeniedError("User not found")
     org, membership = await service.accept_invite(
-        session, user_id=current.user_id, raw_token=body.token
+        session,
+        user_id=current.user_id,
+        raw_token=body.token,
+        current_email=current_user.email,
     )
     role = OrgRole(membership.org_role)
     _remint(response, request, current, org.id, role)

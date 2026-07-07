@@ -1,9 +1,38 @@
 /** @type {import('next').NextConfig} */
 const apiProxyTarget = process.env.API_INTERNAL_URL ?? "http://127.0.0.1:8000";
+const isProd = process.env.NODE_ENV === "production";
+
+/**
+ * Content-Security-Policy.
+ *
+ * 'unsafe-inline' is included for style-src because Tailwind/shadcn inject
+ * inline styles at runtime.  script-src stays without it — all JS is bundled
+ * by Next.js and served from 'self'.  'unsafe-eval' is excluded; Next.js does
+ * not require it in production.
+ *
+ * In development we allow ws: and http: for HMR.
+ */
+const CSP_DIRECTIVES = [
+  "default-src 'self'",
+  "script-src 'self'",
+  // Tailwind/shadcn use inline styles; strict-dynamic is not compatible with class-based CSS.
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: https:",
+  "font-src 'self' data:",
+  // API is same-origin in production (proxied). Allow ws: in dev for HMR.
+  isProd ? "connect-src 'self'" : "connect-src 'self' ws: http: https:",
+  "frame-ancestors 'none'",
+  "form-action 'self'",
+  "base-uri 'self'",
+  "object-src 'none'",
+  "upgrade-insecure-requests",
+]
+  .join("; ")
+  .trim();
 
 /** Strict security headers applied to every route. */
 const SECURITY_HEADERS = [
-  // Prevent framing (clickjacking).
+  // Prevent framing (clickjacking) — belt-and-suspenders with CSP frame-ancestors.
   { key: "X-Frame-Options", value: "DENY" },
   // Disable MIME sniffing.
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -11,6 +40,11 @@ const SECURITY_HEADERS = [
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   // Disable unnecessary browser features.
   { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+  // HSTS — only set in production; 1 year with includeSubDomains.
+  ...(isProd
+    ? [{ key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" }]
+    : []),
+  { key: "Content-Security-Policy", value: CSP_DIRECTIVES },
 ];
 
 /** Extra-strict Referrer-Policy for capability-token pages (scorekeeper, check-in, invite, verify).

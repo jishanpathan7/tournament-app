@@ -85,7 +85,9 @@ async def approve_registration(
     registration = await _require_registration(session, org_id, registration_id)
     if registration.status not in _APPROVABLE:
         raise ConflictError(f"registration is {registration.status}, cannot approve")
-    division = await _require_division(session, org_id, registration.division_id)
+    # Lock the division row so concurrent approve calls cannot both see capacity
+    # as available and both approve past the limit.
+    division = await _require_division(session, org_id, registration.division_id, for_update=True)
 
     # Capacity → waitlist instead of approve.
     if division.capacity is not None:
@@ -347,8 +349,10 @@ async def _require_registration(
     return registration
 
 
-async def _require_division(session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID) -> Any:
-    division = await repo.get_division(session, org_id, did)
+async def _require_division(
+    session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID, *, for_update: bool = False
+) -> Any:
+    division = await repo.get_division(session, org_id, did, for_update=for_update)
     if division is None:
         raise NotFoundError("Division not found")
     return division
