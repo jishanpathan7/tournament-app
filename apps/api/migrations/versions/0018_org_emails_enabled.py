@@ -4,8 +4,8 @@ Adds a Boolean kill-switch column so an organizer can disable all outbound
 email notifications for their account and tournaments in one toggle.
 Defaults to TRUE so no existing org is affected by this migration.
 
-Revision ID: 0017_org_emails_enabled
-Revises: 0016_franchise_ties
+Revision ID: 0018_org_emails_enabled
+Revises: 0017_venue_tournament_fk
 Create Date: 2026-07-07
 """
 
@@ -13,8 +13,8 @@ from __future__ import annotations
 
 from alembic import op
 
-revision = "0017_org_emails_enabled"
-down_revision = "0016_franchise_ties"
+revision = "0018_org_emails_enabled"
+down_revision = "0017_venue_tournament_fk"
 branch_labels = None
 depends_on = None
 
