@@ -95,24 +95,34 @@ async def squad_pair_map(
     division_id: uuid.UUID,
     tournament_id: uuid.UUID,
 ) -> dict[uuid.UUID, list[Participant]]:
-    """Map squad_id → ordered pair participants (from published pairing run)."""
-    run = await pairing_repo.get_latest_published_run(session, org_id, division_id)
-    if run is None:
+    """Map squad_id → ordered pair participants (from published pairing runs).
+
+    Supports both division-wide pairing (single run) and squad-scoped pairing
+    (one run per squad, produced by Gap A squad-scoped pairing engine).
+    """
+    runs = await pairing_repo.list_all_published_runs(session, org_id, division_id)
+    if not runs:
         raise ValidationError(
             "publish doubles pairings before generating franchise ties",
             code="pairing_not_published",
         )
     membership = await squad_repo.squad_membership_by_registration(session, org_id, tournament_id)
-    proposed = sorted(run.proposed_teams, key=lambda t: (t.created_at, str(t.id)))
+
+    # Aggregate proposed_teams across all runs, preserving global creation order so
+    # the zip against list_approved_pair_participants (also ordered by created_at) holds.
+    all_proposed = sorted(
+        (t for run in runs for t in run.proposed_teams),
+        key=lambda t: (t.created_at, str(t.id)),
+    )
     pairs = list(await repo.list_approved_pair_participants(session, org_id, division_id))
-    if len(proposed) != len(pairs):
+    if len(all_proposed) != len(pairs):
         raise ValidationError(
             "published pairing count does not match pair participants — regenerate pairing",
             code="pairing_mismatch",
         )
 
     squad_pairs: dict[uuid.UUID, list[Participant]] = defaultdict(list)
-    for pt, pair in zip(proposed, pairs, strict=True):
+    for pt, pair in zip(all_proposed, pairs, strict=True):
         reg_ids = [uuid.UUID(str(r)) for r in (pt.member_ids or [])]
         squad_ids = {membership[r] for r in reg_ids if r in membership}
         if len(squad_ids) != 1:

@@ -9,6 +9,8 @@ import { LoadingPanel } from "@/components/common/loading";
 import { PageHeader } from "@/components/common/page-header";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { FranchiseTiesPage } from "@/features/franchise-ties/components/franchise-ties-board";
+import { useSquads } from "@/features/squads/use-squads";
 import { useDivisions, useStages } from "@/features/tournaments/use-tournaments";
 
 function StageRow({
@@ -98,9 +100,36 @@ function DivisionDrawCard({
 
 export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
   const { data: divisions, isLoading, isError, refetch } = useDivisions(tournamentId);
+  const squads = useSquads(tournamentId);
+  const isTeamFormat = (squads.data?.summary.squadCount ?? 0) > 0;
 
-  if (isLoading) return <LoadingPanel label="Loading draws" />;
+  if (isLoading || squads.isLoading) return <LoadingPanel label="Loading draws" />;
   if (isError) return <ErrorState onRetry={() => refetch()} />;
+
+  // Team format: primary section is the team draw (squad round-robin + knockout).
+  // Standard division draw stages are still shown below for reference.
+  if (isTeamFormat) {
+    return (
+      <div className="flex flex-col gap-10">
+        <FranchiseTiesPage tournamentId={tournamentId} />
+        {divisions && divisions.length > 0 && (
+          <section className="flex flex-col gap-4">
+            <p className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
+              Division stages
+            </p>
+            {divisions.map((division) => (
+              <DivisionDrawCard
+                key={division.id}
+                tournamentId={tournamentId}
+                divisionId={division.id}
+                divisionName={division.name}
+              />
+            ))}
+          </section>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-6">

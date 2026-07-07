@@ -80,20 +80,28 @@ async def generate(
     rng_seed: int | None,
     forced_groups: list[list[uuid.UUID]],
     forbidden_pairs: list[list[uuid.UUID]],
+    squad_id: uuid.UUID | None = None,
 ) -> PairingRun:
-    """(Re)generate the draft for a division. Any locked teams in the existing draft are
-    carried over verbatim (as forced groups) and the rest is re-folded around them; the
-    old draft is discarded."""
-    ctx = await _load_context(session, org_id, division_id)
+    """(Re)generate the draft for a division.
 
-    membership = await squad_membership_by_registration(session, org_id, ctx.division.tournament_id)
-    if membership:
-        cross_squad = cross_squad_forbidden_registration_pairs(
-            membership, [r.id for r in ctx.entrants]
+    When *squad_id* is provided only members of that squad are eligible — this is the
+    franchise/SIBL flow where intra-team pairs must be formed after the draft ceremony.
+    Any locked teams in the existing draft are carried over; the old draft is discarded.
+    """
+    ctx = await _load_context(session, org_id, division_id, squad_id=squad_id)
+
+    if squad_id is None:
+        # Division-wide run: keep pairs within squads by forbidding cross-squad pairs.
+        membership = await squad_membership_by_registration(
+            session, org_id, ctx.division.tournament_id
         )
-        forbidden_pairs = forbidden_pairs + [list(pair) for pair in cross_squad]
+        if membership:
+            cross_squad = cross_squad_forbidden_registration_pairs(
+                membership, [r.id for r in ctx.entrants]
+            )
+            forbidden_pairs = forbidden_pairs + [list(pair) for pair in cross_squad]
 
-    prior = await repo.get_active_run(session, org_id, division_id)
+    prior = await repo.get_active_run(session, org_id, division_id, squad_id=squad_id)
     carried_locked, carried_names = _carry_locked(prior)
     if prior is not None:
         prior.status = PairingRunStatus.DISCARDED.value
@@ -123,12 +131,20 @@ async def generate(
     except EngineValidationError as exc:
         raise ValidationError(str(exc), code="invalid_pairing") from exc
 
+    config: dict[str, Any] = {
+        "target": str(target),
+        "maxDev": str(max_dev),
+        "teamSize": ctx.policy.team_size,
+    }
+    if squad_id is not None:
+        config["squadId"] = str(squad_id)
+
     run = PairingRun(
         organization_id=org_id,
         division_id=division_id,
         status=PairingRunStatus.DRAFT.value,
         rng_seed=rng_seed,
-        config={"target": str(target), "maxDev": str(max_dev), "teamSize": ctx.policy.team_size},
+        config=config,
     )
     session.add(run)
     await session.flush()
@@ -180,10 +196,13 @@ def carried_locked_sets(groups: list[list[str]]) -> set[frozenset[str]]:
 
 
 async def get_active_run(
-    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    division_id: uuid.UUID,
+    squad_id: uuid.UUID | None = None,
 ) -> PairingRun | None:
-    await _load_context(session, org_id, division_id)  # validates division exists + pairs
-    return await repo.get_active_run(session, org_id, division_id)
+    await _load_context(session, org_id, division_id)  # validates division exists
+    return await repo.get_active_run(session, org_id, division_id, squad_id=squad_id)
 
 
 # ---- edit ----
@@ -396,7 +415,10 @@ async def _materialize_team(
 
 
 async def _load_context(
-    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    division_id: uuid.UUID,
+    squad_id: uuid.UUID | None = None,
 ) -> _Context:
     division = await repo.get_division(session, org_id, division_id)
     if division is None:
@@ -409,15 +431,32 @@ async def _load_context(
         raise NotFoundError("Sport profile not found")
     profile = get_sport_registry().get(profile_row.key)
     policy = profile.pairing_policy({"participantType": division.participant_type})
-    # Squad (franchise) and individual divisions register players as individuals then pair
-    # them into doubles within squads. Both use approved registrations and override to the
-    # doubles pairing policy.
-    is_franchise = division.participant_type in ("individual", "squad")
-    if not policy.supports_pairing or is_franchise:
+    # Franchise (squad-scoped) flow: players registered as individuals, paired into
+    # doubles within their squad.  Requires an explicit squad_id; without one, a
+    # singles division must be rejected — not silently re-routed to the doubles policy.
+    is_franchise = squad_id is not None
+    if not policy.supports_pairing and not is_franchise:
+        raise ValidationError(
+            "pairing is not supported for this division type",
+            code="pairing_unsupported",
+        )
+    if is_franchise:
         policy = profile.pairing_policy({"participantType": "pair"})
         entrants = list(await repo.list_approved_registrations(session, org_id, division_id))
     else:
         entrants = list(await repo.list_eligible_registrations(session, org_id, division_id))
+
+    # Narrow to squad members when running per-squad pairing (franchise/SIBL flow).
+    if squad_id is not None:
+        membership = await squad_membership_by_registration(session, org_id, tournament.id)
+        squad_reg_ids = {reg_id for reg_id, sid in membership.items() if sid == squad_id}
+        if not squad_reg_ids:
+            raise ValidationError(
+                "squad has no assigned members — complete the draft ceremony first",
+                code="squad_empty",
+            )
+        entrants = [e for e in entrants if e.id in squad_reg_ids]
+
     return _Context(division, profile, policy, entrants)
 
 
@@ -550,9 +589,13 @@ async def build_run_view(
         unpaired_count=len(unpaired),
         average_confidence=round(sum(confidences) / len(confidences), 3) if confidences else 0.0,
     )
+    squad_id_str = (run.config or {}).get("squadId")
+    squad_id = uuid.UUID(squad_id_str) if squad_id_str else None
+
     return PairingRunView(
         id=run.id,
         division_id=run.division_id,
+        squad_id=squad_id,
         status=run.status,
         rng_seed=run.rng_seed,
         entrants=entrants,

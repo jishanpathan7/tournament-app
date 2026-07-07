@@ -30,8 +30,11 @@ describe("LandingPage", () => {
 
   it("includes feature and sports sections", () => {
     renderWithProviders(<LandingPage />);
-    expect(screen.getByRole("heading", { name: /everything organizers need/i })).toBeInTheDocument();
-    expect(screen.getByText("Badminton")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /everything organizers need/i }),
+    ).toBeInTheDocument();
+    // Sports strip duplicates items for seamless loop animation — use getAllByText
+    expect(screen.getAllByText("Badminton").length).toBeGreaterThan(0);
   });
 });
 

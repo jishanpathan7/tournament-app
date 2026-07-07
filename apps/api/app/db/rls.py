@@ -139,13 +139,25 @@ def upgrade_statements(tables: Container[str] | None = None) -> list[str]:
 
 def downgrade_statements(tables: Container[str] | None = None) -> list[str]:
     """Drop policies + disable RLS (run before dropping the tables). See ``tables``
-    above."""
+    above.
+
+    Uses IF EXISTS guards so this is safe to call even when some tables were already
+    dropped by a later migration's downgrade (e.g. 0014_squads drops squads before
+    0001_initial calls this with BASELINE_TABLES that still includes squads).
+    """
     all_tables = TENANT_STRICT_TABLES + GLOBAL_OR_TENANT_TABLES
     scoped = all_tables if tables is None else [t for t in all_tables if t in tables]
     stmts: list[str] = []
     for table in scoped:
-        stmts.append(f"DROP POLICY IF EXISTS {table}_org_isolation ON {table};")
-        stmts.append(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY;")
+        # DROP POLICY IF EXISTS still errors when the TABLE doesn't exist — wrap in a
+        # DO block that swallows undefined_table so downgrade order doesn't matter.
+        stmts.append(
+            f"DO $$ BEGIN"
+            f" DROP POLICY IF EXISTS {table}_org_isolation ON {table};"
+            f" EXCEPTION WHEN undefined_table THEN NULL;"
+            f" END $$;"
+        )
+        stmts.append(f"ALTER TABLE IF EXISTS {table} DISABLE ROW LEVEL SECURITY;")
     return stmts
 
 

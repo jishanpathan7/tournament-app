@@ -2622,6 +2622,11 @@ export interface components {
             forcedGroups?: string[][];
             /** Forbiddenpairs */
             forbiddenPairs?: string[][];
+            /**
+             * Squadid
+             * Format: uuid
+             */
+            squadId?: string | null;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2987,6 +2992,11 @@ export interface components {
              * Format: uuid
              */
             divisionId: string;
+            /**
+             * Squadid
+             * Format: uuid
+             */
+            squadId?: string | null;
             /** Status */
             status: string;
             /** Rngseed */

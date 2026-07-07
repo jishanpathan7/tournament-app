@@ -23,7 +23,7 @@ def _registration(**form: object) -> Registration:
 
 
 def test_form_entrant_name_from_import() -> None:
-    reg = _registration(name="Mihir Tuli")
+    reg = _registration(name="Mihir Tuli", _organizer_import=True)
     assert form_entrant_name(reg) == "Mihir Tuli"
     assert entrant_has_external_identity(reg) is True
     assert entrant_display_name(reg, account_name="Organizer") == "Mihir Tuli"

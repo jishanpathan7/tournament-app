@@ -1,29 +1,29 @@
 "use client";
 
 import gsap from "gsap";
-import { forwardRef, useImperativeHandle, useRef } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
 import type { UnassignedRegistrationView } from "@/features/squads/types";
 
-// Six vibrant brand-adjacent colours — matching the reference wheel
 const WHEEL_COLORS = [
-  "#4F6BF6", // Court Cobalt (primary)
-  "#34D399", // Mint
-  "#F43F5E", // Rose
-  "#FBBF24", // Yellow
-  "#F472B6", // Pink
-  "#FB923C", // Orange
+  "#4f6bf6", // --candy
+  "#34d399", // --mint
+  "#fbbf24", // --yellow
+  "#f472b6", // --pink
+  "#3a4fd8", // --candy-dark
+  "#10b981", // --mint-dark
+  "#9db0fb", // --candy-ink
+  "#db2777", // --pink-dark
 ];
 
 function segColor(i: number) {
   return WHEEL_COLORS[i % WHEEL_COLORS.length]!;
 }
 
-// Wheel geometry
 const CX = 300;
 const CY = 300;
-const R  = 284;
-const HUB = 44;
+const R  = 276;
+const HUB = 48;
 
 function polarToXY(angleDeg: number, r: number) {
   const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -44,11 +44,9 @@ function segmentPath(start: number, end: number): string {
   ].join(" ");
 }
 
-// Truncate label to fit the radial space
 function label(name: string, n: number): string {
   const maxChars = n > 24 ? 10 : n > 16 ? 13 : n > 10 ? 16 : 20;
   const first = name.split(" ")[0]!;
-  // For very small segments show first name only
   if (n > 22 && first.length <= maxChars) return first;
   return name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
 }
@@ -63,21 +61,20 @@ function fontSize(n: number): number {
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 
-function playTick(ctx: AudioContext) {
+function playTick(ctx: AudioContext, freq = 1100, vol = 0.08) {
   const osc  = ctx.createOscillator();
   const gain = ctx.createGain();
-  osc.frequency.value = 1100;
-  gain.gain.setValueAtTime(0.1, ctx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.03);
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(vol, ctx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.025);
   osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(); osc.stop(ctx.currentTime + 0.03);
+  osc.start(); osc.stop(ctx.currentTime + 0.025);
 }
 
-
-function tryPlayTick(ctx: AudioContext | null): AudioContext | null {
+function tryPlayTick(ctx: AudioContext | null, freq?: number, vol?: number): AudioContext | null {
   try {
     const c = ctx ?? new AudioContext();
-    playTick(c);
+    playTick(c, freq, vol);
     return c;
   } catch { return ctx; }
 }
@@ -86,72 +83,137 @@ function tryPlayTick(ctx: AudioContext | null): AudioContext | null {
 
 export interface WheelHandle {
   spin(targetIndex: number): Promise<void>;
+  intro(): void;
 }
 
 interface Props {
   players: UnassignedRegistrationView[];
   highlightIndex: number | null;
+  reducedMotion?: boolean;
 }
 
 export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWheel(
-  { players, highlightIndex },
+  { players, highlightIndex, reducedMotion },
   ref,
 ) {
+  const wrapRef          = useRef<HTMLDivElement>(null);
   const spinnerRef       = useRef<HTMLDivElement>(null);
+  const glowRef          = useRef<HTMLDivElement>(null);
   const totalRotationRef = useRef(0);
   const audioCtxRef      = useRef<AudioContext | null>(null);
+  const didIntroRef      = useRef(false);
+
+  // Mount intro
+  useEffect(() => {
+    if (reducedMotion || didIntroRef.current || !wrapRef.current) return;
+    didIntroRef.current = true;
+    gsap.fromTo(
+      wrapRef.current,
+      { scale: 0.72, opacity: 0, rotateZ: -8 },
+      { scale: 1, opacity: 1, rotateZ: 0, duration: 0.85, ease: "back.out(1.3)" },
+    );
+  }, [reducedMotion]);
 
   useImperativeHandle(ref, () => ({
+    intro() {
+      if (reducedMotion || !wrapRef.current) return;
+      gsap.fromTo(
+        wrapRef.current,
+        { scale: 0.72, opacity: 0, rotateZ: -8 },
+        { scale: 1, opacity: 1, rotateZ: 0, duration: 0.85, ease: "back.out(1.3)" },
+      );
+    },
+
     spin(targetIndex: number): Promise<void> {
       return new Promise((resolve) => {
         if (!spinnerRef.current) { resolve(); return; }
         const n = players.length;
-        if (n === 0)             { resolve(); return; }
+        if (n === 0) { resolve(); return; }
+
+        if (reducedMotion) {
+          // Instant snap for reduced-motion
+          const segAngle    = 360 / n;
+          const targetCenter = targetIndex * segAngle + segAngle / 2;
+          const currentAngle = totalRotationRef.current % 360;
+          const alignOffset  = ((360 - targetCenter - currentAngle) % 360 + 360) % 360;
+          totalRotationRef.current += alignOffset;
+          gsap.set(spinnerRef.current, { rotation: totalRotationRef.current });
+          resolve();
+          return;
+        }
 
         const segAngle     = 360 / n;
         const targetCenter = targetIndex * segAngle + segAngle / 2;
         const currentAngle = totalRotationRef.current % 360;
         const alignOffset  = ((360 - targetCenter - currentAngle) % 360 + 360) % 360;
-        const extraSpins   = (5 + Math.floor(Math.random() * 3)) * 360;
+        const extraSpins   = (6 + Math.floor(Math.random() * 4)) * 360;
         const finalRotation = totalRotationRef.current + extraSpins + alignOffset;
+        const spinUpTo      = totalRotationRef.current + (finalRotation - totalRotationRef.current) * 0.15;
 
-        // Phase 1 covers 18% of total travel — quick spin-up
-        const spinUpTo = totalRotationRef.current + (finalRotation - totalRotationRef.current) * 0.18;
-
-        let lastSeg = -1;
+        let lastSeg  = -1;
+        let lastTime = 0;
+        let spinSpeed = 0;
 
         function attachTick(tween: gsap.core.Tween) {
-          const origUpdate = tween.vars.onUpdate as (() => void) | undefined;
-          tween.vars.onUpdate = function() {
-            origUpdate?.();
-            const cur = gsap.getProperty(spinnerRef.current!, "rotation") as number;
-            const seg = Math.floor(((360 - (cur % 360) + 360) % 360) / segAngle) % n;
-            if (seg !== lastSeg) { lastSeg = seg; audioCtxRef.current = tryPlayTick(audioCtxRef.current); }
-          };
+          tween.eventCallback("onUpdate", function () {
+            const now  = performance.now();
+            const cur  = gsap.getProperty(spinnerRef.current!, "rotation") as number;
+            const seg  = Math.floor(((360 - (cur % 360) + 360) % 360) / segAngle) % n;
+            const dt   = now - lastTime;
+
+            if (seg !== lastSeg && dt > 0) {
+              const rpm   = (segAngle / dt) * 60_000;
+              spinSpeed   = rpm;
+              const vol   = Math.min(0.14, 0.04 + rpm * 0.0006);
+              const freq  = 900 + Math.min(rpm * 0.8, 600);
+              lastSeg = seg; lastTime = now;
+              audioCtxRef.current = tryPlayTick(audioCtxRef.current, freq, vol);
+            }
+          });
         }
 
         // Phase 1: accelerate
         const phase1 = gsap.to(spinnerRef.current, {
           rotation: spinUpTo,
           transformOrigin: "center center",
-          duration: 0.9,
-          ease: "power2.in",
+          duration: 0.85,
+          ease: "power3.in",
           onComplete() {
-            // Phase 2: cruise → decelerate
+            // Phase 2: full-speed cruise → natural decelerate
             const phase2 = gsap.to(spinnerRef.current!, {
               rotation: finalRotation,
               transformOrigin: "center center",
-              duration: 4.2,
+              duration: 4.8,
               ease: "power4.out",
               onComplete() {
                 totalRotationRef.current = finalRotation;
-                resolve();
+                // Landing lock animation — brief bounce
+                gsap.to(spinnerRef.current!, {
+                  rotation: finalRotation - 1.2,
+                  duration: 0.12,
+                  ease: "power2.out",
+                  yoyo: true,
+                  repeat: 1,
+                  onComplete() {
+                    // Glow flash
+                    if (glowRef.current) {
+                      gsap.fromTo(
+                        glowRef.current,
+                        { opacity: 0.9, scale: 1.06 },
+                        { opacity: 0, scale: 1, duration: 0.6, ease: "power2.out" },
+                      );
+                    }
+                    resolve();
+                  },
+                });
+                void spinSpeed;
               },
             });
             attachTick(phase2);
           },
         });
         attachTick(phase1);
+        lastTime = performance.now();
       });
     },
   }));
@@ -159,106 +221,118 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
   const n        = players.length;
   const segAngle = n > 0 ? 360 / n : 360;
   const fs       = fontSize(n);
-  // Text starts just outside the hub and runs outward
-  const textX    = CX + HUB + 10;
+  const textX    = CX + HUB + 12;
 
   return (
     <div className="relative flex items-center justify-center select-none">
-      {/* Pointer — downward-pointing triangle sitting above the wheel */}
+      {/* Pointer */}
       <div
         className="pointer-events-none absolute z-10"
         style={{
-          top: -4,
+          top: -6,
           left: "50%",
           transform: "translateX(-50%)",
           width: 0, height: 0,
-          borderLeft:  "18px solid transparent",
-          borderRight: "18px solid transparent",
-          borderTop:   "36px solid #FFFDF5",
-          filter: "drop-shadow(0 3px 6px rgba(0,0,0,0.5))",
+          borderLeft:  "16px solid transparent",
+          borderRight: "16px solid transparent",
+          borderTop:   "32px solid #FFFDF5",
+          filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))",
         }}
       />
 
+      {/* Glow flash overlay (landing) */}
+      <div
+        ref={glowRef}
+        className="pointer-events-none absolute inset-0 z-[5] rounded-full opacity-0"
+        style={{ background: "radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 70%)" }}
+      />
+
       {/* Rotating wheel */}
-      <div ref={spinnerRef} style={{ willChange: "transform" }}>
-        <svg
-          width={CX * 2}
-          height={CY * 2}
-          viewBox={`0 0 ${CX * 2} ${CY * 2}`}
-          style={{ display: "block" }}
-        >
-          <defs>
-            <filter id="wheel-drop" x="-6%" y="-6%" width="112%" height="112%">
-              <feDropShadow dx="0" dy="6" stdDeviation="12" floodOpacity="0.3" />
-            </filter>
-            <filter id="txt-shadow" x="-10%" y="-30%" width="120%" height="160%">
-              <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.7" />
-            </filter>
-          </defs>
+      <div ref={wrapRef} style={{ willChange: "transform, opacity" }}>
+        <div ref={spinnerRef} style={{ willChange: "transform" }}>
+          <svg
+            width={CX * 2}
+            height={CY * 2}
+            viewBox={`0 0 ${CX * 2} ${CY * 2}`}
+            style={{ display: "block" }}
+          >
+            <defs>
+              <filter id="wheel-drop" x="-8%" y="-8%" width="116%" height="116%">
+                <feDropShadow dx="0" dy="8" stdDeviation="16" floodOpacity="0.45" />
+              </filter>
+              <filter id="wheel-glow" x="-12%" y="-12%" width="124%" height="124%">
+                <feGaussianBlur stdDeviation="8" result="blur" />
+                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+              </filter>
+              <filter id="txt-shadow" x="-10%" y="-30%" width="120%" height="160%">
+                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.8" />
+              </filter>
+              <radialGradient id="hub-grad" cx="50%" cy="35%" r="65%">
+                <stop offset="0%" stopColor="#9db0fb" />
+                <stop offset="100%" stopColor="#3a4fd8" />
+              </radialGradient>
+            </defs>
 
-          <g filter="url(#wheel-drop)">
-            {n === 0 ? (
-              <circle cx={CX} cy={CY} r={R} fill="#28324A" />
-            ) : (
-              players.map((player, i) => {
-                const start = i * segAngle;
-                const end   = start + segAngle;
-                const mid   = start + segAngle / 2;
-                const color = segColor(i);
-                const isHL  = highlightIndex === i;
+            <g filter="url(#wheel-drop)">
+              {n === 0 ? (
+                <circle cx={CX} cy={CY} r={R} fill="#28324a" />
+              ) : (
+                players.map((player, i) => {
+                  const start = i * segAngle;
+                  const end   = start + segAngle;
+                  const mid   = start + segAngle / 2;
+                  const color = segColor(i);
+                  const isHL  = highlightIndex === i;
 
-                return (
-                  <g key={player.registrationId}>
-                    {/* Segment */}
-                    <path
-                      d={segmentPath(start, end)}
-                      fill={color}
-                      stroke="#1E293B"
-                      strokeWidth={2}
-                      opacity={isHL ? 1 : 0.92}
-                    />
+                  return (
+                    <g key={player.registrationId}>
+                      <path
+                        d={segmentPath(start, end)}
+                        fill={color}
+                        stroke="#1e293b"
+                        strokeWidth={2.5}
+                        opacity={isHL ? 1 : highlightIndex !== null ? 0.55 : 0.9}
+                        style={{ transition: "opacity 0.3s ease" }}
+                      />
+                      {(() => {
+                        const isFlipped = mid > 90 && mid < 270;
+                        const rot    = isFlipped ? mid - 90 + 180 : mid - 90;
+                        const tx     = isFlipped ? CX - HUB - 12  : textX;
+                        const anchor = isFlipped ? "end"           : "start";
+                        return (
+                          <g transform={`rotate(${rot}, ${CX}, ${CY})`}>
+                            <text
+                              x={tx}
+                              y={CY}
+                              textAnchor={anchor}
+                              dominantBaseline="central"
+                              fontSize={fs}
+                              fontWeight="700"
+                              fill="white"
+                              filter="url(#txt-shadow)"
+                              style={{ pointerEvents: "none", userSelect: "none", letterSpacing: "0.01em" }}
+                            >
+                              {label(player.displayName, n)}
+                            </text>
+                          </g>
+                        );
+                      })()}
+                    </g>
+                  );
+                })
+              )}
 
-                    {/*
-                      Radial text — correct approach:
-                      • Rotate by (mid - 90) so angle-0 (top) aligns with text's natural direction
-                      • Bottom-half segments (90°–270°) get an extra 180° flip + textAnchor="end"
-                        so they also read outward hub→rim instead of being upside-down
-                    */}
-                    {(() => {
-                      const isFlipped = mid > 90 && mid < 270;
-                      const rot    = isFlipped ? mid - 90 + 180 : mid - 90;
-                      const tx     = isFlipped ? CX - HUB - 10  : textX;
-                      const anchor = isFlipped ? "end"           : "start";
-                      return (
-                        <g transform={`rotate(${rot}, ${CX}, ${CY})`}>
-                          <text
-                            x={tx}
-                            y={CY}
-                            textAnchor={anchor}
-                            dominantBaseline="central"
-                            fontSize={fs}
-                            fontWeight="700"
-                            fill="white"
-                            filter="url(#txt-shadow)"
-                            style={{ pointerEvents: "none", userSelect: "none" }}
-                          >
-                            {label(player.displayName, n)}
-                          </text>
-                        </g>
-                      );
-                    })()}
-                  </g>
-                );
-              })
-            )}
-
-            {/* Outer rim */}
-            <circle cx={CX} cy={CY} r={R}   fill="none" stroke="#1E293B" strokeWidth={3} />
-            {/* Hub */}
-            <circle cx={CX} cy={CY} r={HUB} fill="#1E293B" stroke="#3A4760" strokeWidth={3} />
-            <circle cx={CX} cy={CY} r={12}  fill="#4F6BF6" />
-          </g>
-        </svg>
+              {/* Outer rim */}
+              <circle cx={CX} cy={CY} r={R}     fill="none" stroke="#1e293b" strokeWidth={4} />
+              {/* Inner ring accent */}
+              <circle cx={CX} cy={CY} r={HUB+2} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+              {/* Hub */}
+              <circle cx={CX} cy={CY} r={HUB}   fill="url(#hub-grad)" />
+              <circle cx={CX} cy={CY} r={14}     fill="white" opacity={0.92} />
+              <circle cx={CX} cy={CY} r={7}      fill="#4F6BF6" />
+            </g>
+          </svg>
+        </div>
       </div>
     </div>
   );

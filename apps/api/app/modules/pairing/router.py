@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -56,6 +56,7 @@ async def generate_pairing(
         rng_seed=body.rng_seed,
         forced_groups=body.forced_groups,
         forbidden_pairs=body.forbidden_pairs,
+        squad_id=body.squad_id,
     )
     return await service.build_run_view(session, principal.organization_id, run)
 
@@ -63,10 +64,13 @@ async def generate_pairing(
 @router.get("/divisions/{division_id}/pairing", response_model=PairingRunView | None)
 async def get_pairing(
     division_id: uuid.UUID,
+    squad_id: uuid.UUID | None = Query(default=None),
     principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_request_session),
 ) -> PairingRunView | None:
-    run = await service.get_active_run(session, principal.organization_id, division_id)
+    run = await service.get_active_run(
+        session, principal.organization_id, division_id, squad_id=squad_id
+    )
     if run is None:
         return None
     return await service.build_run_view(session, principal.organization_id, run)

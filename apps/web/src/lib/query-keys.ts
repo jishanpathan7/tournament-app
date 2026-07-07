@@ -29,7 +29,10 @@ export const queryKeys = {
     stages: (divisionId: string) => ["divisions", divisionId, "stages"] as const,
     registrations: (divisionId: string) => ["divisions", divisionId, "registrations"] as const,
     participants: (divisionId: string) => ["divisions", divisionId, "participants"] as const,
-    pairing: (divisionId: string) => ["divisions", divisionId, "pairing"] as const,
+    pairing: (divisionId: string, squadId?: string) =>
+      squadId
+        ? (["divisions", divisionId, "pairing", squadId] as const)
+        : (["divisions", divisionId, "pairing"] as const),
   },
 
   stages: {
