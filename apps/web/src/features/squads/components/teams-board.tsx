@@ -2,7 +2,7 @@
 
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { Dices, Users, Wand2 } from "lucide-react";
+import { Dices, Shuffle, Users, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -13,6 +13,11 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SquadPairingFooter } from "@/features/squads/components/squad-pairing-footer";
+import { SquadPairingSheet } from "@/features/squads/components/squad-pairing-sheet";
+import { useTournamentReadiness } from "@/features/registration-ops/use-registration-ops";
+import type { SquadView } from "@/features/squads/types";
+import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { toast } from "@/components/ui/sonner";
 import { SquadColumn } from "@/features/squads/components/squad-column";
 import { UnassignedPool } from "@/features/squads/components/unassigned-pool";
@@ -43,6 +48,11 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
 
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [pairingSquad, setPairingSquad] = useState<SquadView | null>(null);
+
+  const divisions = useDivisions(tournamentId);
+  const firstDivisionId = divisions.data?.[0]?.id ?? null;
+  const readiness = useTournamentReadiness(tournamentId);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -201,6 +211,12 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const board = squads.data;
   if (!board) return null;
 
+  const allAssigned =
+    (squads.data?.summary.unassigned ?? 1) === 0 && (squads.data?.squads.length ?? 0) > 0;
+  const allPaired =
+    allAssigned &&
+    (readiness.data?.divisions.every((d) => d.unpairedEntrants === 0) ?? false);
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -210,23 +226,40 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         actions={actions}
       />
 
+      {/* Progress summary — assignment + pairing state + next action in one card */}
       <Card className="bg-muted/30">
-        <CardContent className="flex flex-wrap items-center gap-4 p-4 text-sm">
-          <span>
-            <strong>{board.summary.assigned}</strong> assigned
-          </span>
-          <span className="text-muted-foreground">·</span>
-          <span>
-            <strong>{board.summary.unassigned}</strong> unassigned
-          </span>
-          <span className="text-muted-foreground">·</span>
-          <span>
-            <strong>{board.summary.squadCount}</strong> teams
-          </span>
-          {board.summary.unassigned > 0 ? (
-            <Badge tone="yellow">{board.summary.unassigned} need a team</Badge>
-          ) : board.summary.squadCount > 0 ? (
-            <Badge tone="mint">All assigned</Badge>
+        <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <span>
+              <strong>{board.summary.squadCount}</strong> teams
+            </span>
+            <span className="text-muted-foreground">·</span>
+            <span>
+              <strong>{board.summary.assigned}</strong> assigned
+              {board.summary.unassigned > 0 && (
+                <span className="text-muted-foreground"> · {board.summary.unassigned} unassigned</span>
+              )}
+            </span>
+            <span className="text-muted-foreground">·</span>
+            {allPaired ? (
+              <Badge tone="mint">All pairs locked</Badge>
+            ) : allAssigned ? (
+              <Badge tone="yellow">Pairs pending</Badge>
+            ) : board.summary.unassigned > 0 ? (
+              <Badge tone="yellow">{board.summary.unassigned} need a team</Badge>
+            ) : board.summary.squadCount > 0 ? (
+              <Badge tone="mint">All assigned</Badge>
+            ) : null}
+          </div>
+          {allPaired ? (
+            <Button asChild tone="mint" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/draws`}>Generate Matches →</Link>
+            </Button>
+          ) : allAssigned && firstDivisionId ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Shuffle className="text-candy h-4 w-4" />
+              <span>Use &ldquo;Generate Doubles Pairs&rdquo; on each team below</span>
+            </div>
           ) : null}
         </CardContent>
       </Card>
@@ -253,38 +286,47 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             />
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
               {board.squads.map((squad) => (
-                <SquadColumn
-                  key={squad.id}
-                  squad={squad}
-                  canManage={canManage}
-                  highlightAssign={!!selectedRegistrationId}
-                  onAssign={() => onAssignToSquad(squad.id)}
-                  onRemove={(registrationId) =>
-                    remove.mutate(
-                      { squadId: squad.id, registrationId },
-                      {
-                        onError: (e) => toast.error(errorMessage(e, "Couldn't remove player")),
-                      },
-                    )
-                  }
-                  onSetCaptain={(registrationId) =>
-                    updateSquad.mutate(
-                      { squadId: squad.id, captainRegistrationId: registrationId },
-                      {
-                        onSuccess: () => toast.success("Captain updated"),
-                        onError: (e) => toast.error(errorMessage(e, "Couldn't set captain")),
-                      },
-                    )
-                  }
-                  onRename={(name) =>
-                    updateSquad.mutate(
-                      { squadId: squad.id, name },
-                      {
-                        onError: (e) => toast.error(errorMessage(e, "Couldn't rename team")),
-                      },
-                    )
-                  }
-                />
+                <div key={squad.id} className="border-ink flex flex-col rounded-2xl border-2 shadow-sticker-xs overflow-hidden">
+                  <SquadColumn
+                    squad={squad}
+                    canManage={canManage}
+                    highlightAssign={!!selectedRegistrationId}
+                    onAssign={() => onAssignToSquad(squad.id)}
+                    onRemove={(registrationId) =>
+                      remove.mutate(
+                        { squadId: squad.id, registrationId },
+                        {
+                          onError: (e) => toast.error(errorMessage(e, "Couldn't remove player")),
+                        },
+                      )
+                    }
+                    onSetCaptain={(registrationId) =>
+                      updateSquad.mutate(
+                        { squadId: squad.id, captainRegistrationId: registrationId },
+                        {
+                          onSuccess: () => toast.success("Captain updated"),
+                          onError: (e) => toast.error(errorMessage(e, "Couldn't set captain")),
+                        },
+                      )
+                    }
+                    onRename={(name) =>
+                      updateSquad.mutate(
+                        { squadId: squad.id, name },
+                        {
+                          onError: (e) => toast.error(errorMessage(e, "Couldn't rename team")),
+                        },
+                      )
+                    }
+                  />
+                  {firstDivisionId && (
+                    <SquadPairingFooter
+                      squad={squad}
+                      divisionId={firstDivisionId}
+                      canManage={canManage}
+                      onOpen={() => setPairingSquad(squad)}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -317,6 +359,26 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
           </CardContent>
         </Card>
       ) : null}
+
+      {/* Intra-team pairing sheet */}
+      {pairingSquad && firstDivisionId && (
+        <div className="fixed inset-0 z-40 flex">
+          {/* Backdrop */}
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => setPairingSquad(null)}
+          />
+          {/* Slide-over panel */}
+          <div className="relative ml-auto h-full w-full max-w-lg overflow-hidden bg-background shadow-2xl">
+            <SquadPairingSheet
+              squad={pairingSquad}
+              divisionId={firstDivisionId}
+              tournamentId={tournamentId}
+              onClose={() => setPairingSquad(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

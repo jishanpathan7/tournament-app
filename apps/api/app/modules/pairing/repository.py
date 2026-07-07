@@ -63,6 +63,23 @@ async def get_latest_published_run(
     return (await session.execute(stmt)).scalars().first()
 
 
+async def list_all_published_runs(
+    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+) -> list[PairingRun]:
+    """All published runs for a division (may be multiple when squad-scoped)."""
+    stmt = (
+        select(PairingRun)
+        .where(
+            PairingRun.division_id == division_id,
+            PairingRun.organization_id == org_id,
+            PairingRun.status == PairingRunStatus.PUBLISHED.value,
+        )
+        .options(selectinload(PairingRun.proposed_teams))
+        .order_by(PairingRun.created_at.asc())
+    )
+    return list((await session.execute(stmt)).scalars().all())
+
+
 async def list_pair_participants(
     session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
 ) -> Sequence[Participant]:
@@ -123,9 +140,12 @@ async def list_approved_registrations(
 
 
 async def get_active_run(
-    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    division_id: uuid.UUID,
+    squad_id: uuid.UUID | None = None,
 ) -> PairingRun | None:
-    """The current draft run for a division (at most one is kept 'draft' at a time)."""
+    """The current draft run for a division (or a specific squad within it)."""
     stmt = (
         select(PairingRun)
         .where(
@@ -136,7 +156,12 @@ async def get_active_run(
         .options(selectinload(PairingRun.proposed_teams))
         .order_by(PairingRun.created_at.desc())
     )
-    return (await session.execute(stmt)).scalars().first()
+    runs = (await session.execute(stmt)).scalars().all()
+    if squad_id is None:
+        # Division-wide run: config has no squadId key.
+        return next((r for r in runs if not (r.config or {}).get("squadId")), None)
+    target = str(squad_id)
+    return next((r for r in runs if (r.config or {}).get("squadId") == target), None)
 
 
 async def get_run(session: AsyncSession, org_id: uuid.UUID, run_id: uuid.UUID) -> PairingRun | None:

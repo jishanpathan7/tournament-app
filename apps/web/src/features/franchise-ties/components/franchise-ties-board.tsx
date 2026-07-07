@@ -54,22 +54,22 @@ export function FranchiseTiesBoard({
       onSuccess: (res) =>
         toast.success(
           isKnockout
-            ? `Created ${res.summary.ties} knockout team ties`
-            : `Created ${res.summary.ties} team ties (${res.summary.legs} doubles legs)`,
+            ? `Created ${res.summary.ties} knockout matches`
+            : `Created ${res.summary.ties} matches (${res.summary.legs} doubles legs)`,
         ),
-      onError: (e) => toast.error(errorMessage(e, "Couldn't generate team ties")),
+      onError: (e) => toast.error(errorMessage(e, "Couldn't generate matches")),
     });
   };
 
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
-        eyebrow="Franchise format"
-        title={isKnockout ? "Knockout finals" : "Team ties"}
+        eyebrow="Team draw"
+        title={isKnockout ? "Knockout finals" : "Team matches"}
         description={
           isKnockout
-            ? "Single-elimination squad ties. Legs expand when both squads are known; winners advance to the next round."
-            : "Squad-vs-squad round robin. Each tie is a series of doubles legs — score legs in Match Center; the tie winner is the squad with more leg wins."
+            ? "Single-elimination team ties. Legs expand when both teams are known; winners advance to the next round."
+            : "Team round robin. Each match is a series of doubles legs — score legs in Match Center; the winning team is the one with more leg wins."
         }
         actions={
           canManage && board.data?.ties.length === 0 ? (
@@ -80,7 +80,7 @@ export function FranchiseTiesBoard({
               disabled={generate.isPending || generateKo.isPending}
             >
               <Trophy className="h-4 w-4" />
-              {isKnockout ? "Generate knockout finals" : "Generate team tie draw"}
+              {isKnockout ? "Generate Knockout Finals" : "Generate Matches"}
             </Button>
           ) : null
         }
@@ -93,11 +93,11 @@ export function FranchiseTiesBoard({
       ) : !board.data?.ties.length ? (
         <EmptyState
           icon={Trophy}
-          title={isKnockout ? "No knockout ties yet" : "No team ties yet"}
+          title={isKnockout ? "No knockout finals yet" : "No team draw yet"}
           description={
             isKnockout
-              ? "Finish the round-robin stage, then generate single-elimination squad finals seeded from standings."
-              : "Assign franchise teams, publish doubles pairings, then generate the squad round-robin."
+              ? "Finish the round-robin stage, then generate single-elimination finals seeded from standings."
+              : "Assign players to teams, publish doubles pairings for each team, then generate the draw."
           }
         />
       ) : (

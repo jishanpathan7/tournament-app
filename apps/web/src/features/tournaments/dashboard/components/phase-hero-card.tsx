@@ -109,45 +109,68 @@ function Step2Hero({ tournamentId }: { tournamentId: string }) {
   );
 }
 
-// ─── Step 3: Team Creation ────────────────────────────────────────────────────
+// ─── Step 3: Create Teams ─────────────────────────────────────────────────────
 
-function Step3Hero({ tournamentId }: { tournamentId: string }) {
+function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
   return (
     <HeroShell step={3} title={STEP_META[3].label}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
-          Divide approved players into franchise teams. Use auto-distribute or assign manually.
+          {signals.franchiseMode
+            ? "Players are imported. Run the Draft Ceremony to assign them to teams, or go to the Team board to assign manually."
+            : "Divide approved players into teams. Use auto-distribute or assign manually."}
         </p>
-        <Button asChild tone="candy" size="sm">
-          <Link href={`/console/tournaments/${tournamentId}/teams`}>
-            <Users className="h-4 w-4" strokeWidth={2.25} />
-            Team board
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          {signals.franchiseMode ? (
+            <Button asChild tone="candy" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/draft-ceremony`}>
+                <GitMerge className="h-4 w-4" strokeWidth={2.25} />
+                Run Draft Ceremony
+              </Link>
+            </Button>
+          ) : null}
+          <Button asChild tone={signals.franchiseMode ? "paper" : "candy"} size="sm">
+            <Link href={`/console/tournaments/${tournamentId}/teams`}>
+              <Users className="h-4 w-4" strokeWidth={2.25} />
+              Team board
+            </Link>
+          </Button>
+        </div>
       </div>
     </HeroShell>
   );
 }
 
-// ─── Step 4: Pair Generation ──────────────────────────────────────────────────
+// ─── Step 4: Pair Each Team ───────────────────────────────────────────────────
 
-function Step4Hero({ tournamentId }: { tournamentId: string }) {
+function Step4Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
   const { data: divisions = [] } = useDivisions(tournamentId);
   return (
     <HeroShell step={4} title={STEP_META[4].label}>
       <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
-          Generate balanced doubles pairs within each team for each division.
+          {signals.franchiseMode
+            ? "Open each team and use \"Pair this team\" to generate balanced doubles pairs within the squad."
+            : "Generate balanced doubles pairs within each team for each division."}
         </p>
         <div className="flex flex-wrap gap-2">
-          {divisions.map((d) => (
-            <Button key={d.id} asChild tone="candy" size="sm">
-              <Link href={`/console/tournaments/${tournamentId}/divisions/${d.id}/pairing`}>
+          {signals.franchiseMode ? (
+            <Button asChild tone="candy" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/teams`}>
                 <GitMerge className="h-4 w-4" strokeWidth={2.25} />
-                {d.name}
+                Generate Doubles Pairs
               </Link>
             </Button>
-          ))}
+          ) : (
+            divisions.map((d) => (
+              <Button key={d.id} asChild tone="candy" size="sm">
+                <Link href={`/console/tournaments/${tournamentId}/divisions/${d.id}/pairing`}>
+                  <GitMerge className="h-4 w-4" strokeWidth={2.25} />
+                  {d.name}
+                </Link>
+              </Button>
+            ))
+          )}
         </div>
       </div>
     </HeroShell>
@@ -174,19 +197,21 @@ function Step5Hero({ tournamentId }: { tournamentId: string }) {
   );
 }
 
-// ─── Step 6: Draw Generation ──────────────────────────────────────────────────
+// ─── Step 6: Generate Draw ────────────────────────────────────────────────────
 
-function Step6Hero({ tournamentId }: { tournamentId: string }) {
+function Step6Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
   return (
     <HeroShell step={6} title={STEP_META[6].label}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-sm">
-          Generate the bracket or round-robin draw for each division.
+          {signals.franchiseMode
+            ? "All pairs are published. Generate the team draw to schedule which squads face each other."
+            : "Generate the bracket or round-robin draw for each division."}
         </p>
         <Button asChild tone="candy" size="sm">
           <Link href={`/console/tournaments/${tournamentId}/draws`}>
             <Shuffle className="h-4 w-4" strokeWidth={2.25} />
-            Generate draws
+            {signals.franchiseMode ? "Generate Matches" : "Generate draws"}
           </Link>
         </Button>
       </div>
@@ -383,10 +408,10 @@ export function PhaseHeroCard({
   switch (step) {
     case 1:  return <Step1Hero tournamentId={tournamentId} />;
     case 2:  return <Step2Hero tournamentId={tournamentId} />;
-    case 3:  return <Step3Hero tournamentId={tournamentId} />;
-    case 4:  return <Step4Hero tournamentId={tournamentId} />;
+    case 3:  return <Step3Hero tournamentId={tournamentId} signals={signals} />;
+    case 4:  return <Step4Hero tournamentId={tournamentId} signals={signals} />;
     case 5:  return <Step5Hero tournamentId={tournamentId} />;
-    case 6:  return <Step6Hero tournamentId={tournamentId} />;
+    case 6:  return <Step6Hero tournamentId={tournamentId} signals={signals} />;
     case 7:  return <Step7Hero tournamentId={tournamentId} signals={signals} />;
     case 8:  return <Step8Hero tournamentId={tournamentId} />;
     case 9:  return <Step9Hero tournamentId={tournamentId} resultsPublishedAt={resultsPublishedAt} />;

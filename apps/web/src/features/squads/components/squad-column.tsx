@@ -43,7 +43,7 @@ export function SquadColumn({
   return (
     <div
       className={cn(
-        "border-ink flex flex-col rounded-2xl border-2 shadow-sticker-xs transition-colors",
+        "flex flex-col transition-colors",
         tint,
         isOver && "ring-candy ring-2 ring-offset-2",
         highlightAssign && canManage && "ring-candy ring-2 ring-offset-2",

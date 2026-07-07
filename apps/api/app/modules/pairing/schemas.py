@@ -19,6 +19,8 @@ class GeneratePairingRequest(ApiModel):
     # Manual hard constraints (each a group of registration ids):
     forced_groups: list[list[uuid.UUID]] = Field(default_factory=list)
     forbidden_pairs: list[list[uuid.UUID]] = Field(default_factory=list)
+    # When set, pair only the members of this squad (franchise / SIBL flow).
+    squad_id: uuid.UUID | None = None
 
 
 class EntrantView(ApiModel):
@@ -50,6 +52,7 @@ class PairingSummary(ApiModel):
 class PairingRunView(ApiModel):
     id: uuid.UUID
     division_id: uuid.UUID
+    squad_id: uuid.UUID | None = None
     status: str
     rng_seed: int | None
     entrants: list[EntrantView]
