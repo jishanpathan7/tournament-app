@@ -1,14 +1,8 @@
 # nixpacks build configuration for the Playlane API.
-# Railway uses nixpacks to build the Python app image.
 #
-# python313 puts the interpreter on PATH as "python3" (not "python").
-# gcc is needed for C-extension packages (asyncpg, cryptography, argon2-cffi).
-
-[phases.setup]
-nixPkgs = ["python313", "gcc"]
-
-[phases.install]
-cmds = ["python3 -m pip install --upgrade pip", "python3 -m pip install -r requirements.txt"]
+# Python version is pinned via .python-version (3.13).
+# nixpacks auto-detects Python + pip from that file and requirements.txt.
+# We only override the start command — everything else is auto-configured.
 
 [start]
 cmd = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1"
