@@ -45,6 +45,7 @@ import {
   divisionsSchema,
   scheduleSchema,
 } from "@/features/tournaments/wizard-schemas";
+import { env } from "@/lib/env";
 import { errorMessage } from "@/lib/problem";
 import { cn } from "@/lib/utils";
 
@@ -146,7 +147,7 @@ function BasicInfoStep({ onNext }: { onNext: () => void }) {
         <Input id="slug" aria-invalid={!!errors.slug} {...register("slug")} />
         {watch("slug") ? (
           <p className="text-muted-foreground mt-1.5 flex items-center gap-1.5 text-xs">
-            <span className="font-mono">{process.env.NEXT_PUBLIC_APP_URL}/t/</span>
+            <span className="font-mono">{env.appUrl}/t/</span>
             <span className="text-foreground font-mono font-semibold">{watch("slug")}</span>
           </p>
         ) : null}
@@ -507,7 +508,7 @@ function ReviewStep({ onBack }: { onBack: () => void }) {
         <ReviewRow label="Name" value={draft.name || "—"} />
         <ReviewRow
           label="Web address"
-          value={draft.slug ? `${process.env.NEXT_PUBLIC_APP_URL}/t/${draft.slug}` : "—"}
+          value={draft.slug ? `${env.appUrl}/t/${draft.slug}` : "—"}
         />
         <ReviewRow label="Visibility" value={draft.visibility} />
         <ReviewRow label="Sport" value={getSport(draft.sportKey)?.label ?? draft.sportKey} />
