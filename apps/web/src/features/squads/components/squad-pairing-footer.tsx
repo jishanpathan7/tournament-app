@@ -30,7 +30,7 @@ export function SquadPairingFooter({
 
   if (pairing.isLoading) {
     return (
-      <div className="border-ink/10 text-muted-foreground flex items-center gap-2 border-t px-3 py-2 text-xs">
+      <div className="border-ink/10 flex items-center gap-2 border-t px-3 py-2 text-xs text-muted-foreground">
         <Loader2 className="h-3 w-3 animate-spin" />
         Checking pairs…
       </div>
@@ -42,7 +42,7 @@ export function SquadPairingFooter({
       <div className="border-ink/10 flex items-center justify-between gap-2 border-t px-3 py-2">
         <div className="flex items-center gap-1.5 text-xs">
           <CheckCircle2 className="text-mint-dark h-3.5 w-3.5" />
-          <span className="text-mint-dark font-semibold">{pairCount} pairs locked</span>
+          <span className="font-semibold text-mint-dark">{pairCount} pairs locked</span>
         </div>
         <Button tone="ghost" size="sm" onClick={onOpen} className="h-6 px-2 text-xs">
           View Pairs

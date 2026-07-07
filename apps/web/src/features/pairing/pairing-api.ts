@@ -12,7 +12,10 @@ import { api, apiGet } from "@/lib/api";
 /** Typed transport for the Smart Pairing Engine — generate/read/edit/swap/publish a
  * division's skill-balanced doubles teams. The backend engine owns every rule. */
 
-export function getPairing(divisionId: string, squadId?: string): Promise<PairingRunView | null> {
+export function getPairing(
+  divisionId: string,
+  squadId?: string,
+): Promise<PairingRunView | null> {
   const url = squadId
     ? `/divisions/${divisionId}/pairing?squad_id=${squadId}`
     : `/divisions/${divisionId}/pairing`;

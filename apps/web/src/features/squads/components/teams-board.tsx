@@ -214,7 +214,8 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const allAssigned =
     (squads.data?.summary.unassigned ?? 1) === 0 && (squads.data?.squads.length ?? 0) > 0;
   const allPaired =
-    allAssigned && (readiness.data?.divisions.every((d) => d.unpairedEntrants === 0) ?? false);
+    allAssigned &&
+    (readiness.data?.divisions.every((d) => d.unpairedEntrants === 0) ?? false);
 
   return (
     <div className="flex flex-col gap-6">
@@ -236,10 +237,8 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             <span>
               <strong>{board.summary.assigned}</strong> assigned
               {board.summary.unassigned > 0 && (
-                <span className="text-muted-foreground">
-                  {" "}
-                  · {board.summary.unassigned} unassigned
-                </span>
+
+                <span className="text-muted-foreground"> · {board.summary.unassigned} unassigned</span>
               )}
             </span>
             <span className="text-muted-foreground">·</span>
@@ -258,7 +257,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
               <Link href={`/console/tournaments/${tournamentId}/draws`}>Generate Matches →</Link>
             </Button>
           ) : allAssigned && firstDivisionId ? (
-            <div className="text-muted-foreground flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Shuffle className="text-candy h-4 w-4" />
               <span>Use &ldquo;Generate Doubles Pairs&rdquo; on each team below</span>
             </div>
@@ -290,7 +289,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
               {board.squads.map((squad) => (
                 <div
                   key={squad.id}
-                  className="border-ink shadow-sticker-xs flex flex-col overflow-hidden rounded-2xl border-2"
+                  className="border-ink flex flex-col overflow-hidden rounded-2xl border-2 shadow-sticker-xs"
                 >
                   <SquadColumn
                     squad={squad}
@@ -374,7 +373,8 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             onClick={() => setPairingSquad(null)}
           />
           {/* Slide-over panel */}
-          <div className="bg-background relative ml-auto h-full w-full max-w-lg overflow-hidden shadow-2xl">
+
+          <div className="relative ml-auto h-full w-full max-w-lg overflow-hidden bg-background shadow-2xl">
             <SquadPairingSheet
               squad={pairingSquad}
               divisionId={firstDivisionId}

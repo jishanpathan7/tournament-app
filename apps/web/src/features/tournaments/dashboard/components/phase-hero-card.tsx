@@ -160,7 +160,7 @@ function Step4Hero({ tournamentId, signals }: { tournamentId: string; signals: S
       <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
           {signals.franchiseMode
-            ? 'Open each team and use "Pair this team" to generate balanced doubles pairs within the squad.'
+            ? "Open each team and use \"Pair this team\" to generate balanced doubles pairs within the squad."
             : "Generate balanced doubles pairs within each team for each division."}
         </p>
         <div className="flex flex-wrap gap-2">
