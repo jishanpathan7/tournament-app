@@ -19,8 +19,8 @@ from starlette.responses import Response
 
 from app.api.deps import get_public_session
 from app.core.config import get_settings
-from app.core.limiter import limiter
 from app.core.factory import get_broadcaster, get_connection_manager, get_transport
+from app.core.limiter import limiter
 from app.db.models import Tournament
 from app.modules.public import service
 from app.modules.public.schemas import (
