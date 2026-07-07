@@ -281,6 +281,86 @@ async def swap_members(
     return run
 
 
+# ---- duplicate pair (odd squad size) ----
+
+
+async def add_duplicate_pair(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    run_id: uuid.UUID,
+    unpaired_id: uuid.UUID,
+    duplicate_id: uuid.UUID,
+) -> PairingRun:
+    """Captain resolves an odd-one-out player by picking an existing player to partner
+    them, allowing that player to compete in two pairs.
+
+    Constraints enforced:
+    - The run must be in DRAFT status.
+    - ``unpaired_id`` must *not* be in any existing proposed team (truly unpaired).
+    - ``duplicate_id`` must *already* be in an existing proposed team (plays twice).
+    - The two ids must be different.
+    - Both must be known entrants for this squad / division.
+
+    The resulting ProposedTeam is locked immediately — it represents a captain's explicit
+    decision and should survive any subsequent regenerate.
+    """
+    run = await _require_draft_run(session, org_id, run_id)
+    if unpaired_id == duplicate_id:
+        raise ValidationError("a player cannot be paired with themselves", code="invalid_pair")
+
+    paired: set[str] = {str(m) for t in run.proposed_teams for m in t.member_ids}
+    if str(unpaired_id) in paired:
+        raise ValidationError(
+            "that player is already assigned to a pair", code="already_paired"
+        )
+    if str(duplicate_id) not in paired:
+        raise ValidationError(
+            "the selected player is not in any existing pair — "
+            "choose someone who is already paired",
+            code="not_in_pair",
+        )
+
+    squad_id = _extract_squad_id(run)
+    ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
+
+    known = set(ctx.by_id)
+    for label, mid in [("unpaired player", str(unpaired_id)), ("duplicate player", str(duplicate_id))]:
+        if mid not in known:
+            raise ValidationError(
+                f"the {label} is not an eligible entrant for this run", code="invalid_pair"
+            )
+
+    weights = {str(r.id): ctx.profile.skill_weight(r.skill_level) for r in ctx.entrants}
+    target, max_dev = _run_bounds(run)
+    strength = weights.get(str(unpaired_id), Decimal(0)) + weights.get(
+        str(duplicate_id), Decimal(0)
+    )
+    confidence = pairing_confidence(strength, target, max_dev)
+
+    session.add(
+        ProposedTeam(
+            organization_id=org_id,
+            pairing_run_id=run.id,
+            member_ids=[str(unpaired_id), str(duplicate_id)],
+            strength=strength,
+            confidence=confidence,
+            reasons=["Duplicate pair — plays twice"],
+            locked=True,
+            team_name=None,
+        )
+    )
+    await session.flush()
+    await _emit(session, org_id, actor_id, run, events.PAIRING_EDITED)
+    return run
+
+
+def _extract_squad_id(run: PairingRun) -> uuid.UUID | None:
+    squad_id_str = (run.config or {}).get("squadId")
+    return uuid.UUID(squad_id_str) if squad_id_str else None
+
+
 # ---- publish ----
 
 
@@ -291,8 +371,7 @@ async def publish(
     source registration. Returns (published_teams, unpaired_count)."""
     run = await _require_draft_run(session, org_id, run_id, lock=True)
     # Re-scope to the squad so that franchise runs (APPROVED registrations) are found.
-    squad_id_str = (run.config or {}).get("squadId")
-    squad_id = uuid.UUID(squad_id_str) if squad_id_str else None
+    squad_id = _extract_squad_id(run)
     ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
 
     paired_ids: set[str] = set()
@@ -559,8 +638,7 @@ async def build_run_view(
         run = loaded
     # Extract squad scope so the entrant list, unpaired count, and summary all reflect
     # only the squad's members — not the whole division.
-    squad_id_str = (run.config or {}).get("squadId")
-    squad_id = uuid.UUID(squad_id_str) if squad_id_str else None
+    squad_id = _extract_squad_id(run)
     ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
 
     # Build reg_id → squad_name map for display

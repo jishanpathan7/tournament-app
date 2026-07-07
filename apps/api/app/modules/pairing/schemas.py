@@ -82,3 +82,16 @@ class PublishPairingResponse(ApiModel):
 
 class RepairPairingResponse(ApiModel):
     teams_repaired: int
+
+
+class AddDuplicatePairRequest(ApiModel):
+    """Captain assigns a partner to an odd-one-out player by choosing an existing
+    player to play twice.  The resulting duplicate pair is locked automatically so
+    a regenerate does not remove it.
+
+    ``unpaired_id``  – registration id of the player who currently has no partner.
+    ``duplicate_id`` – registration id of the player who will play a second match.
+    """
+
+    unpaired_id: uuid.UUID
+    duplicate_id: uuid.UUID

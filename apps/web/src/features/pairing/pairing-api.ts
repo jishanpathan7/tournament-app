@@ -50,3 +50,16 @@ export async function publishPairing(runId: string): Promise<PublishPairingRespo
   const { data } = await api.post<PublishPairingResponse>(`/pairing/runs/${runId}/publish`, {});
   return data;
 }
+
+/** Resolve an odd-one-out player: choose an existing player to partner them,
+ * allowing that player to compete in two pairs. Returns the updated run. */
+export async function addDuplicatePair(
+  runId: string,
+  body: { unpairedId: string; duplicateId: string },
+): Promise<PairingRunView> {
+  const { data } = await api.post<PairingRunView>(
+    `/pairing/runs/${runId}/duplicate-pair`,
+    body,
+  );
+  return data;
+}

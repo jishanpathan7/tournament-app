@@ -57,6 +57,19 @@ export function useSwapMembers(divisionId: string, runId: string, squadId?: stri
   });
 }
 
+/** Resolve an odd-one-out player by choosing an existing player to play twice.
+ * Seeds the updated run directly into the query cache. */
+export function useAddDuplicatePair(divisionId: string, runId: string, squadId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: { unpairedId: string; duplicateId: string }) =>
+      pairingApi.addDuplicatePair(runId, body),
+    onSuccess: (run) => {
+      queryClient.setQueryData(queryKeys.divisions.pairing(divisionId, squadId), run);
+    },
+  });
+}
+
 /** Publish the draft → real pair participants. Invalidates the run + the division's
  * participant list (which the draw step reads). */
 export function usePublishPairing(divisionId: string, tournamentId: string, squadId?: string) {

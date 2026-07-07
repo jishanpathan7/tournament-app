@@ -22,6 +22,7 @@ from app.api.deps import (
 from app.core import authz
 from app.modules.pairing import service
 from app.modules.pairing.schemas import (
+    AddDuplicatePairRequest,
     GeneratePairingRequest,
     PairingRunView,
     ProposedTeamView,
@@ -147,6 +148,35 @@ async def publish_pairing(
         run_id=run_id,
     )
     return PublishPairingResponse(run_id=run_id, published_teams=published, unpaired_count=unpaired)
+
+
+@router.post(
+    "/pairing/runs/{run_id}/duplicate-pair",
+    response_model=PairingRunView,
+    dependencies=[Depends(authed_csrf)],
+    summary="Add a duplicate pair to resolve an odd-one-out player",
+    description=(
+        "When a squad has an odd number of players the engine leaves one player unpaired. "
+        "The captain resolves this by choosing an existing player to partner the odd-one-out, "
+        "allowing that player to compete in two pairs.  The resulting pair is locked so a "
+        "regenerate does not remove it."
+    ),
+)
+async def add_duplicate_pair(
+    run_id: uuid.UUID,
+    body: AddDuplicatePairRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> PairingRunView:
+    run = await service.add_duplicate_pair(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        run_id=run_id,
+        unpaired_id=body.unpaired_id,
+        duplicate_id=body.duplicate_id,
+    )
+    return await service.build_run_view(session, principal.organization_id, run)
 
 
 @router.post(
