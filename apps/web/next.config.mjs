@@ -19,8 +19,11 @@ const CSP_DIRECTIVES = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
   "font-src 'self' data:",
-  // API is same-origin in production (proxied). Allow ws: in dev for HMR.
-  isProd ? "connect-src 'self'" : "connect-src 'self' ws: http: https:",
+  // API is same-origin in production (proxied). Sentry ingest is always allowed
+  // so that browser error reports can reach Sentry. Allow ws: in dev for HMR.
+  isProd
+    ? "connect-src 'self' https://*.sentry.io"
+    : "connect-src 'self' ws: http: https:",
   "frame-ancestors 'none'",
   "form-action 'self'",
   "base-uri 'self'",

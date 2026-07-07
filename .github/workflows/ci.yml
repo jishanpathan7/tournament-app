@@ -71,6 +71,9 @@ jobs:
     env:
       NEXT_PUBLIC_API_URL: ""
       NEXT_PUBLIC_APP_URL: "https://example.playlane.app"
+      # Empty DSN — Sentry is disabled in CI but the env var must exist so the
+      # build does not fall back to undefined-check warnings.
+      NEXT_PUBLIC_SENTRY_DSN: ""
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
