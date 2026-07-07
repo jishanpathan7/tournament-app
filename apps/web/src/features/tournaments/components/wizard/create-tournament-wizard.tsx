@@ -506,10 +506,7 @@ function ReviewStep({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col gap-4">
       <div className="divide-border divide-y">
         <ReviewRow label="Name" value={draft.name || "—"} />
-        <ReviewRow
-          label="Web address"
-          value={draft.slug ? `${env.appUrl}/t/${draft.slug}` : "—"}
-        />
+        <ReviewRow label="Web address" value={draft.slug ? `${env.appUrl}/t/${draft.slug}` : "—"} />
         <ReviewRow label="Visibility" value={draft.visibility} />
         <ReviewRow label="Sport" value={getSport(draft.sportKey)?.label ?? draft.sportKey} />
         <ReviewRow label="Format" value={getFormat(draft.format)?.label ?? draft.format} />

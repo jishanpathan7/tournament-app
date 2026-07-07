@@ -18,11 +18,7 @@ export default function PublicError({
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-md items-center justify-center px-4">
-      <ErrorState
-        error={error}
-        onRetry={reset}
-        title="This page couldn't load"
-      />
+      <ErrorState error={error} onRetry={reset} title="This page couldn't load" />
     </div>
   );
 }
