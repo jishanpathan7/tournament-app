@@ -4,5 +4,5 @@
   "buildCommand": "cd ../.. && yarn workspace web build",
   "installCommand": "cd ../.. && yarn install --frozen-lockfile",
   "outputDirectory": ".next",
-  "ignoreCommand": "git diff HEAD^ HEAD --name-only | grep -q '^apps/web\\|^packages/' && exit 1 || exit 0"
+  "ignoreCommand": "git diff HEAD^ HEAD --name-only | grep -q '^apps/web\\|^packages/' && exit 0 || exit 1"
 }
