@@ -1,6 +1,7 @@
 """Alembic environment — async, targets app.core.db.Base.metadata."""
 
 import asyncio
+import os
 from logging.config import fileConfig
 
 from alembic import context
@@ -17,12 +18,25 @@ if config.config_file_name:
 
 target_metadata = Base.metadata
 
+_LOCAL_DEFAULT = "postgresql+asyncpg://tournament:tournament@localhost:5432/tournament"
+
 
 def _url() -> str:
-    return (
-        get_settings().database_url
-        or "postgresql+asyncpg://tournament:tournament@localhost:5432/tournament"
-    )
+    """Return the migration connection URL.
+
+    Migrations must run against the **direct** (non-pooled) Neon endpoint
+    to avoid PgBouncer prepared-statement conflicts.  Set ``DIRECT_URL`` in
+    production (Railway env); the app's pooled ``DATABASE_URL`` is used as a
+    fallback in dev/CI where a connection pooler is not in the path.
+
+    Neon direct URLs use the ``postgresql://`` scheme; we normalise to
+    ``postgresql+asyncpg://`` so SQLAlchemy's async engine accepts them.
+    """
+    url = os.environ.get("DIRECT_URL") or get_settings().database_url or _LOCAL_DEFAULT
+    # Normalise bare postgresql:// → postgresql+asyncpg:// for the async engine.
+    if url.startswith("postgresql://"):
+        url = "postgresql+asyncpg://" + url[len("postgresql://"):]
+    return url
 
 
 def run_migrations_offline() -> None:
