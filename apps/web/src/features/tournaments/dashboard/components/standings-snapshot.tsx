@@ -31,7 +31,9 @@ export function StandingsSnapshot({
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {drawnStages.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Standings appear once draws are generated.</p>
+          <p className="text-muted-foreground text-sm">
+            Standings appear once draws are generated.
+          </p>
         ) : (
           drawnStages.map((stage) => {
             const rows = topStandingsRows(standingsByStage.get(stage.id));

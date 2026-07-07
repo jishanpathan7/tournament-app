@@ -65,7 +65,9 @@ export function PublicTournamentProvider({
   });
 
   return (
-    <PublicTournamentContext.Provider value={{ tournament: tournament.data ?? initialTournament, slug }}>
+    <PublicTournamentContext.Provider
+      value={{ tournament: tournament.data ?? initialTournament, slug }}
+    >
       {children}
     </PublicTournamentContext.Provider>
   );

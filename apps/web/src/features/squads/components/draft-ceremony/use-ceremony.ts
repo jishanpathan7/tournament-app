@@ -31,22 +31,22 @@ export function skillLabel(s: string | null): string {
 }
 
 export function useCeremony(tournamentId: string) {
-  const squadsQuery   = useSquads(tournamentId);
+  const squadsQuery = useSquads(tournamentId);
   const assignMutation = useAssignSquadMember(tournamentId);
 
-  const [phase, setPhase]           = useState<CeremonyPhase>("intro");
+  const [phase, setPhase] = useState<CeremonyPhase>("intro");
   const [activeSkill, setActiveSkill] = useState<string | null | undefined>(undefined);
-  const [history, setHistory]       = useState<Assignment[]>([]);
+  const [history, setHistory] = useState<Assignment[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
 
   // Round-robin pick index: cycles through squads in order
-  const [pickIndex, setPickIndex]   = useState(0);
+  const [pickIndex, setPickIndex] = useState(0);
 
-  const board         = squadsQuery.data;
+  const board = squadsQuery.data;
   const allUnassigned = board?.unassigned ?? [];
-  const squads        = board?.squads ?? [];
+  const squads = board?.squads ?? [];
 
-  const skillGroups   = uniqueSkillGroups(allUnassigned);
+  const skillGroups = uniqueSkillGroups(allUnassigned);
   const resolvedSkill = activeSkill === undefined ? (skillGroups[0] ?? null) : activeSkill;
 
   const assignedIds = useRef<Set<string>>(new Set());
@@ -75,13 +75,16 @@ export function useCeremony(tournamentId: string) {
     player: UnassignedRegistrationView,
     squadId?: string,
   ): Promise<Assignment | null> {
-    const targetId   = squadId ?? currentSquad?.id;
+    const targetId = squadId ?? currentSquad?.id;
     const targetSquad = squads.find((s) => s.id === targetId);
     if (!targetId || !targetSquad) return null;
 
     setIsAssigning(true);
     try {
-      await assignMutation.mutateAsync({ squadId: targetId, registrationId: player.registrationId });
+      await assignMutation.mutateAsync({
+        squadId: targetId,
+        registrationId: player.registrationId,
+      });
       assignedIds.current = new Set([...assignedIds.current, player.registrationId]);
 
       const record: Assignment = {
@@ -134,7 +137,7 @@ export function useCeremony(tournamentId: string) {
     currentSquad,
     pickIndex,
     isLoading: squadsQuery.isLoading,
-    isError:   squadsQuery.isError,
+    isError: squadsQuery.isError,
     start,
     assign,
     undo,

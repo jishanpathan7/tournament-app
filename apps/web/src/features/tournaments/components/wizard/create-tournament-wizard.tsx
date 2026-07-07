@@ -32,7 +32,11 @@ import {
   getSport,
 } from "@/features/tournaments/config";
 import { useCreateTournamentFlow } from "@/features/tournaments/use-tournaments";
-import { slugify, useTournamentDraft, type DivisionParticipantKind } from "@/features/tournaments/use-tournament-draft";
+import {
+  slugify,
+  useTournamentDraft,
+  type DivisionParticipantKind,
+} from "@/features/tournaments/use-tournament-draft";
 import {
   type BasicInfoValues,
   type DivisionsValues,
@@ -138,16 +142,12 @@ function BasicInfoStep({ onNext }: { onNext: () => void }) {
       <Field label="Tournament name" htmlFor="name" error={errors.name?.message}>
         <Input id="name" aria-invalid={!!errors.name} {...register("name")} />
       </Field>
-      <Field
-        label="Your tournament's web address"
-        htmlFor="slug"
-        error={errors.slug?.message}
-      >
+      <Field label="Your tournament's web address" htmlFor="slug" error={errors.slug?.message}>
         <Input id="slug" aria-invalid={!!errors.slug} {...register("slug")} />
         {watch("slug") ? (
-          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+          <p className="text-muted-foreground mt-1.5 flex items-center gap-1.5 text-xs">
             <span className="font-mono">{process.env.NEXT_PUBLIC_APP_URL}/t/</span>
-            <span className="font-mono font-semibold text-foreground">{watch("slug")}</span>
+            <span className="text-foreground font-mono font-semibold">{watch("slug")}</span>
           </p>
         ) : null}
       </Field>
@@ -224,9 +224,9 @@ function SportStep({ onNext, onBack }: { onNext: () => void; onBack: () => void 
 type PlayerRange = "small" | "medium" | "large";
 
 const PLAYER_RANGES: { key: PlayerRange; label: string; sublabel: string }[] = [
-  { key: "small",  label: "Up to 16",  sublabel: "players / pairs" },
-  { key: "medium", label: "17 – 32",   sublabel: "players / pairs" },
-  { key: "large",  label: "33 or more", sublabel: "players / pairs" },
+  { key: "small", label: "Up to 16", sublabel: "players / pairs" },
+  { key: "medium", label: "17 – 32", sublabel: "players / pairs" },
+  { key: "large", label: "33 or more", sublabel: "players / pairs" },
 ];
 
 function recommendedFormat(range: PlayerRange | null): string | null {
@@ -260,7 +260,7 @@ function FormatStep({ onNext, onBack }: { onNext: () => void; onBack: () => void
 
       {/* Player count picker */}
       <div className="flex flex-col gap-2">
-        <p className="text-2xs font-mono font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+        <p className="text-2xs text-muted-foreground font-mono font-semibold uppercase tracking-[0.18em]">
           How many players do you expect?
         </p>
         <div className="flex flex-wrap gap-2">
@@ -285,7 +285,7 @@ function FormatStep({ onNext, onBack }: { onNext: () => void; onBack: () => void
 
       {/* Recommendation callout */}
       {range && (
-        <p className="rounded-xl border-2 border-mint bg-mint-tint px-4 py-2.5 text-sm text-mint-dark font-medium">
+        <p className="border-mint bg-mint-tint text-mint-dark rounded-xl border-2 px-4 py-2.5 text-sm font-medium">
           {recommendationLabel(range)}
         </p>
       )}
@@ -421,7 +421,8 @@ function DivisionsStep({ onNext, onBack }: { onNext: () => void; onBack: () => v
         onClick={() =>
           append({
             name: "",
-            participantType: (kinds[0] ?? "individual") as DivisionsValues["divisions"][number]["participantType"],
+            participantType: (kinds[0] ??
+              "individual") as DivisionsValues["divisions"][number]["participantType"],
           })
         }
       >
@@ -504,7 +505,10 @@ function ReviewStep({ onBack }: { onBack: () => void }) {
     <div className="flex flex-col gap-4">
       <div className="divide-border divide-y">
         <ReviewRow label="Name" value={draft.name || "—"} />
-        <ReviewRow label="Web address" value={draft.slug ? `${process.env.NEXT_PUBLIC_APP_URL}/t/${draft.slug}` : "—"} />
+        <ReviewRow
+          label="Web address"
+          value={draft.slug ? `${process.env.NEXT_PUBLIC_APP_URL}/t/${draft.slug}` : "—"}
+        />
         <ReviewRow label="Visibility" value={draft.visibility} />
         <ReviewRow label="Sport" value={getSport(draft.sportKey)?.label ?? draft.sportKey} />
         <ReviewRow label="Format" value={getFormat(draft.format)?.label ?? draft.format} />

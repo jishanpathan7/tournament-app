@@ -68,7 +68,9 @@ function MatchRow({
         <p className="font-semibold">
           vs {match.opponentLabel}
           {match.scoreSummary ? (
-            <span className="text-muted-foreground ml-2 font-mono text-sm">{match.scoreSummary}</span>
+            <span className="text-muted-foreground ml-2 font-mono text-sm">
+              {match.scoreSummary}
+            </span>
           ) : null}
         </p>
         <p className="text-muted-foreground text-sm">

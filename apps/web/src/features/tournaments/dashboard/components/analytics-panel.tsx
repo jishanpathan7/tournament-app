@@ -49,7 +49,7 @@ function TeamRankings({ stages }: { stages: StageResponse[] }) {
                 >
                   <td className="px-3 py-2 text-center">
                     {row.rank === 1 ? (
-                      <Medal className="text-yellow-500 mx-auto h-4 w-4" />
+                      <Medal className="mx-auto h-4 w-4 text-yellow-500" />
                     ) : (
                       <span className="text-muted-foreground font-mono text-xs">{row.rank}</span>
                     )}

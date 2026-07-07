@@ -46,7 +46,7 @@ export function ProposedTeamCard({
           {(() => {
             const squadName = entrants.get(team.memberIds[0] ?? "")?.squadName;
             return squadName ? (
-              <Badge tone="ink" className="w-fit text-2xs">
+              <Badge tone="ink" className="text-2xs w-fit">
                 {squadName}
               </Badge>
             ) : null;
@@ -95,7 +95,7 @@ export function ProposedTeamCard({
                   {chip}
                 </button>
               ) : (
-                <div className="border-border flex items-center rounded-xl border-2 bg-card px-3 py-2">
+                <div className="border-border bg-card flex items-center rounded-xl border-2 px-3 py-2">
                   {chip}
                 </div>
               )}

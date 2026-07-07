@@ -79,9 +79,7 @@ export function ScoreEntryForm({
 
   const addGame = () =>
     setValues((s) =>
-      s.games.length >= rules.bestOf
-        ? s
-        : { ...s, games: [...s.games, { a: null, b: null }] },
+      s.games.length >= rules.bestOf ? s : { ...s, games: [...s.games, { a: null, b: null }] },
     );
   const removeGame = (index: number) =>
     setValues((s) => ({ ...s, games: s.games.filter((_, i) => i !== index) }));
@@ -140,7 +138,7 @@ export function ScoreEntryForm({
         <div className="flex flex-col gap-2">
           {values.games.map((game, i) => (
             <div key={i} className="flex items-center gap-2">
-              <span className="text-muted-foreground w-16 shrink-0 text-2xs font-mono uppercase tracking-[0.14em]">
+              <span className="text-muted-foreground text-2xs w-16 shrink-0 font-mono uppercase tracking-[0.14em]">
                 Game {i + 1}
               </span>
               <Input
@@ -229,7 +227,10 @@ export function ScoreEntryForm({
       ) : null}
 
       {error ? (
-        <p className="border-pink bg-pink-tint text-ink rounded-2xl border-2 p-3 text-sm" role="alert">
+        <p
+          className="border-pink bg-pink-tint text-ink rounded-2xl border-2 p-3 text-sm"
+          role="alert"
+        >
           {error}
         </p>
       ) : null}

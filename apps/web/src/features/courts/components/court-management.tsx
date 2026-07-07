@@ -18,7 +18,14 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { BulkCreateCourtsDialog } from "@/features/courts/components/bulk-create-courts-dialog";
 import { CreateCourtDialog } from "@/features/courts/components/create-court-dialog";
 import { courtStatusMeta } from "@/features/courts/config";
@@ -132,12 +139,7 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
           >
             Clear
           </Button>
-          <Button
-            tone="paper"
-            size="sm"
-            onClick={handleBulkRemove}
-            disabled={bulkRemove.isPending}
-          >
+          <Button tone="paper" size="sm" onClick={handleBulkRemove} disabled={bulkRemove.isPending}>
             <Trash2 className="h-4 w-4" />
             Remove selected
           </Button>
@@ -247,10 +249,7 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
                           );
                         }}
                       >
-                        <SelectTrigger
-                          className="h-8 w-40"
-                          aria-label={`${row.court.name} status`}
-                        >
+                        <SelectTrigger className="h-8 w-40" aria-label={`${row.court.name} status`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -278,8 +277,7 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
                                 return next;
                               });
                             },
-                            onError: (e) =>
-                              toast.error(errorMessage(e, "Couldn't remove court")),
+                            onError: (e) => toast.error(errorMessage(e, "Couldn't remove court")),
                           });
                         }}
                       >
@@ -294,7 +292,11 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
         </Table>
       )}
 
-      <CreateCourtDialog tournamentId={tournamentId} open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateCourtDialog
+        tournamentId={tournamentId}
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+      />
       <BulkCreateCourtsDialog
         tournamentId={tournamentId}
         open={bulkCreateOpen}

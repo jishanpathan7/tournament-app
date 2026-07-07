@@ -3,7 +3,13 @@
 import type { MatchView, ParticipantResponse, StageResponse } from "@tournament/api-client";
 
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { matchStatusMeta } from "@/features/draws/config";
 import { courtLabel, isScoreable } from "@/features/matches/config";
@@ -66,13 +72,17 @@ export function MatchDetailDialog({
         <DialogHeader>
           <div className="flex items-center gap-3">
             <DialogTitle className="text-xl">
-              {match.sides.map((s) => participantName(s.participantId, participantsById)).join(" vs ")}
+              {match.sides
+                .map((s) => participantName(s.participantId, participantsById))
+                .join(" vs ")}
             </DialogTitle>
             <Badge tone={status.tone}>{status.label}</Badge>
           </div>
           <DialogDescription>
             {tournamentName}
-            {stage ? ` · ${getFormat(stage.type)?.label ?? stage.type} · Stage ${stage.seq + 1}` : ""}
+            {stage
+              ? ` · ${getFormat(stage.type)?.label ?? stage.type} · Stage ${stage.seq + 1}`
+              : ""}
           </DialogDescription>
         </DialogHeader>
 

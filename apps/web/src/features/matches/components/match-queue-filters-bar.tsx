@@ -81,7 +81,10 @@ export function MatchQueueFiltersBar({
         </SelectContent>
       </Select>
 
-      <Select value={filters.stageId} onValueChange={(stageId) => onChange({ ...filters, stageId })}>
+      <Select
+        value={filters.stageId}
+        onValueChange={(stageId) => onChange({ ...filters, stageId })}
+      >
         <SelectTrigger className="sm:w-48" aria-label="Filter by stage">
           <SelectValue />
         </SelectTrigger>
@@ -96,7 +99,10 @@ export function MatchQueueFiltersBar({
       </Select>
 
       {rounds.length > 1 ? (
-        <Select value={filters.roundId} onValueChange={(roundId) => onChange({ ...filters, roundId })}>
+        <Select
+          value={filters.roundId}
+          onValueChange={(roundId) => onChange({ ...filters, roundId })}
+        >
           <SelectTrigger className="sm:w-40" aria-label="Filter by round">
             <SelectValue />
           </SelectTrigger>
@@ -112,7 +118,10 @@ export function MatchQueueFiltersBar({
       ) : null}
 
       {groups.length > 1 ? (
-        <Select value={filters.groupId} onValueChange={(groupId) => onChange({ ...filters, groupId })}>
+        <Select
+          value={filters.groupId}
+          onValueChange={(groupId) => onChange({ ...filters, groupId })}
+        >
           <SelectTrigger className="sm:w-40" aria-label="Filter by group">
             <SelectValue />
           </SelectTrigger>
@@ -128,7 +137,10 @@ export function MatchQueueFiltersBar({
       ) : null}
 
       {courts.length > 0 ? (
-        <Select value={filters.courtId} onValueChange={(courtId) => onChange({ ...filters, courtId })}>
+        <Select
+          value={filters.courtId}
+          onValueChange={(courtId) => onChange({ ...filters, courtId })}
+        >
           <SelectTrigger className="sm:w-40" aria-label="Filter by court">
             <SelectValue />
           </SelectTrigger>

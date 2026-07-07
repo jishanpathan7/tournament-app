@@ -67,13 +67,15 @@ export function WelcomeGuide({ name }: { name?: string }) {
   return (
     <div className="flex flex-col gap-6">
       {/* Welcome banner */}
-      <div className="bg-ink text-white shadow-sticker relative flex flex-col gap-2 rounded-3xl border-2 border-ink p-6 sm:flex-row sm:items-center sm:justify-between">
+      <div className="bg-ink shadow-sticker border-ink relative flex flex-col gap-2 rounded-3xl border-2 p-6 text-white sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-1">
           <p className="text-2xs font-mono font-semibold uppercase tracking-[0.2em] text-white/50">
             Welcome to Playlane
           </p>
           <h2 className="font-serif text-2xl font-semibold tracking-tight">
-            {name ? `Hey ${name} — let's run your first tournament.` : "Let's run your first tournament."}
+            {name
+              ? `Hey ${name} — let's run your first tournament.`
+              : "Let's run your first tournament."}
           </h2>
           <p className="text-sm text-white/60">
             Three steps. Takes about 5 minutes to get from zero to a live draw.
@@ -128,7 +130,7 @@ function StepCard({ step }: { step: Step }) {
             />
           )}
         </div>
-        <span className="text-2xs font-mono font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+        <span className="text-2xs text-muted-foreground font-mono font-semibold uppercase tracking-[0.2em]">
           Step {step.number}
         </span>
       </div>

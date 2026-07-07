@@ -45,9 +45,7 @@ describe("registrationEntrantLabel", () => {
       submittedBy: "u-org",
       formResponse: { name: "Mihir Tuli", email: "m@example.com" },
     });
-    expect(registrationEntrantLabel(registration, new Map([["u-org", member]]))).toBe(
-      "Mihir Tuli",
-    );
+    expect(registrationEntrantLabel(registration, new Map([["u-org", member]]))).toBe("Mihir Tuli");
   });
 });
 

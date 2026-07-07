@@ -93,9 +93,15 @@ export function TournamentActions({ tournament }: { tournament: TournamentRespon
                   <DropdownMenuItem disabled>No actions available</DropdownMenuItem>
                 ) : null}
                 {forward.map((t) => (
-                  <DropdownMenuItem key={t.to} onSelect={() => setPending(t)} className="flex flex-col items-start gap-0.5">
+                  <DropdownMenuItem
+                    key={t.to}
+                    onSelect={() => setPending(t)}
+                    className="flex flex-col items-start gap-0.5"
+                  >
                     <span className="font-semibold">{t.label}</span>
-                    <span className="text-muted-foreground text-xs font-normal leading-snug whitespace-normal">{t.description}</span>
+                    <span className="text-muted-foreground whitespace-normal text-xs font-normal leading-snug">
+                      {t.description}
+                    </span>
                   </DropdownMenuItem>
                 ))}
                 {archive ? (

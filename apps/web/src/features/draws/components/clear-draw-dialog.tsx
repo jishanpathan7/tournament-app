@@ -39,8 +39,8 @@ export function ClearDrawDialog({
         <DialogHeader>
           <DialogTitle className="text-xl">Clear draw</DialogTitle>
           <DialogDescription>
-            This deletes every match, round, group, and standing this stage generated, so you
-            can regenerate it from scratch. This can&apos;t be undone.
+            This deletes every match, round, group, and standing this stage generated, so you can
+            regenerate it from scratch. This can&apos;t be undone.
           </DialogDescription>
         </DialogHeader>
 

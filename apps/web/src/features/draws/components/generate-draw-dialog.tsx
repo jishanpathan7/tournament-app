@@ -76,9 +76,9 @@ export function GenerateDrawDialog({
         ) : null}
 
         {checkinWarning ? (
-          <div className="border-yellow bg-yellow-tint text-ink rounded-2xl border-2 p-4 text-sm flex flex-col gap-3">
+          <div className="border-yellow bg-yellow-tint text-ink flex flex-col gap-3 rounded-2xl border-2 p-4 text-sm">
             <div className="flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
               <p>{checkinWarning}</p>
             </div>
             <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function GenerateDrawDialog({
                 checked={overrideReadiness}
                 onCheckedChange={(v) => setOverrideReadiness(!!v)}
               />
-              <Label htmlFor="override-readiness" className="text-sm cursor-pointer">
+              <Label htmlFor="override-readiness" className="cursor-pointer text-sm">
                 Override — generate draw anyway without all check-ins
               </Label>
             </div>
@@ -101,8 +101,8 @@ export function GenerateDrawDialog({
         ) : null}
 
         <p className="text-muted-foreground text-sm">
-          This creates the full match schedule now. You won&apos;t be able to change the
-          participant list without clearing the draw first.
+          This creates the full match schedule now. You won&apos;t be able to change the participant
+          list without clearing the draw first.
         </p>
 
         <DialogFooter className="mt-2">
@@ -142,7 +142,11 @@ export function GenerateDrawDialog({
               );
             }}
           >
-            {generate.isPending ? <Spinner className="text-white" /> : <Shuffle className="h-4 w-4" strokeWidth={2.25} />}
+            {generate.isPending ? (
+              <Spinner className="text-white" />
+            ) : (
+              <Shuffle className="h-4 w-4" strokeWidth={2.25} />
+            )}
             Generate draw
           </Button>
         </DialogFooter>

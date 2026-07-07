@@ -52,7 +52,10 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
-  const stagesById = useMemo(() => new Map((stages.data ?? []).map((s) => [s.id, s])), [stages.data]);
+  const stagesById = useMemo(
+    () => new Map((stages.data ?? []).map((s) => [s.id, s])),
+    [stages.data],
+  );
 
   const filtered = useMemo(
     () => applyMatchQueueFilters(matches.data ?? [], filters, participantsById),
@@ -118,7 +121,11 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
           />
 
           {matches.isError ? (
-            <ErrorState error={matches.error} onRetry={() => matches.refetch()} title="Couldn't load matches" />
+            <ErrorState
+              error={matches.error}
+              onRetry={() => matches.refetch()}
+              title="Couldn't load matches"
+            />
           ) : (matches.data?.length ?? 0) === 0 ? (
             <EmptyState
               icon={Swords}
@@ -132,7 +139,11 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
               title="No matches match"
               description="Try different filters."
               action={
-                <Button tone="paper" size="sm" onClick={() => setFilters(DEFAULT_MATCH_QUEUE_FILTERS)}>
+                <Button
+                  tone="paper"
+                  size="sm"
+                  onClick={() => setFilters(DEFAULT_MATCH_QUEUE_FILTERS)}
+                >
                   Clear filters
                 </Button>
               }

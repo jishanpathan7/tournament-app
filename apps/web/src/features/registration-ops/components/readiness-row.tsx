@@ -16,15 +16,14 @@ export function ReadinessRow({
   tournamentId: string;
   compact?: boolean;
 }) {
-  const progressPct =
-    view.approved > 0 ? Math.round((view.checkedIn / view.approved) * 100) : 0;
+  const progressPct = view.approved > 0 ? Math.round((view.checkedIn / view.approved) * 100) : 0;
 
   return (
     <div
       className={
         compact
-          ? "flex flex-col gap-2 rounded-xl border border-border p-3"
-          : "flex flex-col gap-3 rounded-2xl border border-border p-4"
+          ? "border-border flex flex-col gap-2 rounded-xl border p-3"
+          : "border-border flex flex-col gap-3 rounded-2xl border p-4"
       }
     >
       <div className="flex items-start justify-between gap-4">

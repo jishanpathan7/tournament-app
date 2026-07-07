@@ -47,7 +47,7 @@ export function ActivityTimeline({ tournamentId }: { tournamentId: string }) {
                     {event.entity}
                   </span>
                 </div>
-                <span className="text-muted-foreground shrink-0 font-mono text-2xs tabular-nums">
+                <span className="text-muted-foreground text-2xs shrink-0 font-mono tabular-nums">
                   {new Date(event.createdAt).toLocaleString(undefined, {
                     dateStyle: "medium",
                     timeStyle: "short",

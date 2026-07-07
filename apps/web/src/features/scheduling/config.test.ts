@@ -106,7 +106,9 @@ describe("matchParticipantLabel", () => {
 
   it("shows TBD for a side with no resolved participant lookup", () => {
     const match = makeMatch({
-      sides: [{ participantId: "p-1", outcome: null, scoreFor: null, scoreAgainst: null, rank: null }],
+      sides: [
+        { participantId: "p-1", outcome: null, scoreFor: null, scoreAgainst: null, rank: null },
+      ],
     });
     expect(matchParticipantLabel(match, new Map())).toBe("TBD");
   });
@@ -137,8 +139,20 @@ describe("conflictLabel / isHardConflict", () => {
 describe("conflictsForMatch", () => {
   it("filters conflicts down to the given match id", () => {
     const conflicts = [
-      { kind: "court_overlap", matchId: "m-1", otherMatchId: "m-2", participantId: null, message: "x" },
-      { kind: "court_overlap", matchId: "m-2", otherMatchId: "m-1", participantId: null, message: "x" },
+      {
+        kind: "court_overlap",
+        matchId: "m-1",
+        otherMatchId: "m-2",
+        participantId: null,
+        message: "x",
+      },
+      {
+        kind: "court_overlap",
+        matchId: "m-2",
+        otherMatchId: "m-1",
+        participantId: null,
+        message: "x",
+      },
     ];
     expect(conflictsForMatch(conflicts, "m-1")).toEqual([conflicts[0]]);
   });

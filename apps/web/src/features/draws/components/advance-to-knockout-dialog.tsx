@@ -69,10 +69,7 @@ export function AdvanceToKnockoutDialog({
 
         <div className="flex flex-col gap-3 py-2">
           <Label htmlFor="take-select">Participants to advance</Label>
-          <Select
-            value={String(take)}
-            onValueChange={(v) => setTake(Number(v))}
-          >
+          <Select value={String(take)} onValueChange={(v) => setTake(Number(v))}>
             <SelectTrigger id="take-select">
               <SelectValue />
             </SelectTrigger>
@@ -85,8 +82,8 @@ export function AdvanceToKnockoutDialog({
             </SelectContent>
           </Select>
           <p className="text-muted-foreground text-xs">
-            Seeded by current standings rank. A balanced bracket sized to the next power of two
-            is generated (byes auto-resolved).
+            Seeded by current standings rank. A balanced bracket sized to the next power of two is
+            generated (byes auto-resolved).
           </p>
         </div>
 

@@ -38,7 +38,12 @@ describe("PublicLiveMatchView", () => {
         id: MATCH_ID,
         status: "completed",
         roundLabel: "Final",
-        resultPayload: { games: [[21, 15], [21, 18]] },
+        resultPayload: {
+          games: [
+            [21, 15],
+            [21, 18],
+          ],
+        },
         sides: [
           side("p-1", { outcome: "win", scoreFor: 2 }),
           side("p-2", { outcome: "loss", scoreFor: 0 }),

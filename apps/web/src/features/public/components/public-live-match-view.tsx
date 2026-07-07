@@ -67,7 +67,9 @@ export function PublicLiveMatchView({ slug, matchId }: { slug: string; matchId: 
 
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="font-serif text-3xl font-semibold tracking-tight">
-          {match.data.sides.map((s) => participantName(s.participantId, participantsById)).join(" vs ")}
+          {match.data.sides
+            .map((s) => participantName(s.participantId, participantsById))
+            .join(" vs ")}
         </h1>
         <Badge tone={status.tone}>{status.label}</Badge>
       </div>
@@ -79,7 +81,9 @@ export function PublicLiveMatchView({ slug, matchId }: { slug: string; matchId: 
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           {match.data.sides.length === 0 ? (
-            <p className="text-muted-foreground text-sm">Waiting on an earlier match to be decided.</p>
+            <p className="text-muted-foreground text-sm">
+              Waiting on an earlier match to be decided.
+            </p>
           ) : (
             match.data.sides.map((side) => (
               <div key={side.participantId} className="flex items-center justify-between gap-3">
@@ -143,7 +147,7 @@ export function PublicLiveMatchView({ slug, matchId }: { slug: string; matchId: 
                 className="border-border flex items-center justify-between gap-3 border-t pt-2 text-sm first:border-t-0 first:pt-0"
               >
                 <span className="font-medium">{EVENT_TYPE_LABELS[event.type] ?? event.type}</span>
-                <span className="text-muted-foreground font-mono text-2xs tabular-nums">
+                <span className="text-muted-foreground text-2xs font-mono tabular-nums">
                   {new Date(event.createdAt).toLocaleString(undefined, {
                     dateStyle: "medium",
                     timeStyle: "short",

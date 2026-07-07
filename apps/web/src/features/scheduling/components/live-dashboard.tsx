@@ -13,10 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
-import {
-  DEFAULT_DURATION_MINUTES,
-  matchParticipantLabel,
-} from "@/features/scheduling/config";
+import { DEFAULT_DURATION_MINUTES, matchParticipantLabel } from "@/features/scheduling/config";
 import {
   countLiveCourts,
   courtUtilization,
@@ -40,10 +37,7 @@ import { cn } from "@/lib/utils";
 
 const LIVE_REFRESH_MS = 300_000;
 
-const STATE_STYLES: Record<
-  CourtOpsState,
-  { card: string; badge: string; badgeLabel: string }
-> = {
+const STATE_STYLES: Record<CourtOpsState, { card: string; badge: string; badgeLabel: string }> = {
   active: {
     card: "border-mint bg-mint-tint/40",
     badge: "bg-mint text-ink",
@@ -152,10 +146,7 @@ function UtilizationBars({ pct }: { pct: number }) {
       {bars.map((h, i) => (
         <div
           key={i}
-          className={cn(
-            "flex-1 rounded-t-md",
-            i === bars.length - 1 ? "bg-candy" : "bg-candy/30",
-          )}
+          className={cn("flex-1 rounded-t-md", i === bars.length - 1 ? "bg-candy" : "bg-candy/30")}
           style={{ height: `${Math.min(100, h)}%` }}
         />
       ))}
@@ -191,9 +182,7 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
   const activeCourts = data?.courts.filter((c) => c.court.status === "active").length ?? 0;
 
   const updatedAgo =
-    queue.dataUpdatedAt > 0
-      ? Math.max(0, Math.floor((now - queue.dataUpdatedAt) / 1000))
-      : null;
+    queue.dataUpdatedAt > 0 ? Math.max(0, Math.floor((now - queue.dataUpdatedAt) / 1000)) : null;
 
   const sport = tournament.data ? getSport(tournament.data.sportKey) : null;
 
@@ -210,7 +199,9 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
       },
       {
         onSuccess: () =>
-          toast.success(`Called ${matchParticipantLabel(nextWaiting, participantsById)} to ${callTarget.court.name}`),
+          toast.success(
+            `Called ${matchParticipantLabel(nextWaiting, participantsById)} to ${callTarget.court.name}`,
+          ),
         onError: (e) => toast.error(errorMessage(e, "Couldn't assign match to court")),
       },
     );
@@ -297,7 +288,9 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 {data.unscheduled.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No one waiting — all ready matches have courts.</p>
+                  <p className="text-muted-foreground text-sm">
+                    No one waiting — all ready matches have courts.
+                  </p>
                 ) : (
                   <ul className="flex flex-col gap-2">
                     {data.unscheduled.slice(0, 8).map((m, i) => (
@@ -332,7 +325,9 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
                 ) : null}
 
                 {canManage && !callTarget && data.unscheduled.length > 0 ? (
-                  <p className="text-muted-foreground text-xs">All courts busy — clear a court to call the next pair.</p>
+                  <p className="text-muted-foreground text-xs">
+                    All courts busy — clear a court to call the next pair.
+                  </p>
                 ) : null}
               </CardContent>
             </Card>
@@ -344,7 +339,10 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
               <CardContent className="flex flex-col gap-3">
                 <UtilizationBars pct={utilization.pct} />
                 <p className="text-muted-foreground text-sm">
-                  <span className="text-foreground font-semibold tabular-nums">{utilization.pct}%</span> avg
+                  <span className="text-foreground font-semibold tabular-nums">
+                    {utilization.pct}%
+                  </span>{" "}
+                  avg
                   {utilization.total > 0 ? (
                     <>
                       {" "}
@@ -356,7 +354,10 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
             </Card>
 
             <Button asChild tone="paper" size="sm" className="self-start">
-              <Link href={`/console/tournaments/${tournamentId}/schedule/dashboard`} target="_blank">
+              <Link
+                href={`/console/tournaments/${tournamentId}/schedule/dashboard`}
+                target="_blank"
+              >
                 Open TV display
               </Link>
             </Button>

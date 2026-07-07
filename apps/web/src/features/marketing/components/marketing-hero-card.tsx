@@ -68,10 +68,8 @@ export function MarketingHeroCard() {
       <Card className="bg-ink text-paper border-ink shadow-sticker-lg overflow-hidden">
         <CardHeader className="border-paper/10 flex-row items-center justify-between space-y-0 border-b pb-4">
           <div>
-            <p className="text-paper/60 text-2xs font-mono uppercase tracking-[0.2em]">
-              Live now
-            </p>
-            <p className="font-serif mt-1 text-xl font-semibold">Summer Open · MD Final</p>
+            <p className="text-paper/60 text-2xs font-mono uppercase tracking-[0.2em]">Live now</p>
+            <p className="mt-1 font-serif text-xl font-semibold">Summer Open · MD Final</p>
           </div>
           <Badge tone="mint" className="animate-pulse">
             LIVE

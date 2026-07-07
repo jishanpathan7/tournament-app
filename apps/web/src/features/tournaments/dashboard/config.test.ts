@@ -35,7 +35,13 @@ describe("deriveMatchProgress", () => {
 describe("deriveRegistrationTotals", () => {
   it("aggregates across divisions", () => {
     const regs = new Map([
-      ["d1", [makeRegistration({ status: "submitted" }), makeRegistration({ status: "approved", participantId: "p1" })]],
+      [
+        "d1",
+        [
+          makeRegistration({ status: "submitted" }),
+          makeRegistration({ status: "approved", participantId: "p1" }),
+        ],
+      ],
     ]);
     const parts = new Map([["d1", [makeParticipant({ id: "p1", status: "approved" })]]]);
     expect(deriveRegistrationTotals(regs, parts)).toEqual({
@@ -52,7 +58,15 @@ describe("deriveTournamentStats", () => {
     const stats = deriveTournamentStats([
       { status: "walkover", resultPayload: {} } as never,
       { status: "no_show", resultPayload: {} } as never,
-      { status: "completed", resultPayload: { games: [[21, 15], [21, 10]] } } as never,
+      {
+        status: "completed",
+        resultPayload: {
+          games: [
+            [21, 15],
+            [21, 10],
+          ],
+        },
+      } as never,
     ]);
     expect(stats).toEqual({ walkovers: 1, noShows: 1, gamesPlayed: 2 });
   });
@@ -61,9 +75,7 @@ describe("deriveTournamentStats", () => {
 describe("deriveChampions", () => {
   it("picks rank-1 from highest drawn stage per division", () => {
     const divisions = [{ id: "d1", name: "MS Open" }] as never[];
-    const stages = new Map([
-      ["d1", [{ id: "s1", seq: 0, drawn: true } as never]],
-    ]);
+    const stages = new Map([["d1", [{ id: "s1", seq: 0, drawn: true } as never]]]);
     const standings = new Map([
       [
         "s1",
@@ -73,7 +85,9 @@ describe("deriveChampions", () => {
         },
       ],
     ]);
-    const participants = new Map([["p-win", makeParticipant({ id: "p-win", displayName: "Alice" })]]);
+    const participants = new Map([
+      ["p-win", makeParticipant({ id: "p-win", displayName: "Alice" })],
+    ]);
 
     expect(deriveChampions(divisions, stages, standings, participants)).toEqual([
       {

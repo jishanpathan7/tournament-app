@@ -65,11 +65,14 @@ function SeedCard({
             "border-border flex items-center gap-2.5 border-t px-3 py-2.5 text-sm first:border-t-0",
             slot.isWinner && "font-bold",
             slot.isPlaceholder && "text-muted-foreground italic",
-            !slot.isWinner && !slot.isPlaceholder && match.status !== "pending" && "text-muted-foreground",
+            !slot.isWinner &&
+              !slot.isPlaceholder &&
+              match.status !== "pending" &&
+              "text-muted-foreground",
           )}
         >
           {slot.seedLabel ? (
-            <span className="border-ink bg-yellow-tint rounded-md border-2 px-1.5 py-0.5 font-mono text-2xs font-bold">
+            <span className="border-ink bg-yellow-tint text-2xs rounded-md border-2 px-1.5 py-0.5 font-mono font-bold">
               {slot.seedLabel}
             </span>
           ) : null}
@@ -110,7 +113,11 @@ export function BracketBoard({
       : null;
 
   return (
-    <div className="flex items-stretch gap-10 overflow-x-auto pb-6 pt-2" role="group" aria-label="Bracket">
+    <div
+      className="flex items-stretch gap-10 overflow-x-auto pb-6 pt-2"
+      role="group"
+      aria-label="Bracket"
+    >
       {rounds.map((round) => (
         <div key={round.key} className="flex min-w-[220px] flex-col justify-around gap-4">
           <span className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.22em]">

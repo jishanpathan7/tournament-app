@@ -37,11 +37,7 @@ function ExportButton({
 }) {
   const url = `${env.apiUrl}/api/v1${path}`;
   return (
-    <Button
-      tone="paper"
-      className="justify-start"
-      onClick={() => void downloadCsv(url, filename)}
-    >
+    <Button tone="paper" className="justify-start" onClick={() => void downloadCsv(url, filename)}>
       <Download className="h-4 w-4" strokeWidth={2.25} />
       {label}
     </Button>
@@ -86,7 +82,7 @@ export function ReportsPanel({
         {canManage ? (
           <>
             <div className="border-border border-t pt-3">
-              <p className="text-muted-foreground mb-2 text-2xs font-mono uppercase tracking-[0.18em]">
+              <p className="text-muted-foreground text-2xs mb-2 font-mono uppercase tracking-[0.18em]">
                 CSV downloads
               </p>
               <div className="flex flex-col gap-2">
@@ -108,15 +104,13 @@ export function ReportsPanel({
               </div>
             </div>
             <div className="border-border border-t pt-3">
-              <p className="text-muted-foreground mb-2 text-2xs font-mono uppercase tracking-[0.18em]">
+              <p className="text-muted-foreground text-2xs mb-2 font-mono uppercase tracking-[0.18em]">
                 Division registrations
               </p>
               <div className="flex flex-col gap-2">
                 {divisions.map((d) => (
                   <Button key={d.id} asChild tone="paper" className="justify-start">
-                    <Link
-                      href={`/console/tournaments/${tid}/divisions/${d.id}/registrations`}
-                    >
+                    <Link href={`/console/tournaments/${tid}/divisions/${d.id}/registrations`}>
                       <FileSpreadsheet className="h-4 w-4" strokeWidth={2.25} />
                       {d.name}
                     </Link>
@@ -128,7 +122,7 @@ export function ReportsPanel({
         ) : null}
 
         <div className="border-border mt-2 border-t pt-3">
-          <p className="text-muted-foreground mb-2 text-2xs font-mono uppercase tracking-[0.18em]">
+          <p className="text-muted-foreground text-2xs mb-2 font-mono uppercase tracking-[0.18em]">
             Publication status
           </p>
           <ul className="flex flex-col gap-1 text-sm">

@@ -208,7 +208,13 @@ export function BulkCreateCourtsDialog({
         </div>
 
         <DialogFooter className="mt-2">
-          <Button type="button" tone="paper" size="sm" onClick={() => handleOpenChange(false)} disabled={pending}>
+          <Button
+            type="button"
+            tone="paper"
+            size="sm"
+            onClick={() => handleOpenChange(false)}
+            disabled={pending}
+          >
             Cancel
           </Button>
           <Button type="button" tone="candy" size="sm" onClick={handleSubmit} disabled={pending}>

@@ -65,10 +65,7 @@ describe("sortedTeams", () => {
 describe("pairingStats", () => {
   it("derives counts + locked total from the run", () => {
     const run = makePairingRun({
-      teams: [
-        makeProposedTeam({ locked: true }),
-        makeProposedTeam({ locked: false }),
-      ],
+      teams: [makeProposedTeam({ locked: true }), makeProposedTeam({ locked: false })],
       unpairedIds: ["x"],
       summary: {
         teamCount: 2,

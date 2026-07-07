@@ -37,14 +37,14 @@ export function CourtDashboard({ tournamentId }: { tournamentId: string }) {
 
   if (queue.isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-ink">
+      <div className="bg-ink flex h-screen items-center justify-center">
         <LoadingPanel label="Loading court dashboard" />
       </div>
     );
   }
   if (queue.isError) {
     return (
-      <div className="flex h-screen items-center justify-center bg-ink p-8">
+      <div className="bg-ink flex h-screen items-center justify-center p-8">
         <ErrorState error={queue.error} onRetry={() => queue.refetch()} />
       </div>
     );

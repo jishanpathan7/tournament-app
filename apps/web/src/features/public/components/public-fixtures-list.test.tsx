@@ -41,7 +41,12 @@ describe("PublicFixturesList", () => {
     const p1 = makePublicParticipant({ id: "p-1", displayName: "Aarav K." });
     const p2 = makePublicParticipant({ id: "p-2", displayName: "Mei L." });
     vi.mocked(publicApi.listMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: "stage-1", status: "completed", sides: [side("p-1"), side("p-2")] }),
+      makeMatch({
+        id: "m-1",
+        stageId: "stage-1",
+        status: "completed",
+        sides: [side("p-1"), side("p-2")],
+      }),
       makeMatch({ id: "m-2", stageId: "stage-1", status: "pending", sides: [] }),
     ]);
     vi.mocked(publicApi.listParticipants).mockResolvedValue([p1, p2]);
@@ -56,7 +61,12 @@ describe("PublicFixturesList", () => {
     const p1 = makePublicParticipant({ id: "p-1", displayName: "Aarav K." });
     const p2 = makePublicParticipant({ id: "p-2", displayName: "Mei L." });
     vi.mocked(publicApi.listMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: "stage-1", status: "scheduled", sides: [side("p-1"), side("p-2")] }),
+      makeMatch({
+        id: "m-1",
+        stageId: "stage-1",
+        status: "scheduled",
+        sides: [side("p-1"), side("p-2")],
+      }),
     ]);
     vi.mocked(publicApi.listParticipants).mockResolvedValue([p1, p2]);
     renderWithProviders(<PublicFixturesList slug={SLUG} />);
@@ -71,7 +81,12 @@ describe("PublicFixturesList", () => {
     const p1 = makePublicParticipant({ id: "p-1", displayName: "Aarav K." });
     const p2 = makePublicParticipant({ id: "p-2", displayName: "Mei L." });
     vi.mocked(publicApi.listMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: "stage-1", status: "scheduled", sides: [side("p-1"), side("p-2")] }),
+      makeMatch({
+        id: "m-1",
+        stageId: "stage-1",
+        status: "scheduled",
+        sides: [side("p-1"), side("p-2")],
+      }),
     ]);
     vi.mocked(publicApi.listParticipants).mockResolvedValue([p1, p2]);
     renderWithProviders(<PublicFixturesList slug={SLUG} />);

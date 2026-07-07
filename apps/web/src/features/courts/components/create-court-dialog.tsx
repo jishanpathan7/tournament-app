@@ -22,7 +22,12 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/sonner";
-import { useAssignCourt, useCreateCourt, useCreateVenue, useVenues } from "@/features/courts/use-courts";
+import {
+  useAssignCourt,
+  useCreateCourt,
+  useCreateVenue,
+  useVenues,
+} from "@/features/courts/use-courts";
 import { errorMessage } from "@/lib/problem";
 
 const NEW_VENUE = "__new__";
@@ -153,7 +158,13 @@ export function CreateCourtDialog({
         </div>
 
         <DialogFooter className="mt-2">
-          <Button type="button" tone="paper" size="sm" onClick={() => handleOpenChange(false)} disabled={pending}>
+          <Button
+            type="button"
+            tone="paper"
+            size="sm"
+            onClick={() => handleOpenChange(false)}
+            disabled={pending}
+          >
             Cancel
           </Button>
           <Button type="button" tone="candy" size="sm" onClick={handleSubmit} disabled={pending}>

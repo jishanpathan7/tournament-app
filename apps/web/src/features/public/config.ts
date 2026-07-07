@@ -18,7 +18,15 @@ import {
  */
 
 export interface PublicTab {
-  key: "overview" | "participants" | "fixtures" | "bracket" | "standings" | "live" | "courts" | "stats";
+  key:
+    | "overview"
+    | "participants"
+    | "fixtures"
+    | "bracket"
+    | "standings"
+    | "live"
+    | "courts"
+    | "stats";
   label: string;
   icon: LucideIcon;
 }
@@ -36,10 +44,7 @@ export const COURTS_TAB: PublicTab = { key: "courts", label: "Courts", icon: Lay
 
 export const STATS_TAB: PublicTab = { key: "stats", label: "Stats", icon: BarChart3 };
 
-export function formatDateRange(
-  startsAt: string | null,
-  endsAt: string | null,
-): string | null {
+export function formatDateRange(startsAt: string | null, endsAt: string | null): string | null {
   if (!startsAt && !endsAt) return null;
   const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", year: "numeric" };
   const start = startsAt ? new Date(startsAt).toLocaleDateString(undefined, opts) : null;

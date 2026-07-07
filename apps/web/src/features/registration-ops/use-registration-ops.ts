@@ -91,7 +91,9 @@ export function useBulkSetAttendance(divisionId: string, tournamentId: string) {
     mutationFn: (body: BulkCheckInRequest) => opsApi.bulkSetAttendance(divisionId, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.attendance.division(divisionId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.readiness.tournament(tournamentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.readiness.tournament(tournamentId),
+      });
     },
   });
 }

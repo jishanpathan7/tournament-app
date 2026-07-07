@@ -107,12 +107,24 @@ export function ScorekeeperMatchLinkPanel({ matchId }: { matchId: string }) {
               value={displayUrl}
               className="border-ink bg-card min-w-0 flex-1 rounded-lg border px-2 py-1.5 font-mono text-xs"
             />
-            <Button type="button" tone="paper" size="icon" onClick={() => void copyUrl(displayUrl)} aria-label="Copy link">
+            <Button
+              type="button"
+              tone="paper"
+              size="icon"
+              onClick={() => void copyUrl(displayUrl)}
+              aria-label="Copy link"
+            >
               <Copy className="h-4 w-4" />
             </Button>
           </>
         ) : (
-          <Button type="button" tone="mint" size="sm" onClick={() => create.mutate()} disabled={create.isPending}>
+          <Button
+            type="button"
+            tone="mint"
+            size="sm"
+            onClick={() => create.mutate()}
+            disabled={create.isPending}
+          >
             {recipientEmail.trim() ? (
               <>
                 <Mail className="h-4 w-4" />
@@ -127,13 +139,25 @@ export function ScorekeeperMatchLinkPanel({ matchId }: { matchId: string }) {
           </Button>
         )}
         {hasActive && !createdUrl ? (
-          <Button type="button" tone="ghost" size="sm" onClick={() => revoke.mutate()} disabled={revoke.isPending}>
+          <Button
+            type="button"
+            tone="ghost"
+            size="sm"
+            onClick={() => revoke.mutate()}
+            disabled={revoke.isPending}
+          >
             <X className="h-4 w-4" />
             Revoke
           </Button>
         ) : null}
         {hasActive && !displayUrl ? (
-          <Button type="button" tone="paper" size="sm" onClick={() => create.mutate()} disabled={create.isPending}>
+          <Button
+            type="button"
+            tone="paper"
+            size="sm"
+            onClick={() => create.mutate()}
+            disabled={create.isPending}
+          >
             Regenerate
           </Button>
         ) : null}

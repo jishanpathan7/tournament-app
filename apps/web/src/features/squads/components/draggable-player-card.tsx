@@ -26,9 +26,7 @@ export function DraggablePlayerCard({
     id: registrationId,
   });
 
-  const style = transform
-    ? { transform: CSS.Translate.toString(transform) }
-    : undefined;
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
 
   return (
     <li

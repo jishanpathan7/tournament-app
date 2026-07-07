@@ -70,7 +70,7 @@ export function SquadColumn({
             <button
               type="button"
               className={cn(
-                "font-serif text-left text-lg font-semibold",
+                "text-left font-serif text-lg font-semibold",
                 canManage && "hover:underline",
               )}
               onClick={() => canManage && setEditing(true)}
@@ -90,10 +90,7 @@ export function SquadColumn({
         ) : null}
       </div>
 
-      <ul
-        ref={setNodeRef}
-        className="flex min-h-[120px] flex-1 flex-col gap-1 p-2"
-      >
+      <ul ref={setNodeRef} className="flex min-h-[120px] flex-1 flex-col gap-1 p-2">
         {squad.members.map((member) => {
           const isCaptain = squad.captainRegistrationId === member.registrationId;
           return (

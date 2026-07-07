@@ -19,13 +19,7 @@ function formatTime(iso: string | null): string | null {
 
 /** Compact organizer-facing view of "what's happening right now": each court's
  * current/next match and whether it's running late, plus who's waiting for a court. */
-export function QueuePanel({
-  tournamentId,
-  compact,
-}: {
-  tournamentId: string;
-  compact?: boolean;
-}) {
+export function QueuePanel({ tournamentId, compact }: { tournamentId: string; compact?: boolean }) {
   const queue = useScheduleQueue(tournamentId);
   const participants = useTournamentParticipants(tournamentId);
   const participantsById = useMemo(
@@ -43,7 +37,9 @@ export function QueuePanel({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap gap-3">
-        <Badge tone="mint">{freeCourts.length} free court{freeCourts.length === 1 ? "" : "s"}</Badge>
+        <Badge tone="mint">
+          {freeCourts.length} free court{freeCourts.length === 1 ? "" : "s"}
+        </Badge>
         {delayedCourts.length > 0 ? (
           <Badge tone="pink">
             {delayedCourts.length} delayed court{delayedCourts.length === 1 ? "" : "s"}
@@ -53,9 +49,15 @@ export function QueuePanel({
       </div>
 
       {data.courts.length === 0 ? (
-        <EmptyState icon={Clock} title="No courts assigned" description="Assign a court to see the live queue." />
+        <EmptyState
+          icon={Clock}
+          title="No courts assigned"
+          description="Assign a court to see the live queue."
+        />
       ) : (
-        <div className={compact ? "flex flex-col gap-2" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}>
+        <div
+          className={compact ? "flex flex-col gap-2" : "grid gap-3 sm:grid-cols-2 lg:grid-cols-3"}
+        >
           {(compact ? data.courts.slice(0, 4) : data.courts).map((c) => (
             <div
               key={c.court.id}
@@ -67,7 +69,9 @@ export function QueuePanel({
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{c.court.name}</span>
-                {c.isDelayed ? <Badge tone="pink">Delayed</Badge> : !c.currentMatch ? (
+                {c.isDelayed ? (
+                  <Badge tone="pink">Delayed</Badge>
+                ) : !c.currentMatch ? (
                   <Badge tone="mint">Free</Badge>
                 ) : null}
               </div>
@@ -103,29 +107,31 @@ export function QueuePanel({
       )}
 
       {!compact ? (
-      <section className="flex flex-col gap-3">
-        <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
-          <Users className="h-4 w-4" strokeWidth={2.25} />
-          Waiting for a court
-        </h2>
-        {data.unscheduled.length === 0 ? (
-          <p className="text-muted-foreground text-sm">Nobody waiting — every ready match has a court.</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {data.unscheduled.map((m) => (
-              <li
-                key={m.id}
-                className="border-border bg-card flex items-center justify-between rounded-xl border px-3 py-2 text-sm"
-              >
-                <span>{matchParticipantLabel(m, participantsById)}</span>
-                {m.roundLabel ? (
-                  <span className="text-muted-foreground text-xs">{m.roundLabel}</span>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+        <section className="flex flex-col gap-3">
+          <h2 className="flex items-center gap-2 font-serif text-lg font-semibold">
+            <Users className="h-4 w-4" strokeWidth={2.25} />
+            Waiting for a court
+          </h2>
+          {data.unscheduled.length === 0 ? (
+            <p className="text-muted-foreground text-sm">
+              Nobody waiting — every ready match has a court.
+            </p>
+          ) : (
+            <ul className="flex flex-col gap-2">
+              {data.unscheduled.map((m) => (
+                <li
+                  key={m.id}
+                  className="border-border bg-card flex items-center justify-between rounded-xl border px-3 py-2 text-sm"
+                >
+                  <span>{matchParticipantLabel(m, participantsById)}</span>
+                  {m.roundLabel ? (
+                    <span className="text-muted-foreground text-xs">{m.roundLabel}</span>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       ) : null}
     </div>
   );

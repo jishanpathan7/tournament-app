@@ -55,9 +55,7 @@ describe("usePublicRealtime", () => {
 
   it("invokes the matching handler for a dispatched event", () => {
     const onMatchCompleted = vi.fn();
-    renderHook(() =>
-      usePublicRealtime("sibl-open", { "match.completed": onMatchCompleted }),
-    );
+    renderHook(() => usePublicRealtime("sibl-open", { "match.completed": onMatchCompleted }));
     const source = FakeEventSource.instances[0]!;
     source.emit("match.completed", { matchId: "m-1", tournamentId: "t-1" });
 

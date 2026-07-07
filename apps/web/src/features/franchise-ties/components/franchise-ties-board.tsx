@@ -108,7 +108,8 @@ export function FranchiseTiesBoard({
                 <div>
                   <CardTitle className="text-lg">
                     {tie.homeSquadName}{" "}
-                    <span className="text-muted-foreground font-normal">vs</span> {tie.awaySquadName}
+                    <span className="text-muted-foreground font-normal">vs</span>{" "}
+                    {tie.awaySquadName}
                   </CardTitle>
                   <p className="text-muted-foreground mt-1 text-sm">
                     Legs won {tie.homeLegWins}–{tie.awayLegWins} (best of {tie.gamesPerTie})

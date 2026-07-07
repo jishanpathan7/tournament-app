@@ -56,7 +56,11 @@ export function PublicScorekeeperView({ token }: { token: string }) {
   const rules = rulesFromSportConfig(data.sportConfig);
   const labelA = match.sideLabels[0] ?? "Side 1";
   const labelB = match.sideLabels[1] ?? "Side 2";
-  const headerTitle = buildScorekeeperTitle(match.groupName, match.roundLabel, `${labelA} vs ${labelB}`);
+  const headerTitle = buildScorekeeperTitle(
+    match.groupName,
+    match.roundLabel,
+    `${labelA} vs ${labelB}`,
+  );
   const headerMeta = buildScorekeeperMeta(match.courtName, rules);
 
   if (done || match.matchStatus === "completed") {

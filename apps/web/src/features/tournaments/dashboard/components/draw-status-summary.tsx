@@ -25,7 +25,11 @@ export function DrawStatusSummary({
         <CardTitle className="flex items-center gap-2 text-lg">
           <GitMerge className="h-5 w-5" strokeWidth={2.25} />
           Draw status
-          <Badge tone={drawProgress.drawn === drawProgress.total && drawProgress.total > 0 ? "mint" : "muted"}>
+          <Badge
+            tone={
+              drawProgress.drawn === drawProgress.total && drawProgress.total > 0 ? "mint" : "muted"
+            }
+          >
             {drawProgress.drawn}/{drawProgress.total}
           </Badge>
         </CardTitle>

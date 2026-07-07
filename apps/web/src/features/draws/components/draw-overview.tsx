@@ -119,9 +119,17 @@ export function DrawOverview({
       ) : matches.isLoading || participants.isLoading ? (
         <Skeleton className="h-72 rounded-2xl" />
       ) : matches.isError ? (
-        <ErrorState error={matches.error} onRetry={() => matches.refetch()} title="Couldn't load matches" />
+        <ErrorState
+          error={matches.error}
+          onRetry={() => matches.refetch()}
+          title="Couldn't load matches"
+        />
       ) : (matches.data?.length ?? 0) === 0 ? (
-        <EmptyState icon={GitMerge} title="No matches" description="This draw has no matches yet." />
+        <EmptyState
+          icon={GitMerge}
+          title="No matches"
+          description="This draw has no matches yet."
+        />
       ) : stage.type === "single_elim" ? (
         <BracketBoard matches={matches.data!} participantsById={participantsById} />
       ) : (

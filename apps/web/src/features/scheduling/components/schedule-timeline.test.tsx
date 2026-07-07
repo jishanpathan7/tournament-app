@@ -87,9 +87,7 @@ describe("ScheduleTimeline", () => {
     ]);
     renderWithProviders(<ScheduleTimeline tournamentId={TOURNAMENT_ID} />);
 
-    expect(
-      await screen.findByText(/still waiting on earlier bracket results/),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/still waiting on earlier bracket results/)).toBeInTheDocument();
   });
 
   it("clears a scheduled match's court/time when its clear button is clicked", async () => {
@@ -106,7 +104,11 @@ describe("ScheduleTimeline", () => {
     vi.mocked(courtsApi.listTournamentCourts).mockResolvedValue([
       makeTournamentCourt({ court: makeCourt({ id: "c-1", name: "Court 1" }) }),
     ]);
-    vi.mocked(schedulingApi.clearSchedule).mockResolvedValue({ ...scheduled, courtId: null, scheduledAt: null });
+    vi.mocked(schedulingApi.clearSchedule).mockResolvedValue({
+      ...scheduled,
+      courtId: null,
+      scheduledAt: null,
+    });
     renderWithProviders(<ScheduleTimeline tournamentId={TOURNAMENT_ID} />);
 
     const clearButton = await screen.findByRole("button", { name: /Unschedule/ });

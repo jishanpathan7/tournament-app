@@ -62,15 +62,19 @@ export interface FilterOption {
   label: string;
 }
 
-export const STATUS_OPTIONS: FilterOption[] = Object.entries(MATCH_STATUS).map(
-  ([value, meta]) => ({ value, label: meta.label }),
-);
+export const STATUS_OPTIONS: FilterOption[] = Object.entries(MATCH_STATUS).map(([value, meta]) => ({
+  value,
+  label: meta.label,
+}));
 
 export function stageOptions(stages: StageResponse[]): FilterOption[] {
   return stages
     .slice()
     .sort((a, b) => a.seq - b.seq)
-    .map((s) => ({ value: s.id, label: `${getFormat(s.type)?.label ?? s.type} · Stage ${s.seq + 1}` }));
+    .map((s) => ({
+      value: s.id,
+      label: `${getFormat(s.type)?.label ?? s.type} · Stage ${s.seq + 1}`,
+    }));
 }
 
 export function roundOptions(matches: MatchView[]): FilterOption[] {
@@ -90,10 +94,12 @@ export function groupOptions(matches: MatchView[]): FilterOption[] {
   for (const m of matches) {
     if (m.groupId && !seen.has(m.groupId)) seen.set(m.groupId, m.groupName ?? "Group");
   }
-  return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1])).map(([value, label]) => ({
-    value,
-    label,
-  }));
+  return [...seen.entries()]
+    .sort((a, b) => a[1].localeCompare(b[1]))
+    .map(([value, label]) => ({
+      value,
+      label,
+    }));
 }
 
 export function courtLabel(courtId: string | null): string {
@@ -175,7 +181,9 @@ export function emptyScoreForm(gameSlots: number = BADMINTON_DEFAULTS.bestOf): S
 }
 
 function gamesToPayload(games: GameScore[]): number[][] {
-  return games.filter((g) => g.a !== null && g.b !== null).map((g) => [g.a as number, g.b as number]);
+  return games
+    .filter((g) => g.a !== null && g.b !== null)
+    .map((g) => [g.a as number, g.b as number]);
 }
 
 /** Reshapes score-entry form state into the JSON payload the Sport Profile expects

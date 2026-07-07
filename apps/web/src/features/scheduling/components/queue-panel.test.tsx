@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { QueuePanel } from "@/features/scheduling/components/queue-panel";
-import { makeCourt, makeCourtQueue, makeMatch, makeParticipant, makeScheduleQueue } from "@/test/fixtures";
+import {
+  makeCourt,
+  makeCourtQueue,
+  makeMatch,
+  makeParticipant,
+  makeScheduleQueue,
+} from "@/test/fixtures";
 import { renderWithProviders, screen } from "@/test/test-utils";
 
 vi.mock("@/features/scheduling/scheduling-api");
@@ -27,7 +33,11 @@ describe("QueuePanel", () => {
   it("shows the current match, next match, and free/delayed badges per court", async () => {
     const p1 = makeParticipant({ id: "p-1", displayName: "Aarav K." });
     const p2 = makeParticipant({ id: "p-2", displayName: "Mei L." });
-    const current = makeMatch({ id: "m-1", status: "scheduled", sides: [side("p-1"), side("p-2")] });
+    const current = makeMatch({
+      id: "m-1",
+      status: "scheduled",
+      sides: [side("p-1"), side("p-2")],
+    });
     const next = makeMatch({ id: "m-2", status: "scheduled", sides: [side("p-1"), side("p-2")] });
 
     vi.mocked(schedulingApi.getQueue).mockResolvedValue(
@@ -40,7 +50,9 @@ describe("QueuePanel", () => {
           }),
           makeCourtQueue({ court: makeCourt({ id: "c-2", name: "Court 2" }) }),
         ],
-        unscheduled: [makeMatch({ id: "m-3", status: "scheduled", sides: [side("p-1"), side("p-2")] })],
+        unscheduled: [
+          makeMatch({ id: "m-3", status: "scheduled", sides: [side("p-1"), side("p-2")] }),
+        ],
       }),
     );
     vi.mocked(matchesApi.listTournamentParticipants).mockResolvedValue([p1, p2]);

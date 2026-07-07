@@ -23,7 +23,13 @@ describe("applyMatchQueueFilters", () => {
     [p1.id, p1],
     [p2.id, p2],
   ]);
-  const side = (id: string) => ({ participantId: id, outcome: null, scoreFor: null, scoreAgainst: null, rank: null });
+  const side = (id: string) => ({
+    participantId: id,
+    outcome: null,
+    scoreFor: null,
+    scoreAgainst: null,
+    rank: null,
+  });
 
   const matches = [
     makeMatch({
@@ -47,7 +53,9 @@ describe("applyMatchQueueFilters", () => {
   ];
 
   it("returns everything when every filter is 'all'", () => {
-    expect(applyMatchQueueFilters(matches, DEFAULT_MATCH_QUEUE_FILTERS, participantsById)).toHaveLength(2);
+    expect(
+      applyMatchQueueFilters(matches, DEFAULT_MATCH_QUEUE_FILTERS, participantsById),
+    ).toHaveLength(2);
   });
 
   it("filters by stage", () => {
@@ -209,7 +217,10 @@ describe("buildScorePayload", () => {
     const values = emptyScoreForm();
     values.resultType = "retirement";
     values.retiredSide = 1;
-    values.games = [{ a: 21, b: 15 }, { a: 18, b: 20 }];
+    values.games = [
+      { a: 21, b: 15 },
+      { a: 18, b: 20 },
+    ];
     expect(buildScorePayload(values)).toEqual({
       endedBy: "retirement",
       retiredSide: 1,

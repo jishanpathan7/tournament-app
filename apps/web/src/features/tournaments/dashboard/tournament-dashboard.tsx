@@ -65,9 +65,7 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
           {data.phase === "before" ? (
             <BeforePanel tournamentId={tournamentId} data={data} canManage={canManage} />
           ) : null}
-          {data.phase === "during" ? (
-            <DuringPanel tournamentId={tournamentId} data={data} />
-          ) : null}
+          {data.phase === "during" ? <DuringPanel tournamentId={tournamentId} data={data} /> : null}
           {data.phase === "after" ? (
             <AfterPanel tournament={tournament} data={data} canManage={canManage} />
           ) : null}
@@ -81,7 +79,7 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
         </aside>
       </div>
 
-      <section id="divisions" className="flex flex-col gap-3 scroll-mt-8">
+      <section id="divisions" className="flex scroll-mt-8 flex-col gap-3">
         <h2 className="font-serif text-xl font-semibold tracking-tight">Divisions</h2>
         <DivisionsSection tournamentId={tournamentId} canManage={canManage} />
       </section>

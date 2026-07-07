@@ -53,13 +53,8 @@ export function useUpdateSquad(tournamentId: string) {
 export function useAssignSquadMember(tournamentId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      squadId,
-      registrationId,
-    }: {
-      squadId: string;
-      registrationId: string;
-    }) => assignSquadMember(squadId, { registrationId }),
+    mutationFn: ({ squadId, registrationId }: { squadId: string; registrationId: string }) =>
+      assignSquadMember(squadId, { registrationId }),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
   });
 }
@@ -67,13 +62,8 @@ export function useAssignSquadMember(tournamentId: string) {
 export function useRemoveSquadMember(tournamentId: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      squadId,
-      registrationId,
-    }: {
-      squadId: string;
-      registrationId: string;
-    }) => removeSquadMember(squadId, registrationId),
+    mutationFn: ({ squadId, registrationId }: { squadId: string; registrationId: string }) =>
+      removeSquadMember(squadId, registrationId),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
   });
 }

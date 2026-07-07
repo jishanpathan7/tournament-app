@@ -61,7 +61,9 @@ export function PublicCheckInView({ token }: { token: string }) {
         <ErrorState
           error={session.error}
           title={
-            session.error instanceof CheckInApiError ? "Link invalid or expired" : "Couldn't open check-in"
+            session.error instanceof CheckInApiError
+              ? "Link invalid or expired"
+              : "Couldn't open check-in"
           }
         />
       </div>
@@ -88,8 +90,10 @@ export function PublicCheckInView({ token }: { token: string }) {
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div>
-        <p className="text-muted-foreground text-xs font-mono uppercase tracking-widest">Check-in</p>
-        <h1 className="font-serif mt-1 text-2xl font-bold">{data.tournamentName}</h1>
+        <p className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
+          Check-in
+        </p>
+        <h1 className="mt-1 font-serif text-2xl font-bold">{data.tournamentName}</h1>
         <p className="text-muted-foreground mt-1 text-sm">{data.divisionName}</p>
       </div>
 

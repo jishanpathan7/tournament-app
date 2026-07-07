@@ -31,24 +31,24 @@ export function ReadinessDashboard({ tournamentId }: { tournamentId: string }) {
   return (
     <div className="flex flex-col gap-4">
       {/* Tournament-level summary */}
-      <div className="flex items-center gap-3 rounded-2xl border-2 border-border bg-muted/30 px-5 py-4">
+      <div className="border-border bg-muted/30 flex items-center gap-3 rounded-2xl border-2 px-5 py-4">
         {allReady ? (
-          <CheckCircle2 className="h-5 w-5 text-mint shrink-0" />
+          <CheckCircle2 className="text-mint h-5 w-5 shrink-0" />
         ) : data.totalPending > 0 ? (
-          <AlertTriangle className="h-5 w-5 text-yellow-500 shrink-0" />
+          <AlertTriangle className="h-5 w-5 shrink-0 text-yellow-500" />
         ) : (
-          <Circle className="h-5 w-5 text-muted-foreground shrink-0" />
+          <Circle className="text-muted-foreground h-5 w-5 shrink-0" />
         )}
         <div className="flex-1 text-sm">
           <span className="font-semibold">{data.totalCheckedIn}</span> of{" "}
           <span className="font-semibold">{totalApproved}</span> participants checked in across{" "}
           {data.divisions.length} division{data.divisions.length !== 1 ? "s" : ""}
           {data.totalPending > 0 && (
-            <span className="text-yellow-600 ml-2">· {data.totalPending} still pending</span>
+            <span className="ml-2 text-yellow-600">· {data.totalPending} still pending</span>
           )}
         </div>
         {allReady && (
-          <div className="flex items-center gap-1 text-mint text-sm font-medium">
+          <div className="text-mint flex items-center gap-1 text-sm font-medium">
             <Shuffle className="h-4 w-4" strokeWidth={2.25} />
             All divisions ready
           </div>

@@ -22,7 +22,7 @@ export function MatchScorekeeperHeader({
           type="button"
           tone="paper"
           size="icon"
-          className="h-10 w-10 shrink-0 rounded-full shadow-sticker-xs"
+          className="shadow-sticker-xs h-10 w-10 shrink-0 rounded-full"
           onClick={onBack}
           aria-label="Back"
         >
@@ -37,7 +37,7 @@ export function MatchScorekeeperHeader({
           {meta}
         </p>
       </div>
-      <Badge tone="candy" className="mt-0.5 shrink-0 shadow-sticker-xs">
+      <Badge tone="candy" className="shadow-sticker-xs mt-0.5 shrink-0">
         Live
       </Badge>
     </header>

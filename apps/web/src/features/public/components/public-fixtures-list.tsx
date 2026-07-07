@@ -152,10 +152,7 @@ export function PublicFixturesList({ slug }: { slug: string }) {
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
-  const rows = useMemo(
-    () => nestFranchiseFixtures(matches.data ?? []),
-    [matches.data],
-  );
+  const rows = useMemo(() => nestFranchiseFixtures(matches.data ?? []), [matches.data]);
   const filtered = useMemo(
     () => applyFixtureRowFilters(rows, filters, participantsById),
     [rows, filters, participantsById],
@@ -219,7 +216,10 @@ export function PublicFixturesList({ slug }: { slug: string }) {
           ) : null}
         </div>
 
-        <Select value={filters.stageId} onValueChange={(stageId) => setFilters({ ...filters, stageId })}>
+        <Select
+          value={filters.stageId}
+          onValueChange={(stageId) => setFilters({ ...filters, stageId })}
+        >
           <SelectTrigger className="sm:w-48" aria-label="Filter by stage">
             <SelectValue />
           </SelectTrigger>
@@ -234,7 +234,10 @@ export function PublicFixturesList({ slug }: { slug: string }) {
         </Select>
 
         {rounds.length > 1 ? (
-          <Select value={filters.roundId} onValueChange={(roundId) => setFilters({ ...filters, roundId })}>
+          <Select
+            value={filters.roundId}
+            onValueChange={(roundId) => setFilters({ ...filters, roundId })}
+          >
             <SelectTrigger className="sm:w-40" aria-label="Filter by round">
               <SelectValue />
             </SelectTrigger>
@@ -271,7 +274,11 @@ export function PublicFixturesList({ slug }: { slug: string }) {
       )}
 
       {filtered.length === 0 ? (
-        <EmptyState icon={CalendarDays} title="No matches match" description="Try different filters." />
+        <EmptyState
+          icon={CalendarDays}
+          title="No matches match"
+          description="Try different filters."
+        />
       ) : null}
     </div>
   );

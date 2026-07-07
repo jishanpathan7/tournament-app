@@ -74,7 +74,7 @@ function DivisionDrawCard({
   return (
     <Card>
       <CardContent className="pt-4">
-        <p className="text-muted-foreground mb-3 text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
+        <p className="text-muted-foreground text-2xs mb-3 font-mono font-semibold uppercase tracking-[0.18em]">
           {divisionName}
         </p>
         {isLoading ? (

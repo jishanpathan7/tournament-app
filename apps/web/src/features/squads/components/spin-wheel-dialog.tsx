@@ -4,12 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { SquadView, UnassignedRegistrationView } from "@/features/squads/types";
 
 // ── Wheel colours (cycling) ───────────────────────────────────────────────────
@@ -161,8 +156,8 @@ export function SpinWheelDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl gap-0 p-0 overflow-hidden">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+      <DialogContent className="max-w-2xl gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b px-6 pb-4 pt-6">
           <DialogTitle className="text-lg">Spin to assign</DialogTitle>
         </DialogHeader>
 
@@ -182,7 +177,7 @@ export function SpinWheelDialog({
                       setLandedIndex(null);
                     }}
                     className={[
-                      "rounded-full px-3 py-1 text-xs font-semibold border transition-colors",
+                      "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
                       filter === s
                         ? "bg-foreground text-background border-foreground"
                         : "bg-background text-muted-foreground border-border hover:border-foreground/40",
@@ -195,13 +190,19 @@ export function SpinWheelDialog({
             </div>
           )}
 
-          <div className="flex gap-6 items-start">
+          <div className="flex items-start gap-6">
             {/* Wheel */}
             <div className="relative shrink-0">
               {/* Pointer */}
               <div
-                className="absolute left-1/2 -translate-x-1/2 top-0 z-10"
-                style={{ width: 0, height: 0, borderLeft: "10px solid transparent", borderRight: "10px solid transparent", borderTop: "22px solid hsl(var(--foreground))" }}
+                className="absolute left-1/2 top-0 z-10 -translate-x-1/2"
+                style={{
+                  width: 0,
+                  height: 0,
+                  borderLeft: "10px solid transparent",
+                  borderRight: "10px solid transparent",
+                  borderTop: "22px solid hsl(var(--foreground))",
+                }}
               />
 
               <svg
@@ -253,12 +254,19 @@ export function SpinWheelDialog({
                   })
                 )}
                 {/* Centre hub */}
-                <circle cx={CX} cy={CY} r={INNER_R} fill="hsl(var(--background))" stroke="hsl(var(--border))" strokeWidth={2} />
+                <circle
+                  cx={CX}
+                  cy={CY}
+                  r={INNER_R}
+                  fill="hsl(var(--background))"
+                  stroke="hsl(var(--border))"
+                  strokeWidth={2}
+                />
               </svg>
             </div>
 
             {/* Right panel */}
-            <div className="flex flex-1 flex-col gap-4 min-w-0">
+            <div className="flex min-w-0 flex-1 flex-col gap-4">
               {n === 0 ? (
                 <p className="text-muted-foreground text-sm">
                   All {skillLabel(filter)} players assigned.
@@ -266,7 +274,7 @@ export function SpinWheelDialog({
               ) : (
                 <>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">
+                    <p className="text-muted-foreground mb-1 text-sm">
                       {remaining} player{remaining !== 1 ? "s" : ""} remaining
                     </p>
                     <Button
@@ -281,16 +289,22 @@ export function SpinWheelDialog({
                   </div>
 
                   {landedPlayer && (
-                    <div className="rounded-xl border-2 border-candy/40 bg-candy-tint/20 p-4">
-                      <p className="text-xs text-muted-foreground mb-1 font-mono uppercase tracking-wider">Landed on</p>
-                      <p className="font-bold text-lg leading-tight">{landedPlayer.displayName}</p>
+                    <div className="border-candy/40 bg-candy-tint/20 rounded-xl border-2 p-4">
+                      <p className="text-muted-foreground mb-1 font-mono text-xs uppercase tracking-wider">
+                        Landed on
+                      </p>
+                      <p className="text-lg font-bold leading-tight">{landedPlayer.displayName}</p>
                       {landedPlayer.skillLevel && (
-                        <Badge tone="yellow" className="mt-1 text-xs">{skillLabel(landedPlayer.skillLevel)}</Badge>
+                        <Badge tone="yellow" className="mt-1 text-xs">
+                          {skillLabel(landedPlayer.skillLevel)}
+                        </Badge>
                       )}
                       <div className="mt-3 flex flex-col gap-2">
-                        <p className="text-xs text-muted-foreground">Assign to team:</p>
+                        <p className="text-muted-foreground text-xs">Assign to team:</p>
                         {squads.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No teams yet — create teams first.</p>
+                          <p className="text-muted-foreground text-sm">
+                            No teams yet — create teams first.
+                          </p>
                         ) : (
                           squads.map((sq) => (
                             <Button
@@ -302,7 +316,9 @@ export function SpinWheelDialog({
                               className="justify-start"
                             >
                               {sq.name}
-                              <span className="ml-auto text-muted-foreground text-xs">{sq.memberCount}</span>
+                              <span className="text-muted-foreground ml-auto text-xs">
+                                {sq.memberCount}
+                              </span>
                             </Button>
                           ))
                         )}

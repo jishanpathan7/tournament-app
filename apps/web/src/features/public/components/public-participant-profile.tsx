@@ -44,7 +44,9 @@ function MatchRow({
       className="border-ink bg-card shadow-sticker-xs hover:shadow-sticker-md ease-bouncy flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm transition-[transform,box-shadow] hover:-translate-y-0.5"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className={`truncate ${outcome === "win" ? "font-bold" : ""}`}>vs {opponentLabel}</span>
+        <span className={`truncate ${outcome === "win" ? "font-bold" : ""}`}>
+          vs {opponentLabel}
+        </span>
         <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.14em]">
           {roundLabel ?? "Round"}
         </span>

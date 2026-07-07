@@ -7,14 +7,17 @@ import ReactConfetti from "react-confetti";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { dur, ease, stagger } from "@/lib/motion";
-import { CeremonyWheel, type WheelHandle } from "@/features/squads/components/draft-ceremony/ceremony-wheel";
+import {
+  CeremonyWheel,
+  type WheelHandle,
+} from "@/features/squads/components/draft-ceremony/ceremony-wheel";
 import { skillLabel, useCeremony } from "@/features/squads/components/draft-ceremony/use-ceremony";
 import type { SquadView, UnassignedRegistrationView } from "@/features/squads/types";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const VICTORY_SOUND_URL = "/sounds/victory-fanfare.mp3";
-const BG = "#1e293b";         // --foreground (dark surface)
+const BG = "#1e293b"; // --foreground (dark surface)
 const BG_SIDEBAR = "#28324a"; // --ink-2 (raised panel on dark)
 
 // Only design-token colors — candy / mint / yellow / pink + their variants
@@ -30,14 +33,18 @@ const SQUAD_ACCENTS = [
 ];
 const CONFETTI_COLORS = ["#4f6bf6", "#34d399", "#fbbf24", "#f472b6", "#9db0fb", "#fffdf5"];
 
-function squadAccent(i: number) { return SQUAD_ACCENTS[i % SQUAD_ACCENTS.length]!; }
+function squadAccent(i: number) {
+  return SQUAD_ACCENTS[i % SQUAD_ACCENTS.length]!;
+}
 
 function playFanfare() {
   try {
     const a = new Audio(VICTORY_SOUND_URL);
     a.volume = 0.65;
     a.play().catch(() => {});
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
 }
 
 function prefersReducedMotion() {
@@ -62,7 +69,10 @@ function GhostFly({ name, color, fromRect, toRect, onDone }: GhostFlyProps) {
     const el = ref.current;
     if (!el) return;
 
-    if (prefersReducedMotion()) { onDone(); return; }
+    if (prefersReducedMotion()) {
+      onDone();
+      return;
+    }
 
     // Position at source
     gsap.set(el, {
@@ -76,8 +86,8 @@ function GhostFly({ name, color, fromRect, toRect, onDone }: GhostFlyProps) {
     });
 
     gsap.to(el, {
-      top:  toRect.top  + toRect.height / 2,
-      left: toRect.left + toRect.width  / 2,
+      top: toRect.top + toRect.height / 2,
+      left: toRect.left + toRect.width / 2,
       scale: 0.75,
       opacity: 0,
       duration: dur.lg,
@@ -171,7 +181,9 @@ function RevealOverlay({
         },
       });
 
-    return () => { tl.kill(); };
+    return () => {
+      tl.kill();
+    };
   }, [onDone]);
 
   return (
@@ -218,15 +230,18 @@ function SquadRoster({ squads, assignments, columnRefs, flashSquadId }: RosterPr
   return (
     <div className="flex flex-col gap-2.5">
       {squads.map((squad, i) => {
-        const mine  = assignments.filter((a) => a.squadId === squad.id);
+        const mine = assignments.filter((a) => a.squadId === squad.id);
         const total = squad.memberCount + mine.length;
         const color = squadAccent(i);
-        const isComplete = total >= squad.memberCount + mine.length && mine.length > 0 && flashSquadId === squad.id;
+        const isComplete =
+          total >= squad.memberCount + mine.length && mine.length > 0 && flashSquadId === squad.id;
         return (
           <div
             key={squad.id}
-            ref={(el) => { if (el) columnRefs.current.set(squad.id, el); }}
-            className="rounded-xl border border-white/8 p-3 transition-colors"
+            ref={(el) => {
+              if (el) columnRefs.current.set(squad.id, el);
+            }}
+            className="border-white/8 rounded-xl border p-3 transition-colors"
             style={{
               background: isComplete ? `${color}18` : "rgba(255,255,255,0.04)",
               borderColor: flashSquadId === squad.id ? `${color}55` : "rgba(255,255,255,0.08)",
@@ -241,7 +256,7 @@ function SquadRoster({ squads, assignments, columnRefs, flashSquadId }: RosterPr
               {squad.members.map((m) => (
                 <span
                   key={m.registrationId}
-                  className="rounded-md bg-white/8 px-2 py-0.5 text-xs text-white/55"
+                  className="bg-white/8 rounded-md px-2 py-0.5 text-xs text-white/55"
                 >
                   {m.displayName}
                 </span>
@@ -305,13 +320,7 @@ function ProgressBar({ total, remaining }: { total: number; remaining: number })
 
 // ── Squad banner ──────────────────────────────────────────────────────────────
 
-function SquadBanner({
-  squad,
-  squadIndex,
-}: {
-  squad: SquadView | undefined;
-  squadIndex: number;
-}) {
+function SquadBanner({ squad, squadIndex }: { squad: SquadView | undefined; squadIndex: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const prevSquadId = useRef<string | undefined>(undefined);
 
@@ -347,7 +356,7 @@ function SquadBanner({
         className="h-2.5 w-2.5 rounded-full"
         style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
       />
-      <span className="text-white/60 text-xs font-normal">Now picking for</span>
+      <span className="text-xs font-normal text-white/60">Now picking for</span>
       <span style={{ color }}>{squad.name}</span>
     </div>
   );
@@ -365,7 +374,7 @@ function SkillTabs({
   onChangeSkill: (s: string | null) => void;
 }) {
   const activeRef = useRef<HTMLButtonElement | null>(null);
-  const inkRef    = useRef<HTMLDivElement>(null);
+  const inkRef = useRef<HTMLDivElement>(null);
 
   function moveInk(btn: HTMLButtonElement) {
     if (!inkRef.current || prefersReducedMotion()) return;
@@ -421,7 +430,7 @@ function SpinButton({
   disabled: boolean;
   onClick: () => void;
 }) {
-  const btnRef  = useRef<HTMLButtonElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const pulseRef = useRef<gsap.core.Tween | null>(null);
 
   useEffect(() => {
@@ -438,13 +447,13 @@ function SpinButton({
       pulseRef.current?.kill();
       gsap.set(btnRef.current, { boxShadow: "none" });
     }
-    return () => { pulseRef.current?.kill(); };
+    return () => {
+      pulseRef.current?.kill();
+    };
   }, [phase, disabled]);
 
   const label =
-    phase === "spinning" ? "Spinning…" :
-    phase === "revealing" ? "Assigned!" :
-    "🎯  Spin";
+    phase === "spinning" ? "Spinning…" : phase === "revealing" ? "Assigned!" : "🎯  Spin";
 
   return (
     <button
@@ -495,7 +504,8 @@ function IntroScreen({
       <div
         className="pointer-events-none absolute inset-0 z-0"
         style={{
-          background: "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(79,107,246,0.12) 0%, transparent 70%)",
+          background:
+            "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(79,107,246,0.12) 0%, transparent 70%)",
         }}
       />
 
@@ -525,10 +535,7 @@ function IntroScreen({
                 border: `1px solid ${squadAccent(i)}44`,
               }}
             >
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: squadAccent(i) }}
-              />
+              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: squadAccent(i) }} />
               {s.name}
             </span>
           ))}
@@ -570,15 +577,26 @@ function CompletionScreen({
         gsap.fromTo(
           ".complete-item",
           { y: 40, opacity: 0, scale: 0.92 },
-          { y: 0, opacity: 1, scale: 1, duration: dur.md, ease: "back.out(1.3)", stagger: stagger.md },
+          {
+            y: 0,
+            opacity: 1,
+            scale: 1,
+            duration: dur.md,
+            ease: "back.out(1.3)",
+            stagger: stagger.md,
+          },
         );
         // Sequential team card reveals
         gsap.fromTo(
           ".team-result-card",
           { opacity: 0, y: 24, scale: 0.94 },
           {
-            opacity: 1, y: 0, scale: 1, duration: dur.md,
-            ease: ease.out, stagger: stagger.lg,
+            opacity: 1,
+            y: 0,
+            scale: 1,
+            duration: dur.md,
+            ease: ease.out,
+            stagger: stagger.lg,
             delay: 0.4,
           },
         );
@@ -600,7 +618,10 @@ function CompletionScreen({
         <div ref={containerRef} className="flex w-full max-w-2xl flex-col items-center gap-6">
           <div
             className="complete-item flex h-24 w-24 items-center justify-center rounded-3xl text-5xl shadow-2xl"
-            style={{ background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.35)" }}
+            style={{
+              background: "rgba(251,191,36,0.15)",
+              border: "1px solid rgba(251,191,36,0.35)",
+            }}
           >
             🏆
           </div>
@@ -615,8 +636,8 @@ function CompletionScreen({
           <div className="grid w-full gap-3 sm:grid-cols-2">
             {squads.map((squad, i) => {
               const newOnes = sessionAssignments.filter((a) => a.squadId === squad.id);
-              const total   = squad.memberCount + newOnes.length;
-              const color   = squadAccent(i);
+              const total = squad.memberCount + newOnes.length;
+              const color = squadAccent(i);
               return (
                 <div
                   key={squad.id}
@@ -627,7 +648,10 @@ function CompletionScreen({
                   }}
                 >
                   <div className="mb-3 flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+                    <span
+                      className="h-2.5 w-2.5 shrink-0 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
                     <span className="font-bold text-white">{squad.name}</span>
                     <span className="ml-auto font-mono text-sm text-white/40">{total} players</span>
                   </div>
@@ -635,7 +659,7 @@ function CompletionScreen({
                     {squad.members.map((m) => (
                       <span
                         key={m.registrationId}
-                        className="rounded-md bg-white/8 px-2 py-0.5 text-xs text-white/55"
+                        className="bg-white/8 rounded-md px-2 py-0.5 text-xs text-white/55"
                       >
                         {m.displayName}
                       </span>
@@ -682,9 +706,18 @@ function CompletionScreen({
 type SpinPhase = "idle" | "spinning" | "revealing";
 
 function MainScreen({
-  squads, pool, skillGroups, resolvedSkill,
-  totalRemaining, totalPlayers, isAssigning, history,
-  currentSquad, onAssign, onUndo, onChangeSkill,
+  squads,
+  pool,
+  skillGroups,
+  resolvedSkill,
+  totalRemaining,
+  totalPlayers,
+  isAssigning,
+  history,
+  currentSquad,
+  onAssign,
+  onUndo,
+  onChangeSkill,
 }: {
   squads: SquadView[];
   pool: UnassignedRegistrationView[];
@@ -695,21 +728,29 @@ function MainScreen({
   isAssigning: boolean;
   history: { registrationId: string; displayName: string; squadId: string }[];
   currentSquad: SquadView | undefined;
-  onAssign: (player: UnassignedRegistrationView, squadId?: string) => Promise<import("@/features/squads/components/draft-ceremony/use-ceremony").Assignment | null>;
+  onAssign: (
+    player: UnassignedRegistrationView,
+    squadId?: string,
+  ) => Promise<
+    import("@/features/squads/components/draft-ceremony/use-ceremony").Assignment | null
+  >;
   onUndo: () => void;
   onChangeSkill: (skill: string | null) => void;
 }) {
-  const wheelRef      = useRef<WheelHandle>(null);
-  const wheelWrapRef  = useRef<HTMLDivElement>(null);
-  const columnRefs    = useRef<Map<string, HTMLDivElement>>(new Map());
+  const wheelRef = useRef<WheelHandle>(null);
+  const wheelWrapRef = useRef<HTMLDivElement>(null);
+  const columnRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  const [spinPhase, setSpinPhase]         = useState<SpinPhase>("idle");
+  const [spinPhase, setSpinPhase] = useState<SpinPhase>("idle");
   const [highlightIndex, setHighlightIndex] = useState<number | null>(null);
-  const [revealInfo, setRevealInfo]         = useState<RevealInfo | null>(null);
-  const [burstKey, setBurstKey]             = useState(0);
-  const [flashSquadId, setFlashSquadId]     = useState<string | null>(null);
-  const [ghostFly, setGhostFly]             = useState<{
-    name: string; color: string; fromRect: DOMRect; toRect: DOMRect;
+  const [revealInfo, setRevealInfo] = useState<RevealInfo | null>(null);
+  const [burstKey, setBurstKey] = useState(0);
+  const [flashSquadId, setFlashSquadId] = useState<string | null>(null);
+  const [ghostFly, setGhostFly] = useState<{
+    name: string;
+    color: string;
+    fromRect: DOMRect;
+    toRect: DOMRect;
   } | null>(null);
 
   const currentSquadIdx = squads.findIndex((s) => s.id === currentSquad?.id);
@@ -725,10 +766,16 @@ function MainScreen({
     await wheelRef.current.spin(idx);
 
     const player = pool[idx];
-    if (!player) { setSpinPhase("idle"); return; }
+    if (!player) {
+      setSpinPhase("idle");
+      return;
+    }
 
     const result = await onAssign(player);
-    if (!result) { setSpinPhase("idle"); return; }
+    if (!result) {
+      setSpinPhase("idle");
+      return;
+    }
 
     setBurstKey((k) => k + 1);
     playFanfare();
@@ -740,7 +787,7 @@ function MainScreen({
     setRevealInfo({
       playerName: result.displayName,
       skillLevel: result.skillLevel,
-      squadName:  result.squadName,
+      squadName: result.squadName,
       squadColor: squadAccent(squads.findIndex((s) => s.id === result.squadId)),
       wheelRect,
     });
@@ -776,11 +823,15 @@ function MainScreen({
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
       {/* Progress + skill tabs header */}
-      <div className="flex items-center gap-4 border-b border-white/8 px-6 py-3">
+      <div className="border-white/8 flex items-center gap-4 border-b px-6 py-3">
         <SkillTabs
           skillGroups={skillGroups}
           resolvedSkill={resolvedSkill}
-          onChangeSkill={(s) => { onChangeSkill(s); setSpinPhase("idle"); setHighlightIndex(null); }}
+          onChangeSkill={(s) => {
+            onChangeSkill(s);
+            setSpinPhase("idle");
+            setHighlightIndex(null);
+          }}
         />
         <div className="ml-auto flex items-center gap-3">
           <span className="font-mono text-xs text-white/35">{totalRemaining} remaining</span>
@@ -827,11 +878,7 @@ function MainScreen({
               </div>
 
               <div className="relative z-10 flex flex-col items-center gap-2">
-                <SpinButton
-                  phase={spinPhase}
-                  disabled={!canSpin}
-                  onClick={handleSpin}
-                />
+                <SpinButton phase={spinPhase} disabled={!canSpin} onClick={handleSpin} />
                 {history.length > 0 && spinPhase === "idle" && (
                   <button
                     onClick={onUndo}
@@ -848,10 +895,10 @@ function MainScreen({
 
         {/* Team roster sidebar */}
         <aside
-          className="hidden w-72 shrink-0 overflow-y-auto border-l border-white/8 p-4 lg:block"
+          className="border-white/8 hidden w-72 shrink-0 overflow-y-auto border-l p-4 lg:block"
           style={{ background: BG_SIDEBAR }}
         >
-          <p className="mb-3 font-mono text-2xs font-bold uppercase tracking-widest text-white/30">
+          <p className="text-2xs mb-3 font-mono font-bold uppercase tracking-widest text-white/30">
             Teams
           </p>
           <SquadRoster
@@ -864,12 +911,7 @@ function MainScreen({
       </div>
 
       {/* Overlays */}
-      {revealInfo && (
-        <RevealOverlay
-          info={revealInfo}
-          onDone={handleRevealDone}
-        />
-      )}
+      {revealInfo && <RevealOverlay info={revealInfo} onDone={handleRevealDone} />}
       {ghostFly && (
         <GhostFly
           name={ghostFly.name}
@@ -886,8 +928,8 @@ function MainScreen({
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
-  const ceremony  = useCeremony(tournamentId);
-  const shellRef  = useRef<HTMLDivElement>(null);
+  const ceremony = useCeremony(tournamentId);
+  const shellRef = useRef<HTMLDivElement>(null);
   const prevPhase = useRef<string>("intro");
 
   // Phase transition: cross-fade between screens
@@ -905,7 +947,7 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
 
   // Total players count (unassigned at start + already assigned)
   const totalPlayers =
-    (ceremony.squads.reduce((s, sq) => s + sq.memberCount, 0)) +
+    ceremony.squads.reduce((s, sq) => s + sq.memberCount, 0) +
     ceremony.totalRemaining +
     ceremony.history.length;
 
@@ -917,7 +959,7 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
       >
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-white/15 border-t-white/70" />
-          <p className="font-mono text-xs text-white/40 uppercase tracking-widest">Loading…</p>
+          <p className="font-mono text-xs uppercase tracking-widest text-white/40">Loading…</p>
         </div>
       </div>
     );
@@ -935,13 +977,9 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
   }
 
   return (
-    <div
-      ref={shellRef}
-      className="fixed inset-0 z-50 flex flex-col"
-      style={{ background: BG }}
-    >
+    <div ref={shellRef} className="fixed inset-0 z-50 flex flex-col" style={{ background: BG }}>
       {/* Nav bar */}
-      <nav className="flex items-center gap-3 border-b border-white/8 px-4 py-3">
+      <nav className="border-white/8 flex items-center gap-3 border-b px-4 py-3">
         <Link
           href={`/console/tournaments/${tournamentId}/teams`}
           className="flex items-center gap-1.5 text-sm text-white/40 transition-colors hover:text-white/80"
