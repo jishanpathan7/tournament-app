@@ -139,7 +139,7 @@ export function ProposedTeamCard({
         <p className="text-2xs text-muted-foreground leading-relaxed">
           {team.reasons.filter((r) => r !== "Duplicate pair — plays twice").join(" · ")}
           {isDuplicatePair && (
-            <span className="text-yellow-600 font-medium">
+            <span className="font-medium text-yellow-600">
               {team.reasons.filter((r) => r !== "Duplicate pair — plays twice").length > 0
                 ? " · "
                 : ""}

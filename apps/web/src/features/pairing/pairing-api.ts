@@ -57,9 +57,6 @@ export async function addDuplicatePair(
   runId: string,
   body: { unpairedId: string; duplicateId: string },
 ): Promise<PairingRunView> {
-  const { data } = await api.post<PairingRunView>(
-    `/pairing/runs/${runId}/duplicate-pair`,
-    body,
-  );
+  const { data } = await api.post<PairingRunView>(`/pairing/runs/${runId}/duplicate-pair`, body);
   return data;
 }

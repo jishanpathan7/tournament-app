@@ -89,10 +89,11 @@ export function OrgSettingsPanel() {
       { emailsEnabled: next },
       {
         onSuccess: () => {
-          toast.success(
-            next ? "Email notifications enabled" : "Email notifications disabled",
-            { description: next ? "Participants will now receive emails." : "No emails will be sent to any participants or admins." },
-          );
+          toast.success(next ? "Email notifications enabled" : "Email notifications disabled", {
+            description: next
+              ? "Participants will now receive emails."
+              : "No emails will be sent to any participants or admins.",
+          });
         },
         onError: () => {
           toast.error("Failed to update setting", {
@@ -115,7 +116,6 @@ export function OrgSettingsPanel() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
-
       {/* ── Organisation ── */}
       <section>
         <div className="mb-4 flex items-center gap-2">
@@ -190,7 +190,9 @@ export function OrgSettingsPanel() {
           <div className="mt-3 flex items-start gap-3 rounded-xl border-2 border-[#F472B6] bg-[#FCE7F3] px-4 py-3">
             <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />
             <p className="text-sm leading-relaxed text-[#9D174D]">
-              <strong className="font-semibold">Emails are off</strong> — no notifications will be sent to participants or organizers for any tournament in this account. Enable this setting before your event goes live.
+              <strong className="font-semibold">Emails are off</strong> — no notifications will be
+              sent to participants or organizers for any tournament in this account. Enable this
+              setting before your event goes live.
             </p>
           </div>
         )}

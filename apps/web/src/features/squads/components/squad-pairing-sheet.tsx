@@ -245,8 +245,8 @@ export function SquadPairingSheet({
                   </p>
                 </div>
                 <p className="text-xs text-yellow-700">
-                  {squad.name} has an odd number of players. Choose an existing player to
-                  partner the player below — they will play in two pairs.
+                  {squad.name} has an odd number of players. Choose an existing player to partner
+                  the player below — they will play in two pairs.
                 </p>
 
                 {unpairedEntrants.map((entrant) => {
@@ -271,8 +271,7 @@ export function SquadPairingSheet({
                                 "border-purple-200 bg-purple-50 text-purple-700",
                               skill.tone === "mint" &&
                                 "border-emerald-200 bg-emerald-50 text-emerald-700",
-                              skill.tone === "muted" &&
-                                "border-gray-200 bg-gray-50 text-gray-600",
+                              skill.tone === "muted" && "border-gray-200 bg-gray-50 text-gray-600",
                             )}
                           >
                             {skill.label}
@@ -299,7 +298,7 @@ export function SquadPairingSheet({
                             Pick who plays a second match with{" "}
                             <strong>{entrant.displayName}</strong>:
                           </p>
-                          <div className="flex flex-col gap-1.5 max-h-56 overflow-y-auto">
+                          <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
                             {[...pairedIds]
                               .filter((id) => id !== entrant.registrationId)
                               .map((id) => {
@@ -317,7 +316,7 @@ export function SquadPairingSheet({
                                     <span className="font-medium">{candidate.displayName}</span>
                                     <span className="flex items-center gap-1.5">
                                       {duplicatePlayerIds.has(id) && (
-                                        <span className="rounded-full bg-yellow-200 px-1.5 py-0.5 text-2xs font-semibold text-yellow-800">
+                                        <span className="text-2xs rounded-full bg-yellow-200 px-1.5 py-0.5 font-semibold text-yellow-800">
                                           Already plays twice
                                         </span>
                                       )}

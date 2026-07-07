@@ -312,9 +312,7 @@ async def add_duplicate_pair(
 
     paired: set[str] = {str(m) for t in run.proposed_teams for m in t.member_ids}
     if str(unpaired_id) in paired:
-        raise ValidationError(
-            "that player is already assigned to a pair", code="already_paired"
-        )
+        raise ValidationError("that player is already assigned to a pair", code="already_paired")
     if str(duplicate_id) not in paired:
         raise ValidationError(
             "the selected player is not in any existing pair — "
@@ -326,7 +324,10 @@ async def add_duplicate_pair(
     ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
 
     known = set(ctx.by_id)
-    for label, mid in [("unpaired player", str(unpaired_id)), ("duplicate player", str(duplicate_id))]:
+    for label, mid in [
+        ("unpaired player", str(unpaired_id)),
+        ("duplicate player", str(duplicate_id)),
+    ]:
         if mid not in known:
             raise ValidationError(
                 f"the {label} is not an eligible entrant for this run", code="invalid_pair"
