@@ -6,6 +6,7 @@ register on ``Base.metadata`` (imported via ``app.db.models``); Alembic targets 
 
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -19,16 +20,41 @@ __all__ = ["Base", "get_session", "check_db", "check_rls_enforcement"]
 _engine = None
 _sessionmaker: async_sessionmaker[AsyncSession] | None = None
 
+# asyncpg does not accept libpq query-string params (sslmode, channel_binding).
+# Strip them from the URL and translate sslmode → ssl connect_arg instead.
+_ASYNCPG_UNSUPPORTED_PARAMS = {"sslmode", "channel_binding"}
+_SSL_MODES = {"require", "verify-ca", "verify-full"}
+
+
+def _prepare_url(url: str) -> tuple[str, dict]:
+    """Return (clean_url, connect_args) suitable for asyncpg.
+
+    Neon connection strings include ``?sslmode=require&channel_binding=require``
+    which asyncpg rejects.  We strip those params and pass ssl=True via
+    connect_args when sslmode was require/verify-*.
+    """
+    parsed = urlparse(url)
+    params = parse_qs(parsed.query, keep_blank_values=True)
+    sslmode = params.pop("sslmode", ["disable"])[0]
+    for key in list(_ASYNCPG_UNSUPPORTED_PARAMS):
+        params.pop(key, None)
+    clean_url = urlunparse(parsed._replace(query=urlencode({k: v[0] for k, v in params.items()})))
+    connect_args: dict = {"statement_cache_size": 0}
+    if sslmode in _SSL_MODES:
+        connect_args["ssl"] = True
+    return clean_url, connect_args
+
 
 def _init() -> None:
     global _engine, _sessionmaker
     settings = get_settings()
     if settings.database_url and _engine is None:
+        clean_url, connect_args = _prepare_url(settings.database_url)
         _engine = create_async_engine(
-            settings.database_url,
+            clean_url,
             future=True,
             pool_pre_ping=True,
-            connect_args={"statement_cache_size": 0},
+            connect_args=connect_args,
         )
         _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
 
