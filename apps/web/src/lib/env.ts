@@ -16,7 +16,9 @@ function resolveApiUrl(): string {
 
 export const env = {
   apiUrl: resolveApiUrl(),
-  /** Public origin of this app (e.g. https://playlane.app). Used for OG metadata,
+  /** Public origin of this app (e.g. https://playlane.live). Used for OG metadata,
    *  share links, and tournament registration URLs. Set NEXT_PUBLIC_APP_URL in Vercel. */
   appUrl: process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+  /** Sentry DSN for browser-side error reporting. Leave empty in dev/CI to disable. */
+  sentryDsn: process.env.NEXT_PUBLIC_SENTRY_DSN ?? "",
 } as const;
