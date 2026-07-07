@@ -109,17 +109,17 @@ export function SquadPairingSheet({
       {/* Header */}
       <div className="flex items-center justify-between border-b px-5 py-4">
         <div>
-          <p className="font-mono text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+          <p className="text-muted-foreground font-mono text-xs font-semibold uppercase tracking-widest">
             Doubles Pairs
           </p>
           <h2 className="text-lg font-bold">{squad.name}</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             {squad.memberCount} players · paired by skill level
           </p>
         </div>
         <button
           onClick={onClose}
-          className="rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          className="text-muted-foreground hover:bg-muted hover:text-foreground rounded-full p-1.5 transition-colors"
         >
           <X className="h-4 w-4" />
         </button>
@@ -128,13 +128,13 @@ export function SquadPairingSheet({
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
         {pairing.isLoading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             Loading…
           </div>
         ) : !run || run.teams.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-12 text-center">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               No pairs generated yet for <strong>{squad.name}</strong>.
             </p>
             <Button tone="candy" size="sm" onClick={onGenerate} disabled={busy}>
@@ -144,7 +144,7 @@ export function SquadPairingSheet({
         ) : (
           <div className="flex flex-col gap-3">
             {stats && (
-              <div className="flex flex-wrap gap-4 rounded-xl border bg-muted/30 px-4 py-3 text-sm">
+              <div className="bg-muted/30 flex flex-wrap gap-4 rounded-xl border px-4 py-3 text-sm">
                 <span>
                   <strong>{stats.teamCount}</strong> pairs
                 </span>
@@ -168,7 +168,7 @@ export function SquadPairingSheet({
             )}
 
             {selectedMember && (
-              <p className="text-sm font-semibold text-candy-dark">
+              <p className="text-candy-dark text-sm font-semibold">
                 Click another player to swap, or click the same player to cancel.
               </p>
             )}
@@ -200,20 +200,10 @@ export function SquadPairingSheet({
       {/* Footer */}
       {run && run.teams.length > 0 && (
         <div className="flex items-center justify-between gap-3 border-t px-5 py-4">
-          <Button
-            tone="paper"
-            size="sm"
-            onClick={onGenerate}
-            disabled={busy || isPublished}
-          >
+          <Button tone="paper" size="sm" onClick={onGenerate} disabled={busy || isPublished}>
             Regenerate
           </Button>
-          <Button
-            tone="candy"
-            size="sm"
-            onClick={onPublish}
-            disabled={busy || isPublished}
-          >
+          <Button tone="candy" size="sm" onClick={onPublish} disabled={busy || isPublished}>
             {isPublished ? "Locked ✓" : "Lock & Confirm Pairs"}
           </Button>
         </div>

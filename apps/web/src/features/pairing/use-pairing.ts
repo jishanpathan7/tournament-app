@@ -11,10 +11,7 @@ import * as pairingApi from "@/features/pairing/pairing-api";
 import { queryKeys } from "@/lib/query-keys";
 
 /** The current draft pairing run for a division (or a specific squad within it). */
-export function usePairing(
-  divisionId: string,
-  options?: { enabled?: boolean; squadId?: string },
-) {
+export function usePairing(divisionId: string, options?: { enabled?: boolean; squadId?: string }) {
   const squadId = options?.squadId;
   return useQuery({
     queryKey: queryKeys.divisions.pairing(divisionId, squadId),
