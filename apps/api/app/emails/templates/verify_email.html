@@ -1,8 +1,50 @@
 {% extends "layouts/base.html" %}
 {% import "_button.html" as ui %}
+
+{% block preheader %}Verify your email to get started on {{ app_name }}.{% endblock %}
+
+{% block accent_color %}#8B5CF6{% endblock %}
+
 {% block content %}
-<p>Hi {{ name }},</p>
-<p>Confirm your email address to activate your {{ app_name }} account.</p>
-{{ ui.button(frontend_url ~ "/verify-email?token=" ~ token, "Verify email") }}
-<p style="color:#8a8a8a;font-size:12px">This link expires soon. If you didn't create an account, ignore this email.</p>
+<!-- Icon -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr>
+    <td align="center">
+      <div style="display:inline-block;width:52px;height:52px;background:#EDE9FE;border:2px solid #1E293B;border-radius:14px;text-align:center;line-height:48px;font-size:24px;">✉️</div>
+    </td>
+  </tr>
+</table>
+
+<!-- Eyebrow -->
+<p style="margin:0 0 10px;font-family:'Courier New',Courier,ui-monospace,monospace;font-size:11px;font-weight:600;color:#8B5CF6;letter-spacing:0.1em;text-transform:uppercase;text-align:center;">Account Setup</p>
+
+<!-- Heading -->
+<h1 style="margin:0 0 20px;font-family:Fraunces,Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;color:#1E293B;letter-spacing:-0.02em;line-height:1.2;text-align:center;">Verify your email address</h1>
+
+<!-- Divider -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr><td style="border-top:1px solid #E2E8F0;font-size:0;line-height:0;">&nbsp;</td></tr>
+</table>
+
+<!-- Body -->
+<p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#1E293B;">Hi {{ name }},</p>
+<p style="margin:0 0 0;font-size:15px;line-height:1.65;color:#475569;">Thanks for signing up. Tap the button below to confirm your email address and activate your {{ app_name }} account.</p>
+
+{{ ui.button(frontend_url ~ "/verify-email?token=" ~ token, "Verify my email") }}
+
+<!-- Fallback link -->
+<p style="margin:20px 0 0;font-size:13px;line-height:1.5;color:#64748B;text-align:center;">
+  Or copy this link into your browser:<br>
+  <a href="{{ frontend_url ~ '/verify-email?token=' ~ token }}" style="color:#8B5CF6;word-break:break-all;">{{ frontend_url }}/verify-email?token={{ token }}</a>
+</p>
+
+<!-- Security note -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 0;">
+  <tr>
+    <td style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:10px;padding:14px 16px;">
+      <p style="margin:0;font-family:'Courier New',Courier,ui-monospace,monospace;font-size:11px;font-weight:600;color:#64748B;letter-spacing:0.07em;text-transform:uppercase;">🔒 Security note</p>
+      <p style="margin:6px 0 0;font-size:12px;line-height:1.5;color:#64748B;">This link expires in 24 hours. If you didn't create an account, no action is needed — your address will not be used.</p>
+    </td>
+  </tr>
+</table>
 {% endblock %}
