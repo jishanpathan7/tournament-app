@@ -431,11 +431,16 @@ async def _load_context(
         raise NotFoundError("Sport profile not found")
     profile = get_sport_registry().get(profile_row.key)
     policy = profile.pairing_policy({"participantType": division.participant_type})
-    # Squad (franchise) and individual divisions register players as individuals then pair
-    # them into doubles within squads. Both use approved registrations and override to the
-    # doubles pairing policy.
+    # Franchise (squad-scoped) flow: players registered as individuals, paired into
+    # doubles within their squad.  Requires an explicit squad_id; without one, a
+    # singles division must be rejected — not silently re-routed to the doubles policy.
     is_franchise = squad_id is not None
-    if not policy.supports_pairing or is_franchise:
+    if not policy.supports_pairing and not is_franchise:
+        raise ValidationError(
+            "pairing is not supported for this division type",
+            code="pairing_unsupported",
+        )
+    if is_franchise:
         policy = profile.pairing_policy({"participantType": "pair"})
         entrants = list(await repo.list_approved_registrations(session, org_id, division_id))
     else:
