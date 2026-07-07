@@ -12,7 +12,7 @@ from app.modules.scoring.schemas import SportMatchConfigView
 
 
 class CreateMatchScorekeeperLinkRequest(ApiModel):
-    expires_in_hours: int = Field(default=336, ge=1, le=8760)  # default 2 weeks
+    expires_in_hours: int = Field(default=48, ge=1, le=720)  # default 48h, max 30 days
     recipient_email: str | None = Field(default=None, max_length=320)
     recipient_name: str | None = Field(default=None, max_length=200)
 
@@ -51,7 +51,7 @@ class ScorekeeperScoreRequest(ApiModel):
 
 
 class CreateDivisionCheckInLinkRequest(ApiModel):
-    expires_in_hours: int = Field(default=168, ge=1, le=8760)
+    expires_in_hours: int = Field(default=24, ge=1, le=168)  # default 24h, max 7 days
 
 
 class CheckInLinkView(ApiModel):

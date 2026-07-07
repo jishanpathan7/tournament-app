@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 from app.core.config import get_settings
 from app.db.base import Base
 
-__all__ = ["Base", "get_session", "check_db"]
+__all__ = ["Base", "get_session", "check_db", "check_rls_enforcement"]
 
 
 _engine = None
@@ -67,6 +67,28 @@ async def session_scope() -> AsyncIterator[AsyncSession]:
         raise RuntimeError("DATABASE_URL is not configured")
     async with _sessionmaker() as session:
         yield session
+
+
+async def check_rls_enforcement() -> None:
+    """Assert the connected DB role is not a superuser.
+
+    Postgres superusers bypass Row-Level Security, so a superuser connection
+    would silently defeat all tenant isolation. This check runs at startup in
+    production and raises immediately so the deployment fails loud rather than
+    serving data without any RLS enforcement.
+    """
+    _init()
+    if _engine is None:
+        raise RuntimeError("DATABASE_URL is not configured")
+    async with _engine.connect() as conn:
+        row = await conn.execute(text("SELECT current_user, current_setting('is_superuser')"))
+        current_user, is_superuser = row.one()
+    if is_superuser == "on":
+        raise RuntimeError(
+            f"Database role '{current_user}' is a superuser — "
+            "superusers bypass Row-Level Security. "
+            "Create a non-superuser application role and set DATABASE_URL accordingly."
+        )
 
 
 async def check_db() -> bool:

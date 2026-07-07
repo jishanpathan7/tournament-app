@@ -157,7 +157,7 @@ async def register(
     user_agent: str | None = None,
 ) -> AuthResult:
     if await repo.get_user_by_email(session, email) is not None:
-        raise ConflictError("That email is already registered")
+        raise ConflictError("Unable to create account with this email")
     user = User(email=email, name=name, password_hash=hash_password(password))
     session.add(user)
     await session.flush()
@@ -202,7 +202,7 @@ async def authenticate(
     user = await repo.get_user_by_email(session, email)
     if user is None or not user.password_hash or not verify_password(password, user.password_hash):
         await throttle.record_failure(key)
-        logger.info("auth.login_failed", extra={"email": email.lower()})
+        logger.info("auth.login_failed")
         raise AuthenticationError("Invalid email or password")
 
     await throttle.reset(key)
@@ -246,6 +246,17 @@ async def oauth_login(
             )
             session.add(user)
             await session.flush()
+        else:
+            # Linking OAuth to an existing account: only safe when the existing
+            # account's email is verified, or the existing account itself is
+            # OAuth-only (no password).  Without this check an attacker who
+            # pre-registers a victim's email could hijack the account the moment
+            # the victim signs in via Google.
+            if user.email_verified_at is None and user.password_hash is not None:
+                raise AuthenticationError(
+                    "An account with this email already exists. "
+                    "Please sign in with your password and verify your email first."
+                )
         session.add(
             Identity(user_id=user.id, provider=info.provider, provider_subject=info.subject)
         )

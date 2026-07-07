@@ -8,11 +8,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.routing import APIRoute
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
 from app.api import api_router
 from app.api.errors import register_exception_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.core.config import get_settings
+from app.core.db import check_rls_enforcement
 from app.core.logging import configure_logging
 
 logger = logging.getLogger("app")
@@ -36,6 +38,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
         worker_stop = asyncio.Event()
         worker_task = asyncio.create_task(run_forever(worker_stop))
+
+    # In production, assert the DB role is not a superuser and that RLS is
+    # enforced (superusers bypass RLS, defeating all tenant isolation).
+    if settings.is_production and settings.database_url:
+        await check_rls_enforcement()
 
     logger.info("api.startup", extra={"environment": settings.environment})
     yield
@@ -61,6 +68,11 @@ def create_app() -> FastAPI:
         generate_unique_id_function=_operation_id,
     )
     register_exception_handlers(app)
+    # Honour X-Forwarded-For / X-Real-IP set by Railway/Render's load balancer so
+    # the login throttle and audit logs see the actual client IP, not the proxy.
+    # trusted_hosts="*" is safe here: Railway terminates TLS and strips/rewrites
+    # these headers before they reach the app, so end-users cannot spoof them.
+    app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
     # Pure-ASGI request-id/correlation context (runs around every request).
     app.add_middleware(RequestContextMiddleware)
     cors_origins = settings.cors_origin_list

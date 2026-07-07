@@ -451,6 +451,7 @@ async def clear_draw(
     "/stages/{stage_id}/advance",
     response_model=AdvanceToKnockoutResponse,
     status_code=201,
+    dependencies=[Depends(authed_csrf)],
 )
 async def advance_to_knockout(
     stage_id: uuid.UUID,

@@ -201,8 +201,15 @@ async def get_active_run(
     division_id: uuid.UUID,
     squad_id: uuid.UUID | None = None,
 ) -> PairingRun | None:
+    """Return the current run for display: draft if in flight, published if locked.
+
+    Uses ``repo.get_current_run`` (draft-first, published-fallback) so the frontend
+    footer can show "N pairs locked" after a squad run is published, without a
+    separate endpoint.  Generate / swap / publish use ``repo.get_active_run``
+    (draft-only) internally so they never accidentally discard a published run.
+    """
     await _load_context(session, org_id, division_id)  # validates division exists
-    return await repo.get_active_run(session, org_id, division_id, squad_id=squad_id)
+    return await repo.get_current_run(session, org_id, division_id, squad_id=squad_id)
 
 
 # ---- edit ----
@@ -282,8 +289,11 @@ async def publish(
 ) -> tuple[int, int]:
     """Materialize a draft run's teams into Team + pair Participant rows, linking each
     source registration. Returns (published_teams, unpaired_count)."""
-    run = await _require_draft_run(session, org_id, run_id)
-    ctx = await _load_context(session, org_id, run.division_id)
+    run = await _require_draft_run(session, org_id, run_id, lock=True)
+    # Re-scope to the squad so that franchise runs (APPROVED registrations) are found.
+    squad_id_str = (run.config or {}).get("squadId")
+    squad_id = uuid.UUID(squad_id_str) if squad_id_str else None
+    ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
 
     paired_ids: set[str] = set()
     published = 0
@@ -515,9 +525,9 @@ def _validate_member_ids(
 
 
 async def _require_draft_run(
-    session: AsyncSession, org_id: uuid.UUID, run_id: uuid.UUID
+    session: AsyncSession, org_id: uuid.UUID, run_id: uuid.UUID, *, lock: bool = False
 ) -> PairingRun:
-    run = await repo.get_run(session, org_id, run_id)
+    run = await repo.get_run(session, org_id, run_id, for_update=lock)
     if run is None:
         raise NotFoundError("Pairing run not found")
     if run.status != PairingRunStatus.DRAFT.value:
@@ -547,7 +557,11 @@ async def build_run_view(
     loaded = await repo.get_run(session, org_id, run.id)
     if loaded is not None:
         run = loaded
-    ctx = await _load_context(session, org_id, run.division_id)
+    # Extract squad scope so the entrant list, unpaired count, and summary all reflect
+    # only the squad's members — not the whole division.
+    squad_id_str = (run.config or {}).get("squadId")
+    squad_id = uuid.UUID(squad_id_str) if squad_id_str else None
+    ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
 
     # Build reg_id → squad_name map for display
     squads = await list_squads(session, org_id, ctx.division.tournament_id)
@@ -589,9 +603,6 @@ async def build_run_view(
         unpaired_count=len(unpaired),
         average_confidence=round(sum(confidences) / len(confidences), 3) if confidences else 0.0,
     )
-    squad_id_str = (run.config or {}).get("squadId")
-    squad_id = uuid.UUID(squad_id_str) if squad_id_str else None
-
     return PairingRunView(
         id=run.id,
         division_id=run.division_id,

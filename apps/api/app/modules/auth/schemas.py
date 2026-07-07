@@ -21,7 +21,7 @@ class RegisterRequest(ApiModel):
 
 class LoginRequest(ApiModel):
     email: EmailStr
-    password: str
+    password: str = Field(min_length=1, max_length=200)
     remember_me: bool = False
 
 

@@ -11,13 +11,14 @@ import uuid
 from collections.abc import Sequence
 from typing import Any
 
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
 from app.core import audit
 from app.core.security import hash_token, new_opaque_token
 from app.db.enums import OrgInviteStatus, OrgRole
-from app.db.models import Membership, Organization, OrgInvite
+from app.db.models import AuthSession, Membership, Organization, OrgInvite
 from app.db.session import set_org_context
 from app.modules.orgs import events
 from app.modules.orgs import repository as repo
@@ -174,6 +175,14 @@ async def remove_member(
         before={"userId": str(target_user_id), "role": OrgRole(membership.org_role).value},
     )
     await session.delete(membership)
+    # Revoke all of the removed user's sessions so their stale JWT can no
+    # longer be used to access this org.  The refresh-rotate path will issue
+    # a new token with no org context on the next request.
+    await session.execute(
+        update(AuthSession)
+        .where(AuthSession.user_id == target_user_id, AuthSession.revoked_at.is_(None))
+        .values(revoked_at=_now())
+    )
 
 
 async def create_invite(
@@ -231,11 +240,17 @@ async def revoke_invite(
 
 
 async def accept_invite(
-    session: AsyncSession, *, user_id: uuid.UUID, raw_token: str
+    session: AsyncSession, *, user_id: uuid.UUID, raw_token: str, current_email: str
 ) -> tuple[Organization, Membership]:
     invite = await repo.get_invite_by_token(session, hash_token(raw_token))
     if invite is None or invite.status != OrgInviteStatus.PENDING or invite.expires_at < _now():
         raise ValidationError("Invalid or expired invite")
+    if invite.email.lower() != current_email.lower():
+        raise PermissionDeniedError(
+            "This invite was sent to a different email address. "
+            "Please sign in with the invited email to accept.",
+            code="invite_email_mismatch",
+        )
     membership = await repo.get_membership(session, user_id, invite.organization_id)
     if membership is None:
         membership = Membership(
