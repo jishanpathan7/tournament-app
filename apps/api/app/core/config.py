@@ -143,6 +143,22 @@ class Settings(BaseSettings):
                 )
             if not self.storage_signing_secret:
                 problems.append("STORAGE_SIGNING_SECRET must be set (separate from JWT_SECRET)")
+            if not self.r2_configured:
+                problems.append(
+                    "R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY and R2_BUCKET "
+                    "must be set — local disk storage is ephemeral on Railway/Render and "
+                    "must not be used in production"
+                )
+            if self.r2_configured and not self.r2_public_base_url:
+                problems.append(
+                    "R2_PUBLIC_BASE_URL must be set — without it public file URLs are "
+                    "broken relative paths (e.g. /uploads/...) instead of full https:// URLs"
+                )
+            if len(self.jwt_secret) < 32:
+                problems.append(
+                    "JWT_SECRET is too short — use at least 32 random bytes "
+                    "(e.g. openssl rand -hex 32)"
+                )
             if problems:
                 raise ValueError("Invalid production configuration: " + "; ".join(problems))
         return self
