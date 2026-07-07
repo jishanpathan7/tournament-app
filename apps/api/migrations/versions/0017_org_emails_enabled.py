@@ -11,7 +11,6 @@ Create Date: 2026-07-07
 
 from __future__ import annotations
 
-import sqlalchemy as sa
 from alembic import op
 
 revision = "0017_org_emails_enabled"
