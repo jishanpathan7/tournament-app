@@ -185,9 +185,7 @@ async def get_current_run(
         .where(
             PairingRun.division_id == division_id,
             PairingRun.organization_id == org_id,
-            PairingRun.status.in_(
-                [PairingRunStatus.DRAFT.value, PairingRunStatus.PUBLISHED.value]
-            ),
+            PairingRun.status.in_([PairingRunStatus.DRAFT.value, PairingRunStatus.PUBLISHED.value]),
         )
         .options(selectinload(PairingRun.proposed_teams))
         .order_by(PairingRun.created_at.desc())
@@ -201,8 +199,10 @@ async def get_current_run(
         scoped = [r for r in runs if (r.config or {}).get("squadId") == target]
 
     draft = next((r for r in scoped if r.status == PairingRunStatus.DRAFT.value), None)
-    return draft if draft is not None else next(
-        (r for r in scoped if r.status == PairingRunStatus.PUBLISHED.value), None
+    return (
+        draft
+        if draft is not None
+        else next((r for r in scoped if r.status == PairingRunStatus.PUBLISHED.value), None)
     )
 
 
