@@ -12,7 +12,7 @@ import datetime
 import uuid
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, ForeignKey, Index, String, Text, UniqueConstraint, text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, String, Text, UniqueConstraint, text
 from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -57,6 +57,11 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     timezone: Mapped[str] = mapped_column(String(64), nullable=False, server_default=text("'UTC'"))
     plan: Mapped[str] = mapped_column(String(40), nullable=False, server_default=text("'free'"))
+    # Global email kill switch. When False, NO outbound emails are sent for this org
+    # (participants and admins alike). Auth emails (verify, reset) are always exempt.
+    emails_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
     # use_alter breaks the organizations <-> sport_profiles FK cycle at create time.
     default_sport_profile_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
