@@ -66,6 +66,11 @@ jobs:
   web:
     name: Web · lint · types · test · build
     runs-on: ubuntu-latest
+    # Provide build-time env vars so Next.js bakes real-looking values into the
+    # bundle instead of the localhost fallbacks from env.ts.
+    env:
+      NEXT_PUBLIC_API_URL: ""
+      NEXT_PUBLIC_APP_URL: "https://example.playlane.app"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

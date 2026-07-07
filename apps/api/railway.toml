@@ -1,0 +1,17 @@
+# Railway deployment configuration for the Playlane API (FastAPI).
+# https://docs.railway.com/reference/config-as-code
+
+[build]
+builder = "nixpacks"
+
+[deploy]
+# Railway injects $PORT automatically. The app must bind to 0.0.0.0:$PORT.
+startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1"
+
+# Health check — Railway waits for this to return 200 before routing traffic.
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 30       # seconds
+
+# Restart on non-zero exit; give up after 3 consecutive failures.
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3
