@@ -13,6 +13,8 @@ documentation, not implemented): ``notification.dispatch`` (Part 5),
 from __future__ import annotations
 
 import datetime
+import logging
+import uuid
 
 from sqlalchemy import delete, or_
 
@@ -24,9 +26,26 @@ from app.workers.registry import JobContext, handler
 EMAIL_DELIVER = "email.deliver"
 MAINTENANCE_CLEANUP = "maintenance.cleanup"
 
+logger = logging.getLogger("app.workers.tasks")
+
 
 @handler(EMAIL_DELIVER)
 async def deliver_email(payload: dict, ctx: JobContext) -> None:
+    # Defense-in-depth kill-switch check.  The primary gate fires at queue_email() time,
+    # so this normally never trips — but it protects against events queued before the
+    # setting was disabled or events written via any path that bypassed queue_email().
+    org_id_str = payload.get("organizationId")
+    if org_id_str:
+        from app.modules.orgs import repository as org_repo
+
+        org = await org_repo.get_org(ctx.session, uuid.UUID(org_id_str))
+        if org is not None and not org.emails_enabled:
+            logger.info(
+                "email.skipped_kill_switch_worker",
+                extra={"org_id": org_id_str, "template": payload.get("template")},
+            )
+            return
+
     channel = get_email_channel()
     await channel.send(payload["to"], payload["template"], payload.get("data", {}))
 

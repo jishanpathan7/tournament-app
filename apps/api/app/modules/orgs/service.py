@@ -94,17 +94,20 @@ async def update_org(
     name: str | None = None,
     timezone: str | None = None,
     branding: dict[str, Any] | None = None,
+    emails_enabled: bool | None = None,
 ) -> Organization:
     org = await repo.get_org(session, org_id)
     if org is None:
         raise NotFoundError("Organization not found")
-    before = {"name": org.name, "timezone": org.timezone}
+    before = {"name": org.name, "timezone": org.timezone, "emailsEnabled": org.emails_enabled}
     if name is not None:
         org.name = name
     if timezone is not None:
         org.timezone = timezone
     if branding is not None:
         org.branding = branding
+    if emails_enabled is not None:
+        org.emails_enabled = emails_enabled
     await _audit(
         session,
         org_id=org_id,
@@ -113,7 +116,7 @@ async def update_org(
         entity="organization",
         entity_id=org_id,
         before=before,
-        after={"name": org.name, "timezone": org.timezone},
+        after={"name": org.name, "timezone": org.timezone, "emailsEnabled": org.emails_enabled},
     )
     return org
 

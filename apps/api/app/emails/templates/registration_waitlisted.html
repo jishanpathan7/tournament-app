@@ -1,7 +1,76 @@
 {% extends "layouts/base.html" %}
 {% import "_button.html" as ui %}
+
+{% block preheader %}You're on the waitlist for {{ tournament_name }} — we'll be in touch if a spot opens.{% endblock %}
+
+{% block accent_color %}#FBBF24{% endblock %}
+
 {% block content %}
-<p>Hi {{ name }},</p>
-<p>You're on the waitlist for <strong>{{ division_name }}</strong> at {{ tournament_name }}. We'll email you if a spot opens up.</p>
-{{ ui.button(frontend_url ~ "/t/" ~ tournament_slug, "View tournament") }}
+<!-- Icon -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr>
+    <td align="center">
+      <div style="display:inline-block;width:52px;height:52px;background:#FEF3C7;border:2px solid #1E293B;border-radius:14px;text-align:center;line-height:48px;font-size:24px;">⏳</div>
+    </td>
+  </tr>
+</table>
+
+<!-- Eyebrow -->
+<p style="margin:0 0 10px;font-family:'Courier New',Courier,ui-monospace,monospace;font-size:11px;font-weight:600;color:#D97706;letter-spacing:0.1em;text-transform:uppercase;text-align:center;">Waitlist</p>
+
+<!-- Heading -->
+<h1 style="margin:0 0 20px;font-family:Fraunces,Georgia,'Times New Roman',serif;font-size:26px;font-weight:700;color:#1E293B;letter-spacing:-0.02em;line-height:1.2;text-align:center;">You're on the waitlist</h1>
+
+<!-- Divider -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 24px;">
+  <tr><td style="border-top:1px solid #E2E8F0;font-size:0;line-height:0;">&nbsp;</td></tr>
+</table>
+
+<!-- Body -->
+<p style="margin:0 0 8px;font-size:16px;line-height:1.6;color:#1E293B;">Hi {{ name }},</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.65;color:#475569;">We've added you to the waitlist for <strong style="color:#1E293B;font-weight:600;">{{ division_name }}</strong> at <strong style="color:#1E293B;font-weight:600;">{{ tournament_name }}</strong>. If a confirmed spot opens up, you'll be the first to know.</p>
+
+<!-- Waitlist card -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 4px;">
+  <tr>
+    <td style="background:#FFFBEB;border:2px solid #1E293B;border-radius:12px;padding:16px 20px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="padding:4px 0;">
+            <span style="font-family:'Courier New',Courier,ui-monospace,monospace;font-size:10px;font-weight:600;color:#92400E;letter-spacing:0.07em;text-transform:uppercase;">Tournament</span><br>
+            <span style="font-size:14px;font-weight:600;color:#1E293B;">{{ tournament_name }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0 4px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td style="border-top:1px solid #FDE68A;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;">
+            <span style="font-family:'Courier New',Courier,ui-monospace,monospace;font-size:10px;font-weight:600;color:#92400E;letter-spacing:0.07em;text-transform:uppercase;">Division</span><br>
+            <span style="font-size:14px;font-weight:600;color:#1E293B;">{{ division_name }}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:10px 0 4px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr><td style="border-top:1px solid #FDE68A;font-size:0;line-height:0;">&nbsp;</td></tr>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:4px 0;">
+            <span style="font-family:'Courier New',Courier,ui-monospace,monospace;font-size:10px;font-weight:600;color:#92400E;letter-spacing:0.07em;text-transform:uppercase;">Status</span><br>
+            <span style="display:inline-block;margin-top:4px;background:#FEF3C7;border:1px solid #FBBF24;border-radius:100px;padding:3px 10px;font-family:'Courier New',Courier,ui-monospace,monospace;font-size:11px;font-weight:600;color:#92400E;letter-spacing:0.05em;text-transform:uppercase;">Waitlisted</span>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+{{ ui.button(frontend_url ~ "/t/" ~ tournament_slug, "View tournament", color="#FBBF24", text="#1E293B") }}
 {% endblock %}

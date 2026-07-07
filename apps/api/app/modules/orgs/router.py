@@ -181,6 +181,7 @@ async def update_active_org(
         name=body.name,
         timezone=body.timezone,
         branding=body.branding,
+        emails_enabled=body.emails_enabled,
     )
     return OrgResponse.model_validate(org)
 
