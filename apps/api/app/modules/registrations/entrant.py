@@ -23,4 +23,9 @@ def entrant_display_name(registration: Registration, *, account_name: str | None
 
 
 def entrant_has_external_identity(registration: Registration) -> bool:
-    return form_entrant_name(registration) is not None
+    """True when the registration was submitted by an organizer on behalf of an external
+    player (no platform account).  Self-service users may also provide a name in
+    form_response, so we rely on an explicit ``_organizer_import`` marker rather than
+    the mere presence of a name."""
+    form = registration.form_response or {}
+    return bool(form.get("_organizer_import"))

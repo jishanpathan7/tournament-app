@@ -434,7 +434,7 @@ async def _load_context(
     # Squad (franchise) and individual divisions register players as individuals then pair
     # them into doubles within squads. Both use approved registrations and override to the
     # doubles pairing policy.
-    is_franchise = division.participant_type in ("individual", "squad")
+    is_franchise = squad_id is not None
     if not policy.supports_pairing or is_franchise:
         policy = profile.pairing_policy({"participantType": "pair"})
         entrants = list(await repo.list_approved_registrations(session, org_id, division_id))

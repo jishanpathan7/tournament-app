@@ -305,7 +305,7 @@ def _registration_from_row(
         division_id=division_id,
         submitted_by=actor_id,  # imported on the entrant's behalf by the organizer
         status=RegistrationStatus.SUBMITTED.value,
-        form_response={},
+        form_response={"_organizer_import": True},
     )
     _apply_row(reg, row)
     return reg
