@@ -168,10 +168,7 @@ export function OrgSettingsPanel() {
               }
               badge={
                 !emailsEnabled ? (
-                  <Badge
-                    variant="outline"
-                    className="border-[#F472B6] bg-[#FCE7F3] font-mono text-[10px] uppercase tracking-wide text-[#DB2777]"
-                  >
+                  <Badge tone="pink" className="text-[10px]">
                     Off
                   </Badge>
                 ) : null
