@@ -14,7 +14,9 @@ const isProd = process.env.NODE_ENV === "production";
  */
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  "script-src 'self'",
+  // Next.js App Router injects inline scripts for hydration data (__NEXT_DATA__)
+  // and dynamic chunk loading. 'unsafe-inline' is required; 'unsafe-eval' is not.
+  "script-src 'self' 'unsafe-inline'",
   // Tailwind/shadcn use inline styles; strict-dynamic is not compatible with class-based CSS.
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
