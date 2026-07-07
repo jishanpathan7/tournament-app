@@ -5,7 +5,13 @@ import { Upload } from "lucide-react";
 import { useState } from "react";
 
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { ImportWizard } from "@/features/registration-ops/components/import-wizard";
 
 export function PlayersImportPanel({
@@ -19,14 +25,14 @@ export function PlayersImportPanel({
 
   if (divisions.length === 0) {
     return (
-      <div className="bg-ink text-white shadow-sticker rounded-3xl border-2 border-ink p-6">
-        <p className="text-white/70 text-sm">Add a division before importing players.</p>
+      <div className="bg-ink shadow-sticker border-ink rounded-3xl border-2 p-6 text-white">
+        <p className="text-sm text-white/70">Add a division before importing players.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-ink text-white shadow-sticker flex flex-col gap-5 rounded-3xl border-2 border-ink p-6">
+    <div className="bg-ink shadow-sticker border-ink flex flex-col gap-5 rounded-3xl border-2 p-6 text-white">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex flex-col gap-1">
           <p className="text-2xs font-mono font-semibold uppercase tracking-[0.2em] text-white/60">
@@ -37,7 +43,7 @@ export function PlayersImportPanel({
           </h2>
         </div>
         <div className="flex min-w-[200px] flex-col gap-1.5">
-          <Label className="text-white/70 text-xs">Import into</Label>
+          <Label className="text-xs text-white/70">Import into</Label>
           <Select value={divisionId} onValueChange={setDivisionId}>
             <SelectTrigger className="border-white/20 bg-white/10 text-white">
               <SelectValue placeholder="Choose division…" />
@@ -53,7 +59,7 @@ export function PlayersImportPanel({
         </div>
       </div>
 
-      <div className="border-white/10 rounded-2xl border-2 bg-white/5 p-4">
+      <div className="rounded-2xl border-2 border-white/10 bg-white/5 p-4">
         <div className="mb-4 flex items-center gap-2 text-sm text-white/70">
           <Upload className="h-4 w-4" strokeWidth={2.25} />
           Upload a CSV export, map columns, preview rows, then import

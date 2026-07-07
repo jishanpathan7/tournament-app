@@ -40,7 +40,9 @@ function FixtureRow({
           {a?.scoreFor ?? "—"} · {b?.scoreFor ?? "—"}
         </span>
       )}
-      <div className="min-w-0 flex-1 text-right">{nameLink(b?.participantId, b?.outcome === "win")}</div>
+      <div className="min-w-0 flex-1 text-right">
+        {nameLink(b?.participantId, b?.outcome === "win")}
+      </div>
       <Badge tone={status.tone} className="shrink-0">
         {status.label}
       </Badge>
@@ -69,7 +71,12 @@ export function PublicRoundRobinFixtures({
           <h3 className="font-serif text-lg font-semibold tracking-tight">{group.label}</h3>
           <div className="border-ink bg-card shadow-sticker-md overflow-hidden rounded-2xl border-2">
             {group.matches.map((match) => (
-              <FixtureRow key={match.id} slug={slug} match={match} participantsById={participantsById} />
+              <FixtureRow
+                key={match.id}
+                slug={slug}
+                match={match}
+                participantsById={participantsById}
+              />
             ))}
           </div>
         </div>

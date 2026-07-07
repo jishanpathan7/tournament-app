@@ -28,7 +28,7 @@ export function AuthFormShell({
           <p className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.28em]">
             {eyebrow}
           </p>
-          <h2 className="font-serif mt-2 text-2xl font-semibold tracking-tight md:text-3xl">
+          <h2 className="mt-2 font-serif text-2xl font-semibold tracking-tight md:text-3xl">
             {title}
           </h2>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">{description}</p>

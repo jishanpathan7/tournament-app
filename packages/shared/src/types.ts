@@ -24,8 +24,7 @@ export type Visibility = "public" | "unlisted" | "private";
 export type ParticipantStatus =
   "registered" | "approved" | "waitlisted" | "withdrawn" | "rejected" | "checked_in";
 
-export type RegistrationStatus =
-  "submitted" | "approved" | "waitlisted" | "rejected" | "withdrawn";
+export type RegistrationStatus = "submitted" | "approved" | "waitlisted" | "rejected" | "withdrawn";
 
 export type MatchOutcome = "win" | "loss" | "draw" | "rank";
 

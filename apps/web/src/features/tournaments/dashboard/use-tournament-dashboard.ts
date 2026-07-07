@@ -40,10 +40,7 @@ export function useTournamentDashboard(tournamentId: string) {
   );
 
   const divisions = useDivisions(tournamentId);
-  const divisionIds = useMemo(
-    () => (divisions.data ?? []).map((d) => d.id),
-    [divisions.data],
-  );
+  const divisionIds = useMemo(() => (divisions.data ?? []).map((d) => d.id), [divisions.data]);
 
   const readiness = useTournamentReadiness(tournamentId, { enabled: phase !== "after" });
   const matches = useTournamentMatches(tournamentId);
@@ -101,10 +98,7 @@ export function useTournamentDashboard(tournamentId: string) {
     [registrationsByDivision, participantsByDivision],
   );
 
-  const drawProgress = useMemo(
-    () => deriveDrawProgress(stages.data ?? []),
-    [stages.data],
-  );
+  const drawProgress = useMemo(() => deriveDrawProgress(stages.data ?? []), [stages.data]);
 
   const participantsById = useMemo(
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
@@ -175,10 +169,7 @@ export function useTournamentDashboard(tournamentId: string) {
 
   const step: TournamentStep = useMemo(
     () =>
-      deriveTournamentStep(
-        (tournament.data?.status ?? "draft") as TournamentStatus,
-        stepSignals,
-      ),
+      deriveTournamentStep((tournament.data?.status ?? "draft") as TournamentStatus, stepSignals),
     [tournament.data?.status, stepSignals],
   );
 

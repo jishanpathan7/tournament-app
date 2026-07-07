@@ -41,7 +41,9 @@ function tokenQuery(token: string) {
   return `token=${encodeURIComponent(token)}`;
 }
 
-export async function getSession(token: string): Promise<{ session: ScorekeeperSession; etag: string | null }> {
+export async function getSession(
+  token: string,
+): Promise<{ session: ScorekeeperSession; etag: string | null }> {
   const res = await fetch(`${BASE}/session?${tokenQuery(token)}`);
   if (!res.ok) {
     throw new ScorekeeperApiError(res.status, safeErrorMessage(res.status));

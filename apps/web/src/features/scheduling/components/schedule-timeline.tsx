@@ -22,7 +22,11 @@ import { toast } from "@/components/ui/sonner";
 import { BulkScheduleDialog } from "@/features/scheduling/components/bulk-schedule-dialog";
 import { ScheduleLane } from "@/features/scheduling/components/schedule-lane";
 import { ScheduleMatchCard } from "@/features/scheduling/components/schedule-match-card";
-import { DEFAULT_DURATION_MINUTES, bucketMatches, suggestNextSlot } from "@/features/scheduling/config";
+import {
+  DEFAULT_DURATION_MINUTES,
+  bucketMatches,
+  suggestNextSlot,
+} from "@/features/scheduling/config";
 import { useAssignSchedule, useClearSchedule } from "@/features/scheduling/use-schedule";
 import { useTournamentCourts } from "@/features/courts/use-courts";
 import {
@@ -70,7 +74,8 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
   if (matches.isLoading || courts.isLoading || tournament.isLoading) {
     return <LoadingPanel label="Loading schedule" />;
   }
-  if (matches.isError) return <ErrorState error={matches.error} onRetry={() => matches.refetch()} />;
+  if (matches.isError)
+    return <ErrorState error={matches.error} onRetry={() => matches.refetch()} />;
   if (courts.isError) return <ErrorState error={courts.error} onRetry={() => courts.refetch()} />;
 
   function handleDragStart(event: DragStartEvent) {
@@ -129,7 +134,10 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
     const match = (matches.data ?? []).find((m) => m.id === matchId);
     if (!match?.courtId) return;
     assignSchedule.mutate(
-      { matchId, body: { courtId: match.courtId, scheduledAt, durationMinutes: DEFAULT_DURATION_MINUTES } },
+      {
+        matchId,
+        body: { courtId: match.courtId, scheduledAt, durationMinutes: DEFAULT_DURATION_MINUTES },
+      },
       {
         onSuccess: (result) => {
           setConflictsByMatch((prev) => new Map(prev).set(matchId, result.conflicts));
@@ -151,8 +159,8 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-muted-foreground max-w-2xl text-sm">
-          Drag a match onto a court to schedule it, or back to Unscheduled to clear it. Click a
-          time to fine-tune it.
+          Drag a match onto a court to schedule it, or back to Unscheduled to clear it. Click a time
+          to fine-tune it.
         </p>
         {canManage ? (
           <Button tone="paper" size="sm" onClick={() => setBulkOpen(true)}>

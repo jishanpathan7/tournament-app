@@ -50,8 +50,7 @@ export function PairingBoard({
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [confirmPublish, setConfirmPublish] = useState(false);
 
-  const busy =
-    generate.isPending || publish.isPending || swap.isPending || updateTeam.isPending;
+  const busy = generate.isPending || publish.isPending || swap.isPending || updateTeam.isPending;
 
   function onGenerate() {
     setSelectedMember(null);
@@ -229,14 +228,14 @@ function PairingContent({
 
       {unpaired.length > 0 ? (
         <div className="border-ink bg-yellow-tint flex flex-col gap-2 rounded-2xl border-2 p-4">
-          <span className="text-2xs font-mono uppercase tracking-[0.14em] text-ink">
+          <span className="text-2xs text-ink font-mono uppercase tracking-[0.14em]">
             Unpaired reserves
           </span>
           <div className="flex flex-wrap gap-2">
             {unpaired.map((e) => (
               <span
                 key={e!.registrationId}
-                className="border-ink flex items-center gap-2 rounded-full border-2 bg-card px-3 py-1"
+                className="border-ink bg-card flex items-center gap-2 rounded-full border-2 px-3 py-1"
               >
                 <span className="text-sm font-medium">{e!.displayName}</span>
                 <Badge tone={skillMeta(e!.skillLevel).tone}>{skillMeta(e!.skillLevel).label}</Badge>

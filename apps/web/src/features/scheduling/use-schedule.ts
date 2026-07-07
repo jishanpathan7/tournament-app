@@ -76,9 +76,7 @@ export function useClearSchedule(tournamentId: string) {
       await queryClient.cancelQueries({ queryKey: key });
       const previous = queryClient.getQueryData<MatchView[]>(key);
       queryClient.setQueryData<MatchView[]>(key, (old) =>
-        (old ?? []).map((m) =>
-          m.id === matchId ? { ...m, courtId: null, scheduledAt: null } : m,
-        ),
+        (old ?? []).map((m) => (m.id === matchId ? { ...m, courtId: null, scheduledAt: null } : m)),
       );
       return { previous };
     },

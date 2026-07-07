@@ -86,8 +86,9 @@ export function BulkScheduleDialog({
         <DialogHeader>
           <DialogTitle className="text-xl">Bulk schedule</DialogTitle>
           <DialogDescription>
-            Fills {unscheduled.length} unscheduled match{unscheduled.length === 1 ? "" : "es"} across{" "}
-            {activeCourts.length} active court{activeCourts.length === 1 ? "" : "s"}, round-robin.
+            Fills {unscheduled.length} unscheduled match{unscheduled.length === 1 ? "" : "es"}{" "}
+            across {activeCourts.length} active court{activeCourts.length === 1 ? "" : "s"},
+            round-robin.
           </DialogDescription>
         </DialogHeader>
 
@@ -120,7 +121,12 @@ export function BulkScheduleDialog({
         </div>
 
         <DialogFooter className="mt-2">
-          <Button tone="paper" size="sm" onClick={() => onOpenChange(false)} disabled={bulkAssign.isPending}>
+          <Button
+            tone="paper"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={bulkAssign.isPending}
+          >
             Cancel
           </Button>
           <Button tone="candy" size="sm" onClick={handleSubmit} disabled={bulkAssign.isPending}>

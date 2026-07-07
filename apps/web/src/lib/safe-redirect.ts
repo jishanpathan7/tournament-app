@@ -11,10 +11,7 @@
  *
  * Returns the validated path, or `fallback` when the input is unsafe.
  */
-export function safeRedirectPath(
-  next: string | null | undefined,
-  fallback = "/console",
-): string {
+export function safeRedirectPath(next: string | null | undefined, fallback = "/console"): string {
   if (
     !next ||
     typeof next !== "string" ||

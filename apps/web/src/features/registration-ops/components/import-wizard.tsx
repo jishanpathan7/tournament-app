@@ -25,10 +25,23 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "@/components/ui/sonner";
 import {
   useCommitImport,
@@ -294,7 +307,7 @@ export function ImportWizard({
                     {fileName || "Drop file here or click to browse"}
                   </p>
                   {!fileName && (
-                    <p className={`text-xs mt-0.5 ${d.uploadText}`}>
+                    <p className={`mt-0.5 text-xs ${d.uploadText}`}>
                       {selectedSource ? selectedSource.label : "Select a source first"}
                     </p>
                   )}
@@ -421,11 +434,7 @@ export function ImportWizard({
                 >
                   {saveTemplate.isPending ? <Spinner /> : "Save"}
                 </Button>
-                <Button
-                  size="sm"
-                  tone="ghost"
-                  onClick={() => setShowSaveTemplate(false)}
-                >
+                <Button size="sm" tone="ghost" onClick={() => setShowSaveTemplate(false)}>
                   Cancel
                 </Button>
               </div>
@@ -465,9 +474,7 @@ export function ImportWizard({
           {/* Summary chips */}
           <div className="flex flex-wrap gap-2">
             <Badge tone="muted">{preview.summary.total} rows</Badge>
-            {preview.summary.new > 0 && (
-              <Badge tone="mint">{preview.summary.new} new</Badge>
-            )}
+            {preview.summary.new > 0 && <Badge tone="mint">{preview.summary.new} new</Badge>}
             {preview.summary.update > 0 && (
               <Badge tone="candy">{preview.summary.update} updates</Badge>
             )}
@@ -479,7 +486,7 @@ export function ImportWizard({
             )}
           </div>
 
-          <div className="rounded-2xl border border-border overflow-hidden">
+          <div className="border-border overflow-hidden rounded-2xl border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -493,9 +500,10 @@ export function ImportWizard({
               </TableHeader>
               <TableBody>
                 {preview.rows.map((row) => {
-                  const meta =
-                    ROW_STATUS_META[row.status as keyof typeof ROW_STATUS_META] ??
-                    { label: row.status, tone: "muted" as const };
+                  const meta = ROW_STATUS_META[row.status as keyof typeof ROW_STATUS_META] ?? {
+                    label: row.status,
+                    tone: "muted" as const,
+                  };
                   return (
                     <TableRow key={row.rowNumber}>
                       <TableCell className="text-muted-foreground text-xs">
@@ -508,10 +516,10 @@ export function ImportWizard({
                       <TableCell className="text-muted-foreground text-sm">
                         {row.values?.email ?? "—"}
                       </TableCell>
-                      <TableCell className="capitalize text-sm">
+                      <TableCell className="text-sm capitalize">
                         {row.values?.skillLevel ?? "—"}
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground max-w-xs">
+                      <TableCell className="text-muted-foreground max-w-xs text-xs">
                         {row.messages?.join("; ")}
                       </TableCell>
                     </TableRow>
@@ -522,8 +530,8 @@ export function ImportWizard({
           </div>
 
           {preview.summary.invalid > 0 && (
-            <div className="flex items-start gap-2 rounded-2xl border-2 border-yellow bg-yellow-tint p-4 text-sm">
-              <AlertCircle className="h-4 w-4 text-yellow-600 mt-0.5 shrink-0" />
+            <div className="border-yellow bg-yellow-tint flex items-start gap-2 rounded-2xl border-2 p-4 text-sm">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
               <p>
                 {preview.summary.invalid} row{preview.summary.invalid !== 1 ? "s" : ""} will be
                 skipped due to validation errors. Only new/update rows will be imported.
@@ -540,8 +548,7 @@ export function ImportWizard({
               size="sm"
               onClick={handleCommit}
               disabled={
-                commit.isPending ||
-                (preview.summary.new === 0 && preview.summary.update === 0)
+                commit.isPending || (preview.summary.new === 0 && preview.summary.update === 0)
               }
             >
               {commit.isPending ? <Spinner className="text-white" /> : null}
@@ -554,7 +561,7 @@ export function ImportWizard({
       {/* Step 4: Done */}
       {step === "done" && result && (
         <div className="flex flex-col items-center gap-6 py-10">
-          <CheckCircle2 className="h-14 w-14 text-mint" strokeWidth={1.5} />
+          <CheckCircle2 className="text-mint h-14 w-14" strokeWidth={1.5} />
           <div className="text-center">
             <p className="text-xl font-semibold">Import complete</p>
             <p className="text-muted-foreground mt-1 text-sm">

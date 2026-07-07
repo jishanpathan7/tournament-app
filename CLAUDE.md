@@ -124,6 +124,27 @@ alembic upgrade head
 - **asyncpg + prepared statements**: if connecting via Neon's pooled endpoint, add `connect_args={"statement_cache_size": 0}` to the engine. Not needed for direct connections (local dev default).
 - **Migrations always use `DIRECT_URL`** (not the pooled endpoint) — set separately in production.
 
+## Pre-push quality gate (MANDATORY for agents and humans)
+
+**Run this before every `git push` — no exceptions.** A pre-push git hook at `scripts/hooks/pre-push` enforces it automatically; install once with `bash scripts/install-hooks.sh`.
+
+If pushing manually (e.g. Claude Code agent), run the gate yourself before calling `git push`:
+
+```bash
+# API — from apps/api with venv active
+black --check app tests && isort --check-only app tests && flake8 app tests && mypy app
+pytest   # full suite if DATABASE_URL set; otherwise unit tests pass at minimum
+
+# Web — from repo root
+yarn --cwd apps/web typecheck
+yarn --cwd apps/web lint
+yarn format:check
+yarn --cwd apps/web test --run
+```
+
+CI mirrors this exactly. Any check that fails locally **will** fail CI. Fix it before pushing, not after.
+DB-backed API tests (`test_migrations`, `test_pairing`, `test_me_portal`, etc.) require `DATABASE_URL` — they run in CI against Neon. Without a local DB, at minimum the non-DB unit tests must pass.
+
 ## Notes for future sessions
 
 - A persistent memory index lives outside the repo (loaded automatically). The product/architecture decisions and *why* are captured there too.

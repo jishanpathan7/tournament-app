@@ -39,15 +39,45 @@ const AFTER: TournamentNavStatus[] = ["completed", "archived"];
 const ALL: TournamentNavStatus[] = ["draft", ...PREP, "live", ...AFTER];
 
 const NAV = [
-  { key: "dashboard",   label: "Dashboard",   icon: LayoutDashboard, suffix: "",             showIn: ALL },
-  { key: "players",     label: "Players",      icon: UserRound,       suffix: "/players",     showIn: ["draft", ...PREP] as TournamentNavStatus[] },
-  { key: "teams",       label: "Teams",        icon: Users,           suffix: "/teams",        showIn: PREP },
-  { key: "draws",       label: "Draws",        icon: Shuffle,         suffix: "/draws",        showIn: PREP },
-  { key: "courts",      label: "Courts",       icon: LayoutGrid,      suffix: "/courts",       showIn: [...PREP, "live"] as TournamentNavStatus[] },
-  { key: "schedule",    label: "Schedule",     icon: CalendarClock,   suffix: "/schedule",     showIn: PREP },
-  { key: "matches",     label: "Match Center", icon: Swords,          suffix: "/matches",      showIn: ["live", ...AFTER] as TournamentNavStatus[] },
-  { key: "scorekeeper", label: "Scorekeeper",  icon: Smartphone,      suffix: "/scorekeeper",  showIn: ["live"] as TournamentNavStatus[] },
-  { key: "live",        label: "Live",         icon: Radio,           suffix: "/live",         showIn: ["live"] as TournamentNavStatus[] },
+  { key: "dashboard", label: "Dashboard", icon: LayoutDashboard, suffix: "", showIn: ALL },
+  {
+    key: "players",
+    label: "Players",
+    icon: UserRound,
+    suffix: "/players",
+    showIn: ["draft", ...PREP] as TournamentNavStatus[],
+  },
+  { key: "teams", label: "Teams", icon: Users, suffix: "/teams", showIn: PREP },
+  { key: "draws", label: "Draws", icon: Shuffle, suffix: "/draws", showIn: PREP },
+  {
+    key: "courts",
+    label: "Courts",
+    icon: LayoutGrid,
+    suffix: "/courts",
+    showIn: [...PREP, "live"] as TournamentNavStatus[],
+  },
+  { key: "schedule", label: "Schedule", icon: CalendarClock, suffix: "/schedule", showIn: PREP },
+  {
+    key: "matches",
+    label: "Match Center",
+    icon: Swords,
+    suffix: "/matches",
+    showIn: ["live", ...AFTER] as TournamentNavStatus[],
+  },
+  {
+    key: "scorekeeper",
+    label: "Scorekeeper",
+    icon: Smartphone,
+    suffix: "/scorekeeper",
+    showIn: ["live"] as TournamentNavStatus[],
+  },
+  {
+    key: "live",
+    label: "Live",
+    icon: Radio,
+    suffix: "/live",
+    showIn: ["live"] as TournamentNavStatus[],
+  },
 ] as const;
 
 function navHref(tournamentId: string, suffix: string) {
@@ -174,7 +204,7 @@ function WorkspaceChrome({
               <Icon className="h-4 w-4" strokeWidth={2.25} />
               {label}
               {key === "players" && pendingCount > 0 ? (
-                <span className="bg-candy text-white ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-[10px] font-bold leading-none">
+                <span className="bg-candy ml-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 font-mono text-[10px] font-bold leading-none text-white">
                   {pendingCount > 99 ? "99+" : pendingCount}
                 </span>
               ) : null}

@@ -50,14 +50,14 @@ function formString(formResponse: Record<string, unknown>, key: string): string 
 export function playerRating(registration: RegistrationResponse): string | null {
   const fromForm = formString(registration.formResponse, "rating");
   if (fromForm) return fromForm;
-  if (registration.skillLevel) return SKILL_RATING[registration.skillLevel] ?? registration.skillLevel;
+  if (registration.skillLevel)
+    return SKILL_RATING[registration.skillLevel] ?? registration.skillLevel;
   return null;
 }
 
 export function playerGender(registration: RegistrationResponse): string | null {
   const raw =
-    formString(registration.formResponse, "gender") ??
-    formString(registration.formResponse, "sex");
+    formString(registration.formResponse, "gender") ?? formString(registration.formResponse, "sex");
   if (!raw) return null;
   const lower = raw.toLowerCase();
   if (lower.startsWith("m")) return "M";

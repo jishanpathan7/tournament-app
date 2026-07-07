@@ -2,15 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import {
-  Dumbbell,
-  Feather,
-  Gamepad2,
-  Medal,
-  Swords,
-  Trophy,
-} from "lucide-react";
-
+import { Dumbbell, Feather, Gamepad2, Medal, Swords, Trophy } from "lucide-react";
 
 const SPORTS = [
   { label: "Badminton", icon: Feather },
@@ -58,14 +50,14 @@ export function MarketingSportsStrip() {
   }, []);
 
   return (
-    <section id="sports" className="border-ink/10 border-y bg-muted/30 py-8 overflow-hidden">
+    <section id="sports" className="border-ink/10 bg-muted/30 overflow-hidden border-y py-8">
       <div className="mx-auto max-w-6xl px-4 md:px-8">
         <p className="text-muted-foreground text-2xs mb-4 font-mono font-semibold uppercase tracking-[0.24em]">
           One engine · every sport
         </p>
       </div>
       <div className="relative overflow-hidden">
-        <div ref={trackRef} className="flex gap-3 w-max">
+        <div ref={trackRef} className="flex w-max gap-3">
           {ITEMS.map(({ label, icon: Icon }, i) => (
             <span
               key={`${label}-${i}`}

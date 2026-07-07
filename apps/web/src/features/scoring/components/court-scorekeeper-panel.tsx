@@ -157,7 +157,7 @@ export function CourtScorekeeperPanel({
                 i === 0 && "rounded-tl-xl",
                 i === rules.bestOf - 1 && "rounded-tr-xl",
                 i > 0 && "-ml-[2px]",
-                active && "relative z-10 bg-card",
+                active && "bg-card relative z-10",
                 done && !active && "bg-card text-muted-foreground",
                 future && "bg-muted/40 text-muted-foreground/45",
               )}
@@ -202,7 +202,7 @@ export function CourtScorekeeperPanel({
             type="button"
             tone="mint"
             size="lg"
-            className="h-14 w-full rounded-full text-base shadow-sticker"
+            className="shadow-sticker h-14 w-full rounded-full text-base"
             onClick={submitGame}
           >
             <Check className="h-5 w-5" strokeWidth={2.5} />
@@ -213,7 +213,7 @@ export function CourtScorekeeperPanel({
             type="button"
             tone="mint"
             size="lg"
-            className="h-14 w-full rounded-full text-base shadow-sticker"
+            className="shadow-sticker h-14 w-full rounded-full text-base"
             disabled={submitting || fetchingEtag}
             onClick={() =>
               void submitMatch({
@@ -224,7 +224,11 @@ export function CourtScorekeeperPanel({
               })
             }
           >
-            {submitting ? <Spinner className="h-5 w-5" /> : <Check className="h-5 w-5" strokeWidth={2.5} />}
+            {submitting ? (
+              <Spinner className="h-5 w-5" />
+            ) : (
+              <Check className="h-5 w-5" strokeWidth={2.5} />
+            )}
             Complete match ({winsA}–{winsB})
           </Button>
         )}
@@ -233,7 +237,7 @@ export function CourtScorekeeperPanel({
           <Button
             type="button"
             tone="paper"
-            className="h-12 rounded-full shadow-sticker"
+            className="shadow-sticker h-12 rounded-full"
             disabled={submitting}
             onClick={() => setWalkoverOpen(true)}
           >
@@ -243,7 +247,7 @@ export function CourtScorekeeperPanel({
           <Button
             type="button"
             tone="paper"
-            className="h-12 rounded-full shadow-sticker"
+            className="shadow-sticker h-12 rounded-full"
             onClick={undoGame}
             disabled={completedGames.length === 0}
           >
@@ -288,10 +292,20 @@ export function CourtScorekeeperPanel({
             <DialogDescription>Which side wins by walkover?</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Button type="button" tone="paper" onClick={() => void submitWalkover(0)} disabled={submitting}>
+            <Button
+              type="button"
+              tone="paper"
+              onClick={() => void submitWalkover(0)}
+              disabled={submitting}
+            >
               {labelA}
             </Button>
-            <Button type="button" tone="paper" onClick={() => void submitWalkover(1)} disabled={submitting}>
+            <Button
+              type="button"
+              tone="paper"
+              onClick={() => void submitWalkover(1)}
+              disabled={submitting}
+            >
               {labelB}
             </Button>
           </div>
@@ -328,7 +342,7 @@ function ScoreSide({
       <div className="text-center">
         <p className="label text-muted-foreground mb-2 flex items-center justify-center gap-1.5 text-[10px] tracking-[0.16em]">
           {role === "SERVER" ? (
-            <span className="bg-mint inline-block h-2 w-2 rounded-full ring-2 ring-ink animate-pulse" />
+            <span className="bg-mint ring-ink inline-block h-2 w-2 animate-pulse rounded-full ring-2" />
           ) : null}
           {role}
         </p>
@@ -341,12 +355,24 @@ function ScoreSide({
           accent ? "bg-candy-tint" : "bg-card",
         )}
       >
-        <span className="font-mono text-[4.25rem] font-bold leading-none tabular-nums">{score}</span>
+        <span className="font-mono text-[4.25rem] font-bold tabular-nums leading-none">
+          {score}
+        </span>
       </div>
 
       <div className="flex gap-3.5">
-        <ScoreButton label={`Minus ${label}`} onClick={onMinus} disabled={score <= 0} variant="minus" />
-        <ScoreButton label={`Plus ${label}`} onClick={onPlus} disabled={score >= pointCap} variant="plus" />
+        <ScoreButton
+          label={`Minus ${label}`}
+          onClick={onMinus}
+          disabled={score <= 0}
+          variant="minus"
+        />
+        <ScoreButton
+          label={`Plus ${label}`}
+          onClick={onPlus}
+          disabled={score >= pointCap}
+          variant="plus"
+        />
       </div>
     </div>
   );
@@ -370,10 +396,10 @@ function ScoreButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "border-ink grid h-[4.25rem] w-[4.25rem] place-items-center rounded-full border-2 text-2xl font-bold transition-[transform,box-shadow] duration-150 ease-bouncy active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-35",
+        "border-ink ease-bouncy grid h-[4.25rem] w-[4.25rem] place-items-center rounded-full border-2 text-2xl font-bold transition-[transform,box-shadow] duration-150 active:translate-x-0.5 active:translate-y-0.5 disabled:opacity-35",
         variant === "minus"
           ? "bg-card shadow-sticker-sm active:shadow-none"
-          : "bg-candy text-white shadow-sticker-sm active:shadow-none",
+          : "bg-candy shadow-sticker-sm text-white active:shadow-none",
       )}
     >
       {variant === "minus" ? (

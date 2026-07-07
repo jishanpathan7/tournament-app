@@ -59,12 +59,25 @@ export function MarketingFeaturesGrid() {
       gsap.fromTo(
         ".features-heading",
         { opacity: 0, y: 28 },
-        { opacity: 1, y: 0, duration: dur.md, ease: ease.out, scrollTrigger: { trigger: ".features-heading", start: "top 88%", once: true } },
+        {
+          opacity: 1,
+          y: 0,
+          duration: dur.md,
+          ease: ease.out,
+          scrollTrigger: { trigger: ".features-heading", start: "top 88%", once: true },
+        },
       );
       gsap.fromTo(
         ".feature-card",
         { opacity: 0, y: 40 },
-        { opacity: 1, y: 0, duration: dur.md, ease: ease.out, stagger: stagger.sm, scrollTrigger: { trigger: ".feature-card", start: "top 88%", once: true } },
+        {
+          opacity: 1,
+          y: 0,
+          duration: dur.md,
+          ease: ease.out,
+          stagger: stagger.sm,
+          scrollTrigger: { trigger: ".feature-card", start: "top 88%", once: true },
+        },
       );
       el.querySelectorAll<HTMLElement>(".feature-card").forEach((card) => {
         const setY = gsap.quickTo(card, "y", { duration: 0.3, ease: ease.out });

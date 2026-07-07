@@ -194,7 +194,9 @@ describe("DrawOverview", () => {
         roundSeq: 1,
         roundLabel: "Semifinal",
         status: "walkover",
-        sides: [{ participantId: "p-1", outcome: "win", scoreFor: null, scoreAgainst: null, rank: null }],
+        sides: [
+          { participantId: "p-1", outcome: "win", scoreFor: null, scoreAgainst: null, rank: null },
+        ],
       }),
     ]);
     renderOverview();
@@ -249,7 +251,11 @@ describe("DrawOverview", () => {
 
   it("shows the correct draw status badges (generated + live)", async () => {
     vi.mocked(tournamentsApi.getTournament).mockResolvedValue(
-      makeTournament({ id: TOURNAMENT_ID, status: "live", drawPublishedAt: "2026-07-01T00:00:00Z" }),
+      makeTournament({
+        id: TOURNAMENT_ID,
+        status: "live",
+        drawPublishedAt: "2026-07-01T00:00:00Z",
+      }),
     );
     vi.mocked(tournamentsApi.listDivisions).mockResolvedValue([
       makeDivision({ id: DIVISION_ID, tournamentId: TOURNAMENT_ID }),

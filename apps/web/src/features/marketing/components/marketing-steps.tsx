@@ -41,12 +41,25 @@ export function MarketingSteps() {
       gsap.fromTo(
         ".steps-heading",
         { opacity: 0, y: 28 },
-        { opacity: 1, y: 0, duration: dur.md, ease: ease.out, scrollTrigger: { trigger: ".steps-heading", start: "top 88%", once: true } },
+        {
+          opacity: 1,
+          y: 0,
+          duration: dur.md,
+          ease: ease.out,
+          scrollTrigger: { trigger: ".steps-heading", start: "top 88%", once: true },
+        },
       );
       gsap.fromTo(
         ".step-item",
         { opacity: 0, y: 36 },
-        { opacity: 1, y: 0, duration: dur.md, ease: ease.out, stagger: stagger.md, scrollTrigger: { trigger: ".step-item", start: "top 88%", once: true } },
+        {
+          opacity: 1,
+          y: 0,
+          duration: dur.md,
+          ease: ease.out,
+          stagger: stagger.md,
+          scrollTrigger: { trigger: ".step-item", start: "top 88%", once: true },
+        },
       );
       el.querySelectorAll<HTMLElement>(".step-number").forEach((num, i) => {
         const target = i + 1;
@@ -79,9 +92,8 @@ export function MarketingSteps() {
           <p className="text-yellow font-mono text-xs font-semibold uppercase tracking-[0.28em]">
             How it works
           </p>
-          <h2 className="font-serif mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-            Four steps to a{" "}
-            <span className="text-candy italic">flawless event.</span>
+          <h2 className="mt-3 font-serif text-3xl font-semibold tracking-tight md:text-4xl">
+            Four steps to a <span className="text-candy italic">flawless event.</span>
           </h2>
         </div>
         <ol className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">

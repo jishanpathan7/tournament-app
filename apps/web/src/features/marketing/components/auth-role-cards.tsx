@@ -38,7 +38,7 @@ export function AuthRoleCards() {
       <div className="grid gap-3">
         {ROLES.map(({ title, description, href, icon: Icon }) => (
           <Link key={href} href={href} className="group block outline-none">
-            <Card className="transition-[transform,box-shadow] duration-150 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5 group-hover:shadow-sticker-md">
+            <Card className="group-hover:shadow-sticker-md transition-[transform,box-shadow] duration-150 group-hover:-translate-x-0.5 group-hover:-translate-y-0.5">
               <CardContent className="flex items-center gap-4 p-4">
                 <span className="bg-mint border-ink shadow-sticker-xs flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border-2">
                   <Icon className="h-5 w-5" strokeWidth={2.25} />

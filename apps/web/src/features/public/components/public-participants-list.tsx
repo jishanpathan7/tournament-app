@@ -56,7 +56,7 @@ export function PublicParticipantsList({ slug }: { slug: string }) {
                   className="border-ink bg-card shadow-sticker-xs hover:shadow-sticker-md ease-bouncy flex items-center gap-2 rounded-2xl border-2 px-4 py-3 text-sm font-semibold transition-[transform,box-shadow] hover:-translate-y-0.5"
                 >
                   {p.seed != null ? (
-                    <span className="border-ink bg-yellow-tint rounded-md border-2 px-1.5 py-0.5 font-mono text-2xs font-bold">
+                    <span className="border-ink bg-yellow-tint text-2xs rounded-md border-2 px-1.5 py-0.5 font-mono font-bold">
                       {p.seed}
                     </span>
                   ) : null}

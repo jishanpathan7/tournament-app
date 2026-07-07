@@ -68,10 +68,7 @@ export function SquadStandings({ stageId }: { stageId: string }) {
               {data.rows.map((row, i) => (
                 <tr
                   key={row.squadName}
-                  className={cn(
-                    "border-b last:border-0",
-                    i === 0 && "bg-candy-tint",
-                  )}
+                  className={cn("border-b last:border-0", i === 0 && "bg-candy-tint")}
                 >
                   <td className="px-4 py-3 text-center">
                     {i === 0 ? (

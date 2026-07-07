@@ -81,7 +81,13 @@ export function CheckInLinkPanel({ divisionId }: { divisionId: string }) {
           </div>
         </div>
       ) : (
-        <Button type="button" tone="mint" size="sm" onClick={() => create.mutate()} disabled={create.isPending}>
+        <Button
+          type="button"
+          tone="mint"
+          size="sm"
+          onClick={() => create.mutate()}
+          disabled={create.isPending}
+        >
           <Link2 className="h-4 w-4" />
           Generate check-in QR
         </Button>

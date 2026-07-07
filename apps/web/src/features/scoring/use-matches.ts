@@ -30,7 +30,10 @@ export function useStandings(stageId: string, options?: { enabled?: boolean }) {
 }
 
 /** A match's append-only scoring/correction log — Match Detail's history panel. */
-export function useMatchEvents(matchId: string | null | undefined, options?: { enabled?: boolean }) {
+export function useMatchEvents(
+  matchId: string | null | undefined,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: queryKeys.matches.events(matchId ?? ""),
     queryFn: () => scoringApi.listMatchEvents(matchId!),
@@ -60,7 +63,9 @@ export function useScoreMatch(matchId: string, tournamentId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(match.stageId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stages.standings(match.stageId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.activity(tournamentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.tournaments.activity(tournamentId),
+      });
     },
   });
 }

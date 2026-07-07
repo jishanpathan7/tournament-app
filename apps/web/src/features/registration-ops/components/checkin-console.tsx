@@ -13,7 +13,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { toast } from "@/components/ui/sonner";
 import {
   useAttendance,
@@ -89,8 +96,7 @@ export function CheckInConsole({
       setAttendanceMut.mutate(
         { participantId: p.id, body: { status } },
         {
-          onSuccess: () =>
-            toast.success(`${p.displayName} marked ${STATUS_META[status].label}`),
+          onSuccess: () => toast.success(`${p.displayName} marked ${STATUS_META[status].label}`),
           onError: (e) => toast.error(errorMessage(e, "Couldn't update attendance")),
           onSettled: () =>
             setPendingIds((prev) => {
@@ -157,17 +163,17 @@ export function CheckInConsole({
       {/* Counts */}
       <div className="grid grid-cols-3 gap-3">
         {(["checked_in", "pending", "absent"] as const).map((s) => (
-          <div key={s} className="rounded-2xl border border-border p-4 text-center">
+          <div key={s} className="border-border rounded-2xl border p-4 text-center">
             <p className="text-2xl font-bold">{counts[s]}</p>
-            <p className="text-xs text-muted-foreground mt-0.5">{STATUS_META[s].label}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs">{STATUS_META[s].label}</p>
           </div>
         ))}
       </div>
 
       {/* Bulk action bar */}
       {canManage && selected.size > 0 && (
-        <div className="flex items-center gap-2 rounded-2xl border-2 border-candy bg-candy-tint px-4 py-2.5">
-          <span className="text-sm font-medium mr-2">{selected.size} selected</span>
+        <div className="border-candy bg-candy-tint flex items-center gap-2 rounded-2xl border-2 px-4 py-2.5">
+          <span className="mr-2 text-sm font-medium">{selected.size} selected</span>
           <Button
             size="sm"
             tone="paper"
@@ -198,7 +204,7 @@ export function CheckInConsole({
           <Button
             size="sm"
             tone="ghost"
-            className="ml-auto text-muted-foreground"
+            className="text-muted-foreground ml-auto"
             onClick={() => setSelected(new Set())}
           >
             Clear
@@ -217,7 +223,7 @@ export function CheckInConsole({
           description="Approved participants appear here once added to the division."
         />
       ) : (
-        <div className="rounded-2xl border border-border overflow-hidden">
+        <div className="border-border overflow-hidden rounded-2xl border">
           <Table>
             <TableHeader>
               <TableRow>
@@ -243,7 +249,7 @@ export function CheckInConsole({
                   key={p.id}
                   tabIndex={canManage ? 0 : undefined}
                   onKeyDown={(e) => handleKeyDown(e, p)}
-                  className={canManage ? "focus:outline-none focus:bg-muted/30" : ""}
+                  className={canManage ? "focus:bg-muted/30 focus:outline-none" : ""}
                 >
                   {canManage && (
                     <TableCell>
@@ -255,13 +261,13 @@ export function CheckInConsole({
                     </TableCell>
                   )}
                   <TableCell className="font-medium">{p.displayName}</TableCell>
-                  <TableCell className="capitalize text-sm text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-sm capitalize">
                     {p.kind}
                   </TableCell>
                   <TableCell>
                     <AttendanceBadge status={p.attendance} />
                   </TableCell>
-                  <TableCell className="text-sm text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-sm">
                     {p.checkedInAt
                       ? new Date(p.checkedInAt).toLocaleTimeString([], {
                           hour: "2-digit",
@@ -301,7 +307,7 @@ export function CheckInConsole({
                             <Button
                               size="sm"
                               tone="ghost"
-                              className="h-7 px-2 text-xs text-muted-foreground"
+                              className="text-muted-foreground h-7 px-2 text-xs"
                               onClick={() => setOne(p, "pending")}
                             >
                               <Square className="h-3 w-3" strokeWidth={2.5} />

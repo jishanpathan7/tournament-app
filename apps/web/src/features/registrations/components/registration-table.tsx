@@ -14,7 +14,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RegistrationRowActions } from "@/features/registrations/components/registration-row-actions";
-import { formResponseSummary, registrationEntrantLabel, statusMeta } from "@/features/registrations/config";
+import {
+  formResponseSummary,
+  registrationEntrantLabel,
+  statusMeta,
+} from "@/features/registrations/config";
 
 function openOnKey(onOpen: () => void) {
   return (e: KeyboardEvent<HTMLTableRowElement>) => {

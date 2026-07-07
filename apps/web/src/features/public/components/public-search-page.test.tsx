@@ -8,7 +8,9 @@ import { renderWithProviders, screen } from "@/test/test-utils";
 vi.mock("@/features/public/public-api");
 import * as publicApi from "@/features/public/public-api";
 
-const result = (overrides: Partial<PublicTournamentSearchResult> = {}): PublicTournamentSearchResult => ({
+const result = (
+  overrides: Partial<PublicTournamentSearchResult> = {},
+): PublicTournamentSearchResult => ({
   slug: "sibl-open",
   name: "SIBL Open Badminton",
   sportKey: "badminton",

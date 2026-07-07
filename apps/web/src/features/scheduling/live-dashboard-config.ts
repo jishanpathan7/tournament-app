@@ -68,14 +68,10 @@ export function courtUtilization(courts: CourtQueueView[]): {
 }
 
 export function pickCallTarget(courts: CourtQueueView[]): CourtQueueView | null {
-  const open = courts.find(
-    (c) => c.court.status === "active" && deriveCourtOpsState(c) === "open",
-  );
+  const open = courts.find((c) => c.court.status === "active" && deriveCourtOpsState(c) === "open");
   if (open) return open;
   return (
-    courts.find(
-      (c) => c.court.status === "active" && deriveCourtOpsState(c) === "turnover",
-    ) ?? null
+    courts.find((c) => c.court.status === "active" && deriveCourtOpsState(c) === "turnover") ?? null
   );
 }
 

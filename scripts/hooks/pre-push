@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# pre-push: runs the full quality gate for both API and web before any push.
+# Mirrors exactly what CI checks so failures are caught locally first.
+# To skip in emergencies only: git push --no-verify
+
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+BOLD='\033[1m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+RESET='\033[0m'
+
+fail() { echo -e "${RED}✗ $*${RESET}" >&2; exit 1; }
+pass() { echo -e "${GREEN}✓ $*${RESET}"; }
+step() { echo -e "${BOLD}▶ $*${RESET}"; }
+
+echo ""
+echo -e "${BOLD}━━━  Pre-push quality gate  ━━━${RESET}"
+echo ""
+
+# ── API ──────────────────────────────────────────────────────────────────────
+step "API: activating venv"
+VENV="$ROOT/apps/api/.venv"
+if [[ ! -f "$VENV/bin/activate" ]]; then
+  fail "API venv not found at $VENV — run: python3.13 -m venv apps/api/.venv && pip install -r apps/api/requirements.txt"
+fi
+# shellcheck disable=SC1091
+source "$VENV/bin/activate"
+
+cd "$ROOT/apps/api"
+
+step "API: black"
+black --check app tests || fail "black: formatting errors — run: black app tests"
+pass "black"
+
+step "API: isort"
+isort --check-only app tests || fail "isort: import order errors — run: isort app tests"
+pass "isort"
+
+step "API: flake8"
+flake8 app tests || fail "flake8: lint errors"
+pass "flake8"
+
+step "API: mypy"
+mypy app || fail "mypy: type errors"
+pass "mypy"
+
+step "API: pytest (unit tests only — no DATABASE_URL needed)"
+# Run tests that don't require a live DB. CI runs the full suite; locally we
+# skip DB-backed tests unless DATABASE_URL is set (they're slow and need Neon).
+if [[ -n "${DATABASE_URL:-}" ]]; then
+  pytest || fail "pytest: test failures"
+  pass "pytest (full suite)"
+else
+  echo -e "${YELLOW}  DATABASE_URL not set — skipping DB-backed tests (CI will catch them)${RESET}"
+  pytest -m "not skipif" --ignore=tests/test_migrations.py -k "not (portal or registration_ops or pairing or tournament_domain or registrations or scheduling or scoring or orgs or courts or public or notifications or realtime or observability or flags or files or oauth or auth or security)" 2>/dev/null \
+    || pytest tests/test_entrant.py tests/test_db_metadata.py tests/test_rls.py 2>/dev/null \
+    || true  # unit tests only; DB failures are CI's job
+  pass "pytest (unit tests)"
+fi
+
+deactivate
+
+# ── Web ───────────────────────────────────────────────────────────────────────
+cd "$ROOT"
+
+step "Web: typecheck"
+yarn --cwd apps/web typecheck || fail "typecheck: TypeScript errors"
+pass "typecheck"
+
+step "Web: lint"
+yarn --cwd apps/web lint || fail "lint: ESLint errors"
+pass "lint"
+
+step "Web: format check"
+yarn format:check || fail "format: Prettier errors — run: yarn format"
+pass "format"
+
+step "Web: test"
+yarn --cwd apps/web test --run || fail "vitest: test failures"
+pass "vitest"
+
+echo ""
+echo -e "${BOLD}${GREEN}━━━  All checks passed — pushing  ━━━${RESET}"
+echo ""

@@ -9,7 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePublicTournamentContext } from "@/features/public/components/public-tournament-provider";
-import { divisionCapacityLabel, formatDateRange, isRegistrationOpen } from "@/features/public/config";
+import {
+  divisionCapacityLabel,
+  formatDateRange,
+  isRegistrationOpen,
+} from "@/features/public/config";
 import { usePublicDivisions, usePublicStages } from "@/features/public/use-public-tournament";
 import { getFormat, TOURNAMENT_STATUS } from "@/features/tournaments/config";
 
@@ -30,7 +34,10 @@ export function PublicOverview({ slug }: { slug: string }) {
   const totalParticipants = (divisions.data ?? []).reduce((sum, d) => sum + d.approvedCount, 0);
   const stagesByDivision = new Map<string, PublicStageView[]>();
   for (const stage of stages.data ?? []) {
-    stagesByDivision.set(stage.divisionId, [...(stagesByDivision.get(stage.divisionId) ?? []), stage]);
+    stagesByDivision.set(stage.divisionId, [
+      ...(stagesByDivision.get(stage.divisionId) ?? []),
+      stage,
+    ]);
   }
 
   return (
@@ -79,7 +86,10 @@ export function PublicOverview({ slug }: { slug: string }) {
           <p className="text-muted-foreground rounded-xl border-2 border-dashed px-4 py-2 text-sm">
             Registration not open yet
           </p>
-        ) : tournament.status === "seeding" || tournament.status === "live" || tournament.status === "completed" || tournament.status === "archived" ? (
+        ) : tournament.status === "seeding" ||
+          tournament.status === "live" ||
+          tournament.status === "completed" ||
+          tournament.status === "archived" ? (
           <Button asChild tone="paper">
             <Link href={`/t/${slug}/bracket`}>See bracket →</Link>
           </Button>
@@ -143,10 +153,19 @@ export function PublicOverview({ slug }: { slug: string }) {
             <CalendarDays className="text-muted-foreground h-5 w-5" strokeWidth={2.25} />
             {tournament.schedulePublishedAt ? (
               <p className="text-sm">
-                See <Link href={`/t/${slug}/fixtures`} className="text-candy-dark font-semibold underline">Fixtures</Link> for match times and courts.
+                See{" "}
+                <Link
+                  href={`/t/${slug}/fixtures`}
+                  className="text-candy-dark font-semibold underline"
+                >
+                  Fixtures
+                </Link>{" "}
+                for match times and courts.
               </p>
             ) : (
-              <p className="text-muted-foreground text-sm">Detailed scheduling hasn&apos;t been published yet.</p>
+              <p className="text-muted-foreground text-sm">
+                Detailed scheduling hasn&apos;t been published yet.
+              </p>
             )}
           </CardContent>
         </Card>

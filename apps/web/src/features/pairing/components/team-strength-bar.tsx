@@ -24,15 +24,15 @@ export function TeamStrengthBar({
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-center justify-between gap-2">
-        <span className="text-2xs font-mono uppercase tracking-[0.14em] text-muted-foreground">
-          Strength <span className="tabular-nums text-ink">{strength}</span>
+        <span className="text-2xs text-muted-foreground font-mono uppercase tracking-[0.14em]">
+          Strength <span className="text-ink tabular-nums">{strength}</span>
         </span>
         <Badge tone={meta.tone} aria-label={`Pairing confidence ${meta.pct}%`}>
           {meta.label} · {meta.pct}%
         </Badge>
       </div>
       <div
-        className="border-ink h-2.5 w-full overflow-hidden rounded-full border-2 bg-card"
+        className="border-ink bg-card h-2.5 w-full overflow-hidden rounded-full border-2"
         role="progressbar"
         aria-valuenow={meta.pct}
         aria-valuemin={0}

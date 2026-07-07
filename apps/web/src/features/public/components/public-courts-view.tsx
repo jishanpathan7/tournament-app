@@ -17,13 +17,7 @@ const STATUS_TONE: Record<string, "mint" | "candy" | "yellow" | "muted"> = {
   scheduled: "yellow",
 };
 
-function MatchChip({
-  match,
-  label,
-}: {
-  match: PublicCourtMatchView | null;
-  label: string;
-}) {
+function MatchChip({ match, label }: { match: PublicCourtMatchView | null; label: string }) {
   if (!match) return null;
   const names = match.sides.map((s) => s.participantId).join(" vs ");
   return (

@@ -47,8 +47,12 @@ export function useRealtime(
           void queryClient.invalidateQueries({ queryKey: queryKeys.matches.events(data.matchId) });
         }
         if (typeof data.tournamentId === "string") {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(data.tournamentId) });
-          void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.activity(data.tournamentId) });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.tournaments.matches(data.tournamentId),
+          });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.tournaments.activity(data.tournamentId),
+          });
         }
         void queryClient.invalidateQueries({ queryKey: ["stages"] });
         void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
@@ -59,14 +63,15 @@ export function useRealtime(
           void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(data.stageId) });
         }
         if (typeof data.tournamentId === "string") {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(data.tournamentId) });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.tournaments.matches(data.tournamentId),
+          });
         }
         void queryClient.invalidateQueries({ queryKey: ["matches"] });
         // The broadcast only carries stageId, not divisionId, so refresh every cached
         // division stage list — that's where `drawn`/`locked` live for the setup panel.
         void queryClient.invalidateQueries({
-          predicate: (query) =>
-            query.queryKey[0] === "divisions" && query.queryKey[2] === "stages",
+          predicate: (query) => query.queryKey[0] === "divisions" && query.queryKey[2] === "stages",
         });
       },
       [REALTIME_EVENTS.STANDINGS_UPDATED]: (data) => {
@@ -84,7 +89,9 @@ export function useRealtime(
           void queryClient.invalidateQueries({
             queryKey: queryKeys.tournaments.matches(data.tournamentId),
           });
-          void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(data.tournamentId) });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.schedule.queue(data.tournamentId),
+          });
         }
       },
       // Registration lifecycle events all share this shape: refresh both the

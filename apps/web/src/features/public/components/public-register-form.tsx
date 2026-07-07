@@ -11,7 +11,13 @@ import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
 import { isRegistrationOpen } from "@/features/public/config";
@@ -85,9 +91,7 @@ export function PublicRegisterForm({ slug }: { slug: string }) {
   }
 
   if (tournament.isError || !tournament.data) {
-    return (
-      <p className="text-muted-foreground py-16 text-center">Tournament not found.</p>
-    );
+    return <p className="text-muted-foreground py-16 text-center">Tournament not found.</p>;
   }
 
   const open = isRegistrationOpen(tournament.data.status);
@@ -98,7 +102,7 @@ export function PublicRegisterForm({ slug }: { slug: string }) {
       <Link href={`/t/${slug}`} className="text-muted-foreground text-sm hover:underline">
         ← Back to {tournament.data.name}
       </Link>
-      <h1 className="font-serif mt-4 text-3xl font-bold">Register</h1>
+      <h1 className="mt-4 font-serif text-3xl font-bold">Register</h1>
       <p className="text-muted-foreground mt-2">
         {open
           ? "Submit your entry — an organizer will review it."
@@ -117,7 +121,11 @@ export function PublicRegisterForm({ slug }: { slug: string }) {
               control={control}
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger id="reg-division" aria-label="Division" aria-invalid={!!errors.divisionId}>
+                  <SelectTrigger
+                    id="reg-division"
+                    aria-label="Division"
+                    aria-invalid={!!errors.divisionId}
+                  >
                     <SelectValue placeholder="Choose a division" />
                   </SelectTrigger>
                   <SelectContent>
@@ -135,7 +143,12 @@ export function PublicRegisterForm({ slug }: { slug: string }) {
             <Input id="reg-name" aria-invalid={!!errors.name} {...register("name")} />
           </Field>
           <Field label="Email" htmlFor="reg-email" error={errors.email?.message}>
-            <Input id="reg-email" type="email" aria-invalid={!!errors.email} {...register("email")} />
+            <Input
+              id="reg-email"
+              type="email"
+              aria-invalid={!!errors.email}
+              {...register("email")}
+            />
           </Field>
           <Field label="Skill level" htmlFor="reg-skill" error={errors.skill?.message}>
             <Controller
@@ -157,7 +170,11 @@ export function PublicRegisterForm({ slug }: { slug: string }) {
               )}
             />
           </Field>
-          <Field label="Preferred partner name" htmlFor="reg-partner" error={errors.partner?.message}>
+          <Field
+            label="Preferred partner name"
+            htmlFor="reg-partner"
+            error={errors.partner?.message}
+          >
             <Input id="reg-partner" placeholder="Optional — doubles" {...register("partner")} />
           </Field>
           <Button type="submit" size="lg" disabled={submit.isPending}>

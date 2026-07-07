@@ -39,7 +39,7 @@ export function MatchHistoryList({ matchId }: { matchId: string }) {
           className="border-border flex items-center justify-between gap-3 border-t pt-2 text-sm first:border-t-0 first:pt-0"
         >
           <span className="font-medium">{EVENT_TYPE_LABELS[event.type] ?? event.type}</span>
-          <span className="text-muted-foreground font-mono text-2xs tabular-nums">
+          <span className="text-muted-foreground text-2xs font-mono tabular-nums">
             {new Date(event.createdAt).toLocaleString(undefined, {
               dateStyle: "medium",
               timeStyle: "short",

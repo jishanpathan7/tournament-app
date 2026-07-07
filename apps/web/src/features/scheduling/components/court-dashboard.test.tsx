@@ -1,11 +1,21 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CourtDashboard } from "@/features/scheduling/components/court-dashboard";
-import { makeCourt, makeCourtQueue, makeMatch, makeParticipant, makeScheduleQueue } from "@/test/fixtures";
+import {
+  makeCourt,
+  makeCourtQueue,
+  makeMatch,
+  makeParticipant,
+  makeScheduleQueue,
+} from "@/test/fixtures";
 import { renderWithProviders, screen } from "@/test/test-utils";
 
 vi.mock("@/features/auth/use-session", () => ({
-  useSession: () => ({ session: { activeOrganizationId: "org-1" }, isAuthenticated: true, isLoading: false }),
+  useSession: () => ({
+    session: { activeOrganizationId: "org-1" },
+    isAuthenticated: true,
+    isLoading: false,
+  }),
 }));
 
 // The dashboard subscribes to realtime directly (it renders outside AppShell).

@@ -22,7 +22,7 @@ function segColor(i: number) {
 
 const CX = 300;
 const CY = 300;
-const R  = 276;
+const R = 276;
 const HUB = 48;
 
 function polarToXY(angleDeg: number, r: number) {
@@ -31,16 +31,18 @@ function polarToXY(angleDeg: number, r: number) {
 }
 
 function segmentPath(start: number, end: number): string {
-  const s  = polarToXY(start, R);
-  const e  = polarToXY(end,   R);
+  const s = polarToXY(start, R);
+  const e = polarToXY(end, R);
   const si = polarToXY(start, HUB);
-  const ei = polarToXY(end,   HUB);
+  const ei = polarToXY(end, HUB);
   const large = end - start > 180 ? 1 : 0;
   return [
-    `M ${si.x} ${si.y}`, `L ${s.x} ${s.y}`,
+    `M ${si.x} ${si.y}`,
+    `L ${s.x} ${s.y}`,
     `A ${R} ${R} 0 ${large} 1 ${e.x} ${e.y}`,
     `L ${ei.x} ${ei.y}`,
-    `A ${HUB} ${HUB} 0 ${large} 0 ${si.x} ${si.y}`, "Z",
+    `A ${HUB} ${HUB} 0 ${large} 0 ${si.x} ${si.y}`,
+    "Z",
   ].join(" ");
 }
 
@@ -55,20 +57,22 @@ function fontSize(n: number): number {
   if (n > 24) return 9;
   if (n > 18) return 11;
   if (n > 12) return 13;
-  if (n > 8)  return 15;
+  if (n > 8) return 15;
   return 17;
 }
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
 
 function playTick(ctx: AudioContext, freq = 1100, vol = 0.08) {
-  const osc  = ctx.createOscillator();
+  const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(vol, ctx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.025);
-  osc.connect(gain); gain.connect(ctx.destination);
-  osc.start(); osc.stop(ctx.currentTime + 0.025);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + 0.025);
 }
 
 function tryPlayTick(ctx: AudioContext | null, freq?: number, vol?: number): AudioContext | null {
@@ -76,7 +80,9 @@ function tryPlayTick(ctx: AudioContext | null, freq?: number, vol?: number): Aud
     const c = ctx ?? new AudioContext();
     playTick(c, freq, vol);
     return c;
-  } catch { return ctx; }
+  } catch {
+    return ctx;
+  }
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -96,12 +102,12 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
   { players, highlightIndex, reducedMotion },
   ref,
 ) {
-  const wrapRef          = useRef<HTMLDivElement>(null);
-  const spinnerRef       = useRef<HTMLDivElement>(null);
-  const glowRef          = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const spinnerRef = useRef<HTMLDivElement>(null);
+  const glowRef = useRef<HTMLDivElement>(null);
   const totalRotationRef = useRef(0);
-  const audioCtxRef      = useRef<AudioContext | null>(null);
-  const didIntroRef      = useRef(false);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const didIntroRef = useRef(false);
 
   // Mount intro
   useEffect(() => {
@@ -126,47 +132,55 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
 
     spin(targetIndex: number): Promise<void> {
       return new Promise((resolve) => {
-        if (!spinnerRef.current) { resolve(); return; }
+        if (!spinnerRef.current) {
+          resolve();
+          return;
+        }
         const n = players.length;
-        if (n === 0) { resolve(); return; }
+        if (n === 0) {
+          resolve();
+          return;
+        }
 
         if (reducedMotion) {
           // Instant snap for reduced-motion
-          const segAngle    = 360 / n;
+          const segAngle = 360 / n;
           const targetCenter = targetIndex * segAngle + segAngle / 2;
           const currentAngle = totalRotationRef.current % 360;
-          const alignOffset  = ((360 - targetCenter - currentAngle) % 360 + 360) % 360;
+          const alignOffset = (((360 - targetCenter - currentAngle) % 360) + 360) % 360;
           totalRotationRef.current += alignOffset;
           gsap.set(spinnerRef.current, { rotation: totalRotationRef.current });
           resolve();
           return;
         }
 
-        const segAngle     = 360 / n;
+        const segAngle = 360 / n;
         const targetCenter = targetIndex * segAngle + segAngle / 2;
         const currentAngle = totalRotationRef.current % 360;
-        const alignOffset  = ((360 - targetCenter - currentAngle) % 360 + 360) % 360;
-        const extraSpins   = (6 + Math.floor(Math.random() * 4)) * 360;
+        const alignOffset = (((360 - targetCenter - currentAngle) % 360) + 360) % 360;
+        const extraSpins = (6 + Math.floor(Math.random() * 4)) * 360;
         const finalRotation = totalRotationRef.current + extraSpins + alignOffset;
-        const spinUpTo      = totalRotationRef.current + (finalRotation - totalRotationRef.current) * 0.15;
+        const spinUpTo =
+          totalRotationRef.current + (finalRotation - totalRotationRef.current) * 0.15;
 
-        let lastSeg  = -1;
+        let lastSeg = -1;
         let lastTime = 0;
         let spinSpeed = 0;
 
         function attachTick(tween: gsap.core.Tween) {
           tween.eventCallback("onUpdate", function () {
-            const now  = performance.now();
-            const cur  = gsap.getProperty(spinnerRef.current!, "rotation") as number;
-            const seg  = Math.floor(((360 - (cur % 360) + 360) % 360) / segAngle) % n;
-            const dt   = now - lastTime;
+            const now = performance.now();
+            const cur = gsap.getProperty(spinnerRef.current!, "rotation") as number;
+            const seg = Math.floor(((360 - (cur % 360) + 360) % 360) / segAngle) % n;
+            const dt = now - lastTime;
 
             if (seg !== lastSeg && dt > 0) {
-              const rpm   = (segAngle / dt) * 60_000;
-              spinSpeed   = rpm;
-              const vol   = Math.min(0.14, 0.04 + rpm * 0.0006);
-              const freq  = 900 + Math.min(rpm * 0.8, 600);
-              lastSeg = seg; lastTime = now;
+              const rpm = (segAngle / dt) * 60_000;
+              spinSpeed = rpm;
+              const vol = Math.min(0.14, 0.04 + rpm * 0.0006);
+              const freq = 900 + Math.min(rpm * 0.8, 600);
+              lastSeg = seg;
+              lastTime = now;
               audioCtxRef.current = tryPlayTick(audioCtxRef.current, freq, vol);
             }
           });
@@ -218,13 +232,13 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
     },
   }));
 
-  const n        = players.length;
+  const n = players.length;
   const segAngle = n > 0 ? 360 / n : 360;
-  const fs       = fontSize(n);
-  const textX    = CX + HUB + 12;
+  const fs = fontSize(n);
+  const textX = CX + HUB + 12;
 
   return (
-    <div className="relative flex items-center justify-center select-none">
+    <div className="relative flex select-none items-center justify-center">
       {/* Pointer */}
       <div
         className="pointer-events-none absolute z-10"
@@ -232,10 +246,11 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
           top: -6,
           left: "50%",
           transform: "translateX(-50%)",
-          width: 0, height: 0,
-          borderLeft:  "16px solid transparent",
+          width: 0,
+          height: 0,
+          borderLeft: "16px solid transparent",
           borderRight: "16px solid transparent",
-          borderTop:   "32px solid #FFFDF5",
+          borderTop: "32px solid #FFFDF5",
           filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))",
         }}
       />
@@ -244,7 +259,9 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
       <div
         ref={glowRef}
         className="pointer-events-none absolute inset-0 z-[5] rounded-full opacity-0"
-        style={{ background: "radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 70%)" }}
+        style={{
+          background: "radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 70%)",
+        }}
       />
 
       {/* Rotating wheel */}
@@ -262,7 +279,10 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
               </filter>
               <filter id="wheel-glow" x="-12%" y="-12%" width="124%" height="124%">
                 <feGaussianBlur stdDeviation="8" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
               </filter>
               <filter id="txt-shadow" x="-10%" y="-30%" width="120%" height="160%">
                 <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.8" />
@@ -279,10 +299,10 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
               ) : (
                 players.map((player, i) => {
                   const start = i * segAngle;
-                  const end   = start + segAngle;
-                  const mid   = start + segAngle / 2;
+                  const end = start + segAngle;
+                  const mid = start + segAngle / 2;
                   const color = segColor(i);
-                  const isHL  = highlightIndex === i;
+                  const isHL = highlightIndex === i;
 
                   return (
                     <g key={player.registrationId}>
@@ -296,9 +316,9 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                       />
                       {(() => {
                         const isFlipped = mid > 90 && mid < 270;
-                        const rot    = isFlipped ? mid - 90 + 180 : mid - 90;
-                        const tx     = isFlipped ? CX - HUB - 12  : textX;
-                        const anchor = isFlipped ? "end"           : "start";
+                        const rot = isFlipped ? mid - 90 + 180 : mid - 90;
+                        const tx = isFlipped ? CX - HUB - 12 : textX;
+                        const anchor = isFlipped ? "end" : "start";
                         return (
                           <g transform={`rotate(${rot}, ${CX}, ${CY})`}>
                             <text
@@ -310,7 +330,11 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                               fontWeight="700"
                               fill="white"
                               filter="url(#txt-shadow)"
-                              style={{ pointerEvents: "none", userSelect: "none", letterSpacing: "0.01em" }}
+                              style={{
+                                pointerEvents: "none",
+                                userSelect: "none",
+                                letterSpacing: "0.01em",
+                              }}
                             >
                               {label(player.displayName, n)}
                             </text>
@@ -323,13 +347,20 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
               )}
 
               {/* Outer rim */}
-              <circle cx={CX} cy={CY} r={R}     fill="none" stroke="#1e293b" strokeWidth={4} />
+              <circle cx={CX} cy={CY} r={R} fill="none" stroke="#1e293b" strokeWidth={4} />
               {/* Inner ring accent */}
-              <circle cx={CX} cy={CY} r={HUB+2} fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
+              <circle
+                cx={CX}
+                cy={CY}
+                r={HUB + 2}
+                fill="none"
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth={1}
+              />
               {/* Hub */}
-              <circle cx={CX} cy={CY} r={HUB}   fill="url(#hub-grad)" />
-              <circle cx={CX} cy={CY} r={14}     fill="white" opacity={0.92} />
-              <circle cx={CX} cy={CY} r={7}      fill="#4F6BF6" />
+              <circle cx={CX} cy={CY} r={HUB} fill="url(#hub-grad)" />
+              <circle cx={CX} cy={CY} r={14} fill="white" opacity={0.92} />
+              <circle cx={CX} cy={CY} r={7} fill="#4F6BF6" />
             </g>
           </svg>
         </div>

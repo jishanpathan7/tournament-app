@@ -75,15 +75,10 @@ export function listMatches(slug: string): Promise<MatchView[]> {
 }
 
 export function getMatch(slug: string, matchId: string): Promise<MatchView> {
-  return getJson(
-    `/tournaments/${encodeURIComponent(slug)}/matches/${encodeURIComponent(matchId)}`,
-  );
+  return getJson(`/tournaments/${encodeURIComponent(slug)}/matches/${encodeURIComponent(matchId)}`);
 }
 
-export function listMatchEvents(
-  slug: string,
-  matchId: string,
-): Promise<MatchResultEventView[]> {
+export function listMatchEvents(slug: string, matchId: string): Promise<MatchResultEventView[]> {
   return getJson(
     `/tournaments/${encodeURIComponent(slug)}/matches/${encodeURIComponent(matchId)}/events`,
   );

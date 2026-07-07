@@ -51,7 +51,10 @@ function buildSlots(
 function SlotLabel({ slug, slot }: { slug: string; slot: Slot }) {
   if (!slot.participantId) return <span className="truncate">{slot.label}</span>;
   return (
-    <Link href={`/t/${slug}/participants/${slot.participantId}`} className="truncate hover:underline">
+    <Link
+      href={`/t/${slug}/participants/${slot.participantId}`}
+      className="truncate hover:underline"
+    >
       {slot.label}
     </Link>
   );
@@ -86,7 +89,7 @@ function SeedCard({
           )}
         >
           {slot.seedLabel ? (
-            <span className="border-ink bg-yellow-tint rounded-md border-2 px-1.5 py-0.5 font-mono text-2xs font-bold">
+            <span className="border-ink bg-yellow-tint text-2xs rounded-md border-2 px-1.5 py-0.5 font-mono font-bold">
               {slot.seedLabel}
             </span>
           ) : null}
@@ -139,7 +142,12 @@ export function PublicBracketBoard({
             {round.label}
           </span>
           {round.matches.map((match) => (
-            <SeedCard key={match.id} slug={slug} match={match} participantsById={participantsById} />
+            <SeedCard
+              key={match.id}
+              slug={slug}
+              match={match}
+              participantsById={participantsById}
+            />
           ))}
         </div>
       ))}

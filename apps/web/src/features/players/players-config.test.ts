@@ -47,7 +47,17 @@ describe("players-config", () => {
 
   it("aggregates player stats", () => {
     const rows = buildPlayerRows(
-      [{ id: "d1", name: "Open", participantType: "individual", capacity: null, tournamentId: "t1", regForm: {}, createdAt: "" }],
+      [
+        {
+          id: "d1",
+          name: "Open",
+          participantType: "individual",
+          capacity: null,
+          tournamentId: "t1",
+          regForm: {},
+          createdAt: "",
+        },
+      ],
       new Map([
         [
           "d1",

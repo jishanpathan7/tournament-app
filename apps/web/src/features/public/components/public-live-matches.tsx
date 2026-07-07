@@ -82,7 +82,12 @@ export function PublicLiveMatches({ slug }: { slug: string }) {
   return (
     <div className="flex flex-col gap-2">
       {today.map((match) => (
-        <LiveFixtureCard key={match.id} slug={slug} match={match} participantsById={participantsById} />
+        <LiveFixtureCard
+          key={match.id}
+          slug={slug}
+          match={match}
+          participantsById={participantsById}
+        />
       ))}
     </div>
   );

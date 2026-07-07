@@ -33,7 +33,11 @@ function CheckRow({ item }: { item: CheckItem }) {
           strokeWidth={2.25}
         />
       )}
-      <span className={item.passed ? "" : item.required ? "text-foreground font-medium" : "text-muted-foreground"}>
+      <span
+        className={
+          item.passed ? "" : item.required ? "text-foreground font-medium" : "text-muted-foreground"
+        }
+      >
         {item.label}
       </span>
       {!item.passed && !item.required ? (
@@ -126,7 +130,9 @@ export function GoLiveDialog({
               {blockers.length > 1 ? " them" : " it"} before going live.
             </p>
           ) : (
-            <p className="text-mint-dark text-sm font-medium">All required checks passed — ready to go live.</p>
+            <p className="text-mint-dark text-sm font-medium">
+              All required checks passed — ready to go live.
+            </p>
           )}
         </div>
 
@@ -140,7 +146,11 @@ export function GoLiveDialog({
             disabled={!canGoLive || transition.isPending}
             onClick={handleGoLive}
           >
-            {transition.isPending ? <Spinner className="text-white" /> : <Radio className="h-4 w-4" strokeWidth={2.25} />}
+            {transition.isPending ? (
+              <Spinner className="text-white" />
+            ) : (
+              <Radio className="h-4 w-4" strokeWidth={2.25} />
+            )}
             Go live
           </Button>
         </DialogFooter>

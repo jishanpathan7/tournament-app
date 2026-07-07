@@ -24,9 +24,7 @@ function FixtureRow({
   const status = matchStatusMeta(match.status);
   return (
     <div className="border-border flex items-center gap-3 border-t px-4 py-3 text-sm first:border-t-0">
-      <span
-        className={`min-w-0 flex-1 truncate ${a?.outcome === "win" ? "font-bold" : ""}`}
-      >
+      <span className={`min-w-0 flex-1 truncate ${a?.outcome === "win" ? "font-bold" : ""}`}>
         {participantName(a?.participantId, participantsById)}
       </span>
       {match.status === "pending" || match.status === "scheduled" ? (
@@ -82,7 +80,7 @@ export function RoundRobinBoard({
             </div>
             {rows.length > 0 ? (
               <div className="border-ink bg-card shadow-sticker-xs overflow-hidden rounded-2xl border-2">
-                <div className="border-border grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 border-b px-4 py-2 text-2xs font-mono font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                <div className="border-border text-2xs text-muted-foreground grid grid-cols-[auto_1fr_auto_auto_auto] gap-3 border-b px-4 py-2 font-mono font-semibold uppercase tracking-[0.16em]">
                   <span>#</span>
                   <span>Participant</span>
                   <span>W-D-L</span>
@@ -94,7 +92,9 @@ export function RoundRobinBoard({
                     key={row.participantId}
                     className="border-border grid grid-cols-[auto_1fr_auto_auto_auto] items-center gap-3 border-t px-4 py-2 text-sm first:border-t-0"
                   >
-                    <span className="text-muted-foreground font-mono text-xs">{row.rank ?? "—"}</span>
+                    <span className="text-muted-foreground font-mono text-xs">
+                      {row.rank ?? "—"}
+                    </span>
                     <span className="truncate">
                       {participantsById.get(row.participantId)?.displayName ?? "Unknown"}
                     </span>

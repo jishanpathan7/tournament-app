@@ -30,7 +30,9 @@ import { paginate } from "@/lib/paginate";
 
 const PAGE_SIZE = 20;
 
-function firstPairingDivisionId(divisions: { id: string; participantType: string }[]): string | null {
+function firstPairingDivisionId(
+  divisions: { id: string; participantType: string }[],
+): string | null {
   const match = divisions.find(
     (d) => d.participantType === "individual" || d.participantType === "pair",
   );
@@ -78,7 +80,9 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
   }
 
   if (data.isError) {
-    return <ErrorState error={data.error} onRetry={() => data.refetch()} title="Couldn't load players" />;
+    return (
+      <ErrorState error={data.error} onRetry={() => data.refetch()} title="Couldn't load players" />
+    );
   }
 
   const divisions = data.divisions.data ?? [];

@@ -38,16 +38,56 @@ export const STEP_META: Record<
   TournamentStep,
   { label: string; description: string; phase: DashboardPhase }
 > = {
-  1:  { label: "Tournament Setup",     description: "Configure your tournament — venue, format, divisions.",        phase: "before" },
-  2:  { label: "Import & Approve",     description: "Import participants and approve them.",                        phase: "before" },
-  3:  { label: "Create Teams",         description: "Run the Draft Ceremony to assign players to teams.",           phase: "before" },
-  4:  { label: "Pair Each Team",       description: "Generate doubles pairs within each team.",                     phase: "before" },
-  5:  { label: "Check-in & Readiness", description: "Mark attendance and confirm everyone is ready.",               phase: "before" },
-  6:  { label: "Generate Draw",        description: "Generate the team draw or bracket for each division.",         phase: "before" },
-  7:  { label: "Schedule & Go Live",   description: "Configure courts, assign matches, then go live.",              phase: "before" },
-  8:  { label: "Tournament Live",      description: "Monitor courts, score matches, track standings in real time.", phase: "during" },
-  9:  { label: "Tournament Results",   description: "Review results, publish standings, and export data.",          phase: "after"  },
-  10: { label: "Tournament Archive",   description: "Read-only historical record of the tournament.",               phase: "after"  },
+  1: {
+    label: "Tournament Setup",
+    description: "Configure your tournament — venue, format, divisions.",
+    phase: "before",
+  },
+  2: {
+    label: "Import & Approve",
+    description: "Import participants and approve them.",
+    phase: "before",
+  },
+  3: {
+    label: "Create Teams",
+    description: "Run the Draft Ceremony to assign players to teams.",
+    phase: "before",
+  },
+  4: {
+    label: "Pair Each Team",
+    description: "Generate doubles pairs within each team.",
+    phase: "before",
+  },
+  5: {
+    label: "Check-in & Readiness",
+    description: "Mark attendance and confirm everyone is ready.",
+    phase: "before",
+  },
+  6: {
+    label: "Generate Draw",
+    description: "Generate the team draw or bracket for each division.",
+    phase: "before",
+  },
+  7: {
+    label: "Schedule & Go Live",
+    description: "Configure courts, assign matches, then go live.",
+    phase: "before",
+  },
+  8: {
+    label: "Tournament Live",
+    description: "Monitor courts, score matches, track standings in real time.",
+    phase: "during",
+  },
+  9: {
+    label: "Tournament Results",
+    description: "Review results, publish standings, and export data.",
+    phase: "after",
+  },
+  10: {
+    label: "Tournament Archive",
+    description: "Read-only historical record of the tournament.",
+    phase: "after",
+  },
 };
 
 export function deriveTournamentStep(
@@ -77,14 +117,12 @@ export function deriveStepSignals(
 ): StepSignals {
   const squadsReady =
     (readiness?.squadsReady ?? true) && (readiness?.unassignedSquadMembers ?? 0) === 0;
-  const pairingPublished =
-    readiness
-      ? readiness.divisions.every((d) => d.unpairedEntrants === 0)
-      : true;
-  const checkInReady =
-    readiness
-      ? readiness.divisions.every((d) => d.readyForDraw || d.readyForStart)
-      : false;
+  const pairingPublished = readiness
+    ? readiness.divisions.every((d) => d.unpairedEntrants === 0)
+    : true;
+  const checkInReady = readiness
+    ? readiness.divisions.every((d) => d.readyForDraw || d.readyForStart)
+    : false;
 
   return {
     hasApproved: registrationTotals.approved > 0,

@@ -8,10 +8,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { participantName } from "@/features/public/config";
-import {
-  usePublicParticipants,
-  usePublicStandings,
-} from "@/features/public/use-public-tournament";
+import { usePublicParticipants, usePublicStandings } from "@/features/public/use-public-tournament";
 
 /** Rankings, W-D-L, points, and game difference for one stage. Point difference (raw
  * badminton points, not games) isn't tracked as a persisted, queryable aggregate
@@ -25,7 +22,9 @@ export function PublicStandingsTable({ slug, stageId }: { slug: string; stageId:
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
-  const rows = (standings.data?.rows ?? []).slice().sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
+  const rows = (standings.data?.rows ?? [])
+    .slice()
+    .sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999));
 
   if (standings.isLoading || participants.isLoading) {
     return <Skeleton className="h-64 rounded-2xl" />;
@@ -48,7 +47,7 @@ export function PublicStandingsTable({ slug, stageId }: { slug: string; stageId:
     <div className="border-ink bg-card shadow-sticker-md overflow-x-auto rounded-2xl border-2">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-border text-muted-foreground border-b-2 text-left text-2xs font-mono font-semibold uppercase tracking-[0.14em]">
+          <tr className="border-border text-muted-foreground text-2xs border-b-2 text-left font-mono font-semibold uppercase tracking-[0.14em]">
             <th className="px-4 py-2.5">#</th>
             <th className="px-4 py-2.5">Participant</th>
             <th className="px-4 py-2.5 text-right">W</th>

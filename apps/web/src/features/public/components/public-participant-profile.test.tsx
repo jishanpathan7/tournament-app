@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { PublicParticipantProfile } from "@/features/public/components/public-participant-profile";
-import { makeMatch, makePublicDivision, makePublicParticipant, makePublicStage } from "@/test/fixtures";
+import {
+  makeMatch,
+  makePublicDivision,
+  makePublicParticipant,
+  makePublicStage,
+} from "@/test/fixtures";
 import { renderWithProviders, screen } from "@/test/test-utils";
 
 vi.mock("@/features/public/public-api");
@@ -25,7 +30,12 @@ const side = (id: string, overrides: SideOverrides = {}) => ({
 
 function setup() {
   vi.mocked(publicApi.getParticipant).mockResolvedValue(
-    makePublicParticipant({ id: PARTICIPANT_ID, displayName: "Aarav K.", divisionId: "div-1", seed: 1 }),
+    makePublicParticipant({
+      id: PARTICIPANT_ID,
+      displayName: "Aarav K.",
+      divisionId: "div-1",
+      seed: 1,
+    }),
   );
   vi.mocked(publicApi.listDivisions).mockResolvedValue([
     makePublicDivision({ id: "div-1", name: "Men's Singles" }),

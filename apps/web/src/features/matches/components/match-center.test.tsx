@@ -118,7 +118,12 @@ describe("MatchCenter", () => {
   it("filters the queue by search", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "scheduled", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     renderCenter();
     await screen.findByText("Aarav K. vs Mei L.");
@@ -130,7 +135,12 @@ describe("MatchCenter", () => {
   it("submits a normal score and reflects the update", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "scheduled", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     vi.mocked(scoringApi.scoreMatch).mockResolvedValue(
       makeMatch({
@@ -164,10 +174,20 @@ describe("MatchCenter", () => {
   it("submits a walkover", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "scheduled", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     vi.mocked(scoringApi.scoreMatch).mockResolvedValue(
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "walkover", sides: [side(p1.id, { outcome: "win" })] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "walkover",
+        sides: [side(p1.id, { outcome: "win" })],
+      }),
     );
     renderCenter();
     await user.click(await screen.findByRole("button", { name: /open match/i }));
@@ -189,7 +209,12 @@ describe("MatchCenter", () => {
   it("shows a structural validation error before calling the backend", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "scheduled", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     renderCenter();
     await user.click(await screen.findByRole("button", { name: /open match/i }));
@@ -239,10 +264,20 @@ describe("MatchCenter", () => {
   it("surfaces a stale-match conflict with a refresh hint", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "scheduled", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     vi.mocked(scoringApi.scoreMatch).mockRejectedValue(
-      new ApiError({ type: "about:blank", title: "Precondition Failed", status: 412, code: "stale_match" }),
+      new ApiError({
+        type: "about:blank",
+        title: "Precondition Failed",
+        status: 412,
+        code: "stale_match",
+      }),
     );
     renderCenter();
     await user.click(await screen.findByRole("button", { name: /open match/i }));
@@ -259,7 +294,12 @@ describe("MatchCenter", () => {
   it("disables the submit button while the mutation is pending", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "scheduled", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     let resolveScore: (() => void) | undefined;
     vi.mocked(scoringApi.scoreMatch).mockReturnValue(
@@ -284,7 +324,12 @@ describe("MatchCenter", () => {
 
   it("shows match history events once loaded", async () => {
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "completed", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "completed",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     vi.mocked(scoringApi.listMatchEvents).mockResolvedValue([
       makeMatchResultEvent({ matchId: "m-1", type: "normal" }),
@@ -309,7 +354,12 @@ describe("MatchCenter", () => {
     sessionState.role = "viewer";
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
-      makeMatch({ id: "m-1", stageId: STAGE_ID, status: "scheduled", sides: [side(p1.id), side(p2.id)] }),
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
     ]);
     renderCenter();
     await user.click(await screen.findByRole("button", { name: /open match/i }));

@@ -131,9 +131,7 @@ export function matchDecided(
   rules: BadmintonRules = BADMINTON_DEFAULTS,
 ): boolean {
   const majority = Math.floor(rules.bestOf / 2) + 1;
-  return (
-    gamesWonBySide(games, "a") >= majority || gamesWonBySide(games, "b") >= majority
-  );
+  return gamesWonBySide(games, "a") >= majority || gamesWonBySide(games, "b") >= majority;
 }
 
 export function decidingGameIndex(

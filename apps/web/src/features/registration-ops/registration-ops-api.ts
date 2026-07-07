@@ -36,17 +36,11 @@ export async function previewImport(
   divisionId: string,
   body: ImportRequest,
 ): Promise<ImportPreview> {
-  const { data } = await api.post<ImportPreview>(
-    `/divisions/${divisionId}/imports/preview`,
-    body,
-  );
+  const { data } = await api.post<ImportPreview>(`/divisions/${divisionId}/imports/preview`, body);
   return data;
 }
 
-export async function commitImport(
-  divisionId: string,
-  body: ImportRequest,
-): Promise<ImportResult> {
+export async function commitImport(divisionId: string, body: ImportRequest): Promise<ImportResult> {
   const { data } = await api.post<ImportResult>(`/divisions/${divisionId}/imports/commit`, body);
   return data;
 }

@@ -22,10 +22,7 @@ export function useTournamentPlayers(tournamentId: string, options?: { enabled?:
   const divisions = useDivisions(tournamentId);
   const members = useOrgMembers({ enabled });
 
-  const divisionIds = useMemo(
-    () => (divisions.data ?? []).map((d) => d.id),
-    [divisions.data],
-  );
+  const divisionIds = useMemo(() => (divisions.data ?? []).map((d) => d.id), [divisions.data]);
 
   const registrationQueries = useQueries({
     queries: divisionIds.map((divisionId) => ({

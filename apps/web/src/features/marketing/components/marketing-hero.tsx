@@ -27,7 +27,12 @@ export function MarketingHero() {
         { opacity: 1, y: "0%", rotateX: 0, duration: dur.md, stagger: stagger.xs },
         "-=0.1",
       );
-      tl.fromTo(".hero-body", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: dur.sm }, "-=0.3");
+      tl.fromTo(
+        ".hero-body",
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: dur.sm },
+        "-=0.3",
+      );
       tl.fromTo(
         ".hero-cta",
         { opacity: 0, y: 16 },
@@ -57,7 +62,7 @@ export function MarketingHero() {
         <p className="hero-eyebrow text-yellow font-mono text-xs font-semibold uppercase tracking-[0.28em]">
           Competition OS
         </p>
-        <h1 className="font-serif mt-4 text-4xl font-semibold leading-[1.1] tracking-tight md:text-5xl lg:text-[3.25rem] overflow-hidden">
+        <h1 className="mt-4 overflow-hidden font-serif text-4xl font-semibold leading-[1.1] tracking-tight md:text-5xl lg:text-[3.25rem]">
           {/* Split heading into word spans for staggered reveal */}
           <span style={{ display: "block", overflow: "hidden", paddingBottom: "0.1em" }}>
             {before
@@ -94,8 +99,8 @@ export function MarketingHero() {
           </span>
         </h1>
         <p className="hero-body text-muted-foreground mt-5 max-w-lg text-lg leading-relaxed">
-          {SITE.description} Pair players, run live courts, publish standings — all from one
-          modern workspace built for organizers who care about fairness.
+          {SITE.description} Pair players, run live courts, publish standings — all from one modern
+          workspace built for organizers who care about fairness.
         </p>
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Button tone="candy" size="lg" asChild className="hero-cta">

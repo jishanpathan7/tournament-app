@@ -134,7 +134,9 @@ function DivisionList({
           tournamentId={tournamentId}
           division={editingDivision}
           open={editingId !== null}
-          onOpenChange={(open) => { if (!open) setEditingId(null); }}
+          onOpenChange={(open) => {
+            if (!open) setEditingId(null);
+          }}
         />
       ) : null}
     </>

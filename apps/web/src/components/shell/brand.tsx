@@ -16,11 +16,7 @@ export function Brand({
   inverted?: boolean;
 }) {
   return (
-    <Link
-      href={href}
-      className="flex items-center gap-2.5 outline-none"
-      aria-label={SITE.name}
-    >
+    <Link href={href} className="flex items-center gap-2.5 outline-none" aria-label={SITE.name}>
       {inverted ? (
         <span className="border-paper/20 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border-2">
           <PlaylaneMark size={20} inverted />

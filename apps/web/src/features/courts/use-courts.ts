@@ -94,8 +94,7 @@ export function useBulkCreateCourts(tournamentId: string) {
 export function useBulkRemoveCourts(tournamentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (courtIds: string[]) =>
-      courtsApi.bulkRemoveCourts(tournamentId, { courtIds }),
+    mutationFn: (courtIds: string[]) => courtsApi.bulkRemoveCourts(tournamentId, { courtIds }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.courts.tournament(tournamentId) });
     },

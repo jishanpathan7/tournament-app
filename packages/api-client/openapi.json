@@ -7,9 +7,7 @@
   "paths": {
     "/api/v1/health": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Health",
         "description": "Liveness \u2014 the process is up (no dependency checks). Always 200.",
         "operationId": "health_health",
@@ -29,9 +27,7 @@
     },
     "/api/v1/health/db": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Health Db",
         "operationId": "health_health_db",
         "responses": {
@@ -50,9 +46,7 @@
     },
     "/api/v1/health/ready": {
       "get": {
-        "tags": [
-          "health"
-        ],
+        "tags": ["health"],
         "summary": "Health Ready",
         "description": "Readiness \u2014 dependencies reachable. 503 when not ready (for load-balancer probes).",
         "operationId": "health_health_ready",
@@ -72,9 +66,7 @@
     },
     "/api/v1/auth/register": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Register",
         "operationId": "auth_register",
         "requestBody": {
@@ -113,9 +105,7 @@
     },
     "/api/v1/auth/login": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Login",
         "operationId": "auth_login",
         "requestBody": {
@@ -154,9 +144,7 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Refresh",
         "operationId": "auth_refresh",
         "responses": {
@@ -175,9 +163,7 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Logout",
         "operationId": "auth_logout",
         "responses": {
@@ -189,9 +175,7 @@
     },
     "/api/v1/auth/logout-all": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Logout All",
         "operationId": "auth_logout_all",
         "responses": {
@@ -203,9 +187,7 @@
     },
     "/api/v1/auth/sessions": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "List Sessions",
         "operationId": "auth_list_sessions",
         "responses": {
@@ -228,9 +210,7 @@
     },
     "/api/v1/auth/sessions/{session_id}": {
       "delete": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Revoke Session",
         "operationId": "auth_revoke_session",
         "parameters": [
@@ -264,9 +244,7 @@
     },
     "/api/v1/auth/verify-email/request": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Request Email Verification",
         "operationId": "auth_request_email_verification",
         "responses": {
@@ -283,9 +261,7 @@
     },
     "/api/v1/auth/verify-email/confirm": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Confirm Email",
         "operationId": "auth_confirm_email",
         "requestBody": {
@@ -317,9 +293,7 @@
     },
     "/api/v1/auth/password-reset/request": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Request Password Reset",
         "operationId": "auth_request_password_reset",
         "requestBody": {
@@ -356,9 +330,7 @@
     },
     "/api/v1/auth/password-reset/confirm": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Confirm Password Reset",
         "operationId": "auth_confirm_password_reset",
         "requestBody": {
@@ -390,9 +362,7 @@
     },
     "/api/v1/auth/password/change": {
       "post": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Change Password",
         "operationId": "auth_change_password",
         "requestBody": {
@@ -424,9 +394,7 @@
     },
     "/api/v1/auth/me": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Me",
         "operationId": "auth_me",
         "responses": {
@@ -445,9 +413,7 @@
     },
     "/api/v1/auth/google/authorize": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Google Authorize",
         "operationId": "auth_google_authorize",
         "responses": {
@@ -464,9 +430,7 @@
     },
     "/api/v1/auth/google/callback": {
       "get": {
-        "tags": [
-          "auth"
-        ],
+        "tags": ["auth"],
         "summary": "Google Callback",
         "operationId": "auth_google_callback",
         "parameters": [
@@ -513,9 +477,7 @@
     },
     "/api/v1/me/portal": {
       "get": {
-        "tags": [
-          "me"
-        ],
+        "tags": ["me"],
         "summary": "Get Portal Home",
         "operationId": "me_get_portal_home",
         "responses": {
@@ -534,9 +496,7 @@
     },
     "/api/v1/orgs": {
       "get": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "List My Orgs",
         "operationId": "orgs_list_my_orgs",
         "responses": {
@@ -557,9 +517,7 @@
         }
       },
       "post": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Create Org",
         "operationId": "orgs_create_org",
         "requestBody": {
@@ -598,9 +556,7 @@
     },
     "/api/v1/orgs/switch": {
       "post": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Switch Org",
         "operationId": "orgs_switch_org",
         "requestBody": {
@@ -639,9 +595,7 @@
     },
     "/api/v1/orgs/invites/accept": {
       "post": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Accept Invite",
         "operationId": "orgs_accept_invite",
         "requestBody": {
@@ -680,9 +634,7 @@
     },
     "/api/v1/orgs/active": {
       "get": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Get Active Org",
         "operationId": "orgs_get_active_org",
         "responses": {
@@ -699,9 +651,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Update Active Org",
         "operationId": "orgs_update_active_org",
         "requestBody": {
@@ -740,9 +690,7 @@
     },
     "/api/v1/orgs/active/members": {
       "get": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "List Members",
         "operationId": "orgs_list_members",
         "responses": {
@@ -765,9 +713,7 @@
     },
     "/api/v1/orgs/active/members/{user_id}": {
       "patch": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Update Member Role",
         "operationId": "orgs_update_member_role",
         "parameters": [
@@ -816,9 +762,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Remove Member",
         "operationId": "orgs_remove_member",
         "parameters": [
@@ -852,9 +796,7 @@
     },
     "/api/v1/orgs/active/invites": {
       "get": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "List Invites",
         "operationId": "orgs_list_invites",
         "responses": {
@@ -875,9 +817,7 @@
         }
       },
       "post": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Create Invite",
         "operationId": "orgs_create_invite",
         "requestBody": {
@@ -916,9 +856,7 @@
     },
     "/api/v1/orgs/active/invites/{invite_id}": {
       "delete": {
-        "tags": [
-          "orgs"
-        ],
+        "tags": ["orgs"],
         "summary": "Revoke Invite",
         "operationId": "orgs_revoke_invite",
         "parameters": [
@@ -952,9 +890,7 @@
     },
     "/api/v1/files": {
       "post": {
-        "tags": [
-          "files"
-        ],
+        "tags": ["files"],
         "summary": "Presign Upload",
         "operationId": "files_presign_upload",
         "requestBody": {
@@ -993,9 +929,7 @@
     },
     "/api/v1/files/{file_id}/complete": {
       "post": {
-        "tags": [
-          "files"
-        ],
+        "tags": ["files"],
         "summary": "Complete Upload",
         "operationId": "files_complete_upload",
         "parameters": [
@@ -1036,9 +970,7 @@
     },
     "/api/v1/files/{file_id}": {
       "get": {
-        "tags": [
-          "files"
-        ],
+        "tags": ["files"],
         "summary": "Get File",
         "operationId": "files_get_file",
         "parameters": [
@@ -1077,9 +1009,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "files"
-        ],
+        "tags": ["files"],
         "summary": "Delete File",
         "operationId": "files_delete_file",
         "parameters": [
@@ -1113,9 +1043,7 @@
     },
     "/api/v1/notifications": {
       "get": {
-        "tags": [
-          "notifications"
-        ],
+        "tags": ["notifications"],
         "summary": "List Notifications",
         "operationId": "notifications_list_notifications",
         "parameters": [
@@ -1184,9 +1112,7 @@
     },
     "/api/v1/notifications/unread-count": {
       "get": {
-        "tags": [
-          "notifications"
-        ],
+        "tags": ["notifications"],
         "summary": "Unread Count",
         "operationId": "notifications_unread_count",
         "responses": {
@@ -1205,9 +1131,7 @@
     },
     "/api/v1/notifications/{notification_id}/read": {
       "post": {
-        "tags": [
-          "notifications"
-        ],
+        "tags": ["notifications"],
         "summary": "Mark Read",
         "operationId": "notifications_mark_read",
         "parameters": [
@@ -1248,9 +1172,7 @@
     },
     "/api/v1/notifications/read-all": {
       "post": {
-        "tags": [
-          "notifications"
-        ],
+        "tags": ["notifications"],
         "summary": "Mark All Read",
         "operationId": "notifications_mark_all_read",
         "responses": {
@@ -1269,9 +1191,7 @@
     },
     "/api/v1/realtime/stream": {
       "get": {
-        "tags": [
-          "realtime"
-        ],
+        "tags": ["realtime"],
         "summary": "Stream",
         "operationId": "realtime_stream",
         "parameters": [
@@ -1311,9 +1231,7 @@
     },
     "/api/v1/feature-flags": {
       "get": {
-        "tags": [
-          "feature-flags"
-        ],
+        "tags": ["feature-flags"],
         "summary": "List Flags",
         "operationId": "feature-flags_list_flags",
         "responses": {
@@ -1334,9 +1252,7 @@
         }
       },
       "put": {
-        "tags": [
-          "feature-flags"
-        ],
+        "tags": ["feature-flags"],
         "summary": "Upsert Flag",
         "operationId": "feature-flags_upsert_flag",
         "requestBody": {
@@ -1375,9 +1291,7 @@
     },
     "/api/v1/feature-flags/{flag_id}": {
       "delete": {
-        "tags": [
-          "feature-flags"
-        ],
+        "tags": ["feature-flags"],
         "summary": "Delete Flag",
         "operationId": "feature-flags_delete_flag",
         "parameters": [
@@ -1411,9 +1325,7 @@
     },
     "/api/v1/feature-flags/{key}/enabled": {
       "get": {
-        "tags": [
-          "feature-flags"
-        ],
+        "tags": ["feature-flags"],
         "summary": "Flag Enabled",
         "operationId": "feature-flags_flag_enabled",
         "parameters": [
@@ -1453,9 +1365,7 @@
     },
     "/api/v1/tournaments": {
       "get": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "List Tournaments",
         "operationId": "tournaments_list_tournaments",
         "responses": {
@@ -1476,9 +1386,7 @@
         }
       },
       "post": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Create Tournament",
         "operationId": "tournaments_create_tournament",
         "requestBody": {
@@ -1517,9 +1425,7 @@
     },
     "/api/v1/tournaments/{tournament_id}": {
       "get": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Get Tournament",
         "operationId": "tournaments_get_tournament",
         "parameters": [
@@ -1558,9 +1464,7 @@
         }
       },
       "patch": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Update Tournament",
         "operationId": "tournaments_update_tournament",
         "parameters": [
@@ -1609,9 +1513,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Delete Tournament",
         "operationId": "tournaments_delete_tournament",
         "parameters": [
@@ -1645,9 +1547,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/activity": {
       "get": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Get Tournament Activity",
         "operationId": "tournaments_get_tournament_activity",
         "parameters": [
@@ -1692,9 +1592,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/status": {
       "post": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Transition Status",
         "operationId": "tournaments_transition_status",
         "parameters": [
@@ -1745,9 +1643,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/publish": {
       "post": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Publish Tournament",
         "operationId": "tournaments_publish_tournament",
         "parameters": [
@@ -1798,9 +1694,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/divisions": {
       "post": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Create Division",
         "operationId": "tournaments_create_division",
         "parameters": [
@@ -1849,9 +1743,7 @@
         }
       },
       "get": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "List Divisions",
         "operationId": "tournaments_list_divisions",
         "parameters": [
@@ -1896,9 +1788,7 @@
     },
     "/api/v1/divisions/{division_id}/stages": {
       "post": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Create Stage",
         "operationId": "tournaments_create_stage",
         "parameters": [
@@ -1947,9 +1837,7 @@
         }
       },
       "get": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "List Stages",
         "operationId": "tournaments_list_stages",
         "parameters": [
@@ -1994,9 +1882,7 @@
     },
     "/api/v1/stages/{stage_id}/draw": {
       "post": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Generate Draw",
         "operationId": "tournaments_generate_draw",
         "parameters": [
@@ -2045,9 +1931,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "tournaments"
-        ],
+        "tags": ["tournaments"],
         "summary": "Clear Draw",
         "operationId": "tournaments_clear_draw",
         "parameters": [
@@ -2081,9 +1965,7 @@
     },
     "/api/v1/divisions/{division_id}/registrations": {
       "post": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "Submit Registration",
         "operationId": "registrations_submit_registration",
         "parameters": [
@@ -2132,9 +2014,7 @@
         }
       },
       "get": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "List Registrations",
         "operationId": "registrations_list_registrations",
         "parameters": [
@@ -2179,9 +2059,7 @@
     },
     "/api/v1/divisions/{division_id}/participants": {
       "get": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "List Participants",
         "operationId": "registrations_list_participants",
         "parameters": [
@@ -2226,9 +2104,7 @@
     },
     "/api/v1/registrations/{registration_id}/approve": {
       "post": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "Approve Registration",
         "operationId": "registrations_approve_registration",
         "parameters": [
@@ -2269,9 +2145,7 @@
     },
     "/api/v1/registrations/{registration_id}/reject": {
       "post": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "Reject Registration",
         "operationId": "registrations_reject_registration",
         "parameters": [
@@ -2312,9 +2186,7 @@
     },
     "/api/v1/registrations/{registration_id}/waitlist": {
       "post": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "Waitlist Registration",
         "operationId": "registrations_waitlist_registration",
         "parameters": [
@@ -2355,9 +2227,7 @@
     },
     "/api/v1/registrations/{registration_id}/withdraw": {
       "post": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "Withdraw Registration",
         "operationId": "registrations_withdraw_registration",
         "parameters": [
@@ -2398,9 +2268,7 @@
     },
     "/api/v1/teams/{team_id}": {
       "get": {
-        "tags": [
-          "registrations"
-        ],
+        "tags": ["registrations"],
         "summary": "Get Team",
         "operationId": "registrations_get_team",
         "parameters": [
@@ -2441,9 +2309,7 @@
     },
     "/api/v1/imports/sources": {
       "get": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "List Import Sources",
         "operationId": "registration-ops_list_import_sources",
         "responses": {
@@ -2466,9 +2332,7 @@
     },
     "/api/v1/imports/detect": {
       "post": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Detect Columns",
         "operationId": "registration-ops_detect_columns",
         "requestBody": {
@@ -2507,9 +2371,7 @@
     },
     "/api/v1/divisions/{division_id}/imports/preview": {
       "post": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Preview Import",
         "operationId": "registration-ops_preview_import",
         "parameters": [
@@ -2560,9 +2422,7 @@
     },
     "/api/v1/divisions/{division_id}/imports/commit": {
       "post": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Commit Import",
         "operationId": "registration-ops_commit_import",
         "parameters": [
@@ -2613,9 +2473,7 @@
     },
     "/api/v1/imports/mapping-templates": {
       "get": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "List Mapping Templates",
         "operationId": "registration-ops_list_mapping_templates",
         "parameters": [
@@ -2664,9 +2522,7 @@
         }
       },
       "post": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Save Mapping Template",
         "operationId": "registration-ops_save_mapping_template",
         "requestBody": {
@@ -2705,9 +2561,7 @@
     },
     "/api/v1/imports/mapping-templates/{template_id}": {
       "delete": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Delete Mapping Template",
         "operationId": "registration-ops_delete_mapping_template",
         "parameters": [
@@ -2741,9 +2595,7 @@
     },
     "/api/v1/divisions/{division_id}/attendance": {
       "get": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "List Attendance",
         "operationId": "registration-ops_list_attendance",
         "parameters": [
@@ -2788,9 +2640,7 @@
     },
     "/api/v1/participants/{participant_id}/attendance": {
       "post": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Set Attendance",
         "operationId": "registration-ops_set_attendance",
         "parameters": [
@@ -2841,9 +2691,7 @@
     },
     "/api/v1/divisions/{division_id}/attendance/bulk": {
       "post": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Bulk Set Attendance",
         "operationId": "registration-ops_bulk_set_attendance",
         "parameters": [
@@ -2894,9 +2742,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/readiness": {
       "get": {
-        "tags": [
-          "registration-ops"
-        ],
+        "tags": ["registration-ops"],
         "summary": "Get Readiness",
         "operationId": "registration-ops_get_readiness",
         "parameters": [
@@ -2937,9 +2783,7 @@
     },
     "/api/v1/divisions/{division_id}/pairing/generate": {
       "post": {
-        "tags": [
-          "pairing"
-        ],
+        "tags": ["pairing"],
         "summary": "Generate Pairing",
         "operationId": "pairing_generate_pairing",
         "parameters": [
@@ -2990,9 +2834,7 @@
     },
     "/api/v1/divisions/{division_id}/pairing": {
       "get": {
-        "tags": [
-          "pairing"
-        ],
+        "tags": ["pairing"],
         "summary": "Get Pairing",
         "operationId": "pairing_get_pairing",
         "parameters": [
@@ -3041,9 +2883,7 @@
     },
     "/api/v1/pairing/teams/{team_id}": {
       "patch": {
-        "tags": [
-          "pairing"
-        ],
+        "tags": ["pairing"],
         "summary": "Update Team",
         "operationId": "pairing_update_team",
         "parameters": [
@@ -3094,9 +2934,7 @@
     },
     "/api/v1/pairing/runs/{run_id}/swap": {
       "post": {
-        "tags": [
-          "pairing"
-        ],
+        "tags": ["pairing"],
         "summary": "Swap Members",
         "operationId": "pairing_swap_members",
         "parameters": [
@@ -3147,9 +2985,7 @@
     },
     "/api/v1/pairing/runs/{run_id}/publish": {
       "post": {
-        "tags": [
-          "pairing"
-        ],
+        "tags": ["pairing"],
         "summary": "Publish Pairing",
         "operationId": "pairing_publish_pairing",
         "parameters": [
@@ -3190,9 +3026,7 @@
     },
     "/api/v1/divisions/{division_id}/pairing/repair-rosters": {
       "post": {
-        "tags": [
-          "pairing"
-        ],
+        "tags": ["pairing"],
         "summary": "Repair Pairing Rosters",
         "operationId": "pairing_repair_pairing_rosters",
         "parameters": [
@@ -3233,9 +3067,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/squads": {
       "get": {
-        "tags": [
-          "squads"
-        ],
+        "tags": ["squads"],
         "summary": "Get Squads",
         "operationId": "squads_get_squads",
         "parameters": [
@@ -3274,9 +3106,7 @@
         }
       },
       "post": {
-        "tags": [
-          "squads"
-        ],
+        "tags": ["squads"],
         "summary": "Create Squad",
         "operationId": "squads_create_squad",
         "parameters": [
@@ -3327,9 +3157,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/squads/auto-distribute": {
       "post": {
-        "tags": [
-          "squads"
-        ],
+        "tags": ["squads"],
         "summary": "Auto Distribute",
         "operationId": "squads_auto_distribute",
         "parameters": [
@@ -3380,9 +3208,7 @@
     },
     "/api/v1/squads/{squad_id}": {
       "patch": {
-        "tags": [
-          "squads"
-        ],
+        "tags": ["squads"],
         "summary": "Update Squad",
         "operationId": "squads_update_squad",
         "parameters": [
@@ -3431,9 +3257,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "squads"
-        ],
+        "tags": ["squads"],
         "summary": "Delete Squad",
         "operationId": "squads_delete_squad",
         "parameters": [
@@ -3467,9 +3291,7 @@
     },
     "/api/v1/squads/{squad_id}/members": {
       "post": {
-        "tags": [
-          "squads"
-        ],
+        "tags": ["squads"],
         "summary": "Assign Member",
         "operationId": "squads_assign_member",
         "parameters": [
@@ -3520,9 +3342,7 @@
     },
     "/api/v1/squads/{squad_id}/members/{registration_id}": {
       "delete": {
-        "tags": [
-          "squads"
-        ],
+        "tags": ["squads"],
         "summary": "Remove Member",
         "operationId": "squads_remove_member",
         "parameters": [
@@ -3566,9 +3386,7 @@
     },
     "/api/v1/stages/{stage_id}/franchise-draw": {
       "post": {
-        "tags": [
-          "franchise-ties"
-        ],
+        "tags": ["franchise-ties"],
         "summary": "Generate Franchise Draw",
         "operationId": "franchise-ties_generate_franchise_draw",
         "parameters": [
@@ -3619,9 +3437,7 @@
     },
     "/api/v1/stages/{stage_id}/franchise-knockout-draw": {
       "post": {
-        "tags": [
-          "franchise-ties"
-        ],
+        "tags": ["franchise-ties"],
         "summary": "Generate Franchise Knockout Draw",
         "operationId": "franchise-ties_generate_franchise_knockout_draw",
         "parameters": [
@@ -3672,9 +3488,7 @@
     },
     "/api/v1/stages/{stage_id}/franchise-ties": {
       "get": {
-        "tags": [
-          "franchise-ties"
-        ],
+        "tags": ["franchise-ties"],
         "summary": "Get Franchise Ties Board",
         "operationId": "franchise-ties_get_franchise_ties_board",
         "parameters": [
@@ -3715,9 +3529,7 @@
     },
     "/api/v1/matches/{match_id}/score": {
       "post": {
-        "tags": [
-          "scoring"
-        ],
+        "tags": ["scoring"],
         "summary": "Score Match",
         "operationId": "scoring_score_match",
         "parameters": [
@@ -3800,9 +3612,7 @@
     },
     "/api/v1/stages/{stage_id}/matches": {
       "get": {
-        "tags": [
-          "scoring"
-        ],
+        "tags": ["scoring"],
         "summary": "List Stage Matches",
         "operationId": "scoring_list_stage_matches",
         "parameters": [
@@ -3847,9 +3657,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/matches": {
       "get": {
-        "tags": [
-          "scoring"
-        ],
+        "tags": ["scoring"],
         "summary": "List Tournament Matches",
         "operationId": "scoring_list_tournament_matches",
         "parameters": [
@@ -3894,9 +3702,7 @@
     },
     "/api/v1/matches/{match_id}": {
       "get": {
-        "tags": [
-          "scoring"
-        ],
+        "tags": ["scoring"],
         "summary": "Get Match",
         "operationId": "scoring_get_match",
         "parameters": [
@@ -3937,9 +3743,7 @@
     },
     "/api/v1/matches/{match_id}/events": {
       "get": {
-        "tags": [
-          "scoring"
-        ],
+        "tags": ["scoring"],
         "summary": "List Match Events",
         "operationId": "scoring_list_match_events",
         "parameters": [
@@ -3984,9 +3788,7 @@
     },
     "/api/v1/stages/{stage_id}/standings": {
       "get": {
-        "tags": [
-          "scoring"
-        ],
+        "tags": ["scoring"],
         "summary": "Get Standings",
         "operationId": "scoring_get_standings",
         "parameters": [
@@ -4027,9 +3829,7 @@
     },
     "/api/v1/matches/{match_id}/scorekeeper-link": {
       "get": {
-        "tags": [
-          "share-links"
-        ],
+        "tags": ["share-links"],
         "summary": "Get Match Scorekeeper Link",
         "operationId": "share-links_get_match_scorekeeper_link",
         "parameters": [
@@ -4076,9 +3876,7 @@
         }
       },
       "post": {
-        "tags": [
-          "share-links"
-        ],
+        "tags": ["share-links"],
         "summary": "Create Match Scorekeeper Link",
         "operationId": "share-links_create_match_scorekeeper_link",
         "parameters": [
@@ -4127,9 +3925,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "share-links"
-        ],
+        "tags": ["share-links"],
         "summary": "Revoke Match Scorekeeper Link",
         "operationId": "share-links_revoke_match_scorekeeper_link",
         "parameters": [
@@ -4163,9 +3959,7 @@
     },
     "/api/v1/divisions/{division_id}/checkin-link": {
       "get": {
-        "tags": [
-          "share-links"
-        ],
+        "tags": ["share-links"],
         "summary": "Get Division Checkin Link",
         "operationId": "share-links_get_division_checkin_link",
         "parameters": [
@@ -4212,9 +4006,7 @@
         }
       },
       "post": {
-        "tags": [
-          "share-links"
-        ],
+        "tags": ["share-links"],
         "summary": "Create Division Checkin Link",
         "operationId": "share-links_create_division_checkin_link",
         "parameters": [
@@ -4265,9 +4057,7 @@
     },
     "/api/v1/public/scorekeeper/session": {
       "get": {
-        "tags": [
-          "public-scorekeeper"
-        ],
+        "tags": ["public-scorekeeper"],
         "summary": "Get Scorekeeper Session",
         "operationId": "public-scorekeeper_get_scorekeeper_session",
         "parameters": [
@@ -4314,9 +4104,7 @@
     },
     "/api/v1/public/scorekeeper/score": {
       "post": {
-        "tags": [
-          "public-scorekeeper"
-        ],
+        "tags": ["public-scorekeeper"],
         "summary": "Submit Scorekeeper Score",
         "operationId": "public-scorekeeper_submit_scorekeeper_score",
         "parameters": [
@@ -4405,9 +4193,7 @@
     },
     "/api/v1/public/checkin/session": {
       "get": {
-        "tags": [
-          "public-checkin"
-        ],
+        "tags": ["public-checkin"],
         "summary": "Get Checkin Session",
         "operationId": "public-checkin_get_checkin_session",
         "parameters": [
@@ -4454,9 +4240,7 @@
     },
     "/api/v1/public/checkin/confirm": {
       "post": {
-        "tags": [
-          "public-checkin"
-        ],
+        "tags": ["public-checkin"],
         "summary": "Confirm Checkin",
         "operationId": "public-checkin_confirm_checkin",
         "parameters": [
@@ -4506,9 +4290,7 @@
     },
     "/api/v1/public/search": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "Search Tournaments",
         "operationId": "public_search_tournaments",
         "parameters": [
@@ -4554,9 +4336,7 @@
     },
     "/api/v1/public/tournaments/{slug}": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "Get Tournament",
         "operationId": "public_get_tournament",
         "parameters": [
@@ -4596,9 +4376,7 @@
     },
     "/api/v1/public/tournaments/{slug}/divisions": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "List Divisions",
         "operationId": "public_list_divisions",
         "parameters": [
@@ -4642,9 +4420,7 @@
     },
     "/api/v1/public/tournaments/{slug}/divisions/{division_id}/registrations": {
       "post": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "Submit Registration",
         "operationId": "public_submit_registration",
         "parameters": [
@@ -4704,9 +4480,7 @@
     },
     "/api/v1/public/tournaments/{slug}/stages": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "List Stages",
         "operationId": "public_list_stages",
         "parameters": [
@@ -4750,9 +4524,7 @@
     },
     "/api/v1/public/tournaments/{slug}/participants": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "List Participants",
         "operationId": "public_list_participants",
         "parameters": [
@@ -4796,9 +4568,7 @@
     },
     "/api/v1/public/tournaments/{slug}/participants/{participant_id}": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "Get Participant",
         "operationId": "public_get_participant",
         "parameters": [
@@ -4848,9 +4618,7 @@
     },
     "/api/v1/public/tournaments/{slug}/matches": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "List Matches",
         "operationId": "public_list_matches",
         "parameters": [
@@ -4894,9 +4662,7 @@
     },
     "/api/v1/public/tournaments/{slug}/matches/{match_id}": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "Get Match",
         "operationId": "public_get_match",
         "parameters": [
@@ -4946,9 +4712,7 @@
     },
     "/api/v1/public/tournaments/{slug}/matches/{match_id}/events": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "List Match Events",
         "operationId": "public_list_match_events",
         "parameters": [
@@ -5002,9 +4766,7 @@
     },
     "/api/v1/public/tournaments/{slug}/stages/{stage_id}/standings": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "Get Standings",
         "operationId": "public_get_standings",
         "parameters": [
@@ -5054,9 +4816,7 @@
     },
     "/api/v1/public/tournaments/{slug}/stream": {
       "get": {
-        "tags": [
-          "public"
-        ],
+        "tags": ["public"],
         "summary": "Stream",
         "description": "Anonymous SSE subscription to this tournament's own channel \u2014 never the org\nchannel. Re-validates visibility the same way every other public read does; no\nprincipal, no `is_authorized` (that's the authenticated-only gate).",
         "operationId": "public_stream",
@@ -5095,9 +4855,7 @@
     },
     "/api/v1/venues": {
       "get": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "List Venues",
         "operationId": "courts_list_venues",
         "responses": {
@@ -5118,9 +4876,7 @@
         }
       },
       "post": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "Create Venue",
         "operationId": "courts_create_venue",
         "requestBody": {
@@ -5159,9 +4915,7 @@
     },
     "/api/v1/courts": {
       "get": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "List Courts",
         "operationId": "courts_list_courts",
         "responses": {
@@ -5182,9 +4936,7 @@
         }
       },
       "post": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "Create Court",
         "operationId": "courts_create_court",
         "requestBody": {
@@ -5223,9 +4975,7 @@
     },
     "/api/v1/courts/{court_id}": {
       "patch": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "Update Court",
         "operationId": "courts_update_court",
         "parameters": [
@@ -5276,9 +5026,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/courts": {
       "post": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "Assign Court",
         "operationId": "courts_assign_court",
         "parameters": [
@@ -5327,9 +5075,7 @@
         }
       },
       "get": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "List Tournament Courts",
         "operationId": "courts_list_tournament_courts",
         "parameters": [
@@ -5374,9 +5120,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/courts/{court_id}": {
       "delete": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "Unassign Court",
         "operationId": "courts_unassign_court",
         "parameters": [
@@ -5420,9 +5164,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/courts/bulk-create": {
       "post": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "Bulk Create Courts",
         "operationId": "courts_bulk_create_courts",
         "parameters": [
@@ -5473,9 +5215,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/courts/bulk-remove": {
       "post": {
-        "tags": [
-          "courts"
-        ],
+        "tags": ["courts"],
         "summary": "Bulk Remove Courts",
         "operationId": "courts_bulk_remove_courts",
         "parameters": [
@@ -5526,9 +5266,7 @@
     },
     "/api/v1/matches/{match_id}/schedule/check": {
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Check Schedule",
         "operationId": "scheduling_check_schedule",
         "parameters": [
@@ -5579,9 +5317,7 @@
     },
     "/api/v1/matches/{match_id}/schedule": {
       "patch": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Assign Schedule",
         "operationId": "scheduling_assign_schedule",
         "parameters": [
@@ -5630,9 +5366,7 @@
         }
       },
       "delete": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Clear Schedule",
         "operationId": "scheduling_clear_schedule",
         "parameters": [
@@ -5673,9 +5407,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/schedule/bulk": {
       "post": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Bulk Assign Schedule",
         "operationId": "scheduling_bulk_assign_schedule",
         "parameters": [
@@ -5726,9 +5458,7 @@
     },
     "/api/v1/tournaments/{tournament_id}/schedule/queue": {
       "get": {
-        "tags": [
-          "scheduling"
-        ],
+        "tags": ["scheduling"],
         "summary": "Get Queue",
         "operationId": "scheduling_get_queue",
         "parameters": [
@@ -5778,9 +5508,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "token"
-        ],
+        "required": ["token"],
         "title": "AcceptInviteRequest"
       },
       "ActivityEventView": {
@@ -5884,11 +5612,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "registrationId",
-          "status",
-          "participantId"
-        ],
+        "required": ["registrationId", "status", "participantId"],
         "title": "ApproveResult"
       },
       "AssignCourtRequest": {
@@ -5900,9 +5624,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "courtId"
-        ],
+        "required": ["courtId"],
         "title": "AssignCourtRequest"
       },
       "AssignMemberRequest": {
@@ -5914,9 +5636,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "registrationId"
-        ],
+        "required": ["registrationId"],
         "title": "AssignMemberRequest"
       },
       "AutoDistributeRequest": {
@@ -5946,9 +5666,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "teamCount"
-        ],
+        "required": ["teamCount"],
         "title": "AutoDistributeRequest"
       },
       "AutoDistributeResponse": {
@@ -5965,10 +5683,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "squads",
-          "summary"
-        ],
+        "required": ["squads", "summary"],
         "title": "AutoDistributeResponse"
       },
       "BulkCheckInRequest": {
@@ -5988,10 +5703,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "participantIds",
-          "status"
-        ],
+        "required": ["participantIds", "status"],
         "title": "BulkCheckInRequest"
       },
       "BulkCheckInResult": {
@@ -6010,10 +5722,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "updated",
-          "attendance"
-        ],
+        "required": ["updated", "attendance"],
         "title": "BulkCheckInResult"
       },
       "BulkCreateCourtsRequest": {
@@ -6064,9 +5773,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "count"
-        ],
+        "required": ["count"],
         "title": "BulkCreateCourtsRequest",
         "description": "Create numbered courts at a venue and assign them to the tournament."
       },
@@ -6081,9 +5788,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "created"
-        ],
+        "required": ["created"],
         "title": "BulkCreateCourtsResponse"
       },
       "BulkRemoveCourtsRequest": {
@@ -6099,9 +5804,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "courtIds"
-        ],
+        "required": ["courtIds"],
         "title": "BulkRemoveCourtsRequest"
       },
       "BulkRemoveCourtsResponse": {
@@ -6116,9 +5819,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "removed"
-        ],
+        "required": ["removed"],
         "title": "BulkRemoveCourtsResponse"
       },
       "BulkScheduleItem": {
@@ -6147,11 +5848,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "matchId",
-          "courtId",
-          "scheduledAt"
-        ],
+        "required": ["matchId", "courtId", "scheduledAt"],
         "title": "BulkScheduleItem"
       },
       "BulkScheduleRequest": {
@@ -6166,9 +5863,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "assignments"
-        ],
+        "required": ["assignments"],
         "title": "BulkScheduleRequest"
       },
       "BulkScheduleResponse": {
@@ -6182,9 +5877,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "results"
-        ],
+        "required": ["results"],
         "title": "BulkScheduleResponse"
       },
       "ChangePasswordRequest": {
@@ -6201,10 +5894,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "currentPassword",
-          "newPassword"
-        ],
+        "required": ["currentPassword", "newPassword"],
         "title": "ChangePasswordRequest"
       },
       "CheckInLinkView": {
@@ -6253,13 +5943,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "divisionId",
-          "tournamentId",
-          "expiresAt",
-          "revoked"
-        ],
+        "required": ["id", "divisionId", "tournamentId", "expiresAt", "revoked"],
         "title": "CheckInLinkView"
       },
       "CheckInParticipantView": {
@@ -6279,11 +5963,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "displayName",
-          "attendance"
-        ],
+        "required": ["id", "displayName", "attendance"],
         "title": "CheckInParticipantView"
       },
       "CheckInRequest": {
@@ -6294,9 +5974,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "CheckInRequest",
         "description": "Set attendance for a single participant. ``status`` \u2208 pending|checked_in|absent."
       },
@@ -6372,12 +6050,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "kind",
-          "matchId",
-          "otherMatchId",
-          "message"
-        ],
+        "required": ["kind", "matchId", "otherMatchId", "message"],
         "title": "ConflictView"
       },
       "CourtQueueView": {
@@ -6411,12 +6084,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "court",
-          "currentMatch",
-          "nextMatch",
-          "isDelayed"
-        ],
+        "required": ["court", "currentMatch", "nextMatch", "isDelayed"],
         "title": "CourtQueueView"
       },
       "CourtView": {
@@ -6450,14 +6118,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "venueId",
-          "venueName",
-          "name",
-          "status",
-          "createdAt"
-        ],
+        "required": ["id", "venueId", "venueName", "name", "status", "createdAt"],
         "title": "CourtView"
       },
       "CreateCourtRequest": {
@@ -6475,10 +6136,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "venueId",
-          "name"
-        ],
+        "required": ["venueId", "name"],
         "title": "CreateCourtRequest"
       },
       "CreateDivisionCheckInLinkRequest": {
@@ -6524,10 +6182,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "participantType"
-        ],
+        "required": ["name", "participantType"],
         "title": "CreateDivisionRequest"
       },
       "CreateInviteRequest": {
@@ -6542,10 +6197,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "email",
-          "role"
-        ],
+        "required": ["email", "role"],
         "title": "CreateInviteRequest"
       },
       "CreateMatchScorekeeperLinkRequest": {
@@ -6602,10 +6254,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "slug"
-        ],
+        "required": ["name", "slug"],
         "title": "CreateOrgRequest"
       },
       "CreateSquadRequest": {
@@ -6618,9 +6267,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "CreateSquadRequest"
       },
       "CreateStageRequest": {
@@ -6677,9 +6324,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "type"
-        ],
+        "required": ["type"],
         "title": "CreateStageRequest"
       },
       "CreateTournamentRequest": {
@@ -6709,11 +6354,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "slug",
-          "sportKey"
-        ],
+        "required": ["name", "slug", "sportKey"],
         "title": "CreateTournamentRequest"
       },
       "CreateVenueRequest": {
@@ -6737,9 +6378,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "CreateVenueRequest"
       },
       "CursorPage_NotificationResource_": {
@@ -6764,9 +6403,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "items"
-        ],
+        "required": ["items"],
         "title": "CursorPage[NotificationResource]"
       },
       "DBHealthResponse": {
@@ -6777,9 +6414,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "database"
-        ],
+        "required": ["database"],
         "title": "DBHealthResponse"
       },
       "DetectColumnsRequest": {
@@ -6794,10 +6429,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "source",
-          "raw"
-        ],
+        "required": ["source", "raw"],
         "title": "DetectColumnsRequest"
       },
       "DetectColumnsResponse": {
@@ -6821,10 +6453,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "columns",
-          "sampleRows"
-        ],
+        "required": ["columns", "sampleRows"],
         "title": "DetectColumnsResponse"
       },
       "DivisionReadinessView": {
@@ -7008,15 +6637,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "stageId",
-          "format",
-          "groups",
-          "rounds",
-          "matches",
-          "scheduled",
-          "pending"
-        ],
+        "required": ["stageId", "format", "groups", "rounds", "matches", "scheduled", "pending"],
         "title": "DrawResponse"
       },
       "EntrantView": {
@@ -7059,13 +6680,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "registrationId",
-          "displayName",
-          "skillLevel",
-          "weight",
-          "preferredPartnerId"
-        ],
+        "required": ["registrationId", "displayName", "skillLevel", "weight", "preferredPartnerId"],
         "title": "EntrantView"
       },
       "FeatureFlagResource": {
@@ -7135,13 +6750,7 @@
       },
       "FileKind": {
         "type": "string",
-        "enum": [
-          "org_logo",
-          "tournament_logo",
-          "rules_doc",
-          "export",
-          "avatar"
-        ],
+        "enum": ["org_logo", "tournament_logo", "rules_doc", "export", "avatar"],
         "title": "FileKind"
       },
       "FileResource": {
@@ -7225,10 +6834,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "key",
-          "enabled"
-        ],
+        "required": ["key", "enabled"],
         "title": "FlagEnabledResponse"
       },
       "FranchiseDrawRequest": {
@@ -7263,10 +6869,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "stageId",
-          "summary"
-        ],
+        "required": ["stageId", "summary"],
         "title": "FranchiseDrawResponse"
       },
       "FranchiseDrawSummary": {
@@ -7289,12 +6892,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "ties",
-          "legs",
-          "gamesPerTie",
-          "squadCount"
-        ],
+        "required": ["ties", "legs", "gamesPerTie", "squadCount"],
         "title": "FranchiseDrawSummary"
       },
       "FranchiseKnockoutDrawRequest": {
@@ -7415,11 +7013,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "stageId",
-          "gamesPerTie",
-          "ties"
-        ],
+        "required": ["stageId", "gamesPerTie", "ties"],
         "title": "FranchiseTiesBoardView"
       },
       "GeneratePairingRequest": {
@@ -7499,13 +7093,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status",
-          "service",
-          "version",
-          "environment",
-          "time"
-        ],
+        "required": ["status", "service", "version", "environment", "time"],
         "title": "HealthResponse"
       },
       "ImportFieldInfo": {
@@ -7524,11 +7112,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "key",
-          "label",
-          "required"
-        ],
+        "required": ["key", "label", "required"],
         "title": "ImportFieldInfo"
       },
       "ImportPreview": {
@@ -7552,11 +7136,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "columns",
-          "rows",
-          "summary"
-        ],
+        "required": ["columns", "rows", "summary"],
         "title": "ImportPreview"
       },
       "ImportPreviewSummary": {
@@ -7583,13 +7163,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "total",
-          "new",
-          "update",
-          "duplicate",
-          "invalid"
-        ],
+        "required": ["total", "new", "update", "duplicate", "invalid"],
         "title": "ImportPreviewSummary"
       },
       "ImportRequest": {
@@ -7616,10 +7190,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "source",
-          "raw"
-        ],
+        "required": ["source", "raw"],
         "title": "ImportRequest",
         "description": "Shared shape for preview + commit \u2014 the raw upload, the chosen source, and the\ncolumn \u2192 target-field mapping. Preview is a dry run; commit applies it."
       },
@@ -7644,12 +7215,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "batchId",
-          "imported",
-          "updated",
-          "skipped"
-        ],
+        "required": ["batchId", "imported", "updated", "skipped"],
         "title": "ImportResult"
       },
       "ImportSourceInfo": {
@@ -7671,11 +7237,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "key",
-          "label",
-          "targetFields"
-        ],
+        "required": ["key", "label", "targetFields"],
         "title": "ImportSourceInfo"
       },
       "InviteItem": {
@@ -7707,14 +7269,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "email",
-          "role",
-          "status",
-          "expiresAt",
-          "createdAt"
-        ],
+        "required": ["id", "email", "role", "status", "expiresAt", "createdAt"],
         "title": "InviteItem"
       },
       "LoginRequest": {
@@ -7735,10 +7290,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "email",
-          "password"
-        ],
+        "required": ["email", "password"],
         "title": "LoginRequest"
       },
       "MappingTemplateView": {
@@ -7770,13 +7322,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "source",
-          "mapping",
-          "createdAt"
-        ],
+        "required": ["id", "name", "source", "mapping", "createdAt"],
         "title": "MappingTemplateView"
       },
       "MarkAllReadResponse": {
@@ -7787,9 +7333,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "updated"
-        ],
+        "required": ["updated"],
         "title": "MarkAllReadResponse"
       },
       "MatchResultEventView": {
@@ -7832,14 +7376,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "matchId",
-          "type",
-          "payload",
-          "actorId",
-          "createdAt"
-        ],
+        "required": ["id", "matchId", "type", "payload", "actorId", "createdAt"],
         "title": "MatchResultEventView",
         "description": "One row of the append-only scoring/correction log for a match (`MatchResultEvent`) \u2014\nthe source of truth for Match Detail's history panel."
       },
@@ -7896,13 +7433,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "participantId",
-          "outcome",
-          "scoreFor",
-          "scoreAgainst",
-          "rank"
-        ],
+        "required": ["participantId", "outcome", "scoreFor", "scoreAgainst", "rank"],
         "title": "MatchSideView"
       },
       "MatchView": {
@@ -8151,13 +7682,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "userId",
-          "email",
-          "name",
-          "role",
-          "joinedAt"
-        ],
+        "required": ["userId", "email", "name", "role", "joinedAt"],
         "title": "MemberItem"
       },
       "NotificationResource": {
@@ -8204,24 +7729,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "type",
-          "title",
-          "body",
-          "status",
-          "createdAt"
-        ],
+        "required": ["id", "type", "title", "body", "status", "createdAt"],
         "title": "NotificationResource"
       },
       "OrgInviteStatus": {
         "type": "string",
-        "enum": [
-          "pending",
-          "accepted",
-          "revoked",
-          "expired"
-        ],
+        "enum": ["pending", "accepted", "revoked", "expired"],
         "title": "OrgInviteStatus"
       },
       "OrgResponse": {
@@ -8254,25 +7767,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "slug",
-          "name",
-          "timezone",
-          "plan",
-          "branding"
-        ],
+        "required": ["id", "slug", "name", "timezone", "plan", "branding"],
         "title": "OrgResponse"
       },
       "OrgRole": {
         "type": "string",
-        "enum": [
-          "owner",
-          "admin",
-          "organizer",
-          "scorekeeper",
-          "viewer"
-        ],
+        "enum": ["owner", "admin", "organizer", "scorekeeper", "viewer"],
         "title": "OrgRole"
       },
       "OrgSummary": {
@@ -8295,12 +7795,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "slug",
-          "name",
-          "role"
-        ],
+        "required": ["id", "slug", "name", "role"],
         "title": "OrgSummary"
       },
       "PairingRunView": {
@@ -8389,12 +7884,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "teamCount",
-          "entrantCount",
-          "unpairedCount",
-          "averageConfidence"
-        ],
+        "required": ["teamCount", "entrantCount", "unpairedCount", "averageConfidence"],
         "title": "PairingSummary"
       },
       "ParticipantAttendanceView": {
@@ -8464,12 +7954,7 @@
       },
       "ParticipantKind": {
         "type": "string",
-        "enum": [
-          "individual",
-          "pair",
-          "team",
-          "squad"
-        ],
+        "enum": ["individual", "pair", "team", "squad"],
         "title": "ParticipantKind"
       },
       "ParticipantResponse": {
@@ -8565,10 +8050,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "token",
-          "newPassword"
-        ],
+        "required": ["token", "newPassword"],
         "title": "PasswordResetConfirmRequest"
       },
       "PasswordResetRequest": {
@@ -8580,9 +8062,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "email"
-        ],
+        "required": ["email"],
         "title": "PasswordResetRequest"
       },
       "PortalHomeView": {
@@ -8617,12 +8097,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "registrations",
-          "participations",
-          "upcomingMatches",
-          "recentMatches"
-        ],
+        "required": ["registrations", "participations", "upcomingMatches", "recentMatches"],
         "title": "PortalHomeView"
       },
       "PortalMatchView": {
@@ -8912,12 +8387,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "kind",
-          "filename",
-          "contentType",
-          "size"
-        ],
+        "required": ["kind", "filename", "contentType", "size"],
         "title": "PresignUploadRequest"
       },
       "PresignUploadResponse": {
@@ -8936,11 +8406,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "fileId",
-          "storageKey",
-          "upload"
-        ],
+        "required": ["fileId", "storageKey", "upload"],
         "title": "PresignUploadResponse"
       },
       "PreviewRow": {
@@ -8976,12 +8442,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "rowNumber",
-          "status",
-          "values",
-          "messages"
-        ],
+        "required": ["rowNumber", "status", "values", "messages"],
         "title": "PreviewRow"
       },
       "ProposedTeamView": {
@@ -9031,15 +8492,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "memberIds",
-          "strength",
-          "confidence",
-          "reasons",
-          "locked",
-          "teamName"
-        ],
+        "required": ["id", "memberIds", "strength", "confidence", "reasons", "locked", "teamName"],
         "title": "ProposedTeamView"
       },
       "PublicCheckInRequest": {
@@ -9051,9 +8504,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "participantId"
-        ],
+        "required": ["participantId"],
         "title": "PublicCheckInRequest"
       },
       "PublicDivisionView": {
@@ -9088,13 +8539,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "participantType",
-          "capacity",
-          "approvedCount"
-        ],
+        "required": ["id", "name", "participantType", "capacity", "approvedCount"],
         "title": "PublicDivisionView"
       },
       "PublicOrgView": {
@@ -9114,11 +8559,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "slug",
-          "name",
-          "branding"
-        ],
+        "required": ["slug", "name", "branding"],
         "title": "PublicOrgView"
       },
       "PublicParticipantView": {
@@ -9154,13 +8595,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "divisionId",
-          "kind",
-          "displayName",
-          "seed"
-        ],
+        "required": ["id", "divisionId", "kind", "displayName", "seed"],
         "title": "PublicParticipantView"
       },
       "PublicRegistrationSubmittedView": {
@@ -9181,11 +8616,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "status",
-          "divisionId"
-        ],
+        "required": ["id", "status", "divisionId"],
         "title": "PublicRegistrationSubmittedView"
       },
       "PublicStageView": {
@@ -9214,13 +8645,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "divisionId",
-          "type",
-          "seq",
-          "drawn"
-        ],
+        "required": ["id", "divisionId", "type", "seq", "drawn"],
         "title": "PublicStageView"
       },
       "PublicSubmitRegistrationRequest": {
@@ -9264,9 +8689,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name"
-        ],
+        "required": ["name"],
         "title": "PublicSubmitRegistrationRequest"
       },
       "PublicTournamentSearchResult": {
@@ -9297,14 +8720,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "slug",
-          "name",
-          "sportKey",
-          "status",
-          "organizationName",
-          "organizationSlug"
-        ],
+        "required": ["slug", "name", "sportKey", "status", "organizationName", "organizationSlug"],
         "title": "PublicTournamentSearchResult"
       },
       "PublicTournamentView": {
@@ -9432,11 +8848,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "runId",
-          "publishedTeams",
-          "unpairedCount"
-        ],
+        "required": ["runId", "publishedTeams", "unpairedCount"],
         "title": "PublishPairingResponse"
       },
       "PublishRequest": {
@@ -9467,10 +8879,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status",
-          "checks"
-        ],
+        "required": ["status", "checks"],
         "title": "ReadinessResponse"
       },
       "RegisterRequest": {
@@ -9494,11 +8903,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "email",
-          "name",
-          "password"
-        ],
+        "required": ["email", "name", "password"],
         "title": "RegisterRequest"
       },
       "RegistrationResponse": {
@@ -9577,9 +8982,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "teamsRepaired"
-        ],
+        "required": ["teamsRepaired"],
         "title": "RepairPairingResponse"
       },
       "RosterEntryItem": {
@@ -9625,12 +9028,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "userId",
-          "externalName",
-          "role"
-        ],
+        "required": ["id", "userId", "externalName", "role"],
         "title": "RosterEntryItem"
       },
       "SaveMappingTemplateRequest": {
@@ -9654,11 +9052,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "name",
-          "source",
-          "mapping"
-        ],
+        "required": ["name", "source", "mapping"],
         "title": "SaveMappingTemplateRequest"
       },
       "ScheduleAssignRequest": {
@@ -9682,10 +9076,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "courtId",
-          "scheduledAt"
-        ],
+        "required": ["courtId", "scheduledAt"],
         "title": "ScheduleAssignRequest"
       },
       "ScheduleCheckRequest": {
@@ -9709,10 +9100,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "courtId",
-          "scheduledAt"
-        ],
+        "required": ["courtId", "scheduledAt"],
         "title": "ScheduleCheckRequest"
       },
       "ScheduleCheckResponse": {
@@ -9726,9 +9114,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "conflicts"
-        ],
+        "required": ["conflicts"],
         "title": "ScheduleCheckResponse"
       },
       "ScheduleQueueView": {
@@ -9756,11 +9142,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "courts",
-          "unscheduled",
-          "pending"
-        ],
+        "required": ["courts", "unscheduled", "pending"],
         "title": "ScheduleQueueView"
       },
       "ScheduleResultView": {
@@ -9777,10 +9159,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "match",
-          "conflicts"
-        ],
+        "required": ["match", "conflicts"],
         "title": "ScheduleResultView"
       },
       "ScoreRequest": {
@@ -9840,13 +9219,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "matchId",
-          "tournamentId",
-          "expiresAt",
-          "revoked"
-        ],
+        "required": ["id", "matchId", "tournamentId", "expiresAt", "revoked"],
         "title": "ScorekeeperLinkView"
       },
       "ScorekeeperMatchCardView": {
@@ -9946,9 +9319,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "payload"
-        ],
+        "required": ["payload"],
         "title": "ScorekeeperScoreRequest"
       },
       "ScorekeeperSessionView": {
@@ -9970,12 +9341,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "tournamentId",
-          "tournamentName",
-          "match",
-          "sportConfig"
-        ],
+        "required": ["tournamentId", "tournamentName", "match", "sportConfig"],
         "title": "ScorekeeperSessionView",
         "description": "Public scorekeeper page \u2014 one match only, resolved from the token."
       },
@@ -10024,23 +9390,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "createdAt",
-          "expiresAt",
-          "ip",
-          "userAgent",
-          "current"
-        ],
+        "required": ["id", "createdAt", "expiresAt", "ip", "userAgent", "current"],
         "title": "SessionItem"
       },
       "SkillLevel": {
         "type": "string",
-        "enum": [
-          "beginner",
-          "intermediate",
-          "advanced"
-        ],
+        "enum": ["beginner", "intermediate", "advanced"],
         "title": "SkillLevel"
       },
       "SportMatchConfigView": {
@@ -10063,12 +9418,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "bestOf",
-          "pointsToWin",
-          "winBy",
-          "pointCap"
-        ],
+        "required": ["bestOf", "pointsToWin", "winBy", "pointCap"],
         "title": "SportMatchConfigView",
         "description": "Resolved sport rules for this match (tournament defaults + stage overrides)."
       },
@@ -10139,12 +9489,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "squadCount",
-          "assigned",
-          "unassigned",
-          "eligible"
-        ],
+        "required": ["squadCount", "assigned", "unassigned", "eligible"],
         "title": "SquadSummary"
       },
       "SquadView": {
@@ -10204,13 +9549,7 @@
       },
       "StageFormat": {
         "type": "string",
-        "enum": [
-          "round_robin",
-          "single_elim",
-          "group_knockout",
-          "swiss",
-          "ladder"
-        ],
+        "enum": ["round_robin", "single_elim", "group_knockout", "swiss", "ladder"],
         "title": "StageFormat"
       },
       "StageResponse": {
@@ -10372,10 +9711,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "stageId",
-          "rows"
-        ],
+        "required": ["stageId", "rows"],
         "title": "StandingsView"
       },
       "StatusTransitionRequest": {
@@ -10385,9 +9721,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "status"
-        ],
+        "required": ["status"],
         "title": "StatusTransitionRequest"
       },
       "SubmitRegistrationRequest": {
@@ -10425,10 +9759,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "memberA",
-          "memberB"
-        ],
+        "required": ["memberA", "memberB"],
         "title": "SwapMembersRequest",
         "description": "Swap two members between their (different) proposed teams \u2014 a manual override."
       },
@@ -10441,9 +9772,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "organizationId"
-        ],
+        "required": ["organizationId"],
         "title": "SwitchOrgRequest"
       },
       "TeamResponse": {
@@ -10478,12 +9807,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "captainUserId",
-          "roster"
-        ],
+        "required": ["id", "name", "captainUserId", "roster"],
         "title": "TeamResponse"
       },
       "TieLegView": {
@@ -10511,13 +9835,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "status",
-          "legIndex",
-          "homePairName",
-          "awayPairName"
-        ],
+        "required": ["id", "status", "legIndex", "homePairName", "awayPairName"],
         "title": "TieLegView"
       },
       "TournamentCourtView": {
@@ -10542,12 +9860,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "tournamentId",
-          "court",
-          "createdAt"
-        ],
+        "required": ["id", "tournamentId", "court", "createdAt"],
         "title": "TournamentCourtView"
       },
       "TournamentReadinessView": {
@@ -10589,12 +9902,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "tournamentId",
-          "divisions",
-          "totalCheckedIn",
-          "totalPending"
-        ],
+        "required": ["tournamentId", "divisions", "totalCheckedIn", "totalPending"],
         "title": "TournamentReadinessView"
       },
       "TournamentResponse": {
@@ -10739,24 +10047,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "tournamentId",
-          "squads",
-          "unassigned",
-          "summary"
-        ],
+        "required": ["tournamentId", "squads", "unassigned", "summary"],
         "title": "TournamentSquadsView"
       },
       "TournamentStatus": {
         "type": "string",
-        "enum": [
-          "draft",
-          "registration",
-          "seeding",
-          "live",
-          "completed",
-          "archived"
-        ],
+        "enum": ["draft", "registration", "seeding", "live", "completed", "archived"],
         "title": "TournamentStatus"
       },
       "UnassignedRegistrationView": {
@@ -10819,9 +10115,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "count"
-        ],
+        "required": ["count"],
         "title": "UnreadCountResponse"
       },
       "UpdateCourtRequest": {
@@ -10862,9 +10156,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "role"
-        ],
+        "required": ["role"],
         "title": "UpdateMemberRoleRequest"
       },
       "UpdateOrgRequest": {
@@ -11071,13 +10363,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "url",
-          "method",
-          "headers",
-          "maxSize",
-          "expiresIn"
-        ],
+        "required": ["url", "method", "headers", "maxSize", "expiresIn"],
         "title": "UploadTarget",
         "description": "Where and how the client uploads the bytes directly (presigned)."
       },
@@ -11114,9 +10400,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "key"
-        ],
+        "required": ["key"],
         "title": "UpsertFeatureFlagRequest"
       },
       "ValidationError": {
@@ -11152,11 +10436,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "loc",
-          "msg",
-          "type"
-        ],
+        "required": ["loc", "msg", "type"],
         "title": "ValidationError"
       },
       "VenueView": {
@@ -11188,12 +10468,7 @@
           }
         },
         "type": "object",
-        "required": [
-          "id",
-          "name",
-          "address",
-          "createdAt"
-        ],
+        "required": ["id", "name", "address", "createdAt"],
         "title": "VenueView"
       },
       "VerifyEmailConfirmRequest": {
@@ -11204,18 +10479,12 @@
           }
         },
         "type": "object",
-        "required": [
-          "token"
-        ],
+        "required": ["token"],
         "title": "VerifyEmailConfirmRequest"
       },
       "Visibility": {
         "type": "string",
-        "enum": [
-          "public",
-          "unlisted",
-          "private"
-        ],
+        "enum": ["public", "unlisted", "private"],
         "title": "Visibility"
       }
     }

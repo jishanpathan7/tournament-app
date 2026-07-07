@@ -18,10 +18,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFranchiseStandings } from "@/features/franchise-ties/use-franchise-ties";
 import { usePublicPlayerStats } from "@/features/public/use-public-tournament";
-import {
-  deriveMatchProgress,
-  type DashboardAlert,
-} from "@/features/tournaments/dashboard/config";
+import { deriveMatchProgress, type DashboardAlert } from "@/features/tournaments/dashboard/config";
 import { useTournament } from "@/features/tournaments/use-tournaments";
 import type { useTournamentDashboard } from "@/features/tournaments/dashboard/use-tournament-dashboard";
 
@@ -80,7 +77,7 @@ function CurrentMatchCard({
 }) {
   const activeCourts = (queue?.courts ?? []).filter((c) => c.currentMatch !== null);
 
-  function sideNames(match: NonNullable<typeof activeCourts[number]["currentMatch"]>) {
+  function sideNames(match: NonNullable<(typeof activeCourts)[number]["currentMatch"]>) {
     const a = match.sides[0];
     const b = match.sides[1];
     const nameA = (a ? participantsById.get(a.participantId)?.displayName : null) ?? "TBD";
@@ -111,7 +108,7 @@ function CurrentMatchCard({
               key={c.court.id}
               className="border-border flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm"
             >
-              <span className="text-muted-foreground shrink-0 text-xs font-mono">
+              <span className="text-muted-foreground shrink-0 font-mono text-xs">
                 {c.court.name}
               </span>
               <span className="truncate font-semibold">
@@ -397,7 +394,7 @@ export function OpsCommandCenter({
         <StatTile
           label="Registrations"
           value={approved}
-          sub={`${(registrationTotals?.pending ?? 0)} pending`}
+          sub={`${registrationTotals?.pending ?? 0} pending`}
           icon={Users}
           tone="candy"
         />
@@ -419,7 +416,11 @@ export function OpsCommandCenter({
 
       {/* Mid grid: live matches, bracket, alerts */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <CurrentMatchCard tournamentId={tournamentId} queue={q} participantsById={data.participantsById} />
+        <CurrentMatchCard
+          tournamentId={tournamentId}
+          queue={q}
+          participantsById={data.participantsById}
+        />
         <BracketProgressCard
           tournamentId={tournamentId}
           matches={matches.data}

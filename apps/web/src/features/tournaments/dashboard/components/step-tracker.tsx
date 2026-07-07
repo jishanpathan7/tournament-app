@@ -19,8 +19,7 @@ function stepStatus(step: TournamentStep, current: TournamentStep): StepStatus {
 function StepIcon({ status }: { status: StepStatus }) {
   if (status === "done")
     return <CheckCircle2 className="text-mint-dark h-4 w-4 shrink-0" strokeWidth={2.25} />;
-  if (status === "current")
-    return <Dot className="text-candy h-4 w-4 shrink-0" strokeWidth={3} />;
+  if (status === "current") return <Dot className="text-candy h-4 w-4 shrink-0" strokeWidth={3} />;
   return <Circle className="text-muted-foreground/40 h-4 w-4 shrink-0" strokeWidth={2} />;
 }
 
@@ -35,7 +34,7 @@ export function TournamentStepTracker({
 
   return (
     <div className="border-border bg-card rounded-xl border p-4">
-      <p className="text-muted-foreground mb-4 text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
+      <p className="text-muted-foreground text-2xs mb-4 font-mono font-semibold uppercase tracking-[0.18em]">
         Progress
       </p>
       <ol className="flex flex-col gap-1">

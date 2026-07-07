@@ -10,34 +10,34 @@
  */
 :root {
   /* ── App surface ── */
-  --background:       #fffdf5;
-  --foreground:       #1e293b;
-  --card:             #ffffff;
-  --border:           #e2e8f0;
-  --muted:            #f1f5f9;
+  --background: #fffdf5;
+  --foreground: #1e293b;
+  --card: #ffffff;
+  --border: #e2e8f0;
+  --muted: #f1f5f9;
   --muted-foreground: #475569;
 
   /* ── Primary — Court Cobalt ── */
-  --candy:       #4f6bf6;
-  --candy-dark:  #3a4fd8;
-  --candy-tint:  #e5e9fe;
-  --candy-ink:   #9db0fb;  /* primary on dark surfaces */
+  --candy: #4f6bf6;
+  --candy-dark: #3a4fd8;
+  --candy-tint: #e5e9fe;
+  --candy-ink: #9db0fb; /* primary on dark surfaces */
 
   /* ── Extended neutrals ── */
-  --ink-2:       #28324a;  /* raised panels on dark surfaces */
-  --ink-border:  #3a4760;  /* borders inside dark surfaces */
-  --faint:       #94a3b8;  /* tertiary / meta text */
-  --tick:        #64748b;  /* placeholder text */
+  --ink-2: #28324a; /* raised panels on dark surfaces */
+  --ink-border: #3a4760; /* borders inside dark surfaces */
+  --faint: #94a3b8; /* tertiary / meta text */
+  --tick: #64748b; /* placeholder text */
 
   /* ── Status ── */
-  --mint:        #34d399;
-  --mint-dark:   #10b981;
-  --mint-tint:   #d1fae5;
-  --yellow:      #fbbf24;
+  --mint: #34d399;
+  --mint-dark: #10b981;
+  --mint-tint: #d1fae5;
+  --yellow: #fbbf24;
   --yellow-tint: #fef3c7;
-  --pink:        #f472b6;
-  --pink-dark:   #db2777;
-  --pink-tint:   #fce7f3;
+  --pink: #f472b6;
+  --pink-dark: #db2777;
+  --pink-tint: #fce7f3;
 
   --radius: 1rem;
 }

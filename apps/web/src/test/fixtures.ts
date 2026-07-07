@@ -162,9 +162,7 @@ export function makeMatchResultEvent(
   };
 }
 
-export function makeActivityEvent(
-  overrides: Partial<ActivityEventView> = {},
-): ActivityEventView {
+export function makeActivityEvent(overrides: Partial<ActivityEventView> = {}): ActivityEventView {
   seq += 1;
   return {
     id: overrides.id ?? `activity-${seq}`,
