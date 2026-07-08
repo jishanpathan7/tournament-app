@@ -27,7 +27,7 @@ def test_render_verify_email():
     assert SETTINGS.app_name in r.subject
     assert "Ada" in r.html
     assert f"{FRONT}/verify-email?token=TOK123" in r.html  # button link
-    assert "Verify email" in r.html
+    assert "Verify your email address" in r.html
     assert "TOK123" in r.text  # token URL survives into the plaintext part
 
 
