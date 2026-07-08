@@ -1,40 +1,49 @@
 "use client";
 
-import { ArrowLeft, Swords } from "lucide-react";
-import Link from "next/link";
+import { Swords } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ActivityTimeline } from "@/features/matches/components/activity-timeline";
-import { MatchDetailDialog } from "@/features/matches/components/match-detail-dialog";
-import { MatchQueueFiltersBar } from "@/features/matches/components/match-queue-filters-bar";
-import { MatchQueueTable } from "@/features/matches/components/match-queue-table";
+import { ActivityFeedCompact } from "@/features/matches/components/activity-feed-compact";
+import {
+  MatchCommandCenter,
+  type CommandCenterTab,
+} from "@/features/matches/components/match-command-center";
+import { MatchQueueAdvancedFilters } from "@/features/matches/components/match-queue-advanced-filters";
+import { MatchQueueQuickFilters } from "@/features/matches/components/match-queue-quick-filters";
+import { MatchQueueSections } from "@/features/matches/components/match-queue-sections";
+import { OpsContextualCta } from "@/features/matches/components/ops-contextual-cta";
+import { OpsSummaryRow } from "@/features/matches/components/ops-summary-row";
+import { TournamentProgressPanel } from "@/features/matches/components/tournament-progress-panel";
+import { useTournamentCourts } from "@/features/courts/use-courts";
 import {
   applyMatchQueueFilters,
-  countByStatus,
+  applyQuickFilter,
+  buildCourtsById,
   DEFAULT_MATCH_QUEUE_FILTERS,
+  deriveContextualCta,
+  deriveOpsSummary,
+  deriveTournamentProgress,
 } from "@/features/matches/config";
 import {
   useTournamentMatches,
   useTournamentParticipants,
   useTournamentStages,
 } from "@/features/matches/use-tournament-matches";
+import { useScheduleQueue } from "@/features/scheduling/use-schedule";
+import { MobileLiveStickyBar } from "@/features/scheduling/components/mobile-live-sticky-bar";
 import { useTournament } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { ApiError } from "@/lib/problem";
-import { MATCH_STATUS } from "@/features/draws/config";
 
 /**
- * The Match Center: a tournament-wide queue of every match, filterable by stage/round/
- * group/court/status, plus a tournament-wide activity feed. Selecting a match opens its
- * detail (participants, context, score entry, history). Realtime + query invalidation
- * keep everything current without a manual refresh — see `hooks/use-realtime.ts`.
+ * Tournament Operations Center — prioritized match queue, live summary, and command
+ * center for scoring. Realtime invalidation keeps the queue current without refresh.
  */
 export function MatchCenter({ tournamentId }: { tournamentId: string }) {
   const can = useCan();
@@ -44,9 +53,12 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
   const matches = useTournamentMatches(tournamentId);
   const stages = useTournamentStages(tournamentId);
   const participants = useTournamentParticipants(tournamentId);
+  const queue = useScheduleQueue(tournamentId);
+  const tournamentCourts = useTournamentCourts(tournamentId);
 
   const [filters, setFilters] = useState(DEFAULT_MATCH_QUEUE_FILTERS);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
+  const [commandTab, setCommandTab] = useState<CommandCenterTab>("score");
 
   const participantsById = useMemo(
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
@@ -56,21 +68,41 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
     () => new Map((stages.data ?? []).map((s) => [s.id, s])),
     [stages.data],
   );
+  const courtsById = useMemo(() => {
+    const courts = (tournamentCourts.data ?? []).map((tc) => tc.court);
+    const fromQueue = (queue.data?.courts ?? []).map((c) => c.court);
+    return buildCourtsById([...courts, ...fromQueue]);
+  }, [tournamentCourts.data, queue.data?.courts]);
 
-  const filtered = useMemo(
-    () => applyMatchQueueFilters(matches.data ?? [], filters, participantsById),
-    [matches.data, filters, participantsById],
-  );
-  // Derived fresh from the live query every render (not a frozen snapshot) so scoring a
-  // match updates this dialog in place instead of showing stale data until it's closed.
+  const filtered = useMemo(() => {
+    const base = applyMatchQueueFilters(matches.data ?? [], filters, participantsById);
+    return applyQuickFilter(base, filters.quick);
+  }, [matches.data, filters, participantsById]);
+
   const selectedMatch = matches.data?.find((m) => m.id === selectedMatchId) ?? null;
-  const counts = useMemo(() => countByStatus(matches.data ?? []), [matches.data]);
+  const opsSummary = useMemo(
+    () => deriveOpsSummary(matches.data ?? [], queue.data),
+    [matches.data, queue.data],
+  );
+  const progress = useMemo(
+    () => deriveTournamentProgress(matches.data ?? [], stages.data ?? []),
+    [matches.data, stages.data],
+  );
+  const contextualCta = useMemo(
+    () => deriveContextualCta(matches.data ?? [], courtsById),
+    [matches.data, courtsById],
+  );
 
-  if (tournament.isLoading || matches.isLoading || stages.isLoading) {
+  const openMatch = (matchId: string, tab: CommandCenterTab = "score") => {
+    setSelectedMatchId(matchId);
+    setCommandTab(tab);
+  };
+
+  if (tournament.isLoading || matches.isLoading || stages.isLoading || participants.isLoading) {
     return (
       <div className="flex flex-col gap-6">
-        <Skeleton className="h-10 w-40 border-0" />
         <Skeleton className="h-24 rounded-2xl" />
+        <Skeleton className="h-28 rounded-2xl" />
         <Skeleton className="h-96 rounded-2xl" />
       </div>
     );
@@ -88,88 +120,86 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <Button asChild tone="ghost" size="sm" className="text-muted-foreground -ml-2 self-start">
-        <Link href={`/console/tournaments/${tournamentId}`}>
-          <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
-          Back to tournament
-        </Link>
-      </Button>
-
+    <div className="flex flex-col gap-6 pb-24 md:pb-0">
       <PageHeader
-        eyebrow="Match Center"
-        title={tournament.data.name}
-        description="Live scoring and match operations for the whole tournament."
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            {Object.entries(counts).map(([status, count]) => (
-              <Badge key={status} tone={MATCH_STATUS[status]?.tone ?? "muted"}>
-                {count} {MATCH_STATUS[status]?.label ?? status}
-              </Badge>
-            ))}
-          </div>
-        }
+        eyebrow="Operations"
+        title="Match center"
+        description="What needs attention now — score live matches and keep the tournament moving."
+        actions={<OpsContextualCta cta={contextualCta} onAction={openMatch} />}
       />
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        <div className="flex flex-col gap-4">
-          <MatchQueueFiltersBar
-            filters={filters}
-            onChange={setFilters}
-            stages={stages.data ?? []}
-            matches={matches.data ?? []}
-          />
+      <OpsSummaryRow
+        summary={opsSummary}
+        courtsHref={`/console/tournaments/${tournamentId}/live`}
+      />
 
-          {matches.isError ? (
-            <ErrorState
-              error={matches.error}
-              onRetry={() => matches.refetch()}
-              title="Couldn't load matches"
-            />
-          ) : (matches.data?.length ?? 0) === 0 ? (
-            <EmptyState
-              icon={Swords}
-              title="No matches yet"
-              description="Generate a draw for a stage to start scheduling matches."
-              className="py-14"
-            />
-          ) : filtered.length === 0 ? (
-            <EmptyState
-              icon={Swords}
-              title="No matches match"
-              description="Try different filters."
-              action={
-                <Button
-                  tone="paper"
-                  size="sm"
-                  onClick={() => setFilters(DEFAULT_MATCH_QUEUE_FILTERS)}
-                >
-                  Clear filters
-                </Button>
-              }
-            />
-          ) : (
-            <MatchQueueTable
-              matches={filtered}
-              participantsById={participantsById}
-              stagesById={stagesById}
-              onOpen={setSelectedMatchId}
-            />
-          )}
-        </div>
+      <TournamentProgressPanel
+        completed={progress.completed}
+        total={progress.total}
+        pct={progress.pct}
+        byStage={progress.byStage}
+      />
 
-        <ActivityTimeline tournamentId={tournamentId} />
+      <div className="flex flex-col gap-4">
+        <MatchQueueQuickFilters filters={filters} onChange={setFilters} />
+        <MatchQueueAdvancedFilters
+          filters={filters}
+          onChange={setFilters}
+          stages={stages.data ?? []}
+          matches={matches.data ?? []}
+        />
       </div>
 
-      <MatchDetailDialog
+      {matches.isError ? (
+        <ErrorState
+          error={matches.error}
+          onRetry={() => matches.refetch()}
+          title="Couldn't load matches"
+        />
+      ) : (matches.data?.length ?? 0) === 0 ? (
+        <EmptyState
+          icon={Swords}
+          title="No matches yet"
+          description="Generate a draw for a stage to start scheduling matches."
+          className="py-14"
+        />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={Swords}
+          title="No matches match"
+          description="Try different filters."
+          action={
+            <Button tone="paper" size="sm" onClick={() => setFilters(DEFAULT_MATCH_QUEUE_FILTERS)}>
+              Clear filters
+            </Button>
+          }
+        />
+      ) : (
+        <MatchQueueSections
+          matches={filtered}
+          participantsById={participantsById}
+          stagesById={stagesById}
+          courtsById={courtsById}
+          onOpen={(id) => openMatch(id, "overview")}
+          onPrimaryAction={(id) => openMatch(id, "score")}
+        />
+      )}
+
+      <ActivityFeedCompact tournamentId={tournamentId} onOpenMatch={(id) => openMatch(id)} />
+
+      <MobileLiveStickyBar tournamentId={tournamentId} />
+
+      <MatchCommandCenter
         match={selectedMatch}
         tournamentId={tournamentId}
         tournamentName={tournament.data.name}
         stagesById={stagesById}
         participantsById={participantsById}
+        courtsById={courtsById}
         canManage={canManage}
         open={!!selectedMatch}
         onOpenChange={(open) => !open && setSelectedMatchId(null)}
+        defaultTab={commandTab}
       />
     </div>
   );

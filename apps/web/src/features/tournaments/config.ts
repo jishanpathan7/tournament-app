@@ -168,7 +168,7 @@ export interface StatusMeta {
 export const TOURNAMENT_STATUS: Record<TournamentStatus, StatusMeta> = {
   draft: { label: "Draft", tone: "muted", description: "Being set up; not yet open." },
   registration: { label: "Registration", tone: "candy", description: "Accepting entries." },
-  seeding: { label: "Seeding", tone: "yellow", description: "Building draws and seeds." },
+  seeding: { label: "Setting up", tone: "yellow", description: "Preparing brackets and schedule." },
   live: { label: "Live", tone: "pink", description: "Matches in progress.", live: true },
   completed: { label: "Completed", tone: "mint", description: "All results are in." },
   archived: { label: "Archived", tone: "muted", description: "Read-only; retired." },
@@ -196,9 +196,9 @@ export const STATUS_TRANSITIONS: Record<TournamentStatus, StatusTransition[]> = 
   registration: [
     {
       to: "seeding",
-      label: "Start seeding",
+      label: "Continue setup",
       description:
-        "Closes registration. You can now approve entries, resolve pairings, and generate the draw.",
+        "Closes registration. You can approve players, build teams, and generate brackets.",
     },
     {
       to: "draft",
@@ -245,7 +245,7 @@ export const PUBLISH_ARTIFACTS: {
   label: string;
   field: keyof PublishableTimestamps;
 }[] = [
-  { key: "draw", label: "Draw", field: "drawPublishedAt" },
+  { key: "draw", label: "Brackets", field: "drawPublishedAt" },
   { key: "schedule", label: "Schedule", field: "schedulePublishedAt" },
   { key: "results", label: "Results", field: "resultsPublishedAt" },
 ];

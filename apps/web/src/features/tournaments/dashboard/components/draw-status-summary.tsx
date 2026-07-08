@@ -24,7 +24,7 @@ export function DrawStatusSummary({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <GitMerge className="h-5 w-5" strokeWidth={2.25} />
-          Draw status
+          Bracket status
           <Badge
             tone={
               drawProgress.drawn === drawProgress.total && drawProgress.total > 0 ? "mint" : "muted"
@@ -53,7 +53,7 @@ export function DrawStatusSummary({
                       {getFormat(stage.type)?.label ?? stage.type} · Stage {stage.seq + 1}
                     </span>
                     <Badge tone={stage.drawn ? "mint" : "muted"}>
-                      {stage.drawn ? "Drawn" : "Not drawn"}
+                      {stage.drawn ? "Built" : "Not built"}
                     </Badge>
                   </Link>
                 ))

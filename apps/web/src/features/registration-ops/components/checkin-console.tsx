@@ -28,6 +28,7 @@ import {
   useSetAttendance,
 } from "@/features/registration-ops/use-registration-ops";
 import { CheckInLinkPanel } from "@/features/registration-ops/components/checkin-link-panel";
+import { playersForCheckIn } from "@/features/registrations/franchise-roster";
 import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
@@ -66,7 +67,7 @@ export function CheckInConsole({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
 
-  const participants = useMemo(() => attendance.data ?? [], [attendance.data]);
+  const participants = useMemo(() => playersForCheckIn(attendance.data ?? []), [attendance.data]);
 
   const counts = useMemo(
     () => ({

@@ -16,6 +16,7 @@ export function SquadColumn({
   canManage,
   highlightAssign,
   searchQuery = "",
+  hideHeader = false,
   onAssign,
   onRemove,
   onSetCaptain,
@@ -25,6 +26,8 @@ export function SquadColumn({
   canManage: boolean;
   highlightAssign: boolean;
   searchQuery?: string;
+  /** When true, omit the team title row (parent already shows it). */
+  hideHeader?: boolean;
   onAssign: () => void;
   onRemove: (registrationId: string) => void;
   onSetCaptain: (registrationId: string) => void;
@@ -62,46 +65,48 @@ export function SquadColumn({
         highlightAssign && canManage && "ring-candy ring-2 ring-offset-2",
       )}
     >
-      <div className="border-ink/10 flex items-start justify-between gap-2 border-b px-3 py-3">
-        <div className="min-w-0 flex-1">
-          {editing && canManage ? (
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onBlur={commitRename}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") commitRename();
-                if (e.key === "Escape") {
-                  setName(squad.name);
-                  setEditing(false);
-                }
-              }}
-              className="h-8 text-sm font-semibold"
-              autoFocus
-            />
-          ) : (
-            <button
-              type="button"
-              className={cn(
-                "text-left font-serif text-lg font-semibold",
-                canManage && "hover:underline",
-              )}
-              onClick={() => canManage && setEditing(true)}
-              disabled={!canManage}
-            >
-              {squad.name}
-            </button>
-          )}
-          <p className="text-muted-foreground text-xs">
-            {squad.memberCount} players · skill {squad.totalSkillWeight.toFixed(1)}
-          </p>
+      {!hideHeader ? (
+        <div className="border-ink/10 flex items-start justify-between gap-2 border-b px-3 py-3">
+          <div className="min-w-0 flex-1">
+            {editing && canManage ? (
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename();
+                  if (e.key === "Escape") {
+                    setName(squad.name);
+                    setEditing(false);
+                  }
+                }}
+                className="h-8 text-sm font-semibold"
+                autoFocus
+              />
+            ) : (
+              <button
+                type="button"
+                className={cn(
+                  "text-left font-serif text-lg font-semibold",
+                  canManage && "hover:underline",
+                )}
+                onClick={() => canManage && setEditing(true)}
+                disabled={!canManage}
+              >
+                {squad.name}
+              </button>
+            )}
+            <p className="text-muted-foreground text-xs">
+              {squad.memberCount} players · skill {squad.totalSkillWeight.toFixed(1)}
+            </p>
+          </div>
+          {canManage && highlightAssign ? (
+            <Button tone="candy" size="sm" onClick={onAssign}>
+              Assign here
+            </Button>
+          ) : null}
         </div>
-        {canManage && highlightAssign ? (
-          <Button tone="candy" size="sm" onClick={onAssign}>
-            Assign here
-          </Button>
-        ) : null}
-      </div>
+      ) : null}
 
       <ul ref={setNodeRef} className="flex min-h-[120px] flex-1 flex-col gap-1 p-2">
         {visibleMembers.length === 0 ? (

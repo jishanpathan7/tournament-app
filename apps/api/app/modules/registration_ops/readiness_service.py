@@ -25,17 +25,44 @@ def _division_readiness(
     participants: Sequence[Participant],
     registrations: Sequence[Registration],
     drawn: bool,
+    *,
+    franchise_mode: bool = False,
 ) -> DivisionReadinessView:
-    approved = [p for p in participants if p.status == ParticipantStatus.APPROVED.value]
-    checked_in = sum(1 for p in approved if p.attendance == AttendanceStatus.CHECKED_IN.value)
-    pending = sum(1 for p in approved if p.attendance == AttendanceStatus.PENDING.value)
-    absent = sum(1 for p in approved if p.attendance == AttendanceStatus.ABSENT.value)
+    approved_participants = [
+        p for p in participants if p.status == ParticipantStatus.APPROVED.value
+    ]
+    has_published_pairs = any(p.kind == ParticipantKind.PAIR.value for p in approved_participants)
+
+    if franchise_mode and has_published_pairs:
+        # Count players from registrations; check-in stays on individual participant rows.
+        approved_regs = [r for r in registrations if r.status == RegistrationStatus.APPROVED.value]
+        individuals = [
+            p for p in approved_participants if p.kind == ParticipantKind.INDIVIDUAL.value
+        ]
+        approved_count = len(approved_regs)
+        checked_in = sum(
+            1 for p in individuals if p.attendance == AttendanceStatus.CHECKED_IN.value
+        )
+        pending = sum(1 for p in individuals if p.attendance == AttendanceStatus.PENDING.value)
+        absent = sum(1 for p in individuals if p.attendance == AttendanceStatus.ABSENT.value)
+    else:
+        approved_count = len(approved_participants)
+        checked_in = sum(
+            1 for p in approved_participants if p.attendance == AttendanceStatus.CHECKED_IN.value
+        )
+        pending = sum(
+            1 for p in approved_participants if p.attendance == AttendanceStatus.PENDING.value
+        )
+        absent = sum(
+            1 for p in approved_participants if p.attendance == AttendanceStatus.ABSENT.value
+        )
+
     # Entrants who registered but aren't yet a competing participant (awaiting approval or,
     # for doubles, awaiting pairing) — the "missing players / partners" signal.
     unpaired = sum(1 for r in registrations if r.participant_id is None and r.status in _ACTIVE_REG)
 
     blockers: list[str] = []
-    if len(approved) < _MIN_TO_DRAW:
+    if approved_count < _MIN_TO_DRAW:
         blockers.append(f"needs at least {_MIN_TO_DRAW} approved participants")
     if pending:
         blockers.append(f"{pending} awaiting check-in")
@@ -47,7 +74,7 @@ def _division_readiness(
         )
         blockers.append(f"{unpaired} {noun}")
 
-    all_checked_in = len(approved) >= _MIN_TO_DRAW and pending == 0
+    all_checked_in = approved_count >= _MIN_TO_DRAW and pending == 0
     ready_for_draw = all_checked_in and not drawn
     ready_for_start = drawn and all_checked_in
 
@@ -55,7 +82,7 @@ def _division_readiness(
         division_id=division.id,
         division_name=division.name,
         participant_type=division.participant_type,
-        approved=len(approved),
+        approved=approved_count,
         checked_in=checked_in,
         pending=pending,
         absent=absent,
@@ -86,10 +113,18 @@ async def tournament_readiness(
 
     views: list[DivisionReadinessView] = []
     total_checked_in = total_pending = 0
+    franchise_mode = squad_count > 0
     for division in divisions:
         participants = await repo.list_participants(session, org_id, division.id)
         registrations = await repo.list_registrations(session, org_id, division.id)
-        view = _division_readiness(division, participants, registrations, division.id in drawn_ids)
+        view = _division_readiness(
+            division,
+            participants,
+            registrations,
+            division.id in drawn_ids,
+            franchise_mode=franchise_mode
+            and division.participant_type == ParticipantKind.INDIVIDUAL.value,
+        )
         views.append(view)
         total_checked_in += view.checked_in
         total_pending += view.pending

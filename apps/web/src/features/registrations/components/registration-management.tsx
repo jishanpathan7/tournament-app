@@ -21,6 +21,7 @@ import { RegistrationDetailDialog } from "@/features/registrations/components/re
 import { RegistrationFiltersBar } from "@/features/registrations/components/registration-filters-bar";
 import { RegistrationTable } from "@/features/registrations/components/registration-table";
 import { deriveCapacity } from "@/features/registrations/capacity";
+import { competitorsForDraw } from "@/features/registrations/franchise-roster";
 import { downloadCsv, registrationsToCsv } from "@/features/registrations/config";
 import {
   DEFAULT_REGISTRATION_FILTERS,
@@ -97,6 +98,12 @@ export function RegistrationManagement({
     [division, registrations.data, participants.data],
   );
 
+  const drawCompetitors = useMemo(
+    () => competitorsForDraw(participants.data ?? []),
+    [participants.data],
+  );
+  const showCompetitorsOnly = drawCompetitors.length > 0 && capacity.pairs > 0;
+
   const toggleSelect = (id: string) =>
     setSelected((prev) => {
       const next = new Set(prev);
@@ -147,7 +154,9 @@ export function RegistrationManagement({
       <Tabs defaultValue={canManage ? "registrations" : "participants"}>
         <TabsList>
           {canManage ? <TabsTrigger value="registrations">Registrations</TabsTrigger> : null}
-          <TabsTrigger value="participants">Participants</TabsTrigger>
+          <TabsTrigger value="participants">
+            {showCompetitorsOnly ? "Competitors" : "Participants"}
+          </TabsTrigger>
         </TabsList>
 
         {canManage ? (
@@ -263,8 +272,23 @@ export function RegistrationManagement({
               description="Approved entrants appear here."
               className="py-14"
             />
+          ) : drawCompetitors.length === 0 ? (
+            <EmptyState
+              icon={Users}
+              title="No competitors yet"
+              description="Publish squad pairings to create doubles teams for the draw."
+              className="py-14"
+            />
           ) : (
-            <ParticipantsTable participants={participants.data!} />
+            <>
+              {showCompetitorsOnly ? (
+                <p className="text-muted-foreground mb-4 text-sm">
+                  Pairs and franchise teams entered into the draw. Player registrations are on the
+                  Registrations tab.
+                </p>
+              ) : null}
+              <ParticipantsTable participants={drawCompetitors} />
+            </>
           )}
         </TabsContent>
       </Tabs>

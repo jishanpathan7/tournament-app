@@ -8,6 +8,7 @@ import {
   makeMatch,
   makeMatchResultEvent,
   makeParticipant,
+  makeScheduleQueue,
   makeStage,
   makeTournament,
 } from "@/test/fixtures";
@@ -24,14 +25,22 @@ vi.mock("@/features/auth/use-session", () => ({
     isLoading: false,
   }),
 }));
+vi.mock("@/hooks/use-media-query", () => ({
+  useIsDesktop: () => true,
+  useMediaQuery: () => true,
+}));
 
 vi.mock("@/features/tournaments/tournaments-api");
 vi.mock("@/features/registrations/registrations-api");
 vi.mock("@/features/matches/matches-api");
 vi.mock("@/features/scoring/scoring-api");
+vi.mock("@/features/scheduling/scheduling-api");
+vi.mock("@/features/courts/courts-api");
+import * as courtsApi from "@/features/courts/courts-api";
 import * as registrationsApi from "@/features/registrations/registrations-api";
 import * as matchesApi from "@/features/matches/matches-api";
 import * as scoringApi from "@/features/scoring/scoring-api";
+import * as schedulingApi from "@/features/scheduling/scheduling-api";
 import * as tournamentsApi from "@/features/tournaments/tournaments-api";
 
 const TOURNAMENT_ID = "t-1";
@@ -63,14 +72,38 @@ function baseSetup() {
   vi.mocked(matchesApi.listTournamentActivity).mockResolvedValue([]);
   vi.mocked(scoringApi.listMatchEvents).mockResolvedValue([]);
   vi.mocked(scoringApi.getMatchEtag).mockResolvedValue('W/"123"');
-  // Only used by listTournamentParticipants/listTournamentStages internals if not mocked
-  // directly — kept resolved so nothing hangs if a real implementation slips through.
+  vi.mocked(schedulingApi.getQueue).mockResolvedValue(makeScheduleQueue());
+  vi.mocked(courtsApi.listTournamentCourts).mockResolvedValue([]);
   vi.mocked(tournamentsApi.listDivisions).mockResolvedValue([]);
   vi.mocked(registrationsApi.listParticipants).mockResolvedValue([]);
 }
 
 function renderCenter() {
   return renderWithProviders(<MatchCenter tournamentId={TOURNAMENT_ID} />);
+}
+
+async function waitForQueue() {
+  await screen.findByText("Aarav K. vs Mei L.");
+}
+
+async function openMatchCommandCenter(user: ReturnType<typeof userEvent.setup>) {
+  await waitForQueue();
+  await user.click(screen.getByRole("button", { name: /open match: aarav k\. vs mei l\./i }));
+  return screen.findByRole("dialog");
+}
+
+async function openScoreTab(user: ReturnType<typeof userEvent.setup>) {
+  await waitForQueue();
+  await user.click(screen.getByRole("button", { name: "View match" }));
+  return screen.findByRole("dialog");
+}
+
+async function openCompletedMatch(user: ReturnType<typeof userEvent.setup>) {
+  await screen.findByText("Recently finished");
+  await user.click(screen.getByRole("button", { name: /recently finished/i }));
+  await screen.findByRole("button", { name: "View result" });
+  await user.click(screen.getByRole("button", { name: "View result" }));
+  return screen.findByRole("dialog");
 }
 
 describe("MatchCenter", () => {
@@ -94,7 +127,7 @@ describe("MatchCenter", () => {
     expect(await screen.findByText("No matches yet")).toBeInTheDocument();
   });
 
-  it("renders the queue with status counts and opens the detail dialog on row click", async () => {
+  it("renders the ops summary, sectioned queue, and opens the command center on card click", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
       makeMatch({
@@ -108,11 +141,11 @@ describe("MatchCenter", () => {
     renderCenter();
 
     expect(await screen.findByText("Aarav K. vs Mei L.")).toBeInTheDocument();
-    expect(screen.getByText("1 Scheduled")).toBeInTheDocument();
+    expect(screen.getByText("Waiting to start")).toBeInTheDocument();
+    expect(screen.getByText("Waiting for court")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: /open match: aarav k\. vs mei l\./i }));
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Enter result")).toBeInTheDocument();
+    const dialog = await openMatchCommandCenter(user);
+    expect(within(dialog).getByRole("tab", { name: "Overview" })).toBeInTheDocument();
   });
 
   it("filters the queue by search", async () => {
@@ -128,6 +161,7 @@ describe("MatchCenter", () => {
     renderCenter();
     await screen.findByText("Aarav K. vs Mei L.");
 
+    await user.click(screen.getByRole("button", { name: /advanced filters/i }));
     await user.type(screen.getByLabelText("Search matches"), "nobody");
     expect(await screen.findByText("No matches match")).toBeInTheDocument();
   });
@@ -154,13 +188,12 @@ describe("MatchCenter", () => {
       }),
     );
     renderCenter();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openScoreTab(user);
 
     const [gameAInput, gameBInput] = within(dialog).getAllByLabelText(/game 1,/i);
     await user.type(gameAInput!, "21");
     await user.type(gameBInput!, "15");
-    await user.click(within(dialog).getByRole("button", { name: "Submit result" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish match" }));
 
     await waitFor(() =>
       expect(scoringApi.scoreMatch).toHaveBeenCalledWith(
@@ -171,7 +204,7 @@ describe("MatchCenter", () => {
     );
   });
 
-  it("submits a walkover", async () => {
+  it("submits a walkover via quick action", async () => {
     const user = userEvent.setup();
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
       makeMatch({
@@ -190,12 +223,11 @@ describe("MatchCenter", () => {
       }),
     );
     renderCenter();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openScoreTab(user);
 
-    await user.click(within(dialog).getByRole("tab", { name: "Walkover" }));
+    await user.click(within(dialog).getByRole("button", { name: "Walkover" }));
     await user.click(within(dialog).getByRole("button", { name: "Aarav K." }));
-    await user.click(within(dialog).getByRole("button", { name: "Submit result" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish match" }));
 
     await waitFor(() =>
       expect(scoringApi.scoreMatch).toHaveBeenCalledWith(
@@ -217,10 +249,9 @@ describe("MatchCenter", () => {
       }),
     ]);
     renderCenter();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openScoreTab(user);
 
-    await user.click(within(dialog).getByRole("button", { name: "Submit result" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish match" }));
 
     expect(await within(dialog).findByText(/enter at least one game score/i)).toBeInTheDocument();
     expect(scoringApi.scoreMatch).not.toHaveBeenCalled();
@@ -249,14 +280,13 @@ describe("MatchCenter", () => {
       }),
     );
     renderCenter();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
-    const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).getByText("Correct result")).toBeInTheDocument();
+    const dialog = await openCompletedMatch(user);
+    expect(within(dialog).getByRole("button", { name: "Save correction" })).toBeInTheDocument();
 
     const [gameAInput, gameBInput] = within(dialog).getAllByLabelText(/game 1,/i);
     await user.type(gameAInput!, "15");
     await user.type(gameBInput!, "21");
-    await user.click(within(dialog).getByRole("button", { name: "Submit result" }));
+    await user.click(within(dialog).getByRole("button", { name: "Save correction" }));
 
     expect(await within(dialog).findByText(/cannot change the winner/i)).toBeInTheDocument();
   });
@@ -280,13 +310,12 @@ describe("MatchCenter", () => {
       }),
     );
     renderCenter();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openScoreTab(user);
 
     const [gameAInput, gameBInput] = within(dialog).getAllByLabelText(/game 1,/i);
     await user.type(gameAInput!, "21");
     await user.type(gameBInput!, "15");
-    await user.click(within(dialog).getByRole("button", { name: "Submit result" }));
+    await user.click(within(dialog).getByRole("button", { name: "Finish match" }));
 
     expect(await within(dialog).findByText(/updated elsewhere/i)).toBeInTheDocument();
   });
@@ -309,20 +338,19 @@ describe("MatchCenter", () => {
       }),
     );
     renderCenter();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openScoreTab(user);
 
     const [gameAInput, gameBInput] = within(dialog).getAllByLabelText(/game 1,/i);
     await user.type(gameAInput!, "21");
     await user.type(gameBInput!, "15");
-    const submitBtn = within(dialog).getByRole("button", { name: "Submit result" });
+    const submitBtn = within(dialog).getByRole("button", { name: "Finish match" });
     await user.click(submitBtn);
 
     await waitFor(() => expect(submitBtn).toBeDisabled());
     resolveScore?.();
   });
 
-  it("shows match history events once loaded", async () => {
+  it("shows match history events on the timeline tab", async () => {
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
       makeMatch({
         id: "m-1",
@@ -336,18 +364,19 @@ describe("MatchCenter", () => {
     ]);
     renderCenter();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
-    const dialog = await screen.findByRole("dialog");
+    const dialog = await openCompletedMatch(user);
+    await user.click(within(dialog).getByRole("tab", { name: "Timeline" }));
     expect(await within(dialog).findByText("Score submitted")).toBeInTheDocument();
   });
 
-  it("renders the tournament-wide activity timeline", async () => {
+  it("renders the compact activity feed", async () => {
     vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([]);
     vi.mocked(matchesApi.listTournamentActivity).mockResolvedValue([
       makeActivityEvent({ action: "stage.generated", entity: "stage" }),
     ]);
     renderCenter();
     expect(await screen.findByText("Draw generated")).toBeInTheDocument();
+    expect(screen.getByText("Recent activity")).toBeInTheDocument();
   });
 
   it("hides score entry for a non-scoring role", async () => {
@@ -362,9 +391,11 @@ describe("MatchCenter", () => {
       }),
     ]);
     renderCenter();
-    await user.click(await screen.findByRole("button", { name: /open match/i }));
+    await user.click(
+      await screen.findByRole("button", { name: /open match: aarav k\. vs mei l\./i }),
+    );
     const dialog = await screen.findByRole("dialog");
-    expect(within(dialog).queryByText("Enter result")).not.toBeInTheDocument();
-    expect(within(dialog).queryByRole("button", { name: "Submit result" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("tab", { name: "Score" })).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Finish match" })).not.toBeInTheDocument();
   });
 });

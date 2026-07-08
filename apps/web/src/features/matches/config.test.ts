@@ -3,18 +3,33 @@ import { describe, expect, it } from "vitest";
 import {
   activityActionLabel,
   applyMatchQueueFilters,
+  applyQuickFilter,
   buildScorePayload,
   courtLabel,
+  courtLabelFromMap,
   courtOptions,
   DEFAULT_MATCH_QUEUE_FILTERS,
+  deriveContextualCta,
+  deriveOpsSummary,
+  deriveTournamentProgress,
   emptyScoreForm,
+  filterMeaningfulActivity,
+  groupMatchesByOpsSection,
   groupOptions,
+  matchPrimaryAction,
   roundOptions,
+  scoreFormFromResult,
   stageOptions,
   stepFocusId,
   validateScoreForm,
 } from "@/features/matches/config";
-import { makeMatch, makeParticipant, makeStage } from "@/test/fixtures";
+import {
+  makeActivityEvent,
+  makeCourt,
+  makeMatch,
+  makeParticipant,
+  makeStage,
+} from "@/test/fixtures";
 
 describe("applyMatchQueueFilters", () => {
   const p1 = makeParticipant({ id: "p-1", displayName: "Aarav K." });
@@ -273,5 +288,106 @@ describe("activityActionLabel", () => {
 
   it("falls back to the raw action string", () => {
     expect(activityActionLabel("mystery.event")).toBe("mystery.event");
+  });
+});
+
+describe("ops center helpers", () => {
+  it("groups matches into operational sections", () => {
+    const now = Date.parse("2026-07-08T12:00:00Z");
+    const sections = groupMatchesByOpsSection(
+      [
+        makeMatch({ id: "live-1", status: "live" }),
+        makeMatch({ id: "up-1", status: "scheduled", courtId: "c-1" }),
+        makeMatch({ id: "wait-1", status: "scheduled", courtId: null }),
+        makeMatch({
+          id: "delay-1",
+          status: "scheduled",
+          courtId: "c-2",
+          scheduledAt: "2026-07-08T10:00:00Z",
+        }),
+        makeMatch({ id: "done-1", status: "completed", updatedAt: "2026-07-08T11:00:00Z" }),
+      ],
+      now,
+    );
+    expect(sections.live.map((m) => m.id)).toEqual(["live-1"]);
+    expect(sections.upNext.map((m) => m.id)).toEqual(["up-1"]);
+    expect(sections.waiting.map((m) => m.id)).toEqual(["wait-1"]);
+    expect(sections.delayed.map((m) => m.id)).toEqual(["delay-1"]);
+    expect(sections.recentlyFinished.map((m) => m.id)).toEqual(["done-1"]);
+  });
+
+  it("derives ops summary counts", () => {
+    const summary = deriveOpsSummary([
+      makeMatch({ status: "live" }),
+      makeMatch({ status: "scheduled", courtId: null }),
+      makeMatch({ status: "completed" }),
+    ]);
+    expect(summary.live).toBe(1);
+    expect(summary.waitingToStart).toBe(1);
+    expect(summary.completed).toBe(1);
+    expect(summary.progressPct).toBe(33);
+  });
+
+  it("derives contextual CTA for live match first", () => {
+    const cta = deriveContextualCta(
+      [makeMatch({ id: "m-live", status: "live" }), makeMatch({ id: "m-2", status: "scheduled" })],
+      new Map(),
+    );
+    expect(cta?.matchId).toBe("m-live");
+    expect(cta?.defaultTab).toBe("score");
+  });
+
+  it("pre-fills score form from result payload", () => {
+    const form = scoreFormFromResult(
+      makeMatch({
+        resultPayload: {
+          endedBy: "normal",
+          games: [
+            [21, 15],
+            [21, 18],
+          ],
+        },
+      }),
+    );
+    expect(form.resultType).toBe("normal");
+    expect(form.games[0]).toEqual({ a: 21, b: 15 });
+  });
+
+  it("filters meaningful activity events", () => {
+    const filtered = filterMeaningfulActivity([
+      makeActivityEvent({ action: "match.completed" }),
+      makeActivityEvent({ action: "tournament.updated", entity: "tournament" }),
+    ]);
+    expect(filtered).toHaveLength(1);
+  });
+
+  it("applyQuickFilter filters live matches", () => {
+    const matches = [
+      makeMatch({ id: "a", status: "live" }),
+      makeMatch({ id: "b", status: "scheduled" }),
+    ];
+    expect(applyQuickFilter(matches, "live").map((m) => m.id)).toEqual(["a"]);
+  });
+
+  it("courtLabelFromMap uses court name when available", () => {
+    const map = new Map([["c-1", makeCourt({ id: "c-1", name: "Court 3" })]]);
+    expect(courtLabelFromMap("c-1", map)).toBe("Court 3");
+  });
+
+  it("matchPrimaryAction labels live matches", () => {
+    expect(matchPrimaryAction(makeMatch({ status: "live" })).label).toBe("Resume scoring");
+  });
+
+  it("deriveTournamentProgress by stage", () => {
+    const stages = [makeStage({ id: "s-1", type: "round_robin", seq: 0 })];
+    const progress = deriveTournamentProgress(
+      [
+        makeMatch({ stageId: "s-1", status: "completed" }),
+        makeMatch({ stageId: "s-1", status: "scheduled" }),
+      ],
+      stages,
+    );
+    expect(progress.byStage[0]?.completed).toBe(1);
+    expect(progress.byStage[0]?.total).toBe(2);
   });
 });

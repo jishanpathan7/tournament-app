@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import userEvent from "@testing-library/user-event";
 import { renderWithProviders, screen } from "@/test/test-utils";
 
 import { TournamentDashboard } from "@/features/tournaments/dashboard/tournament-dashboard";
@@ -16,7 +17,7 @@ vi.mock("@/features/scheduling/components/queue-panel", () => ({
 }));
 
 vi.mock("@/features/tournaments/components/detail/divisions-section", () => ({
-  DivisionsSection: () => <div>Divisions</div>,
+  DivisionsSection: () => <div>Event types</div>,
 }));
 
 vi.mock("@/features/tournaments/components/detail/overview-panel", () => ({
@@ -34,6 +35,16 @@ const mockUseDashboard = vi.mocked(useTournamentDashboard);
 function baseMock(phase: "before" | "during" | "after") {
   return {
     phase,
+    step: phase === "after" ? 9 : phase === "during" ? 8 : 2,
+    stepSignals: {
+      hasApproved: true,
+      squadsReady: false,
+      pairingPublished: false,
+      checkInReady: false,
+      drawComplete: false,
+      courtsReady: false,
+      franchiseMode: false,
+    },
     stats: [{ label: "Test", value: "1" }],
     alerts: [],
     champions: [],
@@ -70,11 +81,14 @@ function baseMock(phase: "before" | "during" | "after") {
 }
 
 describe("TournamentDashboard", () => {
-  it("renders before-phase readiness panel", () => {
+  it("renders before-phase checklist and expandable details", async () => {
+    const user = userEvent.setup();
     mockUseDashboard.mockReturnValue(baseMock("before"));
     renderWithProviders(<TournamentDashboard tournamentId="t1" />);
+    expect(screen.getByText("Your checklist")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /more details/i }));
     expect(screen.getByText("Readiness")).toBeInTheDocument();
-    expect(screen.getByText("Registrations")).toBeInTheDocument();
+    expect(screen.getByText("Participants")).toBeInTheDocument();
   });
 
   it("renders during-phase match progress", () => {

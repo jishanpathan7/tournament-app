@@ -6,6 +6,7 @@ import { useMemo } from "react";
 import {
   buildPlayerRows,
   derivePlayerStats,
+  deriveRosterStats,
   filterPlayerRows,
   type PlayerSkillFilter,
   type PlayerRow,
@@ -40,6 +41,14 @@ export function useTournamentPlayers(tournamentId: string, options?: { enabled?:
     })),
   });
 
+  const participantQueries = useQueries({
+    queries: divisionIds.map((divisionId) => ({
+      queryKey: queryKeys.divisions.participants(divisionId),
+      queryFn: () => registrationsApi.listParticipants(divisionId),
+      enabled: enabled && divisionIds.length > 0,
+    })),
+  });
+
   const registrationsByDivision = useMemo(() => {
     const map = new Map<string, Awaited<ReturnType<typeof registrationsApi.listRegistrations>>>();
     divisionIds.forEach((id, i) => {
@@ -58,6 +67,15 @@ export function useTournamentPlayers(tournamentId: string, options?: { enabled?:
     return map;
   }, [divisionIds, attendanceQueries]);
 
+  const participantsByDivision = useMemo(() => {
+    const map = new Map<string, Awaited<ReturnType<typeof registrationsApi.listParticipants>>>();
+    divisionIds.forEach((id, i) => {
+      const data = participantQueries[i]?.data;
+      if (data) map.set(id, data);
+    });
+    return map;
+  }, [divisionIds, participantQueries]);
+
   const membersById = useMemo(
     () => new Map((members.data ?? []).map((m) => [m.userId, m])),
     [members.data],
@@ -73,27 +91,34 @@ export function useTournamentPlayers(tournamentId: string, options?: { enabled?:
     );
   }, [divisions.data, registrationsByDivision, attendanceByDivision, membersById]);
 
-  const stats = useMemo(() => derivePlayerStats(rows), [rows]);
+  const stats = useMemo(
+    () => deriveRosterStats(rows, participantsByDivision),
+    [rows, participantsByDivision],
+  );
 
   const isLoading =
     divisions.isLoading ||
     registrationQueries.some((q) => q.isLoading) ||
-    attendanceQueries.some((q) => q.isLoading);
+    attendanceQueries.some((q) => q.isLoading) ||
+    participantQueries.some((q) => q.isLoading);
 
   const isError =
     divisions.isError ||
     registrationQueries.some((q) => q.isError) ||
-    attendanceQueries.some((q) => q.isError);
+    attendanceQueries.some((q) => q.isError) ||
+    participantQueries.some((q) => q.isError);
 
   const error =
     divisions.error ??
     registrationQueries.find((q) => q.error)?.error ??
-    attendanceQueries.find((q) => q.error)?.error;
+    attendanceQueries.find((q) => q.error)?.error ??
+    participantQueries.find((q) => q.error)?.error;
 
   const refetch = () => {
     void divisions.refetch();
     for (const q of registrationQueries) void q.refetch();
     for (const q of attendanceQueries) void q.refetch();
+    for (const q of participantQueries) void q.refetch();
   };
 
   return {

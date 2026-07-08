@@ -96,7 +96,7 @@ export function DrawOverview({
 
       <PageHeader
         eyebrow="Draw & bracket management"
-        title={division?.name ?? "Draw"}
+        title={division?.name ?? "Brackets"}
         description={`${format?.label ?? stage.type} · Stage ${stage.seq + 1}`}
         actions={<DrawStatusBadges stage={stage} tournament={tournament.data} />}
       />

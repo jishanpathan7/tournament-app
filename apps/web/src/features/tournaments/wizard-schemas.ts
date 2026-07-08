@@ -2,7 +2,13 @@ import { z } from "zod";
 
 /** Per-step validation for the create wizard. Mirrors backend constraints (name/slug). */
 
-export const basicInfoSchema = z.object({
+export const eventTypeSchema = z.object({
+  eventType: z.enum(["singles", "doubles", "both"]),
+});
+
+export type EventTypeValues = z.infer<typeof eventTypeSchema>;
+
+export const quickEventSchema = z.object({
   name: z.string().min(1, "Name is required").max(200),
   slug: z
     .string()
@@ -10,6 +16,10 @@ export const basicInfoSchema = z.object({
     .max(120)
     .regex(/^[a-z0-9][a-z0-9-]*$/, "Lowercase letters, numbers, and hyphens"),
   visibility: z.enum(["public", "unlisted", "private"]),
+  sportKey: z.string().min(1),
+  format: z.enum(["round_robin", "single_elim", "group_knockout", "swiss", "ladder"]),
+  startsAt: z.string().optional(),
+  endsAt: z.string().optional(),
 });
 
 export const sportSchema = z.object({
@@ -39,7 +49,7 @@ export const scheduleSchema = z
     path: ["endsAt"],
   });
 
-export type BasicInfoValues = z.infer<typeof basicInfoSchema>;
+export type QuickEventValues = z.infer<typeof quickEventSchema>;
 export type SportValues = z.infer<typeof sportSchema>;
 export type FormatValues = z.infer<typeof formatSchema>;
 export type DivisionsValues = z.infer<typeof divisionsSchema>;

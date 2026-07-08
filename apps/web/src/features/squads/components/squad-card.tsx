@@ -117,7 +117,15 @@ export function SquadCard({
   onOpenPairing: () => void;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState(squad.name);
   const borderTint = squadBorderTint(squad.sortOrder);
+
+  function commitRename() {
+    const trimmed = nameDraft.trim();
+    if (trimmed && trimmed !== squad.name) onRename(trimmed);
+    setEditingName(false);
+  }
 
   if (expanded) {
     return (
@@ -129,20 +137,54 @@ export function SquadCard({
       >
         <div className="border-ink/10 flex items-center justify-between gap-2 border-b px-3 py-2">
           <div className="min-w-0 flex-1">
-            <p className="truncate font-serif text-base font-semibold">{squad.name}</p>
+            {editingName && canManage ? (
+              <Input
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                onBlur={commitRename}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") commitRename();
+                  if (e.key === "Escape") {
+                    setNameDraft(squad.name);
+                    setEditingName(false);
+                  }
+                }}
+                className="h-8 text-sm font-semibold"
+                autoFocus
+              />
+            ) : (
+              <button
+                type="button"
+                className={cn(
+                  "truncate text-left font-serif text-base font-semibold",
+                  canManage && "hover:underline",
+                )}
+                onClick={() => canManage && setEditingName(true)}
+                disabled={!canManage}
+              >
+                {squad.name}
+              </button>
+            )}
             <p className="text-muted-foreground text-xs">
               {squad.memberCount} players · skill {squad.totalSkillWeight.toFixed(1)}
             </p>
           </div>
-          <Button
-            tone="ghost"
-            size="icon-sm"
-            onClick={onToggleExpand}
-            aria-label="Collapse team"
-            aria-expanded
-          >
-            <ChevronDown className="h-4 w-4 rotate-180" />
-          </Button>
+          <div className="flex shrink-0 items-center gap-1">
+            {highlightAssign && canManage ? (
+              <Button tone="candy" size="sm" onClick={onAssign} className="h-8 px-2 text-xs">
+                Assign here
+              </Button>
+            ) : null}
+            <Button
+              tone="ghost"
+              size="icon-sm"
+              onClick={onToggleExpand}
+              aria-label="Collapse team"
+              aria-expanded
+            >
+              <ChevronDown className="h-4 w-4 rotate-180" />
+            </Button>
+          </div>
         </div>
 
         {squad.memberCount > 4 ? (
@@ -161,6 +203,7 @@ export function SquadCard({
           canManage={canManage}
           highlightAssign={highlightAssign}
           searchQuery={searchQuery}
+          hideHeader
           onAssign={onAssign}
           onRemove={onRemove}
           onSetCaptain={onSetCaptain}

@@ -323,7 +323,9 @@ async def build_checkin_session(session: AsyncSession, link: ShareLink) -> Check
     if division is None or tournament is None:
         raise NotFoundError("Division not found")
 
-    roster = await checkin_service.list_attendance(session, link.organization_id, division.id)
+    roster = checkin_service.roster_for_check_in(
+        await checkin_service.list_attendance(session, link.organization_id, division.id)
+    )
     participants = [
         CheckInParticipantView(id=p.id, display_name=p.display_name, attendance=p.attendance)
         for p in roster

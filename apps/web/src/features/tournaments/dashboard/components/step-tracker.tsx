@@ -1,7 +1,6 @@
 "use client";
 
 import { CheckCircle2, Circle, Dot } from "lucide-react";
-import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { STEP_META, type TournamentStep } from "@/features/tournaments/dashboard/config";
@@ -24,20 +23,25 @@ function StepIcon({ status }: { status: StepStatus }) {
 }
 
 export function TournamentStepTracker({
-  tournamentId,
   step,
+  variant = "sidebar",
 }: {
-  tournamentId: string;
   step: TournamentStep;
+  variant?: "sidebar" | "primary";
 }) {
   const visibleSteps = STEPS.filter((s) => STEP_META[s].phase !== "after" || s === step);
 
   return (
-    <div className="border-border bg-card rounded-xl border p-4">
+    <div
+      className={cn(
+        "border-border bg-card rounded-xl border p-4",
+        variant === "primary" && "border-candy/20 shadow-sticker-xs",
+      )}
+    >
       <p className="text-muted-foreground text-2xs mb-4 font-mono font-semibold uppercase tracking-[0.18em]">
-        Progress
+        {variant === "primary" ? "Your checklist" : "Progress"}
       </p>
-      <ol className="flex flex-col gap-1">
+      <ol className={cn("flex flex-col gap-1", variant === "primary" && "sm:grid sm:grid-cols-2")}>
         {visibleSteps.map((s) => {
           const status = stepStatus(s, step);
           const meta = STEP_META[s];
@@ -63,37 +67,17 @@ export function TournamentStepTracker({
                   >
                     {meta.label}
                   </p>
-                  {isCurrent ? (
+                  {isCurrent && variant === "primary" ? (
                     <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
                       {meta.description}
                     </p>
                   ) : null}
                 </div>
-                <span
-                  className={cn(
-                    "text-2xs mt-0.5 shrink-0 font-mono tabular-nums",
-                    status === "pending" ? "text-muted-foreground/40" : "text-muted-foreground",
-                  )}
-                >
-                  {s}
-                </span>
               </div>
-              {s < (visibleSteps[visibleSteps.length - 1] ?? 10) ? (
-                <div className="border-border ml-[19px] h-3 border-l" />
-              ) : null}
             </li>
           );
         })}
       </ol>
-
-      <div className="border-border mt-4 border-t pt-3">
-        <Link
-          href={`/console/tournaments/${tournamentId}`}
-          className="text-candy-dark text-xs font-semibold hover:underline"
-        >
-          Back to dashboard →
-        </Link>
-      </div>
     </div>
   );
 }

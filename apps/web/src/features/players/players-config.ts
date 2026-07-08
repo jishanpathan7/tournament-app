@@ -2,10 +2,12 @@ import type {
   DivisionResponse,
   MemberItem,
   ParticipantAttendanceView,
+  ParticipantResponse,
   RegistrationResponse,
 } from "@tournament/api-client";
 
 import { registrationEntrantLabel } from "@/features/registrations/config";
+import { countCompetitorParticipants } from "@/features/registrations/franchise-roster";
 
 export interface PlayerRow {
   id: string;
@@ -27,6 +29,10 @@ export interface PlayerStats {
   confirmed: number;
   checkedIn: number;
   needsReview: number;
+  /** Published doubles pairs — franchise flow only. */
+  pairs?: number;
+  /** Franchise squads in team ties — franchise flow only. */
+  franchiseTeams?: number;
 }
 
 const SKILL_RATING: Record<string, string> = {
@@ -100,6 +106,23 @@ export function derivePlayerStats(rows: PlayerRow[]): PlayerStats {
   };
 }
 
+/** Merge registration stats with published pair / franchise-team counts. */
+export function deriveRosterStats(
+  rows: PlayerRow[],
+  participantsByDivision: Map<string, ParticipantResponse[]>,
+): PlayerStats {
+  const base = derivePlayerStats(rows);
+  let pairs = 0;
+  let franchiseTeams = 0;
+  for (const participants of participantsByDivision.values()) {
+    const counts = countCompetitorParticipants(participants);
+    pairs += counts.pairs;
+    franchiseTeams += counts.franchiseTeams;
+  }
+  if (pairs === 0 && franchiseTeams === 0) return base;
+  return { ...base, pairs, franchiseTeams };
+}
+
 export function buildPlayerRows(
   divisions: DivisionResponse[],
   registrationsByDivision: Map<string, RegistrationResponse[]>,
@@ -143,6 +166,19 @@ export function buildPlayerRows(
 }
 
 export type PlayerSkillFilter = "all" | "beginner" | "intermediate" | "advanced";
+
+export type ParticipantStatusFilter = "all" | "pending" | "checked_in";
+
+export function filterPlayerRowsByStatus(
+  rows: PlayerRow[],
+  status: ParticipantStatusFilter,
+): PlayerRow[] {
+  if (status === "all") return rows;
+  if (status === "pending") {
+    return rows.filter((r) => r.status === "submitted" || r.status === "waitlisted");
+  }
+  return rows.filter((r) => r.attendance === "checked_in");
+}
 
 export function filterPlayerRows(
   rows: PlayerRow[],

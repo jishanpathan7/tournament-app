@@ -56,6 +56,8 @@ from app.modules.squads.repository import (
 )
 from app.realtime.channels import org_channel
 
+DUPLICATE_PAIR_REASON = "Duplicate pair — plays twice"
+
 
 class _Context:
     """Everything a pairing operation needs about a division."""
@@ -102,9 +104,12 @@ async def generate(
             forbidden_pairs = forbidden_pairs + [list(pair) for pair in cross_squad]
 
     prior = await repo.get_active_run(session, org_id, division_id, squad_id=squad_id)
-    carried_locked, carried_names = _carry_locked(prior)
+    carried_locked, carried_names, deferred_dup = _carry_locked(prior)
     if prior is not None:
         prior.status = PairingRunStatus.DISCARDED.value
+
+    forced_member_ids = {m for group in carried_locked for m in group}
+    exclude_ids = {m for members, _ in deferred_dup for m in members if m not in forced_member_ids}
 
     all_forced = [[str(m) for m in group] for group in forced_groups] + carried_locked
     constraints = PairingConstraints(
@@ -116,6 +121,8 @@ async def generate(
     _validate_member_ids(all_forced, forbidden_pairs, ctx)
 
     entrants = _engine_entrants(ctx)
+    if exclude_ids:
+        entrants = [e for e in entrants if e.id not in exclude_ids]
     target = ctx.policy.target_strength or _mean_target(entrants, ctx.policy.team_size)
     max_dev = field_max_dev([e.weight for e in entrants], ctx.policy.team_size, target)
 
@@ -151,7 +158,9 @@ async def generate(
 
     # A team is "locked" (pinned to survive future regenerates) when its members were
     # explicitly forced — whether carried over from a prior draft or forced in this call.
-    locked_sets = carried_locked_sets(all_forced)
+    locked_sets = carried_locked_sets(all_forced) | {
+        frozenset(members) for members, _ in deferred_dup
+    }
     for team in plan.teams:
         members = frozenset(team.member_ids)
         session.add(
@@ -166,6 +175,23 @@ async def generate(
                 team_name=carried_names.get(members),
             )
         )
+
+    weights = {str(r.id): ctx.profile.skill_weight(r.skill_level) for r in ctx.entrants}
+    for members, team_name in deferred_dup:
+        strength = sum((weights.get(m, Decimal(0)) for m in members), Decimal(0))
+        confidence = pairing_confidence(strength, target, max_dev)
+        session.add(
+            ProposedTeam(
+                organization_id=org_id,
+                pairing_run_id=run.id,
+                member_ids=members,
+                strength=strength,
+                confidence=confidence,
+                reasons=[DUPLICATE_PAIR_REASON],
+                locked=True,
+                team_name=team_name,
+            )
+        )
     await session.flush()
 
     await _emit(session, org_id, actor_id, run, events.PAIRING_GENERATED)
@@ -174,18 +200,28 @@ async def generate(
 
 def _carry_locked(
     prior: PairingRun | None,
-) -> tuple[list[list[str]], dict[frozenset[str], str | None]]:
-    """Locked teams from the prior draft → (forced groups, name-by-members) to preserve."""
+) -> tuple[list[list[str]], dict[frozenset[str], str | None], list[tuple[list[str], str | None]]]:
+    """Locked teams from the prior draft.
+
+    Normal locked teams become forced groups for the engine. Duplicate-pair teams
+    (one player in two pairs) are reapplied after the engine run — they cannot be
+    expressed as forced groups because the engine allows each entrant only once.
+    """
     if prior is None:
-        return [], {}
+        return [], {}, []
     groups: list[list[str]] = []
     names: dict[frozenset[str], str | None] = {}
+    deferred_dup: list[tuple[list[str], str | None]] = []
     for team in prior.proposed_teams:
-        if team.locked:
-            members = [str(m) for m in team.member_ids]
+        if not team.locked:
+            continue
+        members = [str(m) for m in team.member_ids]
+        if DUPLICATE_PAIR_REASON in list(team.reasons or []):
+            deferred_dup.append((members, team.team_name))
+        else:
             groups.append(members)
             names[frozenset(members)] = team.team_name
-    return groups, names
+    return groups, names, deferred_dup
 
 
 def carried_locked_sets(groups: list[list[str]]) -> set[frozenset[str]]:
@@ -208,7 +244,7 @@ async def get_active_run(
     separate endpoint.  Generate / swap / publish use ``repo.get_active_run``
     (draft-only) internally so they never accidentally discard a published run.
     """
-    await _load_context(session, org_id, division_id)  # validates division exists
+    await _load_context(session, org_id, division_id, squad_id=squad_id)
     return await repo.get_current_run(session, org_id, division_id, squad_id=squad_id)
 
 
@@ -349,7 +385,7 @@ async def add_duplicate_pair(
         member_ids=[str(unpaired_id), str(duplicate_id)],
         strength=strength,
         confidence=confidence,
-        reasons=["Duplicate pair — plays twice"],
+        reasons=[DUPLICATE_PAIR_REASON],
         locked=True,
         team_name=None,
     )
@@ -639,6 +675,9 @@ async def build_run_view(
     loaded = await repo.get_run(session, org_id, run.id)
     if loaded is not None:
         run = loaded
+    # Same-session mutations (e.g. add_duplicate_pair) may not appear on a cached
+    # proposed_teams collection when expire_on_commit=False.
+    await session.refresh(run, attribute_names=["proposed_teams"])
     # Extract squad scope so the entrant list, unpaired count, and summary all reflect
     # only the squad's members — not the whole division.
     squad_id = _extract_squad_id(run)

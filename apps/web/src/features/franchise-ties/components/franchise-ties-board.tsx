@@ -69,7 +69,7 @@ export function FranchiseTiesBoard({
         description={
           isKnockout
             ? "Single-elimination team ties. Legs expand when both teams are known; winners advance to the next round."
-            : "Team round robin. Each match is a series of doubles legs — score legs in Match Center; the winning team is the one with more leg wins."
+            : "Team round robin. Each match is a series of doubles legs — score legs in Matches; the winning team is the one with more leg wins."
         }
         actions={
           canManage && board.data?.ties.length === 0 ? (

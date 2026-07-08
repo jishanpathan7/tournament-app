@@ -67,8 +67,8 @@ function Step1Hero({ tournamentId }: { tournamentId: string }) {
     <HeroShell step={1} title={STEP_META[1].label}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-sm">
-          Your tournament is in Draft — players can&apos;t register yet. Configure your details,
-          then open registration to accept entries.
+          Your tournament is in Draft — players can&apos;t register yet. Add your details, then open
+          registration to accept entries.
         </p>
         <Button
           tone="candy"
@@ -110,7 +110,7 @@ function Step2Hero({ tournamentId }: { tournamentId: string }) {
           <Button asChild tone="paper" size="sm">
             <Link href={`/console/tournaments/${tournamentId}/players`}>
               <UserRound className="h-4 w-4" strokeWidth={2.25} />
-              Manage players
+              Manage participants
             </Link>
           </Button>
         </div>
@@ -127,22 +127,22 @@ function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: S
       <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
           {signals.franchiseMode
-            ? "Players are imported. Run the Draft Ceremony to assign them to teams, or go to the Team board to assign manually."
-            : "Divide approved players into teams. Use auto-distribute or assign manually."}
+            ? "Players are imported. Assign them to teams on the Setup tab, or run the draft ceremony."
+            : "Divide approved players into teams. Use auto-distribute or assign manually on Setup."}
         </p>
         <div className="flex flex-wrap gap-2">
           {signals.franchiseMode ? (
             <Button asChild tone="candy" size="sm">
               <Link href={`/console/tournaments/${tournamentId}/draft-ceremony`}>
                 <GitMerge className="h-4 w-4" strokeWidth={2.25} />
-                Run Draft Ceremony
+                Run draft ceremony
               </Link>
             </Button>
           ) : null}
           <Button asChild tone={signals.franchiseMode ? "paper" : "candy"} size="sm">
             <Link href={`/console/tournaments/${tournamentId}/teams`}>
               <Users className="h-4 w-4" strokeWidth={2.25} />
-              Team board
+              Teams
             </Link>
           </Button>
         </div>
@@ -199,7 +199,7 @@ function Step5Hero({ tournamentId }: { tournamentId: string }) {
         <Button asChild tone="candy" size="sm">
           <Link href={`/console/tournaments/${tournamentId}/readiness`}>
             <CheckCircle2 className="h-4 w-4" strokeWidth={2.25} />
-            Manage check-in
+            Open check-in
           </Link>
         </Button>
       </div>
@@ -215,13 +215,13 @@ function Step6Hero({ tournamentId, signals }: { tournamentId: string; signals: S
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-sm">
           {signals.franchiseMode
-            ? "All pairs are published. Generate the team draw to schedule which squads face each other."
-            : "Generate the bracket or round-robin draw for each division."}
+            ? "All pairs are locked. Generate brackets to schedule which teams face each other."
+            : "Generate round-robin or knockout brackets for each event."}
         </p>
         <Button asChild tone="candy" size="sm">
           <Link href={`/console/tournaments/${tournamentId}/draws`}>
             <Shuffle className="h-4 w-4" strokeWidth={2.25} />
-            {signals.franchiseMode ? "Generate Matches" : "Generate draws"}
+            Build brackets
           </Link>
         </Button>
       </div>
@@ -360,7 +360,7 @@ function Step9Hero({
           <Button asChild tone="paper" size="sm">
             <Link href={`/console/tournaments/${tournamentId}/matches`}>
               <GitMerge className="h-4 w-4" strokeWidth={2.25} />
-              Match results
+              View matches
             </Link>
           </Button>
           {!published ? (
@@ -383,7 +383,7 @@ function Step9Hero({
               ) : (
                 <Send className="h-4 w-4" strokeWidth={2.25} />
               )}
-              Publish results
+              Share results
             </Button>
           ) : (
             <Button

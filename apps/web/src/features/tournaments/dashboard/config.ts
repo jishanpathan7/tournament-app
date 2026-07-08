@@ -39,38 +39,38 @@ export const STEP_META: Record<
   { label: string; description: string; phase: DashboardPhase }
 > = {
   1: {
-    label: "Tournament Setup",
-    description: "Configure your tournament — venue, format, divisions.",
+    label: "Event setup",
+    description: "Name your event and open registration when you're ready.",
     phase: "before",
   },
   2: {
-    label: "Import & Approve",
-    description: "Import participants and approve them.",
+    label: "Add participants",
+    description: "Import players and approve anyone waiting to join.",
     phase: "before",
   },
   3: {
-    label: "Create Teams",
-    description: "Run the Draft Ceremony to assign players to teams.",
+    label: "Assign to teams",
+    description: "Split players into balanced teams before pairing.",
     phase: "before",
   },
   4: {
-    label: "Pair Each Team",
-    description: "Generate doubles pairs within each team.",
+    label: "Generate pairs",
+    description: "Create balanced doubles pairs within each team.",
     phase: "before",
   },
   5: {
-    label: "Check-in & Readiness",
-    description: "Mark attendance and confirm everyone is ready.",
+    label: "Check-in",
+    description: "Mark who's here before you build brackets.",
     phase: "before",
   },
   6: {
-    label: "Generate Draw",
-    description: "Generate the team draw or bracket for each division.",
+    label: "Build brackets",
+    description: "Generate fixtures or knockout brackets for each event.",
     phase: "before",
   },
   7: {
-    label: "Schedule & Go Live",
-    description: "Configure courts, assign matches, then go live.",
+    label: "Schedule & go live",
+    description: "Set up courts, assign matches, then start the event.",
     phase: "before",
   },
   8: {
@@ -377,7 +377,7 @@ export function deriveAlerts(input: DeriveAlertsInput): DashboardAlert[] {
     alerts.push({
       id: "publish-draw",
       tone: "info",
-      message: "All draws complete — consider publishing the draw to the public site",
+      message: "All brackets complete — consider sharing brackets on the public site",
     });
   }
 
@@ -406,12 +406,12 @@ export function deriveBeforeStats(
     { label: "Approved", value: String(registrationTotals.approved), tone: "candy" },
     { label: "Checked in", value: `${rs.checkedIn}/${rs.approved || "—"}`, tone: "mint" },
     {
-      label: "Divisions ready",
+      label: "Events ready",
       value: `${rs.divisionsReady}/${rs.totalDivisions || "—"}`,
       tone: rs.divisionsReady === rs.totalDivisions && rs.totalDivisions > 0 ? "mint" : "yellow",
     },
     {
-      label: "Draws complete",
+      label: "Brackets complete",
       value: drawProgress.total > 0 ? `${drawProgress.drawn}/${drawProgress.total}` : "—",
       tone: drawProgress.drawn === drawProgress.total && drawProgress.total > 0 ? "mint" : "muted",
     },
@@ -446,7 +446,7 @@ export function deriveAfterStats(
 
   return [
     { label: "Matches played", value: `${progress.terminal}/${progress.total}`, tone: "mint" },
-    { label: "Divisions", value: String(divisionsWithDraw), tone: "candy" },
+    { label: "Event types", value: String(divisionsWithDraw), tone: "candy" },
     {
       label: "Walkovers / no-shows",
       value: `${stats.walkovers} / ${stats.noShows}`,

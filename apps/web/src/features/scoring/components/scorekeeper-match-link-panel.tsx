@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Copy, Link2, Mail, Smartphone, X } from "lucide-react";
 import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +13,13 @@ import * as matchLinkApi from "@/features/scoring/scorekeeper-match-api";
 import { errorMessage } from "@/lib/problem";
 
 /** Generate a unique public link for this match — scorekeeper lands directly on scoring. */
-export function ScorekeeperMatchLinkPanel({ matchId }: { matchId: string }) {
+export function ScorekeeperMatchLinkPanel({
+  matchId,
+  showQr = false,
+}: {
+  matchId: string;
+  showQr?: boolean;
+}) {
   const queryClient = useQueryClient();
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
   const [recipientEmail, setRecipientEmail] = useState("");
@@ -97,6 +104,16 @@ export function ScorekeeperMatchLinkPanel({ matchId }: { matchId: string }) {
               onChange={(e) => setRecipientName(e.target.value)}
             />
           </div>
+        </div>
+      ) : null}
+      {hasActive && !displayUrl ? (
+        <p className="text-muted-foreground text-sm">
+          A scorekeeper link is active. Regenerate to create a new shareable URL.
+        </p>
+      ) : null}
+      {showQr && displayUrl ? (
+        <div className="border-ink bg-card flex justify-center rounded-2xl border-2 p-4">
+          <QRCodeSVG value={displayUrl} size={160} />
         </div>
       ) : null}
       <div className="flex flex-wrap items-center gap-2">

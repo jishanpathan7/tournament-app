@@ -1,6 +1,6 @@
 import { DrawOverview } from "@/features/draws/components/draw-overview";
 
-export const metadata = { title: "Draw · Console" };
+export const metadata = { title: "Brackets · Console" };
 
 export default async function StageDrawPage({
   params,

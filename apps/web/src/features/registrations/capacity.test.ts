@@ -60,4 +60,23 @@ describe("deriveCapacity", () => {
     const summary = deriveCapacity(5, [], participants);
     expect(summary.approved).toBe(1);
   });
+
+  it("counts players from registrations after franchise pairing is published", () => {
+    const registrations = Array.from({ length: 53 }, (_, i) =>
+      makeRegistration({ id: `r-${i}`, status: "approved" }),
+    );
+    const participants = [
+      ...Array.from({ length: 53 }, () =>
+        makeParticipant({ kind: "individual", status: "approved" }),
+      ),
+      ...Array.from({ length: 28 }, () =>
+        makeParticipant({ kind: "pair", status: "approved", teamId: "t-1" }),
+      ),
+      ...Array.from({ length: 4 }, () => makeParticipant({ kind: "squad", status: "approved" })),
+    ];
+    const summary = deriveCapacity(null, registrations, participants);
+    expect(summary.approved).toBe(53);
+    expect(summary.pairs).toBe(28);
+    expect(summary.franchiseTeams).toBe(4);
+  });
 });

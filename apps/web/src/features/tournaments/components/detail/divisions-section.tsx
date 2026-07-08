@@ -42,8 +42,8 @@ export function DivisionsSection({
       <Card>
         <EmptyState
           icon={LayoutGrid}
-          title="No divisions"
-          description="This tournament has no divisions configured."
+          title="No event types"
+          description="This tournament has no events configured yet."
           className="py-12"
         />
       </Card>

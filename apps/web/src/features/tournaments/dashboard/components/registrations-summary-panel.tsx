@@ -24,7 +24,7 @@ export function RegistrationsSummaryPanel({
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-lg">
           <Users className="h-5 w-5" strokeWidth={2.25} />
-          Registrations
+          Participants
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

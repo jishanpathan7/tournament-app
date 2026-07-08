@@ -18,6 +18,8 @@ export interface DraftDivision {
   participantType: DivisionParticipantKind;
 }
 
+export type EventTypePreset = "singles" | "doubles" | "both";
+
 export interface TournamentDraft {
   name: string;
   slug: string;
@@ -26,7 +28,22 @@ export interface TournamentDraft {
   format: StageFormat;
   startsAt: string;
   endsAt: string;
+  eventType: EventTypePreset;
   divisions: DraftDivision[];
+}
+
+export function divisionsFromEventType(eventType: EventTypePreset): DraftDivision[] {
+  switch (eventType) {
+    case "singles":
+      return [{ name: "Singles", participantType: "individual" }];
+    case "doubles":
+      return [{ name: "Doubles", participantType: "individual" }];
+    case "both":
+      return [
+        { name: "Singles", participantType: "individual" },
+        { name: "Doubles", participantType: "individual" },
+      ];
+  }
 }
 
 const EMPTY_DRAFT: TournamentDraft = {
@@ -37,7 +54,8 @@ const EMPTY_DRAFT: TournamentDraft = {
   format: "round_robin",
   startsAt: "",
   endsAt: "",
-  divisions: [{ name: "Main Draw", participantType: "individual" }],
+  eventType: "doubles",
+  divisions: divisionsFromEventType("doubles"),
 };
 
 interface DraftStore {
