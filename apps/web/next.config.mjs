@@ -5,18 +5,19 @@ const isProd = process.env.NODE_ENV === "production";
 /**
  * Content-Security-Policy.
  *
- * 'unsafe-inline' is included for style-src because Tailwind/shadcn inject
- * inline styles at runtime.  script-src stays without it — all JS is bundled
- * by Next.js and served from 'self'.  'unsafe-eval' is excluded; Next.js does
- * not require it in production.
+ * 'unsafe-inline' is required for Next.js hydration scripts and Tailwind/shadcn
+ * inline styles.  'unsafe-eval' is added only in development — React Fast Refresh
+ * (react-refresh-utils) uses eval() and will throw a CSP EvalError without it.
+ * Production keeps script-src strict (no unsafe-eval).
  *
- * In development we allow ws: and http: for HMR.
+ * In development we also allow ws: and http: for HMR.
  */
 const CSP_DIRECTIVES = [
   "default-src 'self'",
-  // Next.js App Router injects inline scripts for hydration data (__NEXT_DATA__)
-  // and dynamic chunk loading. 'unsafe-inline' is required; 'unsafe-eval' is not.
-  "script-src 'self' 'unsafe-inline'",
+  // Next.js App Router injects inline scripts for hydration; dev HMR needs unsafe-eval.
+  isProd
+    ? "script-src 'self' 'unsafe-inline'"
+    : "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
   // Tailwind/shadcn use inline styles; strict-dynamic is not compatible with class-based CSS.
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: https:",
@@ -30,7 +31,8 @@ const CSP_DIRECTIVES = [
   "form-action 'self'",
   "base-uri 'self'",
   "object-src 'none'",
-  "upgrade-insecure-requests",
+  // Only upgrade in production — local dev runs over plain http.
+  ...(isProd ? ["upgrade-insecure-requests"] : []),
 ]
   .join("; ")
   .trim();

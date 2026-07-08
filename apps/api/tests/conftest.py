@@ -40,8 +40,16 @@ def _migrate_db() -> Iterator[None]:
 
 @pytest.fixture
 def app() -> FastAPI:
-    """A fresh app per test (so dependency_overrides don't leak)."""
-    return create_app()
+    """A fresh app per test (so dependency_overrides don't leak).
+
+    Rate limiting is disabled: all test requests share the same loopback IP and
+    would exhaust the per-minute budget (e.g. 5/minute on /register) after just
+    a handful of tests, causing 429s that silently skip cookie setup and produce
+    cascading 401s on every subsequent authenticated call.
+    """
+    a = create_app()
+    a.state.limiter.enabled = False
+    return a
 
 
 @pytest_asyncio.fixture

@@ -2,26 +2,37 @@
 
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { Dices, Shuffle, Users, Wand2 } from "lucide-react";
+import { useQueries } from "@tanstack/react-query";
+import { ChevronDown, Dices, MoreHorizontal, Users, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SquadPairingFooter } from "@/features/squads/components/squad-pairing-footer";
-import { SquadPairingSheet } from "@/features/squads/components/squad-pairing-sheet";
-import { useTournamentReadiness } from "@/features/registration-ops/use-registration-ops";
-import type { SquadView } from "@/features/squads/types";
-import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { toast } from "@/components/ui/sonner";
-import { SquadColumn } from "@/features/squads/components/squad-column";
+import { getPairing } from "@/features/pairing/pairing-api";
+import { SquadCard } from "@/features/squads/components/squad-card";
+import { SquadPairingSheet } from "@/features/squads/components/squad-pairing-sheet";
 import { UnassignedPool } from "@/features/squads/components/unassigned-pool";
-import { TEAM_COUNT_PRESETS } from "@/features/squads/config";
+import { WorkflowProgress } from "@/features/squads/components/workflow-progress";
+import {
+  TEAM_COUNT_PRESETS,
+  computeWorkflowState,
+  pairingStatusFromRun,
+  type SquadPairingStatus,
+} from "@/features/squads/config";
+import type { SquadView } from "@/features/squads/types";
 import {
   useAssignSquadMember,
   useAutoDistributeSquads,
@@ -30,7 +41,9 @@ import {
   useSquads,
   useUpdateSquad,
 } from "@/features/squads/use-squads";
+import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
+import { queryKeys } from "@/lib/query-keys";
 import { ACTIONS } from "@/lib/permissions";
 import { errorMessage } from "@/lib/problem";
 
@@ -49,10 +62,50 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [pairingSquad, setPairingSquad] = useState<SquadView | null>(null);
+  const [expandedSquadIds, setExpandedSquadIds] = useState<Set<string>>(new Set());
+  const [setupOpen, setSetupOpen] = useState(false);
 
   const divisions = useDivisions(tournamentId);
   const firstDivisionId = divisions.data?.[0]?.id ?? null;
-  const readiness = useTournamentReadiness(tournamentId);
+
+  const board = squads.data;
+  const squadIds = board?.squads.map((s) => s.id) ?? [];
+
+  const pairingQueries = useQueries({
+    queries: squadIds.map((squadId) => ({
+      queryKey: queryKeys.divisions.pairing(firstDivisionId ?? "", squadId),
+      queryFn: () => getPairing(firstDivisionId!, squadId),
+      enabled: !!firstDivisionId,
+    })),
+  });
+
+  const pairingBySquadId = useMemo(() => {
+    const map = new Map<string, { status: SquadPairingStatus; pairCount: number }>();
+    squadIds.forEach((squadId, index) => {
+      const query = pairingQueries[index];
+      const run = query?.data ?? null;
+      map.set(squadId, {
+        status: pairingStatusFromRun(run, query?.isLoading ?? false),
+        pairCount: run?.teams.length ?? 0,
+      });
+    });
+    return map;
+  }, [squadIds, pairingQueries]);
+
+  const pairingStatusMap = useMemo(() => {
+    const map = new Map<string, SquadPairingStatus>();
+    for (const [squadId, info] of pairingBySquadId) {
+      map.set(squadId, info.status);
+    }
+    return map;
+  }, [pairingBySquadId]);
+
+  const workflow = useMemo(() => {
+    if (!board) {
+      return computeWorkflowState([], 0, pairingStatusMap);
+    }
+    return computeWorkflowState(board.squads, board.summary.unassigned, pairingStatusMap);
+  }, [board, pairingStatusMap]);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
@@ -64,10 +117,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
     setDraggingId(null);
     const registrationId = String(e.active.id);
     const targetId = e.over?.id ? String(e.over.id) : null;
-    if (!targetId) return;
-
-    const board = squads.data;
-    if (!board) return;
+    if (!targetId || !board) return;
 
     const currentSquad = board.squads.find((s) =>
       s.members.some((m) => m.registrationId === registrationId),
@@ -77,31 +127,29 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
       if (currentSquad) {
         remove.mutate(
           { squadId: currentSquad.id, registrationId },
-          { onError: (e) => toast.error(errorMessage(e, "Couldn't remove player")) },
+          { onError: (err) => toast.error(errorMessage(err, "Couldn't remove player")) },
         );
       }
       return;
     }
 
-    // Dropped on a squad column
-    if (currentSquad?.id === targetId) return; // no change
+    if (currentSquad?.id === targetId) return;
     if (currentSquad) {
-      // move: remove then assign
       remove.mutate(
         { squadId: currentSquad.id, registrationId },
         {
           onSuccess: () =>
             assign.mutate(
               { squadId: targetId, registrationId },
-              { onError: (e) => toast.error(errorMessage(e, "Couldn't assign player")) },
+              { onError: (err) => toast.error(errorMessage(err, "Couldn't assign player")) },
             ),
-          onError: (e) => toast.error(errorMessage(e, "Couldn't move player")),
+          onError: (err) => toast.error(errorMessage(err, "Couldn't move player")),
         },
       );
     } else {
       assign.mutate(
         { squadId: targetId, registrationId },
-        { onError: (e) => toast.error(errorMessage(e, "Couldn't assign player")) },
+        { onError: (err) => toast.error(errorMessage(err, "Couldn't assign player")) },
       );
     }
   }
@@ -119,7 +167,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
       {
         onSuccess: (res) =>
           toast.success(`Balanced ${res.summary.assigned} players across ${count} teams`),
-        onError: (e) => toast.error(errorMessage(e, "Couldn't auto-assign teams")),
+        onError: (err) => toast.error(errorMessage(err, "Couldn't auto-assign teams")),
       },
     );
   }
@@ -133,7 +181,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
           toast.success("Player assigned");
           setSelectedRegistrationId(null);
         },
-        onError: (e) => toast.error(errorMessage(e, "Couldn't assign player")),
+        onError: (err) => toast.error(errorMessage(err, "Couldn't assign player")),
       },
     );
   }
@@ -142,57 +190,92 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
     setSelectedRegistrationId((prev) => (prev === registrationId ? null : registrationId));
   }
 
-  const actions = canManage ? (
-    <div className="flex flex-wrap items-center gap-2">
-      <Link href={`/console/tournaments/${tournamentId}/draft-ceremony`}>
-        <Button
-          tone="paper"
-          size="sm"
-          disabled={busy || !squads.data || squads.data.unassigned.length === 0}
-        >
-          <Dices className="h-4 w-4" />
-          Draft Ceremony
+  function toggleSquadExpanded(squadId: string) {
+    setExpandedSquadIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(squadId)) next.delete(squadId);
+      else next.add(squadId);
+      return next;
+    });
+  }
+
+  function expandAll() {
+    if (!board) return;
+    setExpandedSquadIds(new Set(board.squads.map((s) => s.id)));
+  }
+
+  function collapseAll() {
+    setExpandedSquadIds(new Set());
+  }
+
+  function openNextUnpairedSquad() {
+    if (workflow.nextSquad) {
+      setPairingSquad(workflow.nextSquad);
+    }
+  }
+
+  function openRemainingPairingQueue() {
+    if (!board) return;
+    const next = board.squads.find((s) => {
+      const status = pairingStatusMap.get(s.id);
+      return status === "none" || status === "draft";
+    });
+    if (next) setPairingSquad(next);
+    else toast.info("All teams already have published pairs");
+  }
+
+  const setupActions = canManage ? (
+    <DropdownMenu open={setupOpen} onOpenChange={setSetupOpen}>
+      <DropdownMenuTrigger asChild>
+        <Button tone="paper" size="sm">
+          <MoreHorizontal className="h-4 w-4" />
+          Setup
+          <ChevronDown className="h-3.5 w-3.5 opacity-60" />
         </Button>
-      </Link>
-      {TEAM_COUNT_PRESETS.map((count) => (
-        <Button
-          key={count}
-          tone="paper"
-          size="sm"
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-52">
+        <DropdownMenuItem asChild>
+          <Link href={`/console/tournaments/${tournamentId}/draft-ceremony`}>
+            <Dices className="h-4 w-4" />
+            Draft Ceremony
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        {TEAM_COUNT_PRESETS.map((count) => (
+          <DropdownMenuItem key={count} disabled={busy} onClick={() => onAutoDistribute(count)}>
+            <Wand2 className="h-4 w-4" />
+            Auto {count} teams
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
           disabled={busy}
-          onClick={() => onAutoDistribute(count)}
+          onClick={() =>
+            createSquad.mutate(
+              { name: `Team ${(board?.squads.length ?? 0) + 1}` },
+              {
+                onSuccess: () => toast.success("Team created"),
+                onError: (err) => toast.error(errorMessage(err, "Couldn't create team")),
+              },
+            )
+          }
         >
-          <Wand2 className="h-4 w-4" />
-          Auto {count} teams
-        </Button>
-      ))}
-      <Button
-        tone="candy"
-        size="sm"
-        disabled={busy}
-        onClick={() =>
-          createSquad.mutate(
-            { name: `Team ${(squads.data?.squads.length ?? 0) + 1}` },
-            {
-              onSuccess: () => toast.success("Team created"),
-              onError: (e) => toast.error(errorMessage(e, "Couldn't create team")),
-            },
-          )
-        }
-      >
-        + Add team
-      </Button>
-    </div>
+          + Add team
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   ) : null;
 
   if (squads.isLoading) {
     return (
       <div className="flex flex-col gap-4">
         <Skeleton className="h-10 w-64" />
-        <div className="grid gap-4 md:grid-cols-3">
-          <Skeleton className="h-64 rounded-2xl" />
-          <Skeleton className="h-64 rounded-2xl" />
-          <Skeleton className="h-64 rounded-2xl" />
+        <Skeleton className="h-20 w-full rounded-2xl" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <Skeleton className="h-36 rounded-2xl" />
+          <Skeleton className="h-36 rounded-2xl" />
+          <Skeleton className="h-36 rounded-2xl" />
+          <Skeleton className="h-36 rounded-2xl" />
         </div>
       </div>
     );
@@ -208,13 +291,13 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
     );
   }
 
-  const board = squads.data;
   if (!board) return null;
 
-  const allAssigned =
-    (squads.data?.summary.unassigned ?? 1) === 0 && (squads.data?.squads.length ?? 0) > 0;
-  const allPaired =
-    allAssigned && (readiness.data?.divisions.every((d) => d.unpairedEntrants === 0) ?? false);
+  const hasUnassigned = board.summary.unassigned > 0;
+  const remainingPairingCount = board.squads.filter((s) => {
+    const status = pairingStatusMap.get(s.id);
+    return status === "none" || status === "draft";
+  }).length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -222,53 +305,35 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         eyebrow="Pre-pairing"
         title="Teams"
         description="Split participants into balanced franchise teams before doubles pairing or draw generation."
-        actions={actions}
+        actions={setupActions}
       />
 
-      {/* Progress summary — assignment + pairing state + next action in one card */}
-      <Card className="bg-muted/30">
-        <CardContent className="flex flex-wrap items-center justify-between gap-4 p-4">
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <span>
-              <strong>{board.summary.squadCount}</strong> teams
-            </span>
-            <span className="text-muted-foreground">·</span>
-            <span>
-              <strong>{board.summary.assigned}</strong> assigned
-              {board.summary.unassigned > 0 && (
-                <span className="text-muted-foreground">
-                  {" "}
-                  · {board.summary.unassigned} unassigned
-                </span>
-              )}
-            </span>
-            <span className="text-muted-foreground">·</span>
-            {allPaired ? (
-              <Badge tone="mint">All pairs locked</Badge>
-            ) : allAssigned ? (
-              <Badge tone="yellow">Pairs pending</Badge>
-            ) : board.summary.unassigned > 0 ? (
-              <Badge tone="yellow">{board.summary.unassigned} need a team</Badge>
-            ) : board.summary.squadCount > 0 ? (
-              <Badge tone="mint">All assigned</Badge>
-            ) : null}
-          </div>
-          {allPaired ? (
-            <Button asChild tone="mint" size="sm">
-              <Link href={`/console/tournaments/${tournamentId}/draws`}>Generate Matches →</Link>
+      <WorkflowProgress
+        workflow={workflow}
+        tournamentId={tournamentId}
+        assigned={board.summary.assigned}
+        onNextAction={workflow.nextSquad ? openNextUnpairedSquad : undefined}
+      />
+
+      {board.squads.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {workflow.playersAssigned && remainingPairingCount > 0 && canManage ? (
+            <Button tone="candy" size="sm" onClick={openRemainingPairingQueue}>
+              Generate remaining pairs ({remainingPairingCount})
             </Button>
-          ) : allAssigned && firstDivisionId ? (
-            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-              <Shuffle className="text-candy h-4 w-4" />
-              <span>Use &ldquo;Generate Doubles Pairs&rdquo; on each team below</span>
-            </div>
           ) : null}
-        </CardContent>
-      </Card>
+          <Button tone="paper" size="sm" onClick={expandAll}>
+            Expand all
+          </Button>
+          <Button tone="paper" size="sm" onClick={collapseAll}>
+            Collapse all
+          </Button>
+        </div>
+      ) : null}
 
       {selectedRegistrationId ? (
         <p className="text-candy-dark text-sm font-semibold">
-          Select a team column to assign the highlighted player, or click again to cancel.
+          Select a team to assign the highlighted player, or click again to cancel.
         </p>
       ) : null}
 
@@ -280,28 +345,51 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         />
       ) : (
         <DndContext sensors={sensors} onDragStart={onDragStart} onDragEnd={onDragEnd}>
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
-            <UnassignedPool
-              entries={board.unassigned}
-              selectedId={selectedRegistrationId}
-              onSelect={canManage ? onSelectRegistration : undefined}
-            />
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-2 2xl:grid-cols-3">
-              {board.squads.map((squad) => (
-                <div
-                  key={squad.id}
-                  className="border-ink shadow-sticker-xs flex flex-col overflow-hidden rounded-2xl border-2"
-                >
-                  <SquadColumn
+          <div
+            className={
+              hasUnassigned
+                ? "grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
+                : "flex flex-col gap-4"
+            }
+          >
+            {hasUnassigned ? (
+              <UnassignedPool
+                entries={board.unassigned}
+                selectedId={selectedRegistrationId}
+                onSelect={canManage ? onSelectRegistration : undefined}
+              />
+            ) : null}
+
+            <div
+              className={
+                hasUnassigned
+                  ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3"
+                  : "grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+              }
+            >
+              {board.squads.map((squad) => {
+                const pairingInfo = pairingBySquadId.get(squad.id) ?? {
+                  status: "loading" as const,
+                  pairCount: 0,
+                };
+                return (
+                  <SquadCard
+                    key={squad.id}
                     squad={squad}
+                    expanded={expandedSquadIds.has(squad.id)}
+                    onToggleExpand={() => toggleSquadExpanded(squad.id)}
                     canManage={canManage}
+                    divisionId={firstDivisionId}
+                    pairingStatus={pairingInfo.status}
+                    pairCount={pairingInfo.pairCount}
                     highlightAssign={!!selectedRegistrationId}
                     onAssign={() => onAssignToSquad(squad.id)}
                     onRemove={(registrationId) =>
                       remove.mutate(
                         { squadId: squad.id, registrationId },
                         {
-                          onError: (e) => toast.error(errorMessage(e, "Couldn't remove player")),
+                          onError: (err) =>
+                            toast.error(errorMessage(err, "Couldn't remove player")),
                         },
                       )
                     }
@@ -310,7 +398,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
                         { squadId: squad.id, captainRegistrationId: registrationId },
                         {
                           onSuccess: () => toast.success("Captain updated"),
-                          onError: (e) => toast.error(errorMessage(e, "Couldn't set captain")),
+                          onError: (err) => toast.error(errorMessage(err, "Couldn't set captain")),
                         },
                       )
                     }
@@ -318,23 +406,17 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
                       updateSquad.mutate(
                         { squadId: squad.id, name },
                         {
-                          onError: (e) => toast.error(errorMessage(e, "Couldn't rename team")),
+                          onError: (err) => toast.error(errorMessage(err, "Couldn't rename team")),
                         },
                       )
                     }
+                    onOpenPairing={() => setPairingSquad(squad)}
                   />
-                  {firstDivisionId && (
-                    <SquadPairingFooter
-                      squad={squad}
-                      divisionId={firstDivisionId}
-                      canManage={canManage}
-                      onOpen={() => setPairingSquad(squad)}
-                    />
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
+
           <DragOverlay>
             {draggingId ? (
               <div className="bg-card border-candy shadow-sticker-candy rounded-xl border-2 px-3 py-2 text-sm font-semibold opacity-90">
@@ -359,22 +441,19 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             <CardTitle className="text-base">Get started</CardTitle>
           </CardHeader>
           <CardContent className="text-muted-foreground text-sm">
-            Use <strong>Auto 4 teams</strong> (or 6 / 8) to snake-draft players by skill level, or
-            add teams manually and click players to assign them.
+            Open <strong>Setup</strong> and use <strong>Auto 4 teams</strong> (or 6 / 8) to
+            snake-draft players by skill level, or add teams manually and click players to assign
+            them.
           </CardContent>
         </Card>
       ) : null}
 
-      {/* Intra-team pairing sheet */}
-      {pairingSquad && firstDivisionId && (
+      {pairingSquad && firstDivisionId ? (
         <div className="fixed inset-0 z-40 flex">
-          {/* Backdrop */}
           <div
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setPairingSquad(null)}
           />
-          {/* Slide-over panel */}
-
           <div className="bg-background relative ml-auto h-full w-full max-w-lg overflow-hidden shadow-2xl">
             <SquadPairingSheet
               squad={pairingSquad}
@@ -384,7 +463,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             />
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

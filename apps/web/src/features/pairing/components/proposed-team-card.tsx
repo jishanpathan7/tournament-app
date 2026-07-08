@@ -11,6 +11,10 @@ import { cn } from "@/lib/utils";
  * One proposed team: its members (with skill), the strength/confidence bar, the reasons
  * the engine formed it, a lock toggle, and — in swap mode — clickable member chips for a
  * manual override (select a member here, then a member on another team to swap them).
+ *
+ * Pass ``duplicatePlayerIds`` (registration ids that appear in more than one team) to
+ * render a "Plays twice" badge on those members so captains can see at a glance who
+ * has been assigned a second match.
  */
 export function ProposedTeamCard({
   team,
@@ -21,6 +25,7 @@ export function ProposedTeamCard({
   onSelectMember,
   onToggleLock,
   busy,
+  duplicatePlayerIds,
 }: {
   team: ProposedTeamView;
   entrants: Map<string, EntrantView>;
@@ -30,12 +35,17 @@ export function ProposedTeamCard({
   onSelectMember: (memberId: string) => void;
   onToggleLock: () => void;
   busy: boolean;
+  /** Registration ids that appear in more than one team (play twice). */
+  duplicatePlayerIds?: ReadonlySet<string>;
 }) {
+  const isDuplicatePair = team.reasons.includes("Duplicate pair — plays twice");
+
   return (
     <div
       className={cn(
         "border-ink bg-card shadow-sticker-xs flex flex-col gap-3 rounded-2xl border-2 p-4",
         team.locked && "ring-candy ring-2 ring-offset-2",
+        isDuplicatePair && "border-yellow-400 ring-2 ring-yellow-300 ring-offset-1",
       )}
     >
       <div className="flex items-start justify-between gap-2">
@@ -51,6 +61,11 @@ export function ProposedTeamCard({
               </Badge>
             ) : null;
           })()}
+          {isDuplicatePair && (
+            <Badge tone="yellow" className="text-2xs w-fit">
+              Captain override
+            </Badge>
+          )}
         </div>
         {canManage ? (
           <Button
@@ -73,10 +88,18 @@ export function ProposedTeamCard({
           const entrant = entrants.get(memberId);
           const skill = skillMeta(entrant?.skillLevel);
           const selected = selectedMemberId === memberId;
+          const playsAgain = duplicatePlayerIds?.has(memberId) ?? false;
           const chip = (
             <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate font-medium">{entrant?.displayName ?? "Unknown"}</span>
-              <Badge tone={skill.tone}>{skill.label}</Badge>
+              <span className="flex shrink-0 items-center gap-1">
+                {playsAgain && (
+                  <Badge tone="yellow" className="text-2xs">
+                    Plays twice
+                  </Badge>
+                )}
+                <Badge tone={skill.tone}>{skill.label}</Badge>
+              </span>
             </span>
           );
           return (
@@ -90,12 +113,18 @@ export function ProposedTeamCard({
                   className={cn(
                     "border-border flex w-full items-center rounded-xl border-2 px-3 py-2 text-left transition-colors",
                     selected ? "border-candy bg-candy-tint" : "hover:bg-muted bg-card",
+                    playsAgain && "border-yellow-300 bg-yellow-50",
                   )}
                 >
                   {chip}
                 </button>
               ) : (
-                <div className="border-border bg-card flex items-center rounded-xl border-2 px-3 py-2">
+                <div
+                  className={cn(
+                    "border-border bg-card flex items-center rounded-xl border-2 px-3 py-2",
+                    playsAgain && "border-yellow-300 bg-yellow-50",
+                  )}
+                >
                   {chip}
                 </div>
               )}
@@ -107,7 +136,17 @@ export function ProposedTeamCard({
       <TeamStrengthBar strength={team.strength} confidence={team.confidence} />
 
       {team.reasons.length > 0 ? (
-        <p className="text-2xs text-muted-foreground leading-relaxed">{team.reasons.join(" · ")}</p>
+        <p className="text-2xs text-muted-foreground leading-relaxed">
+          {team.reasons.filter((r) => r !== "Duplicate pair — plays twice").join(" · ")}
+          {isDuplicatePair && (
+            <span className="font-medium text-yellow-600">
+              {team.reasons.filter((r) => r !== "Duplicate pair — plays twice").length > 0
+                ? " · "
+                : ""}
+              One player competes in two pairs
+            </span>
+          )}
+        </p>
       ) : null}
     </div>
   );
