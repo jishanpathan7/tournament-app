@@ -65,7 +65,13 @@ export function useAddDuplicatePair(divisionId: string, runId: string, squadId?:
     mutationFn: (body: { unpairedId: string; duplicateId: string }) =>
       pairingApi.addDuplicatePair(runId, body),
     onSuccess: (run) => {
+      // Optimistic update with server response, then invalidate to guarantee freshness.
+      // The invalidation is the reliable fallback in case the optimistic data is stale
+      // (e.g. SQLAlchemy identity-map edge cases in the same session).
       queryClient.setQueryData(queryKeys.divisions.pairing(divisionId, squadId), run);
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.pairing(divisionId, squadId),
+      });
     },
   });
 }
