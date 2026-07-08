@@ -15,6 +15,7 @@ export function SquadColumn({
   squad,
   canManage,
   highlightAssign,
+  searchQuery = "",
   onAssign,
   onRemove,
   onSetCaptain,
@@ -23,6 +24,7 @@ export function SquadColumn({
   squad: SquadView;
   canManage: boolean;
   highlightAssign: boolean;
+  searchQuery?: string;
   onAssign: () => void;
   onRemove: (registrationId: string) => void;
   onSetCaptain: (registrationId: string) => void;
@@ -33,6 +35,17 @@ export function SquadColumn({
   const tint = squadTint(squad.sortOrder);
 
   const { setNodeRef, isOver } = useDroppable({ id: squad.id });
+
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const visibleMembers = normalizedQuery
+    ? squad.members.filter((member) => {
+        const haystack = [member.displayName, member.divisionName, member.skillLevel]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(normalizedQuery);
+      })
+    : squad.members;
 
   function commitRename() {
     const trimmed = name.trim();
@@ -91,42 +104,48 @@ export function SquadColumn({
       </div>
 
       <ul ref={setNodeRef} className="flex min-h-[120px] flex-1 flex-col gap-1 p-2">
-        {squad.members.map((member) => {
-          const isCaptain = squad.captainRegistrationId === member.registrationId;
-          return (
-            <DraggablePlayerCard
-              key={member.registrationId}
-              registrationId={member.registrationId}
-              displayName={member.displayName}
-              subtitle={[member.divisionName, member.skillLevel].filter(Boolean).join(" · ")}
-              isCaptain={isCaptain}
-              actions={
-                canManage ? (
-                  <div className="flex shrink-0 gap-0.5">
-                    {!isCaptain ? (
+        {visibleMembers.length === 0 ? (
+          <li className="text-muted-foreground px-2 py-4 text-center text-xs">
+            {normalizedQuery ? "No players match your search" : "No players yet"}
+          </li>
+        ) : (
+          visibleMembers.map((member) => {
+            const isCaptain = squad.captainRegistrationId === member.registrationId;
+            return (
+              <DraggablePlayerCard
+                key={member.registrationId}
+                registrationId={member.registrationId}
+                displayName={member.displayName}
+                subtitle={[member.divisionName, member.skillLevel].filter(Boolean).join(" · ")}
+                isCaptain={isCaptain}
+                actions={
+                  canManage ? (
+                    <div className="flex shrink-0 gap-0.5">
+                      {!isCaptain ? (
+                        <Button
+                          tone="ghost"
+                          size="icon-sm"
+                          title="Make captain"
+                          onClick={() => onSetCaptain(member.registrationId)}
+                        >
+                          <Crown className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        </Button>
+                      ) : null}
                       <Button
                         tone="ghost"
                         size="icon-sm"
-                        title="Make captain"
-                        onClick={() => onSetCaptain(member.registrationId)}
+                        title="Remove from team"
+                        onClick={() => onRemove(member.registrationId)}
                       >
-                        <Crown className="h-3.5 w-3.5" strokeWidth={2.25} />
+                        <UserMinus className="h-3.5 w-3.5" strokeWidth={2.25} />
                       </Button>
-                    ) : null}
-                    <Button
-                      tone="ghost"
-                      size="icon-sm"
-                      title="Remove from team"
-                      onClick={() => onRemove(member.registrationId)}
-                    >
-                      <UserMinus className="h-3.5 w-3.5" strokeWidth={2.25} />
-                    </Button>
-                  </div>
-                ) : null
-              }
-            />
-          );
-        })}
+                    </div>
+                  ) : null
+                }
+              />
+            );
+          })
+        )}
       </ul>
     </div>
   );
