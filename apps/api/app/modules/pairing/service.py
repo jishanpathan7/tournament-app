@@ -340,18 +340,20 @@ async def add_duplicate_pair(
     )
     confidence = pairing_confidence(strength, target, max_dev)
 
-    session.add(
-        ProposedTeam(
-            organization_id=org_id,
-            pairing_run_id=run.id,
-            member_ids=[str(unpaired_id), str(duplicate_id)],
-            strength=strength,
-            confidence=confidence,
-            reasons=["Duplicate pair — plays twice"],
-            locked=True,
-            team_name=None,
-        )
+    # Append via the relationship so run.proposed_teams is back-populated immediately
+    # in Python memory. If we used session.add(..., pairing_run_id=run.id) instead,
+    # SQLAlchemy would not update the already-loaded collection, and build_run_view's
+    # selectinload would see the stale list (N pairs instead of N+1).
+    new_team = ProposedTeam(
+        organization_id=org_id,
+        member_ids=[str(unpaired_id), str(duplicate_id)],
+        strength=strength,
+        confidence=confidence,
+        reasons=["Duplicate pair — plays twice"],
+        locked=True,
+        team_name=None,
     )
+    run.proposed_teams.append(new_team)
     await session.flush()
     await _emit(session, org_id, actor_id, run, events.PAIRING_EDITED)
     return run

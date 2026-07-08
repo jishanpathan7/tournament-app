@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckSquare, LayoutGrid, Pencil, Sparkles, Upload } from "lucide-react";
+import { CheckSquare, LayoutGrid, Pencil, Upload } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 
@@ -102,13 +102,6 @@ function DivisionList({
               />
               {canManage ? (
                 <div className="flex flex-wrap gap-2">
-                  <Button tone="paper" size="sm" asChild>
-                    <Link
-                      href={`/console/tournaments/${tournamentId}/divisions/${division.id}/pairing`}
-                    >
-                      <Sparkles className="h-4 w-4" strokeWidth={2.25} /> Smart Pairing
-                    </Link>
-                  </Button>
                   <Button tone="paper" size="sm" asChild>
                     <Link
                       href={`/console/tournaments/${tournamentId}/divisions/${division.id}/import`}

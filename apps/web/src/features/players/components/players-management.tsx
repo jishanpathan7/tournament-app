@@ -1,7 +1,7 @@
 "use client";
 
 import type { ParticipantResponse } from "@tournament/api-client";
-import { Sparkles, UserPlus, Users } from "lucide-react";
+import { UserPlus, Users } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -30,15 +30,6 @@ import { paginate } from "@/lib/paginate";
 
 const PAGE_SIZE = 20;
 
-function firstPairingDivisionId(
-  divisions: { id: string; participantType: string }[],
-): string | null {
-  const match = divisions.find(
-    (d) => d.participantType === "individual" || d.participantType === "pair",
-  );
-  return match?.id ?? divisions[0]?.id ?? null;
-}
-
 /** Tournament-wide player roster — stats, import, and searchable table across divisions. */
 export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
   const can = useCan();
@@ -65,7 +56,6 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
     ? (participantsById.get(openRow.participantId) ?? null)
     : null;
 
-  const pairingDivisionId = firstPairingDivisionId(data.divisions.data ?? []);
   const primaryDivisionId = data.divisions.data?.[0]?.id ?? null;
 
   if (data.isLoading) {
@@ -95,29 +85,15 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
           title="Players"
           description="All entrants across divisions — import, review, and check-in status in one place."
         />
-        {canManage ? (
-          <div className="flex flex-wrap gap-2">
-            {pairingDivisionId ? (
-              <Button asChild tone="pink">
-                <Link
-                  href={`/console/tournaments/${tournamentId}/divisions/${pairingDivisionId}/pairing`}
-                >
-                  <Sparkles className="h-4 w-4" strokeWidth={2.25} />
-                  Smart pair
-                </Link>
-              </Button>
-            ) : null}
-            {primaryDivisionId ? (
-              <Button asChild tone="candy">
-                <Link
-                  href={`/console/tournaments/${tournamentId}/divisions/${primaryDivisionId}/registrations`}
-                >
-                  <UserPlus className="h-4 w-4" strokeWidth={2.25} />
-                  Add player
-                </Link>
-              </Button>
-            ) : null}
-          </div>
+        {canManage && primaryDivisionId ? (
+          <Button asChild tone="candy">
+            <Link
+              href={`/console/tournaments/${tournamentId}/divisions/${primaryDivisionId}/registrations`}
+            >
+              <UserPlus className="h-4 w-4" strokeWidth={2.25} />
+              Add player
+            </Link>
+          </Button>
         ) : null}
       </div>
 
