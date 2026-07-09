@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Radio, Swords } from "lucide-react";
+import Link from "next/link";
 
 import { ErrorState } from "@/components/common/error-state";
 import { LoadingPanel } from "@/components/common/loading";
@@ -17,6 +18,48 @@ import { MobileTournamentOverview } from "@/features/tournaments/dashboard/compo
 import { PhaseHeroCard } from "@/features/tournaments/dashboard/components/phase-hero-card";
 import { TournamentStepTracker } from "@/features/tournaments/dashboard/components/step-tracker";
 import { useTournamentDashboard } from "@/features/tournaments/dashboard/use-tournament-dashboard";
+
+type DashboardData = ReturnType<typeof useTournamentDashboard>;
+
+function MobileDuringPanel({ tournamentId, data }: { tournamentId: string; data: DashboardData }) {
+  const matches = data.matches.data ?? [];
+  const terminal = new Set(["completed", "walkover", "no_show", "cancelled"]);
+  const liveCount = matches.filter((m) => m.status === "live").length;
+  const doneCount = matches.filter((m) => terminal.has(m.status)).length;
+  const remaining = matches.length - doneCount;
+  const pct = matches.length > 0 ? Math.round((doneCount / matches.length) * 100) : 0;
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className="grid grid-cols-3 gap-2">
+        <div className="border-mint bg-mint-tint/40 rounded-2xl border-2 p-3 text-center">
+          <p className="font-mono text-2xl font-bold tabular-nums">{liveCount}</p>
+          <p className="text-muted-foreground text-xs">Live now</p>
+        </div>
+        <div className="border-border rounded-2xl border p-3 text-center">
+          <p className="font-mono text-2xl font-bold tabular-nums">{remaining}</p>
+          <p className="text-muted-foreground text-xs">Remaining</p>
+        </div>
+        <div className="border-border rounded-2xl border p-3 text-center">
+          <p className="font-mono text-2xl font-bold tabular-nums">{pct}%</p>
+          <p className="text-muted-foreground text-xs">Done</p>
+        </div>
+      </div>
+      <Button asChild tone="candy" size="lg" className="w-full justify-start gap-3">
+        <Link href={`/console/tournaments/${tournamentId}/matches`}>
+          <Swords className="h-5 w-5" strokeWidth={2.25} />
+          Manage matches
+        </Link>
+      </Button>
+      <Button asChild tone="paper" size="lg" className="w-full justify-start gap-3">
+        <Link href={`/console/tournaments/${tournamentId}/live`}>
+          <Radio className="h-5 w-5" strokeWidth={2.25} />
+          Court ops
+        </Link>
+      </Button>
+    </div>
+  );
+}
 import { TOURNAMENT_STATUS } from "@/features/tournaments/config";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
@@ -80,7 +123,16 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
           </section>
         ) : null}
 
-        {data.phase === "during" ? <DuringPanel tournamentId={tournamentId} data={data} /> : null}
+        {data.phase === "during" ? (
+          <>
+            <div className="md:hidden">
+              <MobileDuringPanel tournamentId={tournamentId} data={data} />
+            </div>
+            <div className="hidden md:block">
+              <DuringPanel tournamentId={tournamentId} data={data} />
+            </div>
+          </>
+        ) : null}
 
         <div className="flex flex-col gap-4">
           <Button

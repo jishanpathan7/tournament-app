@@ -209,7 +209,7 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
   };
 
   return (
-    <div className="flex flex-col gap-6 pb-24 md:pb-0">
+    <div className="flex flex-col gap-6 pb-40 md:pb-0">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
           eyebrow="Event day"
@@ -366,7 +366,19 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
         </div>
       )}
 
-      <MobileLiveStickyBar tournamentId={tournamentId} />
+      <MobileLiveStickyBar
+        tournamentId={tournamentId}
+        callNext={
+          canManage && callTarget && nextWaiting
+            ? {
+                courtName: callTarget.court.name,
+                matchLabel: matchParticipantLabel(nextWaiting, participantsById),
+                isPending: assign.isPending,
+                onCall: onCallNext,
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
