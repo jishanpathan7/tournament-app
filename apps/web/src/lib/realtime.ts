@@ -7,6 +7,7 @@ import { env } from "@/lib/env";
  */
 
 export const REALTIME_EVENTS = {
+  MATCH_STARTED: "match.started",
   MATCH_COMPLETED: "match.completed",
   BRACKET_UPDATED: "bracket.updated",
   STANDINGS_UPDATED: "standings.updated",

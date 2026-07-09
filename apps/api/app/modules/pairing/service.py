@@ -162,7 +162,7 @@ async def generate(
         frozenset(members) for members, _ in deferred_dup
     }
     for team in plan.teams:
-        members = frozenset(team.member_ids)
+        member_set = frozenset(team.member_ids)
         session.add(
             ProposedTeam(
                 organization_id=org_id,
@@ -171,20 +171,20 @@ async def generate(
                 strength=team.strength,
                 confidence=team.confidence,
                 reasons=list(team.reasons),
-                locked=members in locked_sets,
-                team_name=carried_names.get(members),
+                locked=member_set in locked_sets,
+                team_name=carried_names.get(member_set),
             )
         )
 
     weights = {str(r.id): ctx.profile.skill_weight(r.skill_level) for r in ctx.entrants}
-    for members, team_name in deferred_dup:
-        strength = sum((weights.get(m, Decimal(0)) for m in members), Decimal(0))
+    for dup_members, team_name in deferred_dup:
+        strength = sum((weights.get(m, Decimal(0)) for m in dup_members), Decimal(0))
         confidence = pairing_confidence(strength, target, max_dev)
         session.add(
             ProposedTeam(
                 organization_id=org_id,
                 pairing_run_id=run.id,
-                member_ids=members,
+                member_ids=dup_members,
                 strength=strength,
                 confidence=confidence,
                 reasons=[DUPLICATE_PAIR_REASON],

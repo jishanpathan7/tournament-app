@@ -3,6 +3,7 @@
 import type { MatchView, ParticipantResponse } from "@tournament/api-client";
 import { Plus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
@@ -22,6 +23,7 @@ import {
 } from "@/features/matches/config";
 import { rulesFromSportConfig } from "@/features/matches/badminton-scoring";
 import { ApiError, errorMessage } from "@/lib/problem";
+import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
 
 /**
@@ -42,6 +44,7 @@ export function ScoreEntryForm({
   onSuccess?: () => void;
   variant?: "default" | "hero";
 }) {
+  const queryClient = useQueryClient();
   const rules = rulesFromSportConfig(match.sportConfig);
   const isHero = variant === "hero";
   const [values, setValues] = useState<ScoreFormValues>(() =>
@@ -63,7 +66,9 @@ export function ScoreEntryForm({
 
   useEffect(() => {
     setValues(scoreFormFromResult(match, rules.bestOf));
-  }, [match, rules.bestOf]);
+    // Status-only updates (scheduled → live) must not wipe in-progress score entry.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when persisted result changes
+  }, [match.id, JSON.stringify(match.resultPayload), rules.bestOf]);
 
   useEffect(() => {
     let alive = true;
@@ -132,6 +137,10 @@ export function ScoreEntryForm({
           if (e instanceof ApiError && e.status === 412) {
             setError("This match was updated elsewhere — refreshing…");
             void refreshEtag();
+            void queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(match.id) });
+            void queryClient.invalidateQueries({
+              queryKey: queryKeys.tournaments.matches(tournamentId),
+            });
           } else {
             setError(errorMessage(e, "Couldn't submit score"));
           }

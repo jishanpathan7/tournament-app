@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
+import { toast } from "@/components/ui/sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { matchStatusMeta } from "@/features/draws/config";
 import { MatchHistoryList } from "@/features/matches/components/match-history-list";
@@ -30,8 +31,10 @@ import {
   isScoreable,
 } from "@/features/matches/config";
 import { ScorekeeperMatchLinkPanel } from "@/features/scoring/components/scorekeeper-match-link-panel";
+import { useEnsureMatchLive } from "@/features/scoring/use-ensure-match-live";
 import { getFormat } from "@/features/tournaments/config";
 import { useIsDesktop } from "@/hooks/use-media-query";
+import { errorMessage } from "@/lib/problem";
 import { cn } from "@/lib/utils";
 
 export type CommandCenterTab = "score" | "overview" | "scorekeeper" | "timeline";
@@ -172,6 +175,7 @@ function CommandCenterBody({
   courtsById,
   canManage,
   defaultTab,
+  startLiveOnOpen,
 }: {
   match: MatchView;
   tournamentId: string;
@@ -181,16 +185,23 @@ function CommandCenterBody({
   courtsById: Map<string, CourtView>;
   canManage: boolean;
   defaultTab: CommandCenterTab;
+  startLiveOnOpen: boolean;
 }) {
   const scoreable = canManage && isScoreable(match.status);
   const resolvedDefault: CommandCenterTab =
     defaultTab === "score" && scoreable ? "score" : scoreable ? "score" : "overview";
 
   const [tab, setTab] = useState<CommandCenterTab>(resolvedDefault);
+  const { ensureLive } = useEnsureMatchLive(match.id, tournamentId, match.status, match.stageId);
 
   useEffect(() => {
     setTab(resolvedDefault);
   }, [match.id, resolvedDefault]);
+
+  useEffect(() => {
+    if (!startLiveOnOpen || match.status !== "scheduled") return;
+    void ensureLive(null).catch((e) => toast.error(errorMessage(e, "Couldn't start match")));
+  }, [startLiveOnOpen, match.id, match.status, ensureLive]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -253,6 +264,7 @@ export function MatchCommandCenter({
   open,
   onOpenChange,
   defaultTab = "score",
+  startLiveOnOpen = false,
 }: {
   match: MatchView | null;
   tournamentId: string;
@@ -264,6 +276,8 @@ export function MatchCommandCenter({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultTab?: CommandCenterTab;
+  /** When true (explicit "Start match" click), transition scheduled → live once on open. */
+  startLiveOnOpen?: boolean;
 }) {
   const isDesktop = useIsDesktop();
 
@@ -291,6 +305,7 @@ export function MatchCommandCenter({
             courtsById={courtsById}
             canManage={canManage}
             defaultTab={defaultTab}
+            startLiveOnOpen={startLiveOnOpen}
           />
         </SheetContent>
       </Sheet>
@@ -313,6 +328,7 @@ export function MatchCommandCenter({
           courtsById={courtsById}
           canManage={canManage}
           defaultTab={defaultTab}
+          startLiveOnOpen={startLiveOnOpen}
         />
       </DialogContent>
     </Dialog>

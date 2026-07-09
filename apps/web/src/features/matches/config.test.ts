@@ -374,6 +374,12 @@ describe("ops center helpers", () => {
     expect(courtLabelFromMap("c-1", map)).toBe("Court 3");
   });
 
+  it("matchPrimaryAction labels scheduled on-court matches", () => {
+    expect(matchPrimaryAction(makeMatch({ status: "scheduled", courtId: "c-1" })).label).toBe(
+      "Start match",
+    );
+  });
+
   it("matchPrimaryAction labels live matches", () => {
     expect(matchPrimaryAction(makeMatch({ status: "live" })).label).toBe("Resume scoring");
   });

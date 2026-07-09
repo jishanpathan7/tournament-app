@@ -301,7 +301,7 @@ export function matchPrimaryAction(match: MatchView): {
   if (match.status === "live") return { label: "Resume scoring", action: "score" };
   if (match.status === "scheduled") {
     return match.courtId
-      ? { label: "Enter result", action: "start" }
+      ? { label: "Start match", action: "start" }
       : { label: "View match", action: "view" };
   }
   if (TERMINAL_STATUSES.has(match.status)) {
@@ -552,6 +552,7 @@ const ACTIVITY_ACTION_LABELS: Record<string, string> = {
   "stage.draw_cleared": "Draw cleared",
   "match.completed": "Match completed",
   "match.corrected": "Match corrected",
+  "match.started": "Match started",
 };
 
 export function activityActionLabel(action: string): string {

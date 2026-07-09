@@ -244,6 +244,22 @@ async def score_via_link(
     )
 
 
+async def start_via_link(
+    session: AsyncSession,
+    *,
+    link: ShareLink,
+    if_match: str | None = None,
+) -> Match:
+    match = await get_linked_match(session, link)
+    return await scoring_service.start_match(
+        session,
+        org_id=link.organization_id,
+        actor_id=None,
+        match_id=match.id,
+        if_match=if_match,
+    )
+
+
 def checkin_url(raw_token: str) -> str:
     base = get_settings().frontend_url.rstrip("/")
     return f"{base}/checkin/{raw_token}"

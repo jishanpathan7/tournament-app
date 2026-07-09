@@ -63,6 +63,29 @@ async def score_match(
     return await service.build_match_view_for_org(session, principal.organization_id, match)
 
 
+@router.post(
+    "/matches/{match_id}/start",
+    response_model=MatchView,
+    dependencies=[Depends(authed_csrf)],
+)
+async def start_match(
+    match_id: uuid.UUID,
+    response: Response,
+    principal: Principal = Depends(_score),
+    session: AsyncSession = Depends(get_request_session),
+    if_match: str | None = Header(default=None, alias="If-Match"),
+) -> MatchView:
+    match = await service.start_match(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        match_id=match_id,
+        if_match=if_match,
+    )
+    response.headers["ETag"] = service.match_etag(match)
+    return await service.build_match_view_for_org(session, principal.organization_id, match)
+
+
 @router.get("/stages/{stage_id}/matches", response_model=list[MatchView])
 async def list_stage_matches(
     stage_id: uuid.UUID,

@@ -72,6 +72,14 @@ function baseSetup() {
   vi.mocked(matchesApi.listTournamentActivity).mockResolvedValue([]);
   vi.mocked(scoringApi.listMatchEvents).mockResolvedValue([]);
   vi.mocked(scoringApi.getMatchEtag).mockResolvedValue('W/"123"');
+  vi.mocked(scoringApi.startMatch).mockImplementation(async (matchId) =>
+    makeMatch({
+      id: matchId,
+      stageId: STAGE_ID,
+      status: "live",
+      sides: [side(p1.id), side(p2.id)],
+    }),
+  );
   vi.mocked(schedulingApi.getQueue).mockResolvedValue(makeScheduleQueue());
   vi.mocked(courtsApi.listTournamentCourts).mockResolvedValue([]);
   vi.mocked(tournamentsApi.listDivisions).mockResolvedValue([]);
@@ -367,6 +375,40 @@ describe("MatchCenter", () => {
     const dialog = await openCompletedMatch(user);
     await user.click(within(dialog).getByRole("tab", { name: "Timeline" }));
     expect(await within(dialog).findByText("Score submitted")).toBeInTheDocument();
+  });
+
+  it("does not start a match when opening the score tab via View match", async () => {
+    const user = userEvent.setup();
+    vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        sides: [side(p1.id), side(p2.id)],
+      }),
+    ]);
+    renderCenter();
+    await openScoreTab(user);
+    await waitFor(() => expect(scoringApi.startMatch).not.toHaveBeenCalled());
+  });
+
+  it("starts a match when clicking Start match", async () => {
+    const user = userEvent.setup();
+    vi.mocked(matchesApi.listTournamentMatches).mockResolvedValue([
+      makeMatch({
+        id: "m-1",
+        stageId: STAGE_ID,
+        status: "scheduled",
+        courtId: "court-1",
+        sides: [side(p1.id), side(p2.id)],
+      }),
+    ]);
+    renderCenter();
+    await waitForQueue();
+    await user.click(screen.getByRole("button", { name: "Start match" }));
+    await waitFor(() =>
+      expect(scoringApi.startMatch).toHaveBeenCalledWith("m-1", { ifMatch: null }),
+    );
   });
 
   it("renders the compact activity feed", async () => {

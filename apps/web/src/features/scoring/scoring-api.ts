@@ -40,3 +40,14 @@ export async function scoreMatch(
   const { data } = await api.post<MatchView>(`/matches/${matchId}/score`, { payload }, { headers });
   return data;
 }
+
+/** Mark a scheduled match as live when play begins on court. Idempotent if already live. */
+export async function startMatch(
+  matchId: string,
+  opts?: { ifMatch?: string | null },
+): Promise<MatchView> {
+  const headers: Record<string, string> = {};
+  if (opts?.ifMatch) headers["If-Match"] = opts.ifMatch;
+  const { data } = await api.post<MatchView>(`/matches/${matchId}/start`, {}, { headers });
+  return data;
+}

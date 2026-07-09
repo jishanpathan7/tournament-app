@@ -79,6 +79,31 @@ describe("useRealtime — registration events", () => {
     expect(invalidate).not.toHaveBeenCalled();
   });
 
+  it("invalidates the tournament-wide match queue + activity feed on match.started", () => {
+    const client = createTestQueryClient();
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const wrapper = ({ children }: { children: React.ReactNode }) => (
+      <Providers client={client}>{children}</Providers>
+    );
+
+    renderHook(() => useRealtime("org:org-1"), { wrapper });
+    const source = FakeEventSource.instances[0]!;
+    source.emit("match.started", { matchId: "m-1", tournamentId: "t-1", status: "live" });
+
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.matches.detail("m-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.tournaments.matches("t-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.tournaments.activity("t-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.schedule.queue("t-1") }),
+    );
+  });
+
   it("invalidates the tournament-wide match queue + activity feed on match.completed", () => {
     const client = createTestQueryClient();
     const invalidate = vi.spyOn(client, "invalidateQueries");
@@ -102,9 +127,12 @@ describe("useRealtime — registration events", () => {
     expect(invalidate).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: queryKeys.tournaments.activity("t-1") }),
     );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.schedule.queue("t-1") }),
+    );
   });
 
-  it("invalidates the tournament-wide match queue on bracket.updated", () => {
+  it("invalidates schedule queue on bracket.updated when tournamentId is present", () => {
     const client = createTestQueryClient();
     const invalidate = vi.spyOn(client, "invalidateQueries");
     const wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -120,6 +148,9 @@ describe("useRealtime — registration events", () => {
     );
     expect(invalidate).toHaveBeenCalledWith(
       expect.objectContaining({ queryKey: queryKeys.tournaments.matches("t-1") }),
+    );
+    expect(invalidate).toHaveBeenCalledWith(
+      expect.objectContaining({ queryKey: queryKeys.schedule.queue("t-1") }),
     );
   });
 

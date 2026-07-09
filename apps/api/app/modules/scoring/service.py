@@ -222,6 +222,62 @@ def build_standings_view(stage_id: uuid.UUID, rows: Sequence[Standing]) -> Stand
     )
 
 
+async def start_match(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID | None,
+    match_id: uuid.UUID,
+    if_match: str | None = None,
+) -> Match:
+    """Mark a scheduled match as live — play has started on court."""
+    match = await repo.get_match(session, org_id, match_id)
+    if match is None:
+        raise NotFoundError("Match not found")
+
+    if if_match is not None and if_match != match_etag(match):
+        raise PreconditionFailedError("Match was modified; refetch and retry", code="stale_match")
+
+    if match.status == MatchStatus.LIVE.value:
+        return match
+
+    if match.status != MatchStatus.SCHEDULED.value:
+        raise ValidationError(
+            f"cannot start a match in status {match.status!r}",
+            code="not_startable",
+        )
+
+    if len(_ordered_sides(match)) != 2:
+        raise ValidationError("match does not have two participants to start", code="not_scorable")
+
+    match.status = MatchStatus.LIVE.value
+    await session.flush()
+    # DB trigger bumps `updated_at` — refresh before router reads it for ETag / MatchView.
+    await session.refresh(match, attribute_names=["updated_at"])
+
+    audit.record(
+        session,
+        organization_id=org_id,
+        actor_id=actor_id,
+        action=events.MATCH_STARTED,
+        entity="match",
+        entity_id=match.id,
+        after={"status": match.status},
+    )
+    await emit_event(
+        session,
+        aggregate="match",
+        event_type=events.MATCH_STARTED,
+        payload={
+            "id": str(match.id),
+            "stageId": str(match.stage_id),
+            "organizationId": str(org_id),
+        },
+    )
+    await _broadcast_started(org_id, match)
+    return match
+
+
 async def score_match(
     session: AsyncSession,
     *,
@@ -396,6 +452,18 @@ async def _emit(
         event_type=events.STANDINGS_RECOMPUTE,
         payload={"stageId": str(match.stage_id), "organizationId": str(org_id)},
     )
+
+
+async def _broadcast_started(org_id: uuid.UUID, match: Match) -> None:
+    broadcaster = get_broadcaster()
+    match_data = {
+        "tournamentId": str(match.tournament_id),
+        "matchId": str(match.id),
+        "stageId": str(match.stage_id),
+        "status": match.status,
+    }
+    for channel in (org_channel(org_id), tournament_channel(match.tournament_id)):
+        await broadcaster.publish(channel, events.RT_MATCH_STARTED, match_data)
 
 
 async def _broadcast(org_id: uuid.UUID, match: Match) -> None:

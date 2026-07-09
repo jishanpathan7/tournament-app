@@ -39,6 +39,7 @@ export function MatchCard({
   focused,
   onOpen,
   onPrimaryAction,
+  nested = false,
 }: {
   match: MatchView;
   participantsById: Map<string, ParticipantResponse>;
@@ -47,6 +48,8 @@ export function MatchCard({
   focused?: boolean;
   onOpen: (matchId: string) => void;
   onPrimaryAction: (matchId: string) => void;
+  /** Lighter row style when nested inside a queue section card. */
+  nested?: boolean;
 }) {
   const status = matchStatusMeta(match.status);
   const stage = stagesById.get(match.stageId);
@@ -62,18 +65,23 @@ export function MatchCard({
   };
 
   const label = participantNames(match, participantsById);
+  const Shell = nested ? "div" : Card;
 
   return (
-    <Card
+    <Shell
       role="button"
       tabIndex={0}
       aria-label={`Open match: ${label}`}
       onClick={() => onOpen(match.id)}
       onKeyDown={handleKeyDown}
       className={cn(
-        "border-ink shadow-sticker-xs hover:bg-muted/30 cursor-pointer border-2 p-4 transition-colors",
+        "cursor-pointer rounded-xl p-4 transition-colors",
+        nested
+          ? "border-ink/12 hover:bg-muted/40 bg-card border"
+          : "border-ink shadow-sticker-xs hover:bg-muted/30 border-2",
         focused && "ring-candy ring-2 ring-offset-2",
-        match.status === "live" && "border-mint bg-mint-tint/30",
+        match.status === "live" &&
+          (nested ? "border-mint bg-mint-tint/25" : "border-mint bg-mint-tint/30"),
       )}
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -105,6 +113,6 @@ export function MatchCard({
           {primary.label}
         </Button>
       </div>
-    </Card>
+    </Shell>
   );
 }

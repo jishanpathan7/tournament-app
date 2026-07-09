@@ -53,3 +53,16 @@ async def submit_scorekeeper_score(
     )
     response.headers["ETag"] = scoring_service.match_etag(match)
     return await scoring_service.build_match_view_for_org(session, link.organization_id, match)
+
+
+@router.post("/start", response_model=MatchView)
+async def start_scorekeeper_match(
+    response: Response,
+    token: str = Depends(_token),
+    session: AsyncSession = Depends(get_public_session),
+    if_match: str | None = Header(default=None, alias="If-Match"),
+) -> MatchView:
+    link = await service.resolve_scorekeeper_token(session, token)
+    match = await service.start_via_link(session, link=link, if_match=if_match)
+    response.headers["ETag"] = scoring_service.match_etag(match)
+    return await scoring_service.build_match_view_for_org(session, link.organization_id, match)

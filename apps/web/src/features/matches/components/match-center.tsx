@@ -13,8 +13,7 @@ import {
   MatchCommandCenter,
   type CommandCenterTab,
 } from "@/features/matches/components/match-command-center";
-import { MatchQueueAdvancedFilters } from "@/features/matches/components/match-queue-advanced-filters";
-import { MatchQueueQuickFilters } from "@/features/matches/components/match-queue-quick-filters";
+import { MatchQueueFiltersPanel } from "@/features/matches/components/match-queue-filters-panel";
 import { MatchQueueSections } from "@/features/matches/components/match-queue-sections";
 import { OpsContextualCta } from "@/features/matches/components/ops-contextual-cta";
 import { OpsSummaryRow } from "@/features/matches/components/ops-summary-row";
@@ -28,6 +27,7 @@ import {
   deriveContextualCta,
   deriveOpsSummary,
   deriveTournamentProgress,
+  matchPrimaryAction,
 } from "@/features/matches/config";
 import {
   useTournamentMatches,
@@ -59,6 +59,7 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
   const [filters, setFilters] = useState(DEFAULT_MATCH_QUEUE_FILTERS);
   const [selectedMatchId, setSelectedMatchId] = useState<string | null>(null);
   const [commandTab, setCommandTab] = useState<CommandCenterTab>("score");
+  const [startLiveOnOpen, setStartLiveOnOpen] = useState(false);
 
   const participantsById = useMemo(
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
@@ -93,9 +94,22 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
     [matches.data, courtsById],
   );
 
-  const openMatch = (matchId: string, tab: CommandCenterTab = "score") => {
+  const openMatch = (
+    matchId: string,
+    tab: CommandCenterTab = "score",
+    opts?: { startLive?: boolean },
+  ) => {
     setSelectedMatchId(matchId);
     setCommandTab(tab);
+    setStartLiveOnOpen(opts?.startLive ?? false);
+  };
+
+  const openPrimaryAction = (matchId: string) => {
+    const m = (matches.data ?? []).find((x) => x.id === matchId);
+    const primary = m ? matchPrimaryAction(m) : { action: "view" as const };
+    const tab: CommandCenterTab =
+      primary.action === "score" || primary.action === "start" ? "score" : "overview";
+    openMatch(matchId, tab, { startLive: primary.action === "start" });
   };
 
   if (tournament.isLoading || matches.isLoading || stages.isLoading || participants.isLoading) {
@@ -140,15 +154,12 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
         byStage={progress.byStage}
       />
 
-      <div className="flex flex-col gap-4">
-        <MatchQueueQuickFilters filters={filters} onChange={setFilters} />
-        <MatchQueueAdvancedFilters
-          filters={filters}
-          onChange={setFilters}
-          stages={stages.data ?? []}
-          matches={matches.data ?? []}
-        />
-      </div>
+      <MatchQueueFiltersPanel
+        filters={filters}
+        onChange={setFilters}
+        stages={stages.data ?? []}
+        matches={matches.data ?? []}
+      />
 
       {matches.isError ? (
         <ErrorState
@@ -181,7 +192,7 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
           stagesById={stagesById}
           courtsById={courtsById}
           onOpen={(id) => openMatch(id, "overview")}
-          onPrimaryAction={(id) => openMatch(id, "score")}
+          onPrimaryAction={openPrimaryAction}
         />
       )}
 
@@ -198,8 +209,14 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
         courtsById={courtsById}
         canManage={canManage}
         open={!!selectedMatch}
-        onOpenChange={(open) => !open && setSelectedMatchId(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedMatchId(null);
+            setStartLiveOnOpen(false);
+          }
+        }}
         defaultTab={commandTab}
+        startLiveOnOpen={startLiveOnOpen}
       />
     </div>
   );

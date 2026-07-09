@@ -69,3 +69,12 @@ export async function submitScore(
     throw new ScorekeeperApiError(res.status, safeErrorMessage(res.status));
   }
 }
+
+export async function startMatch(token: string, ifMatch?: string | null): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (ifMatch) headers["If-Match"] = ifMatch;
+  const res = await fetch(`${BASE}/start?${tokenQuery(token)}`, { method: "POST", headers });
+  if (!res.ok) {
+    throw new ScorekeeperApiError(res.status, safeErrorMessage(res.status));
+  }
+}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Check, Flag, Minus, Plus, RotateCcw } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -46,6 +46,7 @@ export function CourtScorekeeperPanel({
   fetchingEtag,
   onSubmit,
   onComplete,
+  onScoringStart,
 }: {
   labelA: string;
   labelB: string;
@@ -54,12 +55,15 @@ export function CourtScorekeeperPanel({
   fetchingEtag: boolean;
   onSubmit: (payload: Record<string, unknown>) => Promise<void>;
   onComplete?: () => void;
+  /** Called once when the first point is entered — marks the match live on court. */
+  onScoringStart?: () => void;
 }) {
   const [completedGames, setCompletedGames] = useState<GameScore[]>([]);
   const [liveGame, setLiveGame] = useState<GameScore>(emptyLiveGame());
   const [activeGameIndex, setActiveGameIndex] = useState(0);
   const [walkoverOpen, setWalkoverOpen] = useState(false);
   const [tieOpen, setTieOpen] = useState(false);
+  const scoringStartedRef = useRef(false);
 
   const winsA = gamesWonBySide(completedGames as { a: number; b: number }[], "a");
   const winsB = gamesWonBySide(completedGames as { a: number; b: number }[], "b");
@@ -71,7 +75,13 @@ export function CourtScorekeeperPanel({
 
   const bump = (side: GameSide, delta: number) => {
     setLiveGame((g) => {
+      const prevA = g.a ?? 0;
+      const prevB = g.b ?? 0;
       const next = Math.max(0, Math.min(rules.pointCap, (g[side] ?? 0) + delta));
+      if (!scoringStartedRef.current && onScoringStart && prevA === 0 && prevB === 0 && next > 0) {
+        scoringStartedRef.current = true;
+        onScoringStart();
+      }
       return { ...g, [side]: next };
     });
   };
