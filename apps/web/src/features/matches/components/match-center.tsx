@@ -1,6 +1,6 @@
 "use client";
 
-import { Swords } from "lucide-react";
+import { Radio, Swords, Timer } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -142,17 +142,38 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
         actions={<OpsContextualCta cta={contextualCta} onAction={openMatch} />}
       />
 
-      <OpsSummaryRow
-        summary={opsSummary}
-        courtsHref={`/console/tournaments/${tournamentId}/live`}
-      />
+      {/* Mobile: single-line status chip so the match queue is immediately visible */}
+      <div className="border-ink bg-muted/30 flex items-center gap-4 rounded-2xl border-2 px-4 py-2.5 md:hidden">
+        <span className="flex items-center gap-1.5 text-sm">
+          <Radio className="text-mint h-3.5 w-3.5" strokeWidth={2.5} />
+          <span className="font-mono font-bold tabular-nums">{opsSummary.live}</span>
+          <span className="text-muted-foreground">live</span>
+        </span>
+        <span className="flex items-center gap-1.5 text-sm">
+          <Timer className="text-muted-foreground h-3.5 w-3.5" strokeWidth={2.25} />
+          <span className="font-mono font-bold tabular-nums">{opsSummary.waitingToStart}</span>
+          <span className="text-muted-foreground">waiting</span>
+        </span>
+        <span className="ml-auto font-mono text-sm font-bold tabular-nums">
+          {opsSummary.progressPct}%
+          <span className="text-muted-foreground ml-1 font-normal">done</span>
+        </span>
+      </div>
 
-      <TournamentProgressPanel
-        completed={progress.completed}
-        total={progress.total}
-        pct={progress.pct}
-        byStage={progress.byStage}
-      />
+      {/* Desktop: full summary + progress panels */}
+      <div className="hidden md:flex md:flex-col md:gap-6">
+        <OpsSummaryRow
+          summary={opsSummary}
+          courtsHref={`/console/tournaments/${tournamentId}/live`}
+        />
+
+        <TournamentProgressPanel
+          completed={progress.completed}
+          total={progress.total}
+          pct={progress.pct}
+          byStage={progress.byStage}
+        />
+      </div>
 
       <MatchQueueFiltersPanel
         filters={filters}
