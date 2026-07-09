@@ -295,51 +295,92 @@ export function CheckInConsole({
               </div>
 
               <div className="flex shrink-0 items-center gap-2">
-                <AttendanceBadge status={p.attendance} />
-
                 {canManage && (
                   <>
                     {pendingIds.has(p.id) ? (
                       <Spinner className="h-5 w-5" />
                     ) : (
-                      <div className="flex items-center gap-1">
-                        {p.attendance !== "checked_in" && (
-                          <Button
-                            size="sm"
-                            tone="ghost"
-                            className="h-10 w-10 p-0"
-                            onClick={() => setOne(p, "checked_in")}
-                            aria-label={`Check in ${p.displayName}`}
-                          >
-                            <Check className="h-4 w-4" strokeWidth={2.5} />
-                          </Button>
-                        )}
-                        {p.attendance !== "absent" && (
-                          <Button
-                            size="sm"
-                            tone="ghost"
-                            className="h-10 w-10 p-0"
-                            onClick={() => setOne(p, "absent")}
-                            aria-label={`Mark ${p.displayName} absent`}
-                          >
-                            <UserX className="h-4 w-4" strokeWidth={2.5} />
-                          </Button>
-                        )}
-                        {p.attendance !== "pending" && (
-                          <Button
-                            size="sm"
-                            tone="ghost"
-                            className="text-muted-foreground h-10 w-10 p-0"
-                            onClick={() => setOne(p, "pending")}
-                            aria-label={`Reset ${p.displayName} to pending`}
-                          >
-                            <Square className="h-4 w-4" strokeWidth={2.5} />
-                          </Button>
-                        )}
-                      </div>
+                      <>
+                        {/* Mobile: one large primary action per status */}
+                        <div className="flex items-center gap-1 md:hidden">
+                          {p.attendance === "pending" && (
+                            <Button
+                              size="sm"
+                              tone="mint"
+                              className="h-11 gap-1.5 px-4 text-sm font-semibold"
+                              onClick={() => setOne(p, "checked_in")}
+                              aria-label={`Check in ${p.displayName}`}
+                            >
+                              <Check className="h-4 w-4" strokeWidth={2.5} />
+                              Check in
+                            </Button>
+                          )}
+                          {p.attendance === "checked_in" && (
+                            <Button
+                              size="sm"
+                              tone="ghost"
+                              className="text-mint h-11 gap-1.5 px-3 text-sm font-semibold"
+                              onClick={() => setOne(p, "pending")}
+                              aria-label={`Undo check-in for ${p.displayName}`}
+                            >
+                              <Check className="h-4 w-4" strokeWidth={2.5} />
+                              Done
+                            </Button>
+                          )}
+                          {p.attendance === "absent" && (
+                            <Button
+                              size="sm"
+                              tone="ghost"
+                              className="text-muted-foreground h-11 px-3 text-sm"
+                              onClick={() => setOne(p, "pending")}
+                              aria-label={`Reset ${p.displayName} to pending`}
+                            >
+                              Absent · undo
+                            </Button>
+                          )}
+                        </div>
+                        {/* Desktop: all 3 icon buttons */}
+                        <div className="hidden items-center gap-1 md:flex">
+                          <AttendanceBadge status={p.attendance} />
+                          {p.attendance !== "checked_in" && (
+                            <Button
+                              size="sm"
+                              tone="ghost"
+                              className="h-10 w-10 p-0"
+                              onClick={() => setOne(p, "checked_in")}
+                              aria-label={`Check in ${p.displayName}`}
+                            >
+                              <Check className="h-4 w-4" strokeWidth={2.5} />
+                            </Button>
+                          )}
+                          {p.attendance !== "absent" && (
+                            <Button
+                              size="sm"
+                              tone="ghost"
+                              className="h-10 w-10 p-0"
+                              onClick={() => setOne(p, "absent")}
+                              aria-label={`Mark ${p.displayName} absent`}
+                            >
+                              <UserX className="h-4 w-4" strokeWidth={2.5} />
+                            </Button>
+                          )}
+                          {p.attendance !== "pending" && (
+                            <Button
+                              size="sm"
+                              tone="ghost"
+                              className="text-muted-foreground h-10 w-10 p-0"
+                              onClick={() => setOne(p, "pending")}
+                              aria-label={`Reset ${p.displayName} to pending`}
+                            >
+                              <Square className="h-4 w-4" strokeWidth={2.5} />
+                            </Button>
+                          )}
+                        </div>
+                      </>
                     )}
                   </>
                 )}
+                {!canManage && <AttendanceBadge status={p.attendance} />}
               </div>
             </li>
           ))}
