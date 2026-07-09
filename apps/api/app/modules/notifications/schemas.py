@@ -11,9 +11,14 @@ from app.api.schemas import ApiModel
 class NotificationResource(ApiModel):
     id: uuid.UUID
     type: str
+    priority: str  # action_required | important | info
+    icon: str
     title: str | None
     body: str | None
-    status: str  # sent | delivered | failed | read
+    cta_label: str | None
+    cta_href: str | None
+    status: str  # sent | delivered | failed | read | resolved
+    resolved_at: datetime.datetime | None
     created_at: datetime.datetime
 
 
@@ -23,3 +28,8 @@ class UnreadCountResponse(ApiModel):
 
 class MarkAllReadResponse(ApiModel):
     updated: int
+
+
+class ResolveNotificationResponse(ApiModel):
+    id: uuid.UUID
+    status: str

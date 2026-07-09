@@ -23,6 +23,7 @@ from app.db.enums import (
     AttendanceStatus,
     MatchOutcome,
     MatchStatus,
+    OrgRole,
     ParticipantKind,
     TournamentStatus,
     Visibility,
@@ -54,12 +55,37 @@ from app.engine import (
     WinnerOfRef,
     parse_source_refs,
 )
+from app.modules.notifications import service as notif_service
+from app.modules.orgs import repository as orgs_repo
 from app.modules.registrations import notifications as reg_notifications
 from app.modules.registrations import repository as registrations_repo
 from app.modules.scoring import repository as scoring_repo
 from app.modules.tournaments import events
 from app.modules.tournaments import repository as repo
 from app.sports.config import merge_sport_config
+
+_ORGANIZER_ROLES = {OrgRole.OWNER.value, OrgRole.ADMIN.value, OrgRole.ORGANIZER.value}
+
+
+async def _notify_organizers(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    type: str,
+    data: dict,
+) -> None:
+    """Fan out an IN_APP notification to all owners/admins/organizers in the org."""
+    members = await orgs_repo.list_members(session, org_id)
+    for m in members:
+        if m.org_role in _ORGANIZER_ROLES:
+            await notif_service.notify(
+                session,
+                organization_id=org_id,
+                recipient_user_id=m.user_id,
+                type=type,
+                data=data,
+            )
+
 
 _TERMINAL_STATUSES = {
     MatchStatus.COMPLETED.value,
@@ -234,6 +260,19 @@ async def transition_status(
                 tournament=tournament,
                 recipient_emails=approved_emails,
             )
+        await _notify_organizers(
+            session,
+            org_id=org_id,
+            type="tournament.went_live",
+            data={"tournament_id": str(tournament.id), "tournament_name": tournament.name},
+        )
+    elif new_status is TournamentStatus.COMPLETED:
+        await _notify_organizers(
+            session,
+            org_id=org_id,
+            type="tournament.completed",
+            data={"tournament_id": str(tournament.id), "tournament_name": tournament.name},
+        )
     return tournament
 
 
@@ -505,6 +544,15 @@ async def generate_draw(
     summary = await _persist_structure(session, org_id, tournament.id, stage, plan, participants)
     await resolve_bracket(session, org_id, stage)  # resolve byes into walkovers immediately
     await _audit_event(session, org_id, actor_id, events.STAGE_GENERATED, stage.id, after=summary)
+    await _notify_organizers(
+        session,
+        org_id=org_id,
+        type="stage.draw_generated",
+        data={
+            "tournament_id": str(tournament.id),
+            "stage_name": stage.type,
+        },
+    )
     return stage, summary
 
 
@@ -578,6 +626,12 @@ async def advance_to_knockout(
     await resolve_bracket(session, org_id, ko_stage)
     await _audit_event(
         session, org_id, actor_id, events.STAGE_GENERATED, ko_stage.id, after=summary
+    )
+    await _notify_organizers(
+        session,
+        org_id=org_id,
+        type="stage.knockout_generated",
+        data={"tournament_id": str(tournament.id)},
     )
     return ko_stage, summary
 

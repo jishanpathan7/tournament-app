@@ -28,6 +28,7 @@ logger = logging.getLogger("app.worker")
 # imports these on startup so every handler is present without the API's router graph.
 _HANDLER_MODULES = (
     "app.workers.tasks",
+    "app.workers.monitoring",
     "app.modules.notifications.handlers",
     "app.modules.scoring.handlers",
 )

@@ -430,18 +430,20 @@ async def _participant_email(
 async def _notify(
     session: AsyncSession, org_id: uuid.UUID, match: Match, *, rescheduled: bool
 ) -> None:
-    notif_type = events.NOTIFY_MATCH_RESCHEDULED if rescheduled else events.NOTIFY_MATCH_SCHEDULED
     email_template = "match_rescheduled" if rescheduled else "match_scheduled"
     for mp in match.participants:
-        user_id = await scoring_service.participant_user(session, org_id, mp.participant_id)
-        if user_id is not None:
-            await notify(
-                session,
-                organization_id=org_id,
-                recipient_user_id=user_id,
-                type=notif_type,
-                data={"matchId": str(match.id), "tournamentId": str(match.tournament_id)},
-            )
+        # match.scheduled removed from IN_APP — portal schedule view already shows it.
+        # Rescheduled keeps IN_APP (changed plan = organizer must tell participant).
+        if rescheduled:
+            user_id = await scoring_service.participant_user(session, org_id, mp.participant_id)
+            if user_id is not None:
+                await notify(
+                    session,
+                    organization_id=org_id,
+                    recipient_user_id=user_id,
+                    type=events.NOTIFY_MATCH_RESCHEDULED,
+                    data={"matchId": str(match.id), "tournamentId": str(match.tournament_id)},
+                )
         email = await _participant_email(session, org_id, mp.participant_id)
         if email:
             await queue_email(

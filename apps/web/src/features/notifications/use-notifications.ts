@@ -5,13 +5,23 @@ import type {
   MarkAllReadResponse,
   NotificationPage,
   NotificationResource,
+  ResolveNotificationResponse,
   UnreadCountResponse,
 } from "@tournament/api-client";
 
 import { api, apiGet } from "@/lib/api";
 import { queryKeys } from "@/lib/query-keys";
 
-/** Cursor-paginated notification feed (newest first). */
+/** Action Required notifications — unresolved only. Loaded separately from the Updates feed. */
+export function useActionRequired() {
+  return useQuery({
+    queryKey: queryKeys.notifications.actionRequired(),
+    queryFn: () => apiGet<NotificationResource[]>("/notifications/action-required"),
+    refetchInterval: 60_000,
+  });
+}
+
+/** Cursor-paginated Important / Info notification feed (newest first, excludes action_required). */
 export function useNotifications(unreadOnly = false) {
   return useInfiniteQuery({
     queryKey: queryKeys.notifications.list(unreadOnly),
@@ -24,7 +34,7 @@ export function useNotifications(unreadOnly = false) {
   });
 }
 
-/** Unread badge count — polled so the bell stays fresh without a socket. */
+/** Badge count — action_required unreads only. */
 export function useUnreadCount() {
   return useQuery({
     queryKey: queryKeys.notifications.unreadCount(),
@@ -38,6 +48,11 @@ async function markRead(id: string): Promise<NotificationResource> {
   return data;
 }
 
+async function resolveNotification(id: string): Promise<ResolveNotificationResponse> {
+  const { data } = await api.post<ResolveNotificationResponse>(`/notifications/${id}/resolve`);
+  return data;
+}
+
 async function markAllRead(): Promise<MarkAllReadResponse> {
   const { data } = await api.post<MarkAllReadResponse>("/notifications/read-all");
   return data;
@@ -47,6 +62,16 @@ export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: markRead,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+    },
+  });
+}
+
+export function useResolveNotification() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: resolveNotification,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },

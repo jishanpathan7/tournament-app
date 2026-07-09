@@ -64,6 +64,7 @@ export const queryKeys = {
     all: ["notifications"] as const,
     list: (unreadOnly = false) => ["notifications", "list", { unreadOnly }] as const,
     unreadCount: () => ["notifications", "unread-count"] as const,
+    actionRequired: () => ["notifications", "action-required"] as const,
   },
 
   flags: {

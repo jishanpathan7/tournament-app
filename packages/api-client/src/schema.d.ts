@@ -2785,6 +2785,13 @@ export interface components {
       /** Updated */
       updated: number;
     };
+    /** ResolveNotificationResponse */
+    ResolveNotificationResponse: {
+      /** Id */
+      id: string;
+      /** Status */
+      status: string;
+    };
     /**
      * MatchResultEventView
      * @description One row of the append-only scoring/correction log for a match (`MatchResultEvent`) —
@@ -2925,12 +2932,25 @@ export interface components {
       id: string;
       /** Type */
       type: string;
+      /** Priority */
+      priority: string;
+      /** Icon */
+      icon: string;
       /** Title */
       title: string | null;
       /** Body */
       body: string | null;
+      /** Cta Label */
+      ctaLabel: string | null;
+      /** Cta Href */
+      ctaHref: string | null;
       /** Status */
       status: string;
+      /**
+       * Resolvedat
+       * Format: date-time
+       */
+      resolvedAt: string | null;
       /**
        * Createdat
        * Format: date-time

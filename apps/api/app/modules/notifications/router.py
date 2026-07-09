@@ -20,6 +20,7 @@ from app.modules.notifications import service
 from app.modules.notifications.schemas import (
     MarkAllReadResponse,
     NotificationResource,
+    ResolveNotificationResponse,
     UnreadCountResponse,
 )
 
@@ -31,9 +32,14 @@ def _resource(n: Notification) -> NotificationResource:
     return NotificationResource(
         id=n.id,
         type=n.type,
+        priority=n.priority,
+        icon=n.icon,
         title=payload.get("title"),
         body=payload.get("body"),
+        cta_label=n.cta_label,
+        cta_href=n.cta_href,
         status=n.status,
+        resolved_at=n.resolved_at,
         created_at=n.created_at,
     )
 
@@ -49,6 +55,15 @@ async def list_notifications(
         session, user_id=principal.user_id, params=params, unread_only=unread_only
     )
     return CursorPage(items=[_resource(r) for r in rows], next_cursor=next_cursor)
+
+
+@router.get("/action-required", response_model=list[NotificationResource])
+async def list_action_required(
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> list[NotificationResource]:
+    rows = await service.list_action_required(session, user_id=principal.user_id)
+    return [_resource(r) for r in rows]
 
 
 @router.get("/unread-count", response_model=UnreadCountResponse)
@@ -73,6 +88,22 @@ async def mark_read(
         session, user_id=principal.user_id, notification_id=notification_id
     )
     return _resource(notification)
+
+
+@router.post(
+    "/{notification_id}/resolve",
+    response_model=ResolveNotificationResponse,
+    dependencies=[Depends(authed_csrf)],
+)
+async def resolve_notification(
+    notification_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> ResolveNotificationResponse:
+    notification = await service.resolve_notification(
+        session, user_id=principal.user_id, notification_id=notification_id
+    )
+    return ResolveNotificationResponse(id=notification.id, status=notification.status)
 
 
 @router.post("/read-all", response_model=MarkAllReadResponse, dependencies=[Depends(authed_csrf)])

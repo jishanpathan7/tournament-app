@@ -143,12 +143,19 @@ class NotificationChannel(_StrEnum):
     IN_APP = "in_app"
 
 
+class NotificationPriority(_StrEnum):
+    ACTION_REQUIRED = "action_required"
+    IMPORTANT = "important"
+    INFO = "info"
+
+
 class NotificationStatus(_StrEnum):
     PENDING = "pending"
     SENT = "sent"
     DELIVERED = "delivered"
     FAILED = "failed"
     READ = "read"
+    RESOLVED = "resolved"
 
 
 class FileKind(_StrEnum):
@@ -233,6 +240,7 @@ ASSIGNMENT_ROLE = pg_enum(AssignmentRole, "assignment_role")
 SHARE_LINK_SCOPE = pg_enum(ShareLinkScope, "share_link_scope")
 NOTIFICATION_CHANNEL = pg_enum(NotificationChannel, "notification_channel")
 NOTIFICATION_STATUS = pg_enum(NotificationStatus, "notification_status")
+NOTIFICATION_PRIORITY = pg_enum(NotificationPriority, "notification_priority")  # 0019
 FILE_KIND = pg_enum(FileKind, "file_kind")
 FILE_STATUS = pg_enum(FileStatus, "file_status")
 ORG_INVITE_STATUS = pg_enum(OrgInviteStatus, "org_invite_status")
