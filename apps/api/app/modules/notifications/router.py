@@ -41,6 +41,7 @@ def _resource(n: Notification) -> NotificationResource:
         status=n.status,
         resolved_at=n.resolved_at,
         created_at=n.created_at,
+        tournament_name=payload.get("tournament_name"),
     )
 
 

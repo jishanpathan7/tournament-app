@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     worker_batch_size: int = 20  # rows drained per poll cycle
     worker_max_attempts: int = 5  # dead-letter a job after this many failures
     outbox_retention_days: int = 7  # processed outbox rows older than this are purged
+    notification_archive_days: int = (
+        7  # important/info in-app notifications older than this are purged
+    )
 
     # Realtime — SSE transport at MVP; WebSocket/Ably/Pusher slot in behind the seam.
     realtime_transport: str = "sse"

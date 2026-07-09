@@ -2956,6 +2956,8 @@ export interface components {
        * Format: date-time
        */
       createdAt: string;
+      /** Tournamentname */
+      tournamentName: string | null;
     };
     /**
      * OrgInviteStatus

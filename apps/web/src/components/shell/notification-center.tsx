@@ -131,6 +131,20 @@ function UpdateRow({ n }: { n: NotificationResource }) {
   );
 }
 
+/** Group notifications by tournament name, ungrouped items under null key. */
+function groupByTournament(
+  items: NotificationResource[],
+): [string | null, NotificationResource[]][] {
+  const map = new Map<string | null, NotificationResource[]>();
+  for (const n of items) {
+    const key = n.tournamentName ?? null;
+    const bucket = map.get(key) ?? [];
+    bucket.push(n);
+    map.set(key, bucket);
+  }
+  return Array.from(map.entries());
+}
+
 export function NotificationCenter() {
   const { data: unreadData } = useUnreadCount();
   const { data: actionData, isLoading: actionLoading } = useActionRequired();
@@ -141,6 +155,8 @@ export function NotificationCenter() {
   const updateItems = data?.pages.flatMap((p) => p.items) ?? [];
   const count = unreadData?.count ?? 0;
   const hasContent = actionItems.length > 0 || updateItems.length > 0;
+  const groupedUpdates = groupByTournament(updateItems);
+  const hasUnreadUpdates = updateItems.some((n) => n.status !== "read" && n.status !== "resolved");
 
   return (
     <Popover>
@@ -160,7 +176,7 @@ export function NotificationCenter() {
           <span className="text-2xs font-mono font-semibold uppercase tracking-[0.22em]">
             Notifications
           </span>
-          {updateItems.some((n) => n.status !== "read") ? (
+          {hasUnreadUpdates ? (
             <Button
               tone="ghost"
               size="sm"
@@ -207,20 +223,29 @@ export function NotificationCenter() {
 
               {updateItems.length > 0 ? (
                 <div>
-                  {actionItems.length > 0 ? (
-                    <div className="border-border border-b px-4 pb-1.5 pt-3">
-                      <span className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
-                        Updates
-                      </span>
-                    </div>
-                  ) : null}
-                  <div className="divide-border divide-y">
-                    {updateItems.map((n) => (
-                      <UpdateRow key={n.id} n={n} />
-                    ))}
+                  <div className="border-border border-b px-4 pb-1.5 pt-3">
+                    <span className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
+                      Tournament Updates
+                    </span>
                   </div>
+                  {groupedUpdates.map(([tournamentName, items]) => (
+                    <div key={tournamentName ?? "__ungrouped"}>
+                      {tournamentName ? (
+                        <div className="bg-muted/40 px-4 py-1.5">
+                          <span className="text-muted-foreground text-2xs font-mono font-medium uppercase tracking-[0.14em]">
+                            {tournamentName}
+                          </span>
+                        </div>
+                      ) : null}
+                      <div className="divide-border divide-y">
+                        {items.map((n) => (
+                          <UpdateRow key={n.id} n={n} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
                   {hasNextPage ? (
-                    <div className="p-3">
+                    <div className="border-border border-t p-3">
                       <Button
                         tone="paper"
                         size="sm"

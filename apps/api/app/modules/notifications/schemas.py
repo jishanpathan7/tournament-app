@@ -20,6 +20,7 @@ class NotificationResource(ApiModel):
     status: str  # sent | delivered | failed | read | resolved
     resolved_at: datetime.datetime | None
     created_at: datetime.datetime
+    tournament_name: str | None  # from payload, for frontend grouping
 
 
 class UnreadCountResponse(ApiModel):

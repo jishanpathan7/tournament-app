@@ -71,12 +71,12 @@ register_template(
     NotificationTemplate(
         type="tournament.went_live",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Tournament is now live",
-        in_app_body="{tournament_name} has started.",
+        in_app_title="{tournament_name} is live",
+        in_app_body="Matches are open. Head to the Live view to start calling courts.",
         priority=NotificationPriority.IMPORTANT,
         icon="radio",
-        cta_label="Go to matches",
-        cta_href="/console/tournaments/{tournament_id}/matches",
+        cta_label="Go to Live",
+        cta_href="/console/tournaments/{tournament_id}/live",
     )
 )
 
@@ -84,8 +84,8 @@ register_template(
     NotificationTemplate(
         type="tournament.completed",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Tournament completed",
-        in_app_body="{tournament_name} has finished. Results are ready to publish.",
+        in_app_title="{tournament_name} is wrapped up",
+        in_app_body="All matches are done. Publish the final standings when you're ready.",
         priority=NotificationPriority.IMPORTANT,
         icon="trophy",
         cta_label="Publish results",
@@ -97,11 +97,11 @@ register_template(
     NotificationTemplate(
         type="stage.draw_generated",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Draw generated",
-        in_app_body="{stage_name} bracket is ready to review.",
+        in_app_title="{stage_name} draw is ready",
+        in_app_body="Review the bracket before going live — make any manual adjustments now.",
         priority=NotificationPriority.IMPORTANT,
         icon="network",
-        cta_label="View bracket",
+        cta_label="Review bracket",
         cta_href="/console/tournaments/{tournament_id}/draws",
     )
 )
@@ -110,11 +110,13 @@ register_template(
     NotificationTemplate(
         type="stage.knockout_generated",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Knockout stage generated",
-        in_app_body="The knockout bracket has been set from group stage results.",
+        in_app_title="Knockout bracket is set",
+        in_app_body=(
+            "Group stage results are in. The knockout draw has been seeded automatically."
+        ),
         priority=NotificationPriority.IMPORTANT,
         icon="swords",
-        cta_label="View bracket",
+        cta_label="Review bracket",
         cta_href="/console/tournaments/{tournament_id}/draws",
     )
 )
@@ -123,8 +125,10 @@ register_template(
     NotificationTemplate(
         type="registration.closed",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Registration closed",
-        in_app_body="{tournament_name} registration window has closed.",
+        in_app_title="Registration closed for {tournament_name}",
+        in_app_body=(
+            "No new sign-ups will be accepted. Review the list and approve pending entries."
+        ),
         priority=NotificationPriority.IMPORTANT,
         icon="lock",
         cta_label="Review registrations",
@@ -136,8 +140,8 @@ register_template(
     NotificationTemplate(
         type="standings.final_published",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Final standings published",
-        in_app_body="{tournament_name} results are now public.",
+        in_app_title="Results are public for {tournament_name}",
+        in_app_body="Final standings are live on the public page.",
         priority=NotificationPriority.IMPORTANT,
         icon="bar-chart-2",
         cta_label="View public page",
@@ -151,8 +155,10 @@ register_template(
     NotificationTemplate(
         type="ops.court_idle",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Court idle: {court_name}",
-        in_app_body="{court_name} has had no active match for {idle_minutes} minutes.",
+        in_app_title="{court_name} has been idle for {idle_minutes} min",
+        in_app_body=(
+            "No match is running on this court." " Assign the next pair to keep things moving."
+        ),
         priority=NotificationPriority.ACTION_REQUIRED,
         icon="alert-triangle",
         cta_label="Assign next match",
@@ -164,10 +170,10 @@ register_template(
     NotificationTemplate(
         type="ops.match_stalled",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Match stalled: {court_name}",
+        in_app_title="Score missing on {court_name} ({stalled_minutes} min)",
         in_app_body=(
-            "A live match on {court_name} has had no score update"
-            " for {stalled_minutes} minutes."
+            "A live match has had no score update in a while."
+            " Check with the scorekeeper or enter the score manually."
         ),
         priority=NotificationPriority.ACTION_REQUIRED,
         icon="alert-triangle",
@@ -180,10 +186,10 @@ register_template(
     NotificationTemplate(
         type="ops.checkin_low",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Check-in rate low",
+        in_app_title="Only {checked_in} of {total} players checked in",
         in_app_body=(
-            "Only {checked_in}/{total} participants checked in."
-            " Tournament starts in {minutes_to_start} min."
+            "Tournament starts in {minutes_to_start} min."
+            " Reach out to missing players or adjust the draw."
         ),
         priority=NotificationPriority.ACTION_REQUIRED,
         icon="user-x",
@@ -196,11 +202,11 @@ register_template(
     NotificationTemplate(
         type="ops.draw_failed",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Draw generation failed",
+        in_app_title="Draw couldn't be generated",
         in_app_body="{error_summary}",
         priority=NotificationPriority.ACTION_REQUIRED,
         icon="x-circle",
-        cta_label="Retry",
+        cta_label="Try again",
         cta_href="/console/tournaments/{tournament_id}/draws",
     )
 )
@@ -209,11 +215,11 @@ register_template(
     NotificationTemplate(
         type="ops.scheduling_conflict",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Scheduling conflict",
-        in_app_body="{conflict_count} match(es) are double-booked on the same court.",
+        in_app_title="{conflict_count} scheduling conflict(s) need fixing",
+        in_app_body="Two or more matches are double-booked on the same court at the same time.",
         priority=NotificationPriority.ACTION_REQUIRED,
         icon="calendar-x",
-        cta_label="Resolve",
+        cta_label="Fix schedule",
         cta_href="/console/tournaments/{tournament_id}/schedule",
     )
 )
@@ -222,7 +228,7 @@ register_template(
     NotificationTemplate(
         type="ops.tournament_blocked",
         channels=(NotificationChannel.IN_APP,),
-        in_app_title="Tournament cannot progress",
+        in_app_title="Tournament can't go live yet",
         in_app_body="{block_reason}",
         priority=NotificationPriority.ACTION_REQUIRED,
         icon="shield-alert",
