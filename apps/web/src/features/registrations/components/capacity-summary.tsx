@@ -1,4 +1,4 @@
-import { Clock, ListTodo, Users } from "lucide-react";
+import { Clock, Link2, ListTodo, Star, Users } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import type { CapacitySummary } from "@/features/registrations/capacity";
@@ -37,6 +37,7 @@ function StatChip({
 
 /** Approved / remaining / waitlist / pending, with a fill bar when the division has a capacity limit. */
 export function CapacitySummaryBar({ summary }: { summary: CapacitySummary }) {
+  const franchisePaired = summary.pairs > 0;
   const pct =
     summary.capacity && summary.capacity > 0
       ? Math.min(100, Math.round((summary.approved / summary.capacity) * 100))
@@ -46,7 +47,25 @@ export function CapacitySummaryBar({ summary }: { summary: CapacitySummary }) {
     <Card className="flex flex-col gap-4 p-5">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex flex-wrap items-center gap-6">
-          <StatChip icon={Users} label="Approved" value={summary.approved} tint="bg-mint-tint" />
+          <StatChip
+            icon={Users}
+            label={franchisePaired ? "Players" : "Approved"}
+            value={summary.approved}
+            tint="bg-mint-tint"
+          />
+          {franchisePaired ? (
+            <>
+              <StatChip icon={Link2} label="Pairs" value={summary.pairs} tint="bg-candy-tint" />
+              {summary.franchiseTeams > 0 ? (
+                <StatChip
+                  icon={Star}
+                  label="Franchise teams"
+                  value={summary.franchiseTeams}
+                  tint="bg-yellow-tint"
+                />
+              ) : null}
+            </>
+          ) : null}
           <StatChip icon={ListTodo} label="Pending" value={summary.pending} tint="bg-candy-tint" />
           <StatChip
             icon={Clock}

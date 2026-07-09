@@ -21,13 +21,17 @@ export function WorkflowProgress({
   tournamentId,
   assigned,
   onNextAction,
+  onGenerateMatches,
+  generateMatchesPending,
 }: {
   workflow: WorkflowState;
   tournamentId: string;
   assigned: number;
   onNextAction?: () => void;
+  onGenerateMatches?: () => void;
+  generateMatchesPending?: boolean;
 }) {
-  const { currentStep, pairedCount, totalSquads, nextSquad } = workflow;
+  const { currentStep, pairedCount, draftCount, generatedCount, totalSquads, nextSquad } = workflow;
 
   return (
     <Card className="bg-muted/30">
@@ -47,27 +51,53 @@ export function WorkflowProgress({
               <>
                 <span className="text-muted-foreground">·</span>
                 <span>
-                  <strong>{pairedCount}</strong>/{totalSquads} teams paired
+                  <strong>{generatedCount}</strong>/{totalSquads} with pairs
+                </span>
+                <span className="text-muted-foreground">·</span>
+                <span>
+                  <strong>{pairedCount}</strong>/{totalSquads} locked
                 </span>
               </>
             )}
             {!workflow.playersAssigned && <Badge tone="yellow">Assign players first</Badge>}
-            {workflow.playersAssigned && !workflow.teamsPaired && (
+            {workflow.playersAssigned && draftCount > 0 && !workflow.allPairsLocked && (
               <Badge tone="yellow">
-                {totalSquads - pairedCount} team{totalSquads - pairedCount !== 1 ? "s" : ""}{" "}
-                remaining
+                {draftCount} draft{draftCount !== 1 ? "s" : ""} not locked yet
               </Badge>
             )}
-            {workflow.readyForDraw && <Badge tone="mint">All pairs locked</Badge>}
+            {workflow.playersAssigned && generatedCount < totalSquads && (
+              <Badge tone="yellow">
+                {totalSquads - generatedCount} team{totalSquads - generatedCount !== 1 ? "s" : ""}{" "}
+                need pairs
+              </Badge>
+            )}
+            {workflow.readyForDraw && workflow.allPairsLocked && (
+              <Badge tone="mint">All pairs locked</Badge>
+            )}
+            {workflow.readyForDraw && !workflow.allPairsLocked && (
+              <Badge tone="mint">Ready to generate matches</Badge>
+            )}
           </div>
 
           {workflow.readyForDraw ? (
-            <Button asChild tone="mint" size="sm">
-              <Link href={`/console/tournaments/${tournamentId}/draws`}>
+            onGenerateMatches ? (
+              <Button
+                tone="mint"
+                size="sm"
+                onClick={onGenerateMatches}
+                disabled={generateMatchesPending}
+              >
                 Generate Matches
                 <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Button>
+              </Button>
+            ) : (
+              <Button asChild tone="mint" size="sm">
+                <Link href={`/console/tournaments/${tournamentId}/draws`}>
+                  Generate Matches
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            )
           ) : nextSquad && onNextAction ? (
             <Button tone="candy" size="sm" onClick={onNextAction}>
               Generate pairs for {nextSquad.name}

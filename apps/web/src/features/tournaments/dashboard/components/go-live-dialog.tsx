@@ -77,7 +77,7 @@ export function GoLiveDialog({
       required: false,
     },
     {
-      label: "Draws generated for all divisions",
+      label: "Brackets built for all events",
       passed: signals.drawComplete,
       required: true,
     },

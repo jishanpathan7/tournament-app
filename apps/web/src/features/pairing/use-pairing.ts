@@ -10,6 +10,29 @@ import type {
 import * as pairingApi from "@/features/pairing/pairing-api";
 import { queryKeys } from "@/lib/query-keys";
 
+function invalidateDivisionPairing(
+  queryClient: ReturnType<typeof useQueryClient>,
+  divisionId: string,
+) {
+  void queryClient.invalidateQueries({
+    queryKey: ["divisions", divisionId, "pairing"],
+  });
+}
+
+function invalidatePairingParticipants(
+  queryClient: ReturnType<typeof useQueryClient>,
+  divisionId: string,
+  tournamentId: string,
+) {
+  invalidateDivisionPairing(queryClient, divisionId);
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.divisions.participants(divisionId),
+  });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.tournaments.participants(tournamentId),
+  });
+}
+
 /** The current draft pairing run for a division (or a specific squad within it). */
 export function usePairing(divisionId: string, options?: { enabled?: boolean; squadId?: string }) {
   const squadId = options?.squadId;
@@ -28,6 +51,7 @@ export function useGeneratePairing(divisionId: string, squadId?: string) {
       pairingApi.generatePairing(divisionId, { ...body, squadId }),
     onSuccess: (run) => {
       queryClient.setQueryData(queryKeys.divisions.pairing(divisionId, squadId), run);
+      invalidateDivisionPairing(queryClient, divisionId);
     },
   });
 }
@@ -39,9 +63,7 @@ export function useUpdateProposedTeam(divisionId: string, squadId?: string) {
     mutationFn: (vars: { teamId: string; body: UpdateProposedTeamRequest }) =>
       pairingApi.updateProposedTeam(vars.teamId, vars.body),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.divisions.pairing(divisionId, squadId),
-      });
+      invalidateDivisionPairing(queryClient, divisionId);
     },
   });
 }
@@ -53,6 +75,7 @@ export function useSwapMembers(divisionId: string, runId: string, squadId?: stri
     mutationFn: (body: SwapMembersRequest) => pairingApi.swapMembers(runId, body),
     onSuccess: (run) => {
       queryClient.setQueryData(queryKeys.divisions.pairing(divisionId, squadId), run);
+      invalidateDivisionPairing(queryClient, divisionId);
     },
   });
 }
@@ -83,15 +106,19 @@ export function usePublishPairing(divisionId: string, tournamentId: string, squa
   return useMutation({
     mutationFn: (runId: string) => pairingApi.publishPairing(runId),
     onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.divisions.pairing(divisionId, squadId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.divisions.participants(divisionId),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.tournaments.participants(tournamentId),
-      });
+      invalidatePairingParticipants(queryClient, divisionId, tournamentId);
+    },
+  });
+}
+
+/** Lock all squad draft pairings before draw generation. */
+export function usePublishAllSquadPairings(divisionId: string, tournamentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (runs: { runId: string; status: string }[]) =>
+      pairingApi.publishAllSquadPairings(runs),
+    onSuccess: () => {
+      invalidatePairingParticipants(queryClient, divisionId, tournamentId);
     },
   });
 }

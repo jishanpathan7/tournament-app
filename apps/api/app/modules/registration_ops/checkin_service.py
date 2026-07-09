@@ -14,7 +14,7 @@ from app.api.errors import NotFoundError, ValidationError
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster
-from app.db.enums import AttendanceStatus
+from app.db.enums import AttendanceStatus, ParticipantKind, ParticipantStatus
 from app.db.models import Participant
 from app.modules.registration_ops import events
 from app.modules.registration_ops import repository as repo
@@ -22,6 +22,14 @@ from app.modules.registration_ops.schemas import ParticipantAttendanceView
 from app.realtime.channels import org_channel
 
 _VALID = {s.value for s in AttendanceStatus}
+
+
+def roster_for_check_in(participants: Sequence[Participant]) -> list[Participant]:
+    """Event-day check-in is per player — hide pair/squad rows once doubles are published."""
+    approved = [p for p in participants if p.status == ParticipantStatus.APPROVED.value]
+    if any(p.kind == ParticipantKind.PAIR.value for p in approved):
+        return [p for p in approved if p.kind == ParticipantKind.INDIVIDUAL.value]
+    return approved
 
 
 def _now() -> datetime.datetime:

@@ -85,7 +85,7 @@ export function MobileScorekeeper({ tournamentId }: { tournamentId: string }) {
       <Button asChild tone="ghost" size="sm" className="-ml-2 self-start">
         <Link href={`/console/tournaments/${tournamentId}/matches`}>
           <ArrowLeft className="h-4 w-4" strokeWidth={2.25} />
-          Match Center
+          Matches
         </Link>
       </Button>
       <div>

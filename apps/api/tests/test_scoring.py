@@ -146,13 +146,59 @@ def _win_payload(sides: list[dict], winner_participant_id: str) -> dict:
 
 async def _score(
     client: AsyncClient, match_id: str, payload: dict, **headers: str
-) -> "tuple[int, dict]":
+) -> "tuple[int, object]":
     resp = await client.post(
         f"/api/v1/matches/{match_id}/score",
         json={"payload": payload},
         headers={**_csrf(client), **headers},
     )
     return resp.status_code, resp
+
+
+async def _start(client: AsyncClient, match_id: str, **headers: str) -> "tuple[int, object]":
+    resp = await client.post(
+        f"/api/v1/matches/{match_id}/start",
+        headers={**_csrf(client), **headers},
+    )
+    return resp.status_code, resp
+
+
+# ---- start match (scheduled → live) ----
+
+
+async def test_start_match_transitions_scheduled_to_live(app, client):
+    _tid, _did, sid = await _bracket(client, "round_robin", 2)
+    matches = await _matches(client, sid)
+    match = matches[0]
+    assert match["status"] == "scheduled"
+
+    status, resp = await _start(client, match["id"])
+    assert status == 200, resp.text
+    assert resp.json()["status"] == "live"
+
+    # Idempotent second call
+    status2, resp2 = await _start(client, match["id"])
+    assert status2 == 200, resp2.text
+    assert resp2.json()["status"] == "live"
+
+    # Final score still completes from live
+    winner = match["sides"][0]["participantId"]
+    status3, resp3 = await _score(client, match["id"], _win_payload(match["sides"], winner))
+    assert status3 == 200, resp3.text
+    assert resp3.json()["status"] == "completed"
+
+
+async def test_start_match_rejects_completed(app, client):
+    _tid, _did, sid = await _bracket(client, "round_robin", 2)
+    matches = await _matches(client, sid)
+    match = matches[0]
+    winner = match["sides"][0]["participantId"]
+    await _score(client, match["id"], _win_payload(match["sides"], winner))
+
+    status, resp = await _start(client, match["id"])
+    assert status == 422, resp.text
+    body = resp.json()
+    assert body.get("code") == "not_startable"
 
 
 # ---- 1. round robin → standings ----

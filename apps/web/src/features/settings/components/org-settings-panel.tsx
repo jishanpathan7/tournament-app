@@ -1,9 +1,11 @@
 "use client";
 
-import { Bell, BellOff, Building2, Loader2 } from "lucide-react";
+import { Bell, BellOff, Building2, Loader2, Users } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { useOrgSettings, useUpdateOrgSettings } from "@/features/settings/use-settings";
@@ -196,6 +198,25 @@ export function OrgSettingsPanel() {
             </p>
           </div>
         )}
+      </section>
+
+      <section>
+        <div className="mb-4 flex items-center gap-2">
+          <Users className="h-4 w-4 text-[#8B5CF6]" />
+          <h2 className="font-mono text-xs font-semibold uppercase tracking-widest text-[#8B5CF6]">
+            Team
+          </h2>
+        </div>
+        <Card className="border-2 border-[#1E293B] shadow-[4px_4px_0_#1E293B]">
+          <CardContent className="flex flex-col gap-3 p-6">
+            <p className="text-sm text-[#64748B]">
+              Invite scorekeepers and other organizers who help run your events.
+            </p>
+            <Button asChild tone="paper" size="sm" className="self-start">
+              <Link href="/console/people">Manage staff</Link>
+            </Button>
+          </CardContent>
+        </Card>
       </section>
 
       <Separator className="bg-[#E2E8F0]" />

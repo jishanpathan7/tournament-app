@@ -210,6 +210,48 @@ async def test_swap_same_team_is_rejected(app, client):
     assert resp.status_code == 422 and resp.json()["code"] == "invalid_swap"
 
 
+async def test_regenerate_survives_locked_duplicate_pair(app, client):
+    """Odd squad: duplicate pair locks a player into two teams — regenerate must not 422."""
+    await _new_org(client)
+    _tid, did = await _doubles_division(client)
+    await _entrant(client, did, "A", "advanced")
+    await _entrant(client, did, "B", "intermediate")
+    await _entrant(client, did, "C", "beginner")
+
+    run = await _generate(client, did)
+    assert len(run["teams"]) == 1
+    assert len(run["unpairedIds"]) == 1
+    unpaired = run["unpairedIds"][0]
+    paired_team = run["teams"][0]
+    duplicate_id = next(m for m in paired_team["memberIds"] if m != unpaired)
+
+    dup = await client.post(
+        f"/api/v1/pairing/runs/{run['id']}/duplicate-pair",
+        json={"unpairedId": unpaired, "duplicateId": duplicate_id},
+        headers=_csrf(client),
+    )
+    assert dup.status_code == 200, dup.text
+
+    lock = await client.patch(
+        f"/api/v1/pairing/teams/{paired_team['id']}",
+        json={"locked": True},
+        headers=_csrf(client),
+    )
+    assert lock.status_code == 200
+
+    regen = await client.post(
+        f"/api/v1/divisions/{did}/pairing/generate", json={}, headers=_csrf(client)
+    )
+    assert regen.status_code == 201, regen.text
+    body = regen.json()
+    assert any(
+        set(t["memberIds"]) == {unpaired, duplicate_id} and t["locked"] for t in body["teams"]
+    )
+    assert set(paired_team["memberIds"]) in [
+        set(t["memberIds"]) for t in body["teams"] if t["locked"]
+    ]
+
+
 # ---- preferences + forced ----
 
 

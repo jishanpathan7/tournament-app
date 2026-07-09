@@ -58,9 +58,9 @@ export function PublishDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl">Publish artifacts</DialogTitle>
+          <DialogTitle className="text-xl">Share publicly</DialogTitle>
           <DialogDescription>
-            Make these visible on the public microsite. Re-publishing refreshes them.
+            Make brackets, schedule, or results visible on your public event page.
           </DialogDescription>
         </DialogHeader>
         <div className="flex flex-col gap-2">

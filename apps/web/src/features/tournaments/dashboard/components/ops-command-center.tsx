@@ -164,7 +164,7 @@ function BracketProgressCard({
             href={`/console/tournaments/${tournamentId}/draws`}
             className="text-candy-dark text-xs font-semibold"
           >
-            Draws →
+            Brackets →
           </Link>
         ) : null}
       </CardHeader>
@@ -392,7 +392,7 @@ export function OpsCommandCenter({
           tone={t?.status === "live" ? "mint" : "muted"}
         />
         <StatTile
-          label="Registrations"
+          label="Participants"
           value={approved}
           sub={`${registrationTotals?.pending ?? 0} pending`}
           icon={Users}

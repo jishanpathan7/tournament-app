@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import type { PublicTournamentView } from "@tournament/api-client";
 import { createContext, useContext } from "react";
 
+import { invalidatePublicLiveCaches } from "@/features/public/public-live-cache";
 import { publicQueryKeys } from "@/features/public/query-keys";
 import { usePublicTournament } from "@/features/public/use-public-tournament";
 import { usePublicRealtime } from "@/hooks/use-public-realtime";
@@ -20,9 +21,7 @@ const PublicTournamentContext = createContext<PublicTournamentContextValue | nul
  * Wraps every page under `(public)/t/[slug]`: seeds the tournament query from the
  * server-fetched `initialTournament` (SSR for SEO + fast first paint), opens the one
  * realtime subscription for the whole tournament visit, and hands the resolved
- * tournament down via context so child pages don't each re-fetch it. Realtime
- * invalidation is coarse (invalidate the whole matches/standings list rather than
- * one row) — public traffic patterns don't warrant finer-grained cache surgery.
+ * tournament down via context so child pages don't each re-fetch it.
  */
 export function PublicTournamentProvider({
   slug,
@@ -36,30 +35,27 @@ export function PublicTournamentProvider({
   const tournament = usePublicTournament(slug, initialTournament);
   const queryClient = useQueryClient();
 
-  usePublicRealtime(tournament.data?.id ?? null, {
+  usePublicRealtime(slug, {
+    [REALTIME_EVENTS.MATCH_STARTED]: (data) => {
+      invalidatePublicLiveCaches(queryClient, slug, {
+        matchId: typeof data.matchId === "string" ? data.matchId : undefined,
+      });
+    },
     [REALTIME_EVENTS.MATCH_COMPLETED]: (data) => {
-      void queryClient.invalidateQueries({ queryKey: publicQueryKeys.matches(slug) });
-      if (typeof data.matchId === "string") {
-        void queryClient.invalidateQueries({
-          queryKey: publicQueryKeys.match(slug, data.matchId),
-        });
-        void queryClient.invalidateQueries({
-          queryKey: publicQueryKeys.matchEvents(slug, data.matchId),
-        });
-      }
+      invalidatePublicLiveCaches(queryClient, slug, {
+        matchId: typeof data.matchId === "string" ? data.matchId : undefined,
+        standings: true,
+      });
     },
     [REALTIME_EVENTS.BRACKET_UPDATED]: () => {
-      void queryClient.invalidateQueries({ queryKey: publicQueryKeys.matches(slug) });
+      invalidatePublicLiveCaches(queryClient, slug);
     },
     [REALTIME_EVENTS.STANDINGS_UPDATED]: () => {
-      // Stage-scoped standings keys aren't known here; sweep every standings query
-      // for this tournament (cheap — there's at most a handful of stages).
-      void queryClient.invalidateQueries({
-        predicate: (query) =>
-          query.queryKey[0] === "public" &&
-          query.queryKey[1] === "tournament" &&
-          query.queryKey[2] === slug &&
-          query.queryKey[4] === "standings",
+      invalidatePublicLiveCaches(queryClient, slug, { standings: true, courts: false });
+    },
+    [REALTIME_EVENTS.SCHEDULE_UPDATED]: (data) => {
+      invalidatePublicLiveCaches(queryClient, slug, {
+        matchId: typeof data.matchId === "string" ? data.matchId : undefined,
       });
     },
   });

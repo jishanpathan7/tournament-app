@@ -135,7 +135,7 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
     <div className="flex flex-col gap-6">
       <PageHeader
         eyebrow="Tournament"
-        title="Draws"
+        title="Brackets"
         description="Generate and review the bracket or round-robin draw for each division."
       />
       {!divisions || divisions.length === 0 ? (

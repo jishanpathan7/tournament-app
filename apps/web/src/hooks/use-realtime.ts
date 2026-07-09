@@ -4,6 +4,13 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 
 import { queryKeys } from "@/lib/query-keys";
+import {
+  invalidateFromBracketUpdatedEvent,
+  invalidateFromMatchCompletedEvent,
+  invalidateFromMatchStartedEvent,
+  invalidateFromScheduleUpdatedEvent,
+  invalidateFromStandingsUpdatedEvent,
+} from "@/lib/live-tournament-cache";
 import { REALTIME_EVENTS, streamUrl } from "@/lib/realtime";
 
 export type RealtimeStatus = "idle" | "connecting" | "open" | "error";
@@ -41,58 +48,20 @@ export function useRealtime(
     source.onerror = () => setStatus("error"); // browser auto-reconnects
 
     const defaults: Record<string, EventHandler> = {
+      [REALTIME_EVENTS.MATCH_STARTED]: (data) => {
+        invalidateFromMatchStartedEvent(queryClient, data);
+      },
       [REALTIME_EVENTS.MATCH_COMPLETED]: (data) => {
-        if (typeof data.matchId === "string") {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(data.matchId) });
-          void queryClient.invalidateQueries({ queryKey: queryKeys.matches.events(data.matchId) });
-        }
-        if (typeof data.tournamentId === "string") {
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.tournaments.matches(data.tournamentId),
-          });
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.tournaments.activity(data.tournamentId),
-          });
-        }
-        void queryClient.invalidateQueries({ queryKey: ["stages"] });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
-        void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+        invalidateFromMatchCompletedEvent(queryClient, data);
       },
       [REALTIME_EVENTS.BRACKET_UPDATED]: (data) => {
-        if (typeof data.stageId === "string") {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(data.stageId) });
-        }
-        if (typeof data.tournamentId === "string") {
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.tournaments.matches(data.tournamentId),
-          });
-        }
-        void queryClient.invalidateQueries({ queryKey: ["matches"] });
-        // The broadcast only carries stageId, not divisionId, so refresh every cached
-        // division stage list — that's where `drawn`/`locked` live for the setup panel.
-        void queryClient.invalidateQueries({
-          predicate: (query) => query.queryKey[0] === "divisions" && query.queryKey[2] === "stages",
-        });
+        invalidateFromBracketUpdatedEvent(queryClient, data);
       },
       [REALTIME_EVENTS.STANDINGS_UPDATED]: (data) => {
-        if (typeof data.stageId === "string") {
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.stages.standings(data.stageId),
-          });
-        }
+        invalidateFromStandingsUpdatedEvent(queryClient, data);
       },
       [REALTIME_EVENTS.SCHEDULE_UPDATED]: (data) => {
-        if (typeof data.matchId === "string") {
-          void queryClient.invalidateQueries({ queryKey: queryKeys.matches.detail(data.matchId) });
-        }
-        if (typeof data.tournamentId === "string") {
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.tournaments.matches(data.tournamentId),
-          });
-          void queryClient.invalidateQueries({
-            queryKey: queryKeys.schedule.queue(data.tournamentId),
-          });
-        }
+        invalidateFromScheduleUpdatedEvent(queryClient, data);
       },
       // Registration lifecycle events all share this shape: refresh both the
       // registrations queue and the approved participants list for that division.

@@ -105,7 +105,7 @@ export function ReportsPanel({
             </div>
             <div className="border-border border-t pt-3">
               <p className="text-muted-foreground text-2xs mb-2 font-mono uppercase tracking-[0.18em]">
-                Division registrations
+                Event participants
               </p>
               <div className="flex flex-col gap-2">
                 {divisions.map((d) => (

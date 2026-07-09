@@ -244,6 +244,22 @@ async def score_via_link(
     )
 
 
+async def start_via_link(
+    session: AsyncSession,
+    *,
+    link: ShareLink,
+    if_match: str | None = None,
+) -> Match:
+    match = await get_linked_match(session, link)
+    return await scoring_service.start_match(
+        session,
+        org_id=link.organization_id,
+        actor_id=None,
+        match_id=match.id,
+        if_match=if_match,
+    )
+
+
 def checkin_url(raw_token: str) -> str:
     base = get_settings().frontend_url.rstrip("/")
     return f"{base}/checkin/{raw_token}"
@@ -323,7 +339,9 @@ async def build_checkin_session(session: AsyncSession, link: ShareLink) -> Check
     if division is None or tournament is None:
         raise NotFoundError("Division not found")
 
-    roster = await checkin_service.list_attendance(session, link.organization_id, division.id)
+    roster = checkin_service.roster_for_check_in(
+        await checkin_service.list_attendance(session, link.organization_id, division.id)
+    )
     participants = [
         CheckInParticipantView(id=p.id, display_name=p.display_name, attendance=p.attendance)
         for p in roster

@@ -30,7 +30,7 @@ export function LiveProgressPanel({
           href={`/console/tournaments/${tournamentId}/matches`}
           className="text-candy-dark text-sm font-semibold"
         >
-          Match Center
+          Matches
         </Link>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

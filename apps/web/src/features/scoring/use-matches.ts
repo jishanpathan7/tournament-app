@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as scoringApi from "@/features/scoring/scoring-api";
+import { reconcileMatchInCaches } from "@/lib/live-tournament-cache";
 import { queryKeys } from "@/lib/query-keys";
 
 export function useStageMatches(stageId: string, options?: { enabled?: boolean }) {
@@ -58,14 +59,7 @@ export function useScoreMatch(matchId: string, tournamentId: string) {
         idempotencyKey: crypto.randomUUID(),
       }),
     onSuccess: (match) => {
-      queryClient.setQueryData(queryKeys.matches.detail(matchId), match);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.matches.events(matchId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(match.stageId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.stages.standings(match.stageId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.tournaments.activity(tournamentId),
-      });
+      reconcileMatchInCaches(queryClient, match, tournamentId, "scored");
     },
   });
 }

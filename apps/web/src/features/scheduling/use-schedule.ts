@@ -4,6 +4,10 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type { BulkScheduleRequest, MatchView, ScheduleAssignRequest } from "@tournament/api-client";
 
 import * as schedulingApi from "@/features/scheduling/scheduling-api";
+import {
+  reconcileMatchInCaches,
+  invalidateLiveTournamentCaches,
+} from "@/lib/live-tournament-cache";
 import { queryKeys } from "@/lib/query-keys";
 
 export function useScheduleQueue(
@@ -60,9 +64,7 @@ export function useAssignSchedule(tournamentId: string) {
       }
     },
     onSuccess: (result) => {
-      queryClient.setQueryData(queryKeys.matches.detail(result.match.id), result.match);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
+      reconcileMatchInCaches(queryClient, result.match, tournamentId, "scheduled");
     },
   });
 }
@@ -86,9 +88,7 @@ export function useClearSchedule(tournamentId: string) {
       }
     },
     onSuccess: (match) => {
-      queryClient.setQueryData(queryKeys.matches.detail(match.id), match);
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
+      reconcileMatchInCaches(queryClient, match, tournamentId, "scheduled");
     },
   });
 }
@@ -98,8 +98,11 @@ export function useBulkAssignSchedule(tournamentId: string) {
   return useMutation({
     mutationFn: (body: BulkScheduleRequest) => schedulingApi.bulkAssignSchedule(tournamentId, body),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
+      invalidateLiveTournamentCaches(
+        queryClient,
+        { tournamentId },
+        { stageMatches: false, standings: false },
+      );
     },
   });
 }

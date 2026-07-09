@@ -51,6 +51,19 @@ export async function publishPairing(runId: string): Promise<PublishPairingRespo
   return data;
 }
 
+/** Publish squad draft pairing runs by run id (skips already-locked squads). */
+export async function publishAllSquadPairings(
+  runs: { runId: string; status: string }[],
+): Promise<number> {
+  let published = 0;
+  for (const run of runs) {
+    if (run.status !== "draft") continue;
+    await publishPairing(run.runId);
+    published += 1;
+  }
+  return published;
+}
+
 /** Resolve an odd-one-out player: choose an existing player to partner them,
  * allowing that player to compete in two pairs. Returns the updated run. */
 export async function addDuplicatePair(

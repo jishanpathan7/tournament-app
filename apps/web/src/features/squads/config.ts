@@ -43,10 +43,19 @@ export interface WorkflowState {
   playersAssigned: boolean;
   teamsPaired: boolean;
   readyForDraw: boolean;
+  /** True when every squad's pairing run has been published (locked). */
+  allPairsLocked: boolean;
   currentStep: number;
+  /** Squads with published (locked) pairing runs. */
   pairedCount: number;
+  /** Squads with draft pairs awaiting lock. */
+  draftCount: number;
+  /** Squads with any pairs generated (draft or published). */
+  generatedCount: number;
   totalSquads: number;
   nextSquad: SquadView | null;
+  /** What the organizer should do for ``nextSquad``. */
+  nextSquadAction: "generate" | "review" | null;
 }
 
 export function computeWorkflowState(
@@ -58,31 +67,36 @@ export function computeWorkflowState(
   const teamsCreated = totalSquads > 0;
   const playersAssigned = teamsCreated && unassigned === 0;
   const pairedCount = squads.filter((s) => pairingStatuses.get(s.id) === "published").length;
-  const teamsPaired = playersAssigned && totalSquads > 0 && pairedCount === totalSquads;
-  const readyForDraw = teamsPaired;
+  const draftCount = squads.filter((s) => pairingStatuses.get(s.id) === "draft").length;
+  const generatedCount = pairedCount + draftCount;
+  const allPairsGenerated = playersAssigned && totalSquads > 0 && generatedCount === totalSquads;
+  const allPairsLocked = playersAssigned && totalSquads > 0 && pairedCount === totalSquads;
+  /** Pairing step complete — every squad has a generated draft (lock optional until draw). */
+  const teamsPaired = allPairsGenerated;
+  const readyForDraw = allPairsGenerated;
 
   let currentStep = 0;
   if (!teamsCreated) currentStep = 0;
   else if (!playersAssigned) currentStep = 1;
-  else if (!teamsPaired) currentStep = 2;
+  else if (!allPairsGenerated) currentStep = 2;
   else currentStep = 3;
 
-  const nextSquad =
-    playersAssigned && !teamsPaired
-      ? (squads.find((s) => {
-          const status = pairingStatuses.get(s.id);
-          return status === "none" || status === "draft";
-        }) ?? null)
-      : null;
+  const nextNone = squads.find((s) => pairingStatuses.get(s.id) === "none") ?? null;
+  const nextSquad = allPairsGenerated ? null : nextNone;
+  const nextSquadAction = nextNone ? "generate" : null;
 
   return {
     teamsCreated,
     playersAssigned,
     teamsPaired,
     readyForDraw,
+    allPairsLocked,
     currentStep,
     pairedCount,
+    draftCount,
+    generatedCount,
     totalSquads,
     nextSquad,
+    nextSquadAction,
   };
 }

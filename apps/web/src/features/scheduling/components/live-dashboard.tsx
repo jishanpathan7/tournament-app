@@ -30,6 +30,7 @@ import { useAssignSchedule, useScheduleQueue } from "@/features/scheduling/use-s
 import { useTournamentParticipants } from "@/features/matches/use-tournament-matches";
 import { useTournament } from "@/features/tournaments/use-tournaments";
 import { getSport } from "@/features/tournaments/config";
+import { MobileLiveStickyBar } from "@/features/scheduling/components/mobile-live-sticky-bar";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { errorMessage } from "@/lib/problem";
@@ -208,11 +209,11 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 pb-24 md:pb-0">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <PageHeader
-          eyebrow="Run"
-          title="Live Dashboard"
+          eyebrow="Event day"
+          title="Live"
           description={
             tournament.data
               ? `${tournament.data.name}${sport ? ` · ${sport.label}` : ""}`
@@ -266,7 +267,7 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
         />
       ) : (
         <div className="grid gap-6 xl:grid-cols-[1fr_320px]">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {data.courts.map((entry) => (
               <CourtCard
                 key={entry.court.id}
@@ -364,6 +365,8 @@ export function LiveDashboard({ tournamentId }: { tournamentId: string }) {
           </div>
         </div>
       )}
+
+      <MobileLiveStickyBar tournamentId={tournamentId} />
     </div>
   );
 }

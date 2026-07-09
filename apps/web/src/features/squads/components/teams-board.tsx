@@ -5,6 +5,7 @@ import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { useQueries } from "@tanstack/react-query";
 import { ChevronDown, Dices, MoreHorizontal, Users, Wand2 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -22,6 +23,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import { getPairing } from "@/features/pairing/pairing-api";
+import { usePublishAllSquadPairings } from "@/features/pairing/use-pairing";
 import { SquadCard } from "@/features/squads/components/squad-card";
 import { SquadPairingSheet } from "@/features/squads/components/squad-pairing-sheet";
 import { UnassignedPool } from "@/features/squads/components/unassigned-pool";
@@ -49,6 +51,7 @@ import { errorMessage } from "@/lib/problem";
 
 /** Franchise team board — assign registrations to balanced squads before pairing. */
 export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
+  const router = useRouter();
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
 
@@ -67,6 +70,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
 
   const divisions = useDivisions(tournamentId);
   const firstDivisionId = divisions.data?.[0]?.id ?? null;
+  const publishAllPairings = usePublishAllSquadPairings(firstDivisionId ?? "", tournamentId);
 
   const board = squads.data;
   const squadIds = board?.squads.map((s) => s.id) ?? [];
@@ -216,12 +220,38 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
 
   function openRemainingPairingQueue() {
     if (!board) return;
-    const next = board.squads.find((s) => {
-      const status = pairingStatusMap.get(s.id);
-      return status === "none" || status === "draft";
-    });
+    const next = board.squads.find((s) => pairingStatusMap.get(s.id) === "none");
     if (next) setPairingSquad(next);
-    else toast.info("All teams already have published pairs");
+    else toast.info("Every team already has pairs — use Generate Matches to continue");
+  }
+
+  function draftRunsToPublish() {
+    return squadIds.flatMap((squadId, index) => {
+      const run = pairingQueries[index]?.data;
+      if (!run || run.status !== "draft" || run.teams.length === 0) return [];
+      return [{ runId: run.id, status: run.status }];
+    });
+  }
+
+  function handleGenerateMatches() {
+    if (!board || !firstDivisionId) return;
+    const drafts = draftRunsToPublish();
+    if (drafts.length === 0) {
+      router.push(`/console/tournaments/${tournamentId}/draws`);
+      return;
+    }
+    publishAllPairings.mutate(drafts, {
+      onSuccess: (lockedCount) => {
+        if (lockedCount > 0) {
+          toast.success(
+            `Locked pairs for ${lockedCount} team${lockedCount !== 1 ? "s" : ""} — opening brackets`,
+          );
+        }
+        router.push(`/console/tournaments/${tournamentId}/draws`);
+      },
+      onError: (err) =>
+        toast.error(errorMessage(err, "Couldn't lock pairs before generating matches")),
+    });
   }
 
   const setupActions = canManage ? (
@@ -294,10 +324,10 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   if (!board) return null;
 
   const hasUnassigned = board.summary.unassigned > 0;
-  const remainingPairingCount = board.squads.filter((s) => {
-    const status = pairingStatusMap.get(s.id);
-    return status === "none" || status === "draft";
-  }).length;
+  const needsGenerateCount = board.squads.filter(
+    (s) => pairingStatusMap.get(s.id) === "none",
+  ).length;
+  const needsLockCount = board.squads.filter((s) => pairingStatusMap.get(s.id) === "draft").length;
 
   return (
     <div className="flex flex-col gap-6">
@@ -313,13 +343,30 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         tournamentId={tournamentId}
         assigned={board.summary.assigned}
         onNextAction={workflow.nextSquad ? openNextUnpairedSquad : undefined}
+        onGenerateMatches={workflow.readyForDraw && canManage ? handleGenerateMatches : undefined}
+        generateMatchesPending={publishAllPairings.isPending}
       />
 
       {board.squads.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
-          {workflow.playersAssigned && remainingPairingCount > 0 && canManage ? (
+          {workflow.playersAssigned && needsGenerateCount > 0 && canManage ? (
             <Button tone="candy" size="sm" onClick={openRemainingPairingQueue}>
-              Generate remaining pairs ({remainingPairingCount})
+              Generate remaining pairs ({needsGenerateCount})
+            </Button>
+          ) : null}
+          {workflow.readyForDraw && canManage ? (
+            <Button
+              tone="candy"
+              size="sm"
+              onClick={handleGenerateMatches}
+              disabled={publishAllPairings.isPending}
+            >
+              Generate Matches
+            </Button>
+          ) : null}
+          {workflow.playersAssigned && needsLockCount > 0 && !workflow.readyForDraw && canManage ? (
+            <Button tone="paper" size="sm" onClick={openRemainingPairingQueue}>
+              Review &amp; lock remaining pairs ({needsLockCount})
             </Button>
           ) : null}
           <Button tone="paper" size="sm" onClick={expandAll}>
@@ -454,7 +501,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             className="absolute inset-0 bg-black/40 backdrop-blur-sm"
             onClick={() => setPairingSquad(null)}
           />
-          <div className="bg-background relative ml-auto h-full w-full max-w-lg overflow-hidden shadow-2xl">
+          <div className="bg-background relative ml-auto h-full w-full max-w-xl overflow-hidden shadow-2xl">
             <SquadPairingSheet
               squad={pairingSquad}
               divisionId={firstDivisionId}
