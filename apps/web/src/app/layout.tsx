@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 
 import { Providers } from "@/components/providers";
 import { env } from "@/lib/env";
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     >
       <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <Providers>{children}</Providers>
+        <Analytics />
       </body>
     </html>
   );
