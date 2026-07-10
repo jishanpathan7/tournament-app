@@ -4,12 +4,13 @@ import {
   Radio,
   SlidersHorizontal,
   Trophy,
+  Users,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
 
 /** Primary tournament workspace tabs — organizer mental model, not data model. */
-export type TournamentNavKey = "overview" | "participants" | "setup" | "live" | "results";
+export type TournamentNavKey = "overview" | "participants" | "setup" | "live" | "results" | "staff";
 
 export interface TournamentNavItem {
   key: TournamentNavKey;
@@ -25,6 +26,7 @@ export const TOURNAMENT_NAV: TournamentNavItem[] = [
   { key: "setup", label: "Setup", icon: SlidersHorizontal, hrefSuffix: "/teams" },
   { key: "live", label: "Live", icon: Radio, hrefSuffix: "/matches" },
   { key: "results", label: "Results", icon: Trophy, hrefSuffix: "" },
+  { key: "staff", label: "Staff", icon: Users, hrefSuffix: "/staff" },
 ];
 
 const AFTER_STATUSES = new Set<TournamentStatus>(["completed", "archived"]);
@@ -74,6 +76,10 @@ export function resolveTournamentNavKey(
 
   if (rel.startsWith("/matches") || rel.startsWith("/scorekeeper") || rel.startsWith("/live")) {
     return "live";
+  }
+
+  if (rel.startsWith("/staff")) {
+    return "staff";
   }
 
   return "overview";

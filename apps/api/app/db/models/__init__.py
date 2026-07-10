@@ -22,6 +22,8 @@ from app.db.models.identity import (
     Membership,
     Organization,
     OrgInvite,
+    TournamentInvite,
+    TournamentMember,
     User,
 )
 from app.db.models.imports import ImportBatch, MappingTemplate
@@ -48,6 +50,8 @@ __all__ = [
     "AuthSession",
     "AuthToken",
     "OrgInvite",
+    "TournamentMember",
+    "TournamentInvite",
     # sport
     "SportProfile",
     "PointsRule",

@@ -87,4 +87,8 @@ export const queryKeys = {
   },
 
   health: ["health"] as const,
+
+  tournamentMembers: {
+    list: (tournamentId: string) => ["tournament-members", tournamentId] as const,
+  },
 } as const;
