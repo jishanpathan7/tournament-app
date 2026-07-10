@@ -92,7 +92,7 @@ def test_rls_classification_is_exhaustive_and_disjoint():
 def test_enum_type_names_unique():
     names = [e.name for e in ALL_PG_ENUMS]
     assert (
-        len(names) == len(set(names)) == 18
+        len(names) == len(set(names)) == 19
     )  # baseline enums (non-baseline added by later migrations)
 
 
