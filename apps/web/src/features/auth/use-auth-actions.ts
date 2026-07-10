@@ -5,10 +5,12 @@ import type { MeResponse } from "@tournament/api-client";
 
 import {
   confirmEmail,
+  confirmPasswordReset,
   login,
   logout,
   register,
   requestEmailVerification,
+  requestPasswordReset,
 } from "@/features/auth/auth-api";
 import type { LoginValues, RegisterValues } from "@/features/auth/schemas";
 import { queryKeys } from "@/lib/query-keys";
@@ -62,4 +64,15 @@ export function useConfirmEmail() {
 
 export function useResendVerification() {
   return useMutation({ mutationFn: requestEmailVerification });
+}
+
+export function useRequestPasswordReset() {
+  return useMutation({ mutationFn: (email: string) => requestPasswordReset(email) });
+}
+
+export function useConfirmPasswordReset() {
+  return useMutation({
+    mutationFn: ({ token, password }: { token: string; password: string }) =>
+      confirmPasswordReset(token, password),
+  });
 }
