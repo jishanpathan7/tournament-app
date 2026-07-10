@@ -95,11 +95,17 @@ async def update_org(
     timezone: str | None = None,
     branding: dict[str, Any] | None = None,
     emails_enabled: bool | None = None,
+    in_app_notifications_enabled: bool | None = None,
 ) -> Organization:
     org = await repo.get_org(session, org_id)
     if org is None:
         raise NotFoundError("Organization not found")
-    before = {"name": org.name, "timezone": org.timezone, "emailsEnabled": org.emails_enabled}
+    before = {
+        "name": org.name,
+        "timezone": org.timezone,
+        "emailsEnabled": org.emails_enabled,
+        "inAppNotificationsEnabled": org.in_app_notifications_enabled,
+    }
     if name is not None:
         org.name = name
     if timezone is not None:
@@ -108,6 +114,8 @@ async def update_org(
         org.branding = branding
     if emails_enabled is not None:
         org.emails_enabled = emails_enabled
+    if in_app_notifications_enabled is not None:
+        org.in_app_notifications_enabled = in_app_notifications_enabled
     await _audit(
         session,
         org_id=org_id,
@@ -116,7 +124,12 @@ async def update_org(
         entity="organization",
         entity_id=org_id,
         before=before,
-        after={"name": org.name, "timezone": org.timezone, "emailsEnabled": org.emails_enabled},
+        after={
+            "name": org.name,
+            "timezone": org.timezone,
+            "emailsEnabled": org.emails_enabled,
+            "inAppNotificationsEnabled": org.in_app_notifications_enabled,
+        },
     )
     return org
 

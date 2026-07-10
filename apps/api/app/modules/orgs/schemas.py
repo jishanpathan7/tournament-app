@@ -22,6 +22,7 @@ class UpdateOrgRequest(ApiModel):
     timezone: str | None = Field(default=None, max_length=64)
     branding: dict[str, Any] | None = None
     emails_enabled: bool | None = None
+    in_app_notifications_enabled: bool | None = None
 
 
 class SwitchOrgRequest(ApiModel):
@@ -36,6 +37,7 @@ class OrgResponse(ApiModel):
     plan: str
     branding: dict[str, Any]
     emails_enabled: bool
+    in_app_notifications_enabled: bool
 
 
 class MemberItem(ApiModel):

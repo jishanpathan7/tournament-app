@@ -14,12 +14,14 @@ export interface OrgSettings {
   plan: string;
   branding: Record<string, unknown>;
   emailsEnabled: boolean;
+  inAppNotificationsEnabled: boolean;
 }
 
 export interface UpdateOrgSettingsRequest {
   name?: string;
   timezone?: string;
   emailsEnabled?: boolean;
+  inAppNotificationsEnabled?: boolean;
 }
 
 export function getActiveOrgSettings(): Promise<OrgSettings> {

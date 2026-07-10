@@ -65,9 +65,12 @@ function PublicScorekeeperScoring({
   if (done || match.matchStatus === "completed") {
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6 py-16 text-center">
-        <h1 className="font-serif text-2xl font-bold">Match recorded</h1>
+        <h1 className="font-serif text-2xl font-bold">Match Recorded</h1>
         <p className="text-muted-foreground text-sm">
           {labelA} vs {labelB} — saved to {data.tournamentName}.
+          <span className="text-muted-foreground mt-2 block text-xs">
+            you can close this tab now
+          </span>
         </p>
       </div>
     );

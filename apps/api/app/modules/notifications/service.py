@@ -69,9 +69,25 @@ async def notify(
         cta_label = None
         cta_href = None
 
+    # Check org-level in-app kill switch once before iterating channels.
+    in_app_allowed = True
+    if NotificationChannel.IN_APP in resolved:
+        from app.modules.orgs import repository as org_repo
+
+        org = await org_repo.get_org(session, organization_id)
+        if org is not None and not org.in_app_notifications_enabled:
+            import logging
+
+            logging.getLogger("app.notifications").debug(
+                "in_app.skipped_kill_switch", extra={"organization_id": str(organization_id)}
+            )
+            in_app_allowed = False
+
     created: list[Notification] = []
     for channel in resolved:
         is_in_app = channel == NotificationChannel.IN_APP
+        if is_in_app and not in_app_allowed:
+            continue
         payload: dict = {"title": title, "body": body, "data": data}
         if dedup_key is not None:
             payload["dedup_key"] = dedup_key
