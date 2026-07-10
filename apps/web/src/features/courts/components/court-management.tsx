@@ -3,6 +3,16 @@
 import { LayoutGrid, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
@@ -33,6 +43,7 @@ import {
   useAssignCourt,
   useBulkRemoveCourts,
   useCourts,
+  useDeleteCourt,
   useTournamentCourts,
   useUnassignCourt,
   useUpdateCourt,
@@ -52,10 +63,13 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
   const bulkRemove = useBulkRemoveCourts(tournamentId);
   const assignCourt = useAssignCourt(tournamentId);
 
+  const deleteCourt = useDeleteCourt(tournamentId);
+
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
   const [assignSelection, setAssignSelection] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const assignedCourtIds = new Set((assigned.data ?? []).map((a) => a.court.id));
   const unassignedCourts = (allCourts.data ?? []).filter((c) => !assignedCourtIds.has(c.id));
@@ -264,25 +278,37 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
                   </TableCell>
                   {canManage ? (
                     <TableCell className="text-right">
-                      <Button
-                        tone="ghost"
-                        size="sm"
-                        onClick={() => {
-                          unassignCourt.mutate(row.court.id, {
-                            onSuccess: () => {
-                              setSelected((prev) => {
-                                if (!prev.has(row.court.id)) return prev;
-                                const next = new Set(prev);
-                                next.delete(row.court.id);
-                                return next;
-                              });
-                            },
-                            onError: (e) => toast.error(errorMessage(e, "Couldn't remove court")),
-                          });
-                        }}
-                      >
-                        Remove
-                      </Button>
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          tone="ghost"
+                          size="sm"
+                          onClick={() => {
+                            unassignCourt.mutate(row.court.id, {
+                              onSuccess: () => {
+                                setSelected((prev) => {
+                                  if (!prev.has(row.court.id)) return prev;
+                                  const next = new Set(prev);
+                                  next.delete(row.court.id);
+                                  return next;
+                                });
+                              },
+                              onError: (e) => toast.error(errorMessage(e, "Couldn't remove court")),
+                            });
+                          }}
+                        >
+                          Remove
+                        </Button>
+                        <Button
+                          tone="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() =>
+                            setDeleteTarget({ id: row.court.id, name: row.court.name })
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   ) : null}
                 </TableRow>
@@ -302,6 +328,53 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
         open={bulkCreateOpen}
         onOpenChange={setBulkCreateOpen}
       />
+
+      <Dialog
+        open={!!deleteTarget}
+        onOpenChange={(open: boolean) => !open && setDeleteTarget(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete {deleteTarget?.name}?</DialogTitle>
+            <DialogDescription>
+              This permanently removes the court record. The court must not have any scheduled
+              matches or active assignments — remove it from all tournaments first if it does.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button tone="paper" size="sm" disabled={deleteCourt.isPending}>
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button
+              tone="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              disabled={deleteCourt.isPending}
+              onClick={() => {
+                if (!deleteTarget) return;
+                deleteCourt.mutate(deleteTarget.id, {
+                  onSuccess: () => {
+                    setDeleteTarget(null);
+                    setSelected((prev) => {
+                      if (!prev.has(deleteTarget.id)) return prev;
+                      const next = new Set(prev);
+                      next.delete(deleteTarget.id);
+                      return next;
+                    });
+                    toast.success(`${deleteTarget.name} deleted`);
+                  },
+                  onError: (e) => toast.error(errorMessage(e, "Couldn't delete court")),
+                });
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+              Delete permanently
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

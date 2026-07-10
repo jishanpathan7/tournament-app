@@ -84,6 +84,11 @@ async def delete_tournament_court(session: AsyncSession, assignment: TournamentC
     await session.flush()
 
 
+async def delete_court(session: AsyncSession, court: Court) -> None:
+    await session.delete(court)
+    await session.flush()
+
+
 async def list_tournament_courts(
     session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
 ) -> Sequence[TournamentCourt]:

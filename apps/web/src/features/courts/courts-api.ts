@@ -55,6 +55,10 @@ export async function unassignCourt(tournamentId: string, courtId: string): Prom
   await api.delete(`/tournaments/${tournamentId}/courts/${courtId}`);
 }
 
+export async function deleteCourt(courtId: string): Promise<void> {
+  await api.delete(`/courts/${courtId}`);
+}
+
 export async function bulkCreateCourts(
   tournamentId: string,
   body: BulkCreateCourtsRequest,

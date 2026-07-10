@@ -9,6 +9,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, ValidationError
@@ -101,6 +102,20 @@ async def get_court(session: AsyncSession, org_id: uuid.UUID, court_id: uuid.UUI
     if court is None:
         raise NotFoundError("Court not found")
     return court
+
+
+async def delete_court(session: AsyncSession, *, org_id: uuid.UUID, court_id: uuid.UUID) -> None:
+    court = await repo.get_court(session, org_id, court_id)
+    if court is None:
+        raise NotFoundError("Court not found")
+    try:
+        await repo.delete_court(session, court)
+    except IntegrityError:
+        raise ConflictError(
+            "Court is still in use — remove it from all tournaments and clear any scheduled "
+            "matches before deleting.",
+            code="court_in_use",
+        )
 
 
 async def assign_court(

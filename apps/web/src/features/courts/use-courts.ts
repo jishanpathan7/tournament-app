@@ -100,3 +100,14 @@ export function useBulkRemoveCourts(tournamentId: string) {
     },
   });
 }
+
+export function useDeleteCourt(tournamentId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courtId: string) => courtsApi.deleteCourt(courtId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.courts.list() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.courts.tournament(tournamentId) });
+    },
+  });
+}

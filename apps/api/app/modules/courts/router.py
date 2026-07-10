@@ -91,6 +91,19 @@ async def list_courts(
     return [service.build_court_view(c) for c in rows]
 
 
+@router.delete(
+    "/courts/{court_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(authed_csrf)],
+)
+async def delete_court(
+    court_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> None:
+    await service.delete_court(session, org_id=principal.organization_id, court_id=court_id)
+
+
 @router.patch(
     "/courts/{court_id}",
     response_model=CourtView,
