@@ -1,13 +1,10 @@
 "use client";
 
 import type { TournamentResponse } from "@tournament/api-client";
-import { CheckCircle2, Circle, Copy, Link2 } from "lucide-react";
+import { CheckCircle2, Circle } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { toast } from "@/components/ui/sonner";
 import { PUBLISH_ARTIFACTS, VISIBILITIES, getSport } from "@/features/tournaments/config";
-import { env } from "@/lib/env";
 
 function fmt(iso: string | null): string {
   return iso
@@ -32,63 +29,13 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-async function copyLink(url: string) {
-  try {
-    await navigator.clipboard.writeText(url);
-    toast.success("Link copied");
-  } catch {
-    toast.error("Couldn't copy");
-  }
-}
-
-async function shareLink(url: string, title: string) {
-  if (navigator.share) {
-    try {
-      await navigator.share({ title, url });
-    } catch {
-      // cancelled by user
-    }
-  } else {
-    await copyLink(url);
-  }
-}
-
 /** Overview: core metadata + publication status of public artifacts. */
 export function OverviewPanel({ tournament }: { tournament: TournamentResponse }) {
   const sport = getSport(tournament.sportKey);
   const visibility = VISIBILITIES.find((v) => v.value === tournament.visibility);
 
-  const regUrl = `${env.appUrl}/t/${tournament.slug}/register`;
-
   return (
     <div className="flex flex-col gap-4">
-      {tournament.status === "registration" ? (
-        <Card className="border-candy bg-candy-tint">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Link2 className="text-candy-dark h-4 w-4" strokeWidth={2.25} />
-              Registration link
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <p className="text-candy-dark break-all font-mono text-xs">{regUrl}</p>
-            <p className="text-muted-foreground text-xs">
-              Share this with players so they can sign up directly.
-            </p>
-            <div className="flex gap-2">
-              <Button
-                tone="candy"
-                size="sm"
-                className="flex-1"
-                onClick={() => void shareLink(regUrl, tournament.name)}
-              >
-                <Copy className="h-3.5 w-3.5" />
-                Copy &amp; share
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      ) : null}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Overview</CardTitle>
