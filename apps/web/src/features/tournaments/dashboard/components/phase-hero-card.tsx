@@ -2,7 +2,10 @@
 
 import {
   CalendarClock,
+  Check,
   CheckCircle2,
+  Copy,
+  ExternalLink,
   GitMerge,
   LayoutGrid,
   Radio,
@@ -20,6 +23,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { useTournament } from "@/features/tournaments/use-tournaments";
 import { GoLiveDialog } from "@/features/tournaments/dashboard/components/go-live-dialog";
 import {
   STEP_META,
@@ -30,7 +34,6 @@ import {
   useDivisions,
   usePublishTournament,
   useTransitionStatus,
-  useTournament,
   useUpdateTournament,
 } from "@/features/tournaments/use-tournaments";
 import { errorMessage } from "@/lib/problem";
@@ -59,10 +62,68 @@ function HeroShell({
   );
 }
 
+// ─── Shared: Registration link box ───────────────────────────────────────────
+
+function RegistrationLinkBox({ slug }: { slug: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${typeof window !== "undefined" ? window.location.origin : ""}/t/${slug}/register`;
+
+  function copyLink() {
+    void navigator.clipboard.writeText(url).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
+  return (
+    <div className="bg-background rounded-lg border p-3">
+      <p className="text-muted-foreground mb-2 text-xs font-semibold uppercase tracking-wide">
+        Registration link
+      </p>
+      <div className="flex items-center gap-2">
+        <code className="text-foreground bg-muted min-w-0 flex-1 truncate rounded px-2 py-1.5 text-xs">
+          {url}
+        </code>
+        <Button tone="paper" size="sm" className="shrink-0" onClick={copyLink}>
+          {copied ? (
+            <Check className="h-3.5 w-3.5 text-green-600" strokeWidth={2.5} />
+          ) : (
+            <Copy className="h-3.5 w-3.5" strokeWidth={2.25} />
+          )}
+          {copied ? "Copied!" : "Copy"}
+        </Button>
+        <Button asChild tone="paper" size="sm" className="shrink-0">
+          <Link href={`/t/${slug}/register`} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="h-3.5 w-3.5" strokeWidth={2.25} />
+            Open
+          </Link>
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // ─── Step 1: Tournament Setup ─────────────────────────────────────────────────
 
 function Step1Hero({ tournamentId }: { tournamentId: string }) {
   const transition = useTransitionStatus(tournamentId);
+  const { data: tournament } = useTournament(tournamentId);
+  const [justOpened, setJustOpened] = useState(false);
+
+  if (justOpened && tournament?.slug) {
+    return (
+      <HeroShell step={1} title={STEP_META[1].label}>
+        <div className="flex flex-col gap-3">
+          <p className="text-muted-foreground flex items-center gap-2 text-sm">
+            <CheckCircle2 className="text-good h-4 w-4 shrink-0" strokeWidth={2.25} />
+            Registration is now open — share the link with your players.
+          </p>
+          <RegistrationLinkBox slug={tournament.slug} />
+        </div>
+      </HeroShell>
+    );
+  }
+
   return (
     <HeroShell step={1} title={STEP_META[1].label}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -79,7 +140,10 @@ function Step1Hero({ tournamentId }: { tournamentId: string }) {
             transition.mutate(
               { status: "registration" },
               {
-                onSuccess: () => toast.success("Registration is now open"),
+                onSuccess: () => {
+                  toast.success("Registration is now open");
+                  setJustOpened(true);
+                },
                 onError: (e) => toast.error(errorMessage(e, "Couldn't open registration")),
               },
             )
@@ -100,12 +164,11 @@ function Step1Hero({ tournamentId }: { tournamentId: string }) {
 // ─── Step 2: Player Registration ──────────────────────────────────────────────
 
 function Step2Hero({ tournamentId }: { tournamentId: string }) {
+  const { data: tournament } = useTournament(tournamentId);
   return (
     <HeroShell step={2} title={STEP_META[2].label}>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-muted-foreground text-sm">
-          Import participants and approve them to build your roster.
-        </p>
+      <div className="flex flex-col gap-3">
+        {tournament?.slug ? <RegistrationLinkBox slug={tournament.slug} /> : null}
         <div className="flex gap-2">
           <Button asChild tone="paper" size="sm">
             <Link href={`/console/tournaments/${tournamentId}/players`}>
