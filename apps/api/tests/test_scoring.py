@@ -425,10 +425,12 @@ async def test_scoring_emits_realtime_and_notifications(app, client):
     types = {e["type"] for e in received}
     assert "match.completed" in types and "bracket.updated" in types
 
-    # In-app notifications were created for the (owner-linked) participants.
+    # match.completed IN_APP notification was intentionally removed in the notification
+    # redesign — the result is visible in the bracket/standings, so no persistent
+    # notification is needed. Realtime SSE still fires (asserted above).
     notifs = await client.get("/api/v1/notifications")
     assert notifs.status_code == 200
-    assert any(n["type"] == "match.completed" for n in notifs.json()["items"])
+    assert not any(n["type"] == "match.completed" for n in notifs.json()["items"])
 
 
 # ---- 7. authorization + org isolation ----

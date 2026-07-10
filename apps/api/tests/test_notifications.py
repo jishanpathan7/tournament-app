@@ -91,8 +91,21 @@ async def test_inbox_list_and_unread_count(app, client):
     body = listing.json()
     assert len(body["items"]) == 3 and body["items"][0]["title"] == "Hi"
 
+    # unread-count only counts action_required priority; system.announcement is
+    # IMPORTANT, so the badge count is 0 even though items exist in the feed.
     count = await client.get(f"{NOTIF}/unread-count")
-    assert count.status_code == 200 and count.json()["count"] == 3
+    assert count.status_code == 200 and count.json()["count"] == 0
+
+    # Seed an action_required notification and confirm it increments the badge.
+    await _seed(
+        org_id,
+        user_id,
+        type_="ops.draw_failed",
+        data={"error_summary": "test", "tournament_id": str(org_id)},
+        n=1,
+    )
+    count2 = await client.get(f"{NOTIF}/unread-count")
+    assert count2.json()["count"] == 1
 
 
 async def test_mark_read_and_read_all(app, client):
@@ -103,7 +116,8 @@ async def test_mark_read_and_read_all(app, client):
 
     read = await client.post(f"{NOTIF}/{ids[0]}/read", headers=_csrf(client))
     assert read.status_code == 200 and read.json()["status"] == "read"
-    assert (await client.get(f"{NOTIF}/unread-count")).json()["count"] == 2
+    # system.announcement is IMPORTANT — unread-count tracks action_required only, stays 0.
+    assert (await client.get(f"{NOTIF}/unread-count")).json()["count"] == 0
 
     all_read = await client.post(f"{NOTIF}/read-all", headers=_csrf(client))
     assert all_read.status_code == 200 and all_read.json()["updated"] == 2
