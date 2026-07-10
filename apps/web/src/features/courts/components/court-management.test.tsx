@@ -83,7 +83,9 @@ describe("CourtManagement", () => {
     ]);
     renderWithProviders(<CourtManagement tournamentId={TOURNAMENT_ID} />);
 
-    expect(await screen.findByText("Existing courts")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Assign" })).toBeInTheDocument();
+    const toggle = await screen.findByRole("button", { name: /existing courts/i });
+    expect(toggle).toBeInTheDocument();
+    toggle.click();
+    expect(await screen.findByRole("button", { name: "Assign" })).toBeInTheDocument();
   });
 });

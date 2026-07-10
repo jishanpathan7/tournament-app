@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, LayoutGrid, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -68,6 +68,7 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [existingCourtsOpen, setExistingCourtsOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
   const assignedCourtIds = new Set((assigned.data ?? []).map((a) => a.court.id));
@@ -160,8 +161,26 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
       ) : null}
 
       {canManage && unassignedCourts.length > 0 ? (
-        <div className="border-ink bg-card shadow-sticker-xs flex flex-col gap-2 rounded-2xl border-2 p-4">
-          <span className="text-sm font-medium">Existing courts</span>
+        <div className="border-ink bg-card shadow-sticker-xs overflow-hidden rounded-2xl border-2">
+          <button
+            type="button"
+            onClick={() => setExistingCourtsOpen((v) => !v)}
+            aria-expanded={existingCourtsOpen}
+            className="border-ink/10 flex w-full items-center gap-3 border-b px-4 py-3 text-left transition-colors"
+          >
+            <ChevronDown
+              className={`text-muted-foreground h-4 w-4 transition-transform ${existingCourtsOpen ? "" : "-rotate-90"}`}
+              aria-hidden
+            />
+            <span className="text-sm font-medium">
+              Existing courts
+              <span className="text-muted-foreground ml-2 font-normal">
+                ({unassignedCourts.length})
+              </span>
+            </span>
+          </button>
+          {existingCourtsOpen ? (
+          <div className="flex flex-col gap-2 p-4">
           {unassignedCourts.map((c) => (
             <div
               key={c.id}
@@ -195,6 +214,8 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
               </div>
             </div>
           ))}
+          </div>
+          ) : null}
         </div>
       ) : null}
 
