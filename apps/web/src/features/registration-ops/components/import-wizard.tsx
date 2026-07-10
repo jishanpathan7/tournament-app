@@ -532,7 +532,7 @@ export function ImportWizard({
           {preview.summary.invalid > 0 && (
             <div className="border-yellow bg-yellow-tint flex items-start gap-2 rounded-2xl border-2 p-4 text-sm">
               <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-yellow-600" />
-              <p>
+              <p className="text-black">
                 {preview.summary.invalid} row{preview.summary.invalid !== 1 ? "s" : ""} will be
                 skipped due to validation errors. Only new/update rows will be imported.
               </p>

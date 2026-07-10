@@ -16,14 +16,6 @@ vi.mock("@/features/scheduling/components/queue-panel", () => ({
   QueuePanel: () => <div data-testid="queue">Queue</div>,
 }));
 
-vi.mock("@/features/tournaments/components/detail/divisions-section", () => ({
-  DivisionsSection: () => <div>Event types</div>,
-}));
-
-vi.mock("@/features/tournaments/components/detail/overview-panel", () => ({
-  OverviewPanel: () => <div>Overview</div>,
-}));
-
 vi.mock("@/hooks/use-permissions", () => ({
   useCan: () => () => true,
 }));
@@ -81,13 +73,12 @@ function baseMock(phase: "before" | "during" | "after") {
 }
 
 describe("TournamentDashboard", () => {
-  it("renders before-phase checklist and expandable details", async () => {
-    const user = userEvent.setup();
+  it("renders before-phase checklist and registration summary at step 2", () => {
     mockUseDashboard.mockReturnValue(baseMock("before"));
     renderWithProviders(<TournamentDashboard tournamentId="t1" />);
+    // Checklist is always visible below the hero in before phase
     expect(screen.getByText("Your checklist")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /more details/i }));
-    expect(screen.getByText("Readiness")).toBeInTheDocument();
+    // RegistrationsSummaryPanel promoted to main flow at step 2
     expect(screen.getByText("Participants")).toBeInTheDocument();
   });
 
