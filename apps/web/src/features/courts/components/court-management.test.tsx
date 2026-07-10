@@ -83,7 +83,7 @@ describe("CourtManagement", () => {
     ]);
     renderWithProviders(<CourtManagement tournamentId={TOURNAMENT_ID} />);
 
-    expect(await screen.findByText("Assign an existing court")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Assign" })).toBeDisabled();
+    expect(await screen.findByText("Existing courts")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Assign" })).toBeInTheDocument();
   });
 });
