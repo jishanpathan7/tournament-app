@@ -67,7 +67,6 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkCreateOpen, setBulkCreateOpen] = useState(false);
-  const [assignSelection, setAssignSelection] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
 
@@ -161,36 +160,41 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
       ) : null}
 
       {canManage && unassignedCourts.length > 0 ? (
-        <div className="border-ink bg-card shadow-sticker-xs flex flex-wrap items-center gap-3 rounded-2xl border-2 p-4">
-          <span className="text-sm font-medium">Assign an existing court</span>
-          <Select value={assignSelection} onValueChange={setAssignSelection}>
-            <SelectTrigger className="w-56" aria-label="Choose a court to assign">
-              <SelectValue placeholder="Choose a court" />
-            </SelectTrigger>
-            <SelectContent>
-              {unassignedCourts.map((c) => (
-                <SelectItem key={c.id} value={c.id}>
-                  {c.venueName} · {c.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Button
-            tone="paper"
-            size="sm"
-            disabled={!assignSelection || assignCourt.isPending}
-            onClick={() => {
-              assignCourt.mutate(
-                { courtId: assignSelection },
-                {
-                  onSuccess: () => setAssignSelection(""),
-                  onError: (e) => toast.error(errorMessage(e, "Couldn't assign court")),
-                },
-              );
-            }}
-          >
-            Assign
-          </Button>
+        <div className="border-ink bg-card shadow-sticker-xs flex flex-col gap-2 rounded-2xl border-2 p-4">
+          <span className="text-sm font-medium">Existing courts</span>
+          {unassignedCourts.map((c) => (
+            <div
+              key={c.id}
+              className="border-ink/10 flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
+            >
+              <span className="font-medium">
+                {c.venueName} · {c.name}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  tone="paper"
+                  size="sm"
+                  disabled={assignCourt.isPending}
+                  onClick={() =>
+                    assignCourt.mutate(
+                      { courtId: c.id },
+                      { onError: (e) => toast.error(errorMessage(e, "Couldn't assign court")) },
+                    )
+                  }
+                >
+                  Assign
+                </Button>
+                <Button
+                  tone="ghost"
+                  size="sm"
+                  className="text-destructive hover:text-destructive"
+                  onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       ) : null}
 

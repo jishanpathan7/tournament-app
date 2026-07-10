@@ -75,23 +75,30 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
     return buildCourtsById([...courts, ...fromQueue]);
   }, [tournamentCourts.data, queue.data?.courts]);
 
-  const filtered = useMemo(() => {
-    const base = applyMatchQueueFilters(matches.data ?? [], filters, participantsById);
-    return applyQuickFilter(base, filters.quick);
-  }, [matches.data, filters, participantsById]);
+  // Exclude TIE parent matches — they're squad-vs-squad containers, not scoreable entries.
+  // Only standard and leg matches belong in the ops queue and progress counts.
+  const scorableMatches = useMemo(
+    () => (matches.data ?? []).filter((m) => m.contestKind !== "tie"),
+    [matches.data],
+  );
 
-  const selectedMatch = matches.data?.find((m) => m.id === selectedMatchId) ?? null;
+  const filtered = useMemo(() => {
+    const base = applyMatchQueueFilters(scorableMatches, filters, participantsById);
+    return applyQuickFilter(base, filters.quick);
+  }, [scorableMatches, filters, participantsById]);
+
+  const selectedMatch = scorableMatches.find((m) => m.id === selectedMatchId) ?? null;
   const opsSummary = useMemo(
-    () => deriveOpsSummary(matches.data ?? [], queue.data),
-    [matches.data, queue.data],
+    () => deriveOpsSummary(scorableMatches, queue.data),
+    [scorableMatches, queue.data],
   );
   const progress = useMemo(
-    () => deriveTournamentProgress(matches.data ?? [], stages.data ?? []),
-    [matches.data, stages.data],
+    () => deriveTournamentProgress(scorableMatches, stages.data ?? []),
+    [scorableMatches, stages.data],
   );
   const contextualCta = useMemo(
-    () => deriveContextualCta(matches.data ?? [], courtsById),
-    [matches.data, courtsById],
+    () => deriveContextualCta(scorableMatches, courtsById),
+    [scorableMatches, courtsById],
   );
 
   const openMatch = (
