@@ -171,9 +171,7 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
                 {data.phase === "before" ? (
                   <BeforePanel tournamentId={tournamentId} data={data} canManage={canManage} />
                 ) : null}
-                {data.phase === "during" ? (
-                  <ActivityFeedPanel tournamentId={tournamentId} />
-                ) : null}
+                {data.phase === "during" ? <ActivityFeedPanel tournamentId={tournamentId} /> : null}
               </div>
             ) : null}
           </div>
