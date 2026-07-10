@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import type { NotificationResource } from "@tournament/api-client";
 import {
   AlertTriangle,
@@ -145,21 +146,121 @@ function groupByTournament(
   return Array.from(map.entries());
 }
 
-export function NotificationCenter() {
-  const { data: unreadData } = useUnreadCount();
+/** Popover panel content — only mounted when the popover is open. */
+function NotificationPanel() {
   const { data: actionData, isLoading: actionLoading } = useActionRequired();
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useNotifications();
   const markAll = useMarkAllRead();
 
   const actionItems = actionData ?? [];
   const updateItems = data?.pages.flatMap((p) => p.items) ?? [];
-  const count = unreadData?.count ?? 0;
   const hasContent = actionItems.length > 0 || updateItems.length > 0;
   const groupedUpdates = groupByTournament(updateItems);
   const hasUnreadUpdates = updateItems.some((n) => n.status !== "read" && n.status !== "resolved");
 
   return (
-    <Popover>
+    <>
+      <div className="border-ink flex items-center justify-between border-b-2 px-4 py-3">
+        <span className="text-2xs font-mono font-semibold uppercase tracking-[0.22em]">
+          Notifications
+        </span>
+        {hasUnreadUpdates ? (
+          <Button
+            tone="ghost"
+            size="sm"
+            className="text-candy-dark h-7 gap-1.5 px-2 text-xs"
+            onClick={() => markAll.mutate()}
+            disabled={markAll.isPending}
+          >
+            <CheckCheck className="h-4 w-4" strokeWidth={2.5} />
+            Mark all read
+          </Button>
+        ) : null}
+      </div>
+
+      <ScrollArea className="max-h-[28rem]">
+        {actionLoading || isLoading ? (
+          <div className="flex flex-col gap-2 p-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 border-0" />
+            ))}
+          </div>
+        ) : !hasContent ? (
+          <EmptyState
+            icon={Inbox}
+            title="You're all caught up"
+            description="Operational alerts and tournament updates will show up here."
+            className="py-10"
+          />
+        ) : (
+          <div>
+            {actionItems.length > 0 ? (
+              <div>
+                <div className="border-border border-b px-4 pb-1.5 pt-3">
+                  <span className="text-pink text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
+                    Action Required
+                  </span>
+                </div>
+                <div className="divide-border divide-y">
+                  {actionItems.map((n) => (
+                    <ActionRequiredRow key={n.id} n={n} />
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {updateItems.length > 0 ? (
+              <div>
+                <div className="border-border border-b px-4 pb-1.5 pt-3">
+                  <span className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
+                    Tournament Updates
+                  </span>
+                </div>
+                {groupedUpdates.map(([tournamentName, items]) => (
+                  <div key={tournamentName ?? "__ungrouped"}>
+                    {tournamentName ? (
+                      <div className="bg-muted/40 px-4 py-1.5">
+                        <span className="text-muted-foreground text-2xs font-mono font-medium uppercase tracking-[0.14em]">
+                          {tournamentName}
+                        </span>
+                      </div>
+                    ) : null}
+                    <div className="divide-border divide-y">
+                      {items.map((n) => (
+                        <UpdateRow key={n.id} n={n} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {hasNextPage ? (
+                  <div className="border-border border-t p-3">
+                    <Button
+                      tone="paper"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => fetchNextPage()}
+                      disabled={isFetchingNextPage}
+                    >
+                      Load more
+                    </Button>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        )}
+      </ScrollArea>
+    </>
+  );
+}
+
+export function NotificationCenter() {
+  const { data: unreadData } = useUnreadCount();
+  const [open, setOpen] = useState(false);
+  const count = unreadData?.count ?? 0;
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger
         className="border-ink bg-card hover:bg-muted focus-visible:border-candy shadow-sticker-xs relative flex h-9 w-9 items-center justify-center rounded-full border-2 outline-none transition-colors"
         aria-label={`Notifications${count ? `, ${count} action required` : ""}`}
@@ -172,96 +273,7 @@ export function NotificationCenter() {
         ) : null}
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[22rem] p-0">
-        <div className="border-ink flex items-center justify-between border-b-2 px-4 py-3">
-          <span className="text-2xs font-mono font-semibold uppercase tracking-[0.22em]">
-            Notifications
-          </span>
-          {hasUnreadUpdates ? (
-            <Button
-              tone="ghost"
-              size="sm"
-              className="text-candy-dark h-7 gap-1.5 px-2 text-xs"
-              onClick={() => markAll.mutate()}
-              disabled={markAll.isPending}
-            >
-              <CheckCheck className="h-4 w-4" strokeWidth={2.5} />
-              Mark all read
-            </Button>
-          ) : null}
-        </div>
-
-        <ScrollArea className="max-h-[28rem]">
-          {actionLoading || isLoading ? (
-            <div className="flex flex-col gap-2 p-4">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 border-0" />
-              ))}
-            </div>
-          ) : !hasContent ? (
-            <EmptyState
-              icon={Inbox}
-              title="You're all caught up"
-              description="Operational alerts and tournament updates will show up here."
-              className="py-10"
-            />
-          ) : (
-            <div>
-              {actionItems.length > 0 ? (
-                <div>
-                  <div className="border-border border-b px-4 pb-1.5 pt-3">
-                    <span className="text-pink text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
-                      Action Required
-                    </span>
-                  </div>
-                  <div className="divide-border divide-y">
-                    {actionItems.map((n) => (
-                      <ActionRequiredRow key={n.id} n={n} />
-                    ))}
-                  </div>
-                </div>
-              ) : null}
-
-              {updateItems.length > 0 ? (
-                <div>
-                  <div className="border-border border-b px-4 pb-1.5 pt-3">
-                    <span className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
-                      Tournament Updates
-                    </span>
-                  </div>
-                  {groupedUpdates.map(([tournamentName, items]) => (
-                    <div key={tournamentName ?? "__ungrouped"}>
-                      {tournamentName ? (
-                        <div className="bg-muted/40 px-4 py-1.5">
-                          <span className="text-muted-foreground text-2xs font-mono font-medium uppercase tracking-[0.14em]">
-                            {tournamentName}
-                          </span>
-                        </div>
-                      ) : null}
-                      <div className="divide-border divide-y">
-                        {items.map((n) => (
-                          <UpdateRow key={n.id} n={n} />
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {hasNextPage ? (
-                    <div className="border-border border-t p-3">
-                      <Button
-                        tone="paper"
-                        size="sm"
-                        className="w-full"
-                        onClick={() => fetchNextPage()}
-                        disabled={isFetchingNextPage}
-                      >
-                        Load more
-                      </Button>
-                    </div>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          )}
-        </ScrollArea>
+        {open ? <NotificationPanel /> : null}
       </PopoverContent>
     </Popover>
   );
