@@ -23,9 +23,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # New priority enum type
+    # New priority enum type — guard against re-entrant runs (CI reuses DB between jobs)
     op.execute(
-        "CREATE TYPE notification_priority AS ENUM ('action_required', 'important', 'info')"
+        "DO $$ BEGIN "
+        "  CREATE TYPE notification_priority AS ENUM ('action_required', 'important', 'info'); "
+        "EXCEPTION WHEN duplicate_object THEN NULL; "
+        "END $$"
     )
 
     # Add RESOLVED value to notification_status enum
