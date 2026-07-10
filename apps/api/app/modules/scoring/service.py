@@ -486,16 +486,7 @@ async def _broadcast(org_id: uuid.UUID, match: Match) -> None:
 async def _notify(
     session: AsyncSession, org_id: uuid.UUID, match: Match, scheduled_ids: list[str]
 ) -> None:
-    for mp in match.participants:
-        user_id = await participant_user(session, org_id, mp.participant_id)
-        if user_id is not None:
-            await notify(
-                session,
-                organization_id=org_id,
-                recipient_user_id=user_id,
-                type=events.NOTIFY_MATCH_COMPLETED,
-                data={"matchId": str(match.id), "tournamentId": str(match.tournament_id)},
-            )
+    # match.completed removed from IN_APP — result is visible in bracket/standings.
     for match_id in scheduled_ids:
         ready = await repo.get_match(session, org_id, uuid.UUID(match_id))
         if ready is None:

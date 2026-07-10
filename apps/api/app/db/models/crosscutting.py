@@ -33,6 +33,7 @@ from app.db.enums import (
     FILE_STATUS,
     IDEMPOTENCY_STATUS,
     NOTIFICATION_CHANNEL,
+    NOTIFICATION_PRIORITY,
     NOTIFICATION_STATUS,
     SHARE_LINK_SCOPE,
 )
@@ -107,6 +108,15 @@ class Notification(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
         NOTIFICATION_STATUS, nullable=False, server_default=text("'pending'")
     )
     sent_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    priority: Mapped[str] = mapped_column(
+        NOTIFICATION_PRIORITY, nullable=False, server_default=text("'info'")
+    )
+    icon: Mapped[str] = mapped_column(String(64), nullable=False, server_default=text("'bell'"))
+    cta_label: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    cta_href: Mapped[str | None] = mapped_column(String(512), nullable=True)
+    resolved_at: Mapped[datetime.datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

@@ -24,8 +24,10 @@ register_template(
     NotificationTemplate(
         type=NOTIFY_SUBMITTED,
         channels=(NotificationChannel.IN_APP, NotificationChannel.EMAIL),
-        in_app_title="Registration received",
-        in_app_body="Your registration for {division_name} in {tournament_name} was received.",
+        in_app_title="You're registered for {division_name}",
+        in_app_body=(
+            "We've got your spot at {tournament_name}. You'll hear back once it's confirmed."
+        ),
         email_template="registration_received",
     )
 )
@@ -33,8 +35,10 @@ register_template(
     NotificationTemplate(
         type=NOTIFY_APPROVED,
         channels=(NotificationChannel.IN_APP, NotificationChannel.EMAIL),
-        in_app_title="Registration confirmed",
-        in_app_body="You're in for {division_name} at {tournament_name}.",
+        in_app_title="You're in — {division_name} at {tournament_name}",
+        in_app_body=(
+            "Your spot is confirmed. Check your portal for match details as the event approaches."
+        ),
         email_template="registration_approved",
     )
 )
@@ -42,8 +46,11 @@ register_template(
     NotificationTemplate(
         type=NOTIFY_REJECTED,
         channels=(NotificationChannel.IN_APP, NotificationChannel.EMAIL),
-        in_app_title="Registration update",
-        in_app_body="Your registration for {division_name} at {tournament_name} was not accepted.",
+        in_app_title="Registration not accepted — {division_name}",
+        in_app_body=(
+            "Your registration for {tournament_name} wasn't accepted this time."
+            " Contact the organizer if you have questions."
+        ),
         email_template="registration_rejected",
     )
 )
@@ -51,8 +58,11 @@ register_template(
     NotificationTemplate(
         type=NOTIFY_WAITLISTED,
         channels=(NotificationChannel.IN_APP, NotificationChannel.EMAIL),
-        in_app_title="Added to waitlist",
-        in_app_body="You're on the waitlist for {division_name} at {tournament_name}.",
+        in_app_title="You're on the waitlist for {division_name}",
+        in_app_body=(
+            "We've got you on the list for {tournament_name}."
+            " We'll let you know if a spot opens up."
+        ),
         email_template="registration_waitlisted",
     )
 )
@@ -60,8 +70,8 @@ register_template(
     NotificationTemplate(
         type=NOTIFY_DRAW_PUBLISHED,
         channels=(NotificationChannel.IN_APP, NotificationChannel.EMAIL),
-        in_app_title="Draw is live",
-        in_app_body="{tournament_name} bracket is now published.",
+        in_app_title="Your bracket is up for {tournament_name}",
+        in_app_body="The draw is published — see who you're playing and when.",
         email_template="draw_published",
     )
 )

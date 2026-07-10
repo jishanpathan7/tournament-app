@@ -71,6 +71,7 @@ export type StandingRowView = Schemas["StandingRowView"];
 // ---- notifications ----
 export type NotificationResource = Schemas["NotificationResource"];
 export type NotificationPage = Schemas["CursorPage_NotificationResource_"];
+export type ResolveNotificationResponse = Schemas["ResolveNotificationResponse"];
 export type UnreadCountResponse = Schemas["UnreadCountResponse"];
 export type MarkAllReadResponse = Schemas["MarkAllReadResponse"];
 
