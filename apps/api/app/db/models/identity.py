@@ -68,6 +68,10 @@ class Organization(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     emails_enabled: Mapped[bool] = mapped_column(
         Boolean, nullable=False, server_default=text("true")
     )
+    # Global in-app notification kill switch. When False, notify() skips IN_APP rows.
+    in_app_notifications_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, server_default=text("true")
+    )
     # use_alter breaks the organizations <-> sport_profiles FK cycle at create time.
     default_sport_profile_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),

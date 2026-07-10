@@ -23,7 +23,7 @@ export interface TournamentNavItem {
 export const TOURNAMENT_NAV: TournamentNavItem[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard, hrefSuffix: "" },
   { key: "participants", label: "Participants", icon: UserRound, hrefSuffix: "/players" },
-  { key: "setup", label: "Setup", icon: SlidersHorizontal, hrefSuffix: "/teams" },
+  { key: "setup", label: "Setup", icon: SlidersHorizontal, hrefSuffix: "/setup" },
   { key: "live", label: "Live", icon: Radio, hrefSuffix: "/matches" },
   { key: "results", label: "Results", icon: Trophy, hrefSuffix: "" },
   { key: "staff", label: "Staff", icon: Users, hrefSuffix: "/staff" },
@@ -61,6 +61,7 @@ export function resolveTournamentNavKey(
   }
 
   if (
+    rel.startsWith("/setup") ||
     rel.startsWith("/teams") ||
     rel.startsWith("/draws") ||
     rel.startsWith("/schedule") ||

@@ -86,6 +86,26 @@ export function OrgSettingsPanel() {
   const { data: org, isLoading } = useOrgSettings();
   const { mutate: updateSettings, isPending } = useUpdateOrgSettings();
 
+  function handleInAppToggle(next: boolean) {
+    updateSettings(
+      { inAppNotificationsEnabled: next },
+      {
+        onSuccess: () => {
+          toast.success(next ? "In-app notifications enabled" : "In-app notifications disabled", {
+            description: next
+              ? "Users will now receive in-app notifications."
+              : "No in-app notifications will be delivered to any user in this account.",
+          });
+        },
+        onError: () => {
+          toast.error("Failed to update setting", {
+            description: "Please try again. If the problem persists, contact support.",
+          });
+        },
+      },
+    );
+  }
+
   function handleEmailsToggle(next: boolean) {
     updateSettings(
       { emailsEnabled: next },
@@ -115,6 +135,7 @@ export function OrgSettingsPanel() {
   }
 
   const emailsEnabled = org?.emailsEnabled ?? true;
+  const inAppEnabled = org?.inAppNotificationsEnabled ?? true;
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
@@ -185,6 +206,38 @@ export function OrgSettingsPanel() {
                 />
               }
             />
+            <SettingRow
+              id="in-app-enabled"
+              icon={
+                inAppEnabled ? (
+                  <Bell className="h-4 w-4 text-[#8B5CF6]" />
+                ) : (
+                  <BellOff className="h-4 w-4 text-[#94A3B8]" />
+                )
+              }
+              title="In-app notifications"
+              description={
+                inAppEnabled
+                  ? "Users see operational alerts and tournament updates in the notification centre."
+                  : "All in-app notifications are suppressed account-wide. The bell will stay silent for all users."
+              }
+              badge={
+                !inAppEnabled ? (
+                  <Badge tone="pink" className="text-[10px]">
+                    Off
+                  </Badge>
+                ) : null
+              }
+              control={
+                <Toggle
+                  id="in-app-enabled"
+                  checked={inAppEnabled}
+                  onChange={handleInAppToggle}
+                  disabled={isPending}
+                  ariaLabel="Toggle in-app notifications"
+                />
+              }
+            />
           </CardContent>
         </Card>
 
@@ -195,6 +248,16 @@ export function OrgSettingsPanel() {
               <strong className="font-semibold">Emails are off</strong> — no notifications will be
               sent to participants or organizers for any tournament in this account. Enable this
               setting before your event goes live.
+            </p>
+          </div>
+        )}
+        {!inAppEnabled && (
+          <div className="mt-3 flex items-start gap-3 rounded-xl border-2 border-[#F472B6] bg-[#FCE7F3] px-4 py-3">
+            <BellOff className="mt-0.5 h-4 w-4 shrink-0 text-[#DB2777]" />
+            <p className="text-sm leading-relaxed text-[#9D174D]">
+              <strong className="font-semibold">In-app notifications are off</strong> — no alerts or
+              tournament updates will appear in the notification centre for any user in this
+              account.
             </p>
           </div>
         )}

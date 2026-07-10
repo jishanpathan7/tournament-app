@@ -7,8 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { countUnpairedFromReadiness } from "@/features/tournaments/dashboard/config";
 import { DrawStatusSummary } from "@/features/tournaments/dashboard/components/draw-status-summary";
-import { ReadinessSummary } from "@/features/tournaments/dashboard/components/readiness-summary";
-import { RegistrationsSummaryPanel } from "@/features/tournaments/dashboard/components/registrations-summary-panel";
 import { useSquads } from "@/features/squads/use-squads";
 import type { useTournamentDashboard } from "@/features/tournaments/dashboard/use-tournament-dashboard";
 
@@ -30,15 +28,16 @@ export function BeforePanel({
   const squads = useSquads(tournamentId);
   const unassignedTeams = squads.data?.summary.unassigned ?? 0;
 
+  const hasContent =
+    (canManage && (squads.data?.summary.squadCount ?? 0) === 0) ||
+    (canManage && unassignedTeams > 0) ||
+    unpaired > 0 ||
+    divisions.length > 0;
+
+  if (!hasContent) return null;
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
-      <ReadinessSummary tournamentId={tournamentId} readiness={data.readiness} />
-      <RegistrationsSummaryPanel
-        tournamentId={tournamentId}
-        divisions={divisions}
-        totals={data.registrationTotals}
-        canManage={canManage}
-      />
       {canManage && (squads.data?.summary.squadCount ?? 0) === 0 ? (
         <Card className="lg:col-span-2">
           <CardHeader>
