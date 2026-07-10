@@ -180,41 +180,41 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
             </span>
           </button>
           {existingCourtsOpen ? (
-          <div className="flex flex-col gap-2 p-4">
-          {unassignedCourts.map((c) => (
-            <div
-              key={c.id}
-              className="border-ink/10 flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
-            >
-              <span className="font-medium">
-                {c.venueName} · {c.name}
-              </span>
-              <div className="flex items-center gap-1">
-                <Button
-                  tone="paper"
-                  size="sm"
-                  disabled={assignCourt.isPending}
-                  onClick={() =>
-                    assignCourt.mutate(
-                      { courtId: c.id },
-                      { onError: (e) => toast.error(errorMessage(e, "Couldn't assign court")) },
-                    )
-                  }
+            <div className="flex flex-col gap-2 p-4">
+              {unassignedCourts.map((c) => (
+                <div
+                  key={c.id}
+                  className="border-ink/10 flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
                 >
-                  Assign
-                </Button>
-                <Button
-                  tone="ghost"
-                  size="sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+                  <span className="font-medium">
+                    {c.venueName} · {c.name}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      tone="paper"
+                      size="sm"
+                      disabled={assignCourt.isPending}
+                      onClick={() =>
+                        assignCourt.mutate(
+                          { courtId: c.id },
+                          { onError: (e) => toast.error(errorMessage(e, "Couldn't assign court")) },
+                        )
+                      }
+                    >
+                      Assign
+                    </Button>
+                    <Button
+                      tone="ghost"
+                      size="sm"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-          </div>
           ) : null}
         </div>
       ) : null}
