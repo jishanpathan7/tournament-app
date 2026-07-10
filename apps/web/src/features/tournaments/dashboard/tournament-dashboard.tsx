@@ -112,6 +112,11 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
           canManage={canManage}
           resultsPublishedAt={tournament.resultsPublishedAt}
         />
+        {showPrepTracker ? (
+          <div className="hidden md:block">
+            <TournamentStepTracker step={step} variant="primary" />
+          </div>
+        ) : null}
 
         {showRegistrationSummary ? (
           <RegistrationsSummaryPanel
@@ -143,12 +148,6 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
               <DuringPanel tournamentId={tournamentId} data={data} />
             </div>
           </>
-        ) : null}
-
-        {showPrepTracker ? (
-          <div className="hidden md:block">
-            <TournamentStepTracker step={step} variant="primary" />
-          </div>
         ) : null}
 
         {showDetailsToggle ? (
