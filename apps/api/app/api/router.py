@@ -26,6 +26,8 @@ from app.modules.share_links.checkin_public_router import router as checkin_publ
 from app.modules.share_links.public_router import router as scorekeeper_public_router
 from app.modules.share_links.router import router as share_links_router
 from app.modules.squads.router import router as squads_router
+from app.modules.tournament_members.router import accept_router as tournament_invites_router
+from app.modules.tournament_members.router import router as tournament_members_router
 from app.modules.tournaments.router import router as tournaments_router
 from app.modules.venues.router import router as venues_router
 from app.realtime.router import router as realtime_router
@@ -40,6 +42,8 @@ api_router.include_router(notifications_router)
 api_router.include_router(realtime_router)
 api_router.include_router(flags_router)
 api_router.include_router(tournaments_router)
+api_router.include_router(tournament_members_router)
+api_router.include_router(tournament_invites_router)
 api_router.include_router(registrations_router)
 api_router.include_router(registration_ops_router)
 api_router.include_router(pairing_router)

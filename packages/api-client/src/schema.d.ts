@@ -4208,6 +4208,77 @@ export interface components {
      * @enum {string}
      */
     Visibility: "public" | "unlisted" | "private";
+    /** TournamentRole */
+    TournamentRole:
+      | "tournament_admin"
+      | "organizer"
+      | "court_manager"
+      | "checkin_staff"
+      | "scorekeeper"
+      | "viewer";
+    /** TournamentInviteStatus */
+    TournamentInviteStatus: "pending" | "accepted" | "revoked" | "expired";
+    /** TournamentMemberResponse */
+    TournamentMemberResponse: {
+      /** Id */
+      id: string;
+      /** UserId */
+      userId: string;
+      /** TournamentId */
+      tournamentId: string;
+      tournamentRole: components["schemas"]["TournamentRole"];
+      /** Name */
+      name: string;
+      /** Email */
+      email: string;
+      /** InvitedBy */
+      invitedBy: string | null;
+      /** AcceptedAt */
+      acceptedAt: string | null;
+      /** CreatedAt */
+      createdAt: string;
+    };
+    /** TournamentInviteResponse */
+    TournamentInviteResponse: {
+      /** Id */
+      id: string;
+      /** Email */
+      email: string;
+      /** TournamentId */
+      tournamentId: string;
+      tournamentRole: components["schemas"]["TournamentRole"];
+      status: components["schemas"]["TournamentInviteStatus"];
+      /** ExpiresAt */
+      expiresAt: string;
+      /** CreatedAt */
+      createdAt: string;
+    };
+    /** TournamentMembersListResponse */
+    TournamentMembersListResponse: {
+      members: components["schemas"]["TournamentMemberResponse"][];
+      pendingInvites: components["schemas"]["TournamentInviteResponse"][];
+    };
+    /** InviteTournamentMemberRequest */
+    InviteTournamentMemberRequest: {
+      /** Email */
+      email: string;
+      tournamentRole: components["schemas"]["TournamentRole"];
+    };
+    /** UpdateTournamentMemberRoleRequest */
+    UpdateTournamentMemberRoleRequest: {
+      tournamentRole: components["schemas"]["TournamentRole"];
+    };
+    /** GenerateInviteLinkRequest */
+    GenerateInviteLinkRequest: {
+      tournamentRole: components["schemas"]["TournamentRole"];
+    };
+    /** InviteLinkResponse */
+    InviteLinkResponse: {
+      /** Token */
+      token: string;
+      /** Expires At */
+      expiresAt: string;
+    };
   };
   responses: never;
   parameters: never;

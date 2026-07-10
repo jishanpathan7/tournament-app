@@ -8,7 +8,7 @@ scorekeeper only on assigned matches) — unused until the scoring module.
 
 from __future__ import annotations
 
-from app.db.enums import OrgRole
+from app.db.enums import OrgRole, TournamentRole
 
 # Actions are "resource:verb" strings. tournament:* / scoring:* are forward-declared
 # for the modules that follow, so the matrix is complete when they land.
@@ -76,3 +76,83 @@ def can(role: OrgRole | str, action: str, resource: object | None = None) -> boo
     except ValueError:
         return False
     return action in ROLE_PERMISSIONS.get(role_enum, frozenset())
+
+
+# ---------------------------------------------------------------------------
+# Tournament-level role permissions
+# ---------------------------------------------------------------------------
+
+# Actions a tournament-level role may perform within one tournament.
+# Org OWNER / ADMIN always bypass — checked in resolve_tournament_role.
+TOURNAMENT_ROLE_PERMISSIONS: dict[TournamentRole, frozenset[str]] = {
+    TournamentRole.TOURNAMENT_ADMIN: frozenset(
+        {
+            TOURNAMENT_UPDATE,
+            TOURNAMENT_DELETE,
+            SCORING_WRITE,
+            SCHEDULE_MANAGE,
+            FILE_READ,
+            FILE_WRITE,
+            MEMBER_READ,
+            MEMBER_INVITE,
+            MEMBER_ROLE_UPDATE,
+            MEMBER_REMOVE,
+        }
+    ),
+    TournamentRole.ORGANIZER: frozenset(
+        {
+            TOURNAMENT_UPDATE,
+            SCORING_WRITE,
+            SCHEDULE_MANAGE,
+            FILE_READ,
+            FILE_WRITE,
+            MEMBER_READ,
+        }
+    ),
+    TournamentRole.COURT_MANAGER: frozenset(
+        {
+            SCHEDULE_MANAGE,
+            FILE_READ,
+            MEMBER_READ,
+        }
+    ),
+    TournamentRole.CHECKIN_STAFF: frozenset({FILE_READ, MEMBER_READ}),
+    TournamentRole.SCOREKEEPER: frozenset({SCORING_WRITE, FILE_READ, MEMBER_READ}),
+    TournamentRole.VIEWER: frozenset({FILE_READ, MEMBER_READ}),
+}
+
+# Actions that bypass tournament-role check (org OWNER / ADMIN always pass)
+_ORG_BYPASS_ROLES: frozenset[OrgRole] = frozenset({OrgRole.OWNER, OrgRole.ADMIN})
+
+
+def tournament_can(
+    org_role: OrgRole | str,
+    tournament_role: TournamentRole | str | None,
+    action: str,
+) -> bool:
+    """Return True if this user can perform `action` on a specific tournament.
+
+    Org OWNER / ADMIN bypass tournament-level checks entirely.
+    If no tournament_role row exists, fall back to the org-level `can()`.
+    """
+    try:
+        org_enum = org_role if isinstance(org_role, OrgRole) else OrgRole(org_role)
+    except ValueError:
+        return False
+
+    if org_enum in _ORG_BYPASS_ROLES:
+        return True
+
+    if tournament_role is not None:
+        try:
+            t_enum = (
+                tournament_role
+                if isinstance(tournament_role, TournamentRole)
+                else TournamentRole(tournament_role)
+            )
+        except ValueError:
+            return False
+        return action in TOURNAMENT_ROLE_PERMISSIONS.get(t_enum, frozenset())
+
+    # No tournament-specific row — fall back to org role
+    return can(org_enum, action)

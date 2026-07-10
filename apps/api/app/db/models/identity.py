@@ -17,7 +17,13 @@ from sqlalchemy.dialects.postgresql import INET, JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
-from app.db.enums import AUTH_TOKEN_PURPOSE, ORG_INVITE_STATUS, ORG_ROLE
+from app.db.enums import (
+    AUTH_TOKEN_PURPOSE,
+    ORG_INVITE_STATUS,
+    ORG_ROLE,
+    TOURNAMENT_INVITE_STATUS,
+    TOURNAMENT_ROLE,
+)
 from app.db.mixins import OrgScopedMixin, TimestampMixin, UUIDPrimaryKeyMixin
 
 if TYPE_CHECKING:
@@ -136,6 +142,63 @@ class OrgInvite(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     )
     status: Mapped[str] = mapped_column(
         ORG_INVITE_STATUS, nullable=False, server_default=text("'pending'")
+    )
+    expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    accepted_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+
+
+class TournamentMember(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
+    """Per-tournament role override. When a row exists for (user_id, tournament_id),
+    its role takes precedence over the user's org-level role for that tournament only.
+    Org OWNER and ADMIN always bypass this check."""
+
+    __tablename__ = "tournament_members"
+    __table_args__ = (UniqueConstraint("tournament_id", "user_id"),)
+
+    tournament_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tournaments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tournament_role: Mapped[str] = mapped_column(TOURNAMENT_ROLE, nullable=False)
+    invited_by: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    accepted_at: Mapped[datetime.datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+    user: Mapped[User] = relationship(foreign_keys=[user_id])
+
+
+class TournamentInvite(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
+    """Email invite to join a tournament with a specific role (token-based acceptance)."""
+
+    __tablename__ = "tournament_invites"
+
+    tournament_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("tournaments.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    email: Mapped[str] = mapped_column(String(320), nullable=False, index=True)
+    tournament_role: Mapped[str] = mapped_column(TOURNAMENT_ROLE, nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    invited_by: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+    )
+    status: Mapped[str] = mapped_column(
+        TOURNAMENT_INVITE_STATUS, nullable=False, server_default=text("'pending'")
     )
     expires_at: Mapped[datetime.datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     accepted_at: Mapped[datetime.datetime | None] = mapped_column(

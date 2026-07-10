@@ -14,6 +14,8 @@ EXPECTED_TABLES = {
     "auth_sessions",
     "auth_tokens",
     "org_invites",
+    "tournament_members",
+    "tournament_invites",
     # sport
     "sport_profiles",
     "points_rules",
@@ -92,7 +94,7 @@ def test_rls_classification_is_exhaustive_and_disjoint():
 def test_enum_type_names_unique():
     names = [e.name for e in ALL_PG_ENUMS]
     assert (
-        len(names) == len(set(names)) == 19
+        len(names) == len(set(names)) == 19  # 0020 adds 2 more but they're in later-migrations list
     )  # baseline enums (non-baseline added by later migrations)
 
 

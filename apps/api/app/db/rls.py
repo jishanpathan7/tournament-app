@@ -63,6 +63,8 @@ TENANT_STRICT_TABLES = [
     "notifications",
     "audit_logs",
     "idempotency_keys",
+    "tournament_members",
+    "tournament_invites",
 ]
 
 # Global catalog (NULL org_id) + optional org-owned rows.

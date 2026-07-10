@@ -208,6 +208,22 @@ class PairingRunStatus(_StrEnum):
     DISCARDED = "discarded"  # superseded by a regenerate or thrown away
 
 
+class TournamentRole(_StrEnum):
+    TOURNAMENT_ADMIN = "tournament_admin"
+    ORGANIZER = "organizer"
+    COURT_MANAGER = "court_manager"
+    CHECKIN_STAFF = "checkin_staff"
+    SCOREKEEPER = "scorekeeper"
+    VIEWER = "viewer"
+
+
+class TournamentInviteStatus(_StrEnum):
+    PENDING = "pending"
+    ACCEPTED = "accepted"
+    REVOKED = "revoked"
+    EXPIRED = "expired"
+
+
 def pg_enum(py_enum: type[enum.Enum], name: str) -> sa.Enum:
     """Build a named native PG ENUM bound to a Python enum.
 
@@ -254,6 +270,8 @@ COURT_STATUS = pg_enum(CourtStatus, "court_status")  # 0010
 PAIRING_RUN_STATUS = pg_enum(PairingRunStatus, "pairing_run_status")  # 0011
 ATTENDANCE_STATUS = pg_enum(AttendanceStatus, "attendance_status")  # 0012
 CONTEST_KIND = pg_enum(ContestKind, "contest_kind")  # 0016
+TOURNAMENT_ROLE = pg_enum(TournamentRole, "tournament_role")  # 0020
+TOURNAMENT_INVITE_STATUS = pg_enum(TournamentInviteStatus, "tournament_invite_status")  # 0020
 
 # The 0001 baseline enum set. Consumed by the initial migration's
 # upgrade()/downgrade(). Order is irrelevant (no inter-enum dependencies).

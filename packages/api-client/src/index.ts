@@ -168,6 +168,17 @@ export type FranchiseTieView = Schemas["FranchiseTieView"];
 export type FranchiseTiesBoardView = Schemas["FranchiseTiesBoardView"];
 export type TieLegView = Schemas["TieLegView"];
 
+// ---- tournament members ----
+export type TournamentRole = Schemas["TournamentRole"];
+export type TournamentInviteStatus = Schemas["TournamentInviteStatus"];
+export type TournamentMemberResponse = Schemas["TournamentMemberResponse"];
+export type TournamentInviteResponse = Schemas["TournamentInviteResponse"];
+export type TournamentMembersListResponse = Schemas["TournamentMembersListResponse"];
+export type InviteTournamentMemberRequest = Schemas["InviteTournamentMemberRequest"];
+export type UpdateTournamentMemberRoleRequest = Schemas["UpdateTournamentMemberRoleRequest"];
+export type GenerateInviteLinkRequest = Schemas["GenerateInviteLinkRequest"];
+export type InviteLinkResponse = Schemas["InviteLinkResponse"];
+
 // ---- health / errors ----
 export type HealthResponse = Schemas["HealthResponse"];
 
