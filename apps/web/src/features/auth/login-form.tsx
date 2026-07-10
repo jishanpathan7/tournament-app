@@ -48,7 +48,21 @@ export function LoginForm() {
           {...register("email")}
         />
       </Field>
-      <Field label="Password" htmlFor="password" error={errors.password?.message}>
+      <Field
+        label={
+          <span className="flex items-center justify-between">
+            Password
+            <Link
+              href="/forgot-password"
+              className="text-muted-foreground hover:text-foreground text-xs font-normal"
+            >
+              Forgot password?
+            </Link>
+          </span>
+        }
+        htmlFor="password"
+        error={errors.password?.message}
+      >
         <Input
           id="password"
           type="password"
