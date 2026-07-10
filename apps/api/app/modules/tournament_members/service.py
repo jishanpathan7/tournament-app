@@ -188,7 +188,6 @@ async def accept_invite(
     *,
     raw_token: str,
     user_id: uuid.UUID,
-    org_id: uuid.UUID,
 ) -> TournamentMember:
     invite = await repo.get_invite_by_token_hash(session, hash_token(raw_token))
     if (

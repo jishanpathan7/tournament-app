@@ -8,9 +8,12 @@ from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
+    CurrentUser,
     Principal,
     authed_csrf,
+    get_current_user,
     get_principal,
+    get_public_session,
     get_request_session,
     require_permission,
 )
@@ -226,14 +229,13 @@ accept_router = APIRouter(prefix="/tournament-invites", tags=["tournament-member
 @accept_router.post("/accept", dependencies=[Depends(authed_csrf)])
 async def accept_invite(
     body: dict,
-    principal: Principal = Depends(get_principal),
-    session: AsyncSession = Depends(get_request_session),
+    current_user: CurrentUser = Depends(get_current_user),
+    session: AsyncSession = Depends(get_public_session),
 ) -> dict:
     token = body.get("token", "")
     await service.accept_invite(
         session,
         raw_token=token,
-        user_id=principal.user_id,
-        org_id=principal.organization_id,
+        user_id=current_user.user_id,
     )
     return {"accepted": True}

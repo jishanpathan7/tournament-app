@@ -31,6 +31,8 @@ _SUBJECTS: dict[str, str] = {
     "registration_rejected": "Registration update — {{ tournament_name }}",
     "registration_waitlisted": "Waitlist — {{ tournament_name }}",
     "draw_published": "Draw is live — {{ tournament_name }}",
+    "tournament_member_added": "You're on the team — {{ tournament_name }}",
+    "tournament_invite": "You've been invited to help run {{ tournament_name }}",
 }
 
 _env = Environment(
