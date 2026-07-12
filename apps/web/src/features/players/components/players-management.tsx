@@ -74,7 +74,7 @@ function ParticipantStatusPills({
 export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
-  const data = useTournamentPlayers(tournamentId, { enabled: canManage || true });
+  const data = useTournamentPlayers(tournamentId, { enabled: canManage });
 
   const [search, setSearch] = useState("");
   const [skill, setSkill] = useState<PlayerSkillFilter>("all");

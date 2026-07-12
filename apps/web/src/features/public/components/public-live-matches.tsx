@@ -10,7 +10,7 @@ import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { matchStatusMeta } from "@/features/draws/config";
-import { groupByBucket, participantName } from "@/features/public/config";
+import { participantName } from "@/features/public/config";
 import { usePublicMatches, usePublicParticipants } from "@/features/public/use-public-tournament";
 
 function LiveFixtureCard({
@@ -60,7 +60,10 @@ export function PublicLiveMatches({ slug }: { slug: string }) {
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
-  const today = useMemo(() => groupByBucket(matches.data ?? []).today, [matches.data]);
+  const today = useMemo(
+    () => (matches.data ?? []).filter((m) => m.status === "in_progress"),
+    [matches.data],
+  );
 
   if (matches.isLoading) {
     return <Skeleton className="h-48 rounded-2xl" />;

@@ -36,7 +36,6 @@ import {
 import { getFormat } from "@/features/tournaments/config";
 
 const BUCKET_LABELS: Record<FixtureBucket, string> = {
-  today: "Today",
   upcoming: "Upcoming",
   completed: "Completed",
 };
@@ -253,7 +252,7 @@ export function PublicFixturesList({ slug }: { slug: string }) {
         ) : null}
       </div>
 
-      {(["today", "upcoming", "completed"] as const).map((bucket) =>
+      {(["upcoming", "completed"] as const).map((bucket) =>
         buckets[bucket].length > 0 ? (
           <div key={bucket} className="flex flex-col gap-3">
             <h2 className="font-serif text-xl font-semibold tracking-tight">
