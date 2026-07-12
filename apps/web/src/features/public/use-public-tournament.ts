@@ -12,7 +12,9 @@ import type {
 } from "@tournament/api-client";
 
 import * as publicApi from "@/features/public/public-api";
-import { publicQueryKeys } from "@/features/public/query-keys";
+import { queryKeys } from "@/lib/query-keys";
+
+const publicQueryKeys = queryKeys.public;
 
 /**
  * Every hook accepts `initialData` — the Server Component page fetches once (for SEO

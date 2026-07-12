@@ -1,6 +1,6 @@
 "use client";
 
-import { Radio, Swords, Timer } from "lucide-react";
+import { Download, Radio, Swords, Timer } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -37,14 +37,28 @@ import {
 import { useScheduleQueue } from "@/features/scheduling/use-schedule";
 import { MobileLiveStickyBar } from "@/features/scheduling/components/mobile-live-sticky-bar";
 import { useTournament } from "@/features/tournaments/use-tournaments";
+import { env } from "@/lib/env";
+import { toast } from "@/components/ui/sonner";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { ApiError } from "@/lib/problem";
 
-/**
- * Tournament Operations Center — prioritized match queue, live summary, and command
- * center for scoring. Realtime invalidation keeps the queue current without refresh.
- */
+async function downloadCsv(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { credentials: "include" });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(href);
+  } catch {
+    toast.error("Export failed — try again");
+  }
+}
+
 export function MatchCenter({ tournamentId }: { tournamentId: string }) {
   const can = useCan();
   const canManage = can(ACTIONS.SCORING_WRITE);
@@ -146,7 +160,24 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
         eyebrow="Operations"
         title="Match center"
         description="What needs attention now — score live matches and keep the tournament moving."
-        actions={<OpsContextualCta cta={contextualCta} onAction={openMatch} />}
+        actions={
+          <>
+            <Button
+              tone="paper"
+              size="sm"
+              onClick={() =>
+                void downloadCsv(
+                  `${env.apiUrl}/api/v1/tournaments/${tournamentId}/export/matches.csv`,
+                  "matches.csv",
+                )
+              }
+            >
+              <Download className="h-4 w-4" strokeWidth={2.25} />
+              Export CSV
+            </Button>
+            <OpsContextualCta cta={contextualCta} onAction={openMatch} />
+          </>
+        }
       />
 
       {/* Mobile: single-line status chip so the match queue is immediately visible */}

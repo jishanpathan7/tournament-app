@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useSession } from "@/features/auth/use-session";
 import { TournamentCard } from "@/features/tournaments/components/tournament-card";
-import { WelcomeGuide } from "@/features/tournaments/components/welcome-guide";
 import { useTournaments } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
@@ -69,7 +68,12 @@ export default function ConsolePage() {
           title="Couldn't load your tournaments"
         />
       ) : (data?.length ?? 0) === 0 ? (
-        <WelcomeGuide name={firstName} />
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <p className="text-muted-foreground text-sm">
+            No tournaments yet. Create your first one to get started.
+          </p>
+          {newButton}
+        </div>
       ) : (
         <>
           <section className="grid grid-cols-1 gap-4 sm:grid-cols-3">

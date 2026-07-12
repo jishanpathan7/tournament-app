@@ -139,10 +139,15 @@ export function AnalyticsPanel({
 }) {
   const { data: tournament } = useTournament(tournamentId);
 
+  const hasFranchiseStage = stages.some((s) => s.type === "round_robin");
+  const hasSlug = !!tournament?.slug;
+
+  if (!hasFranchiseStage && !hasSlug) return null;
+
   return (
     <div className="col-span-full grid gap-6 lg:grid-cols-2">
       <TeamRankings stages={stages} />
-      {tournament?.slug ? <TopPerformers slug={tournament.slug} /> : null}
+      {hasSlug ? <TopPerformers slug={tournament.slug} /> : null}
     </div>
   );
 }

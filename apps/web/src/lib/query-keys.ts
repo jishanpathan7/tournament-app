@@ -67,12 +67,6 @@ export const queryKeys = {
     actionRequired: () => ["notifications", "action-required"] as const,
   },
 
-  flags: {
-    all: ["feature-flags"] as const,
-    list: () => ["feature-flags", "list"] as const,
-    enabled: (key: string) => ["feature-flags", "enabled", key] as const,
-  },
-
   imports: {
     sources: () => ["imports", "sources"] as const,
     templates: (source?: string) => ["imports", "templates", source ?? "all"] as const,
@@ -90,5 +84,26 @@ export const queryKeys = {
 
   tournamentMembers: {
     list: (tournamentId: string) => ["tournament-members", tournamentId] as const,
+  },
+
+  // Public microsite keys live under a "public" prefix so they never cross-invalidate
+  // with the authenticated console's cache (they run in separate QueryClient instances).
+  public: {
+    tournament: (slug: string) => ["public", "tournament", slug] as const,
+    divisions: (slug: string) => ["public", "tournament", slug, "divisions"] as const,
+    stages: (slug: string) => ["public", "tournament", slug, "stages"] as const,
+    participants: (slug: string) => ["public", "tournament", slug, "participants"] as const,
+    participant: (slug: string, participantId: string) =>
+      ["public", "tournament", slug, "participants", participantId] as const,
+    matches: (slug: string) => ["public", "tournament", slug, "matches"] as const,
+    match: (slug: string, matchId: string) =>
+      ["public", "tournament", slug, "matches", matchId] as const,
+    matchEvents: (slug: string, matchId: string) =>
+      ["public", "tournament", slug, "matches", matchId, "events"] as const,
+    standings: (slug: string, stageId: string) =>
+      ["public", "tournament", slug, "stages", stageId, "standings"] as const,
+    courts: (slug: string) => ["public", "tournament", slug, "courts"] as const,
+    playerStats: (slug: string) => ["public", "tournament", slug, "player-stats"] as const,
+    search: (query: string) => ["public", "search", query] as const,
   },
 } as const;

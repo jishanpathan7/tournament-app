@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronDown, Radio, Swords } from "lucide-react";
+import { Radio, Swords } from "lucide-react";
 import Link from "next/link";
 
 import { ErrorState } from "@/components/common/error-state";
@@ -63,14 +62,11 @@ function MobileDuringPanel({ tournamentId, data }: { tournamentId: string; data:
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { ApiError } from "@/lib/problem";
-import { cn } from "@/lib/utils";
 
 export function TournamentDashboard({ tournamentId }: { tournamentId: string }) {
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
   const data = useTournamentDashboard(tournamentId);
-  const [detailsOpen, setDetailsOpen] = useState(false);
-
   if (data.tournament.isLoading || data.isLoadingCore) {
     return <LoadingPanel label="Loading overview" />;
   }
@@ -95,8 +91,6 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
   const showRegistrationSummary = showPrepTracker && step === 2;
   // Promote readiness summary at steps 5–7 (check-in, brackets, go live)
   const showReadinessSummary = showPrepTracker && step >= 5 && step <= 7;
-  // Show "More details" collapse for before/during phases
-  const showDetailsToggle = data.phase === "before" || data.phase === "during";
 
   return (
     <div className="flex flex-col gap-6">
@@ -150,31 +144,10 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
           </>
         ) : null}
 
-        {showDetailsToggle ? (
-          <div className="flex flex-col gap-4">
-            <Button
-              type="button"
-              tone="paper"
-              size="sm"
-              className="self-start"
-              onClick={() => setDetailsOpen((open) => !open)}
-            >
-              <ChevronDown
-                className={cn("h-4 w-4 transition-transform", detailsOpen && "rotate-180")}
-              />
-              {detailsOpen ? "Hide details" : "More details"}
-            </Button>
-
-            {detailsOpen ? (
-              <div className="flex flex-col gap-6">
-                {data.phase === "before" ? (
-                  <BeforePanel tournamentId={tournamentId} data={data} canManage={canManage} />
-                ) : null}
-                {data.phase === "during" ? <ActivityFeedPanel tournamentId={tournamentId} /> : null}
-              </div>
-            ) : null}
-          </div>
+        {data.phase === "before" ? (
+          <BeforePanel tournamentId={tournamentId} data={data} canManage={canManage} />
         ) : null}
+        {data.phase === "during" ? <ActivityFeedPanel tournamentId={tournamentId} /> : null}
       </div>
     </div>
   );

@@ -2,11 +2,30 @@
 
 import type { ParticipantResponse, StageResponse, StandingsView } from "@tournament/api-client";
 import Link from "next/link";
-import { Trophy } from "lucide-react";
+import { Download, Trophy } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { toast } from "@/components/ui/sonner";
 import { getFormat } from "@/features/tournaments/config";
 import { topStandingsRows } from "@/features/tournaments/dashboard/config";
+import { env } from "@/lib/env";
+
+async function downloadCsv(url: string, filename: string) {
+  try {
+    const res = await fetch(url, { credentials: "include" });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const blob = await res.blob();
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = href;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(href);
+  } catch {
+    toast.error("Export failed — try again");
+  }
+}
 
 export function StandingsSnapshot({
   tournamentId,
@@ -23,11 +42,25 @@ export function StandingsSnapshot({
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Trophy className="h-5 w-5" strokeWidth={2.25} />
           Standings snapshot
         </CardTitle>
+        <Button
+          tone="ghost"
+          size="sm"
+          className="shrink-0"
+          onClick={() =>
+            void downloadCsv(
+              `${env.apiUrl}/api/v1/tournaments/${tournamentId}/export/standings.csv`,
+              "standings.csv",
+            )
+          }
+        >
+          <Download className="h-4 w-4" strokeWidth={2.25} />
+          CSV
+        </Button>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         {drawnStages.length === 0 ? (
@@ -40,7 +73,7 @@ export function StandingsSnapshot({
             return (
               <div key={stage.id}>
                 <Link
-                  href={`/console/tournaments/${tournamentId}/divisions/${stage.divisionId}/stages/${stage.id}/draw`}
+                  href={`/console/tournaments/${tournamentId}/draws`}
                   className="text-sm font-semibold hover:underline"
                 >
                   {getFormat(stage.type)?.label ?? stage.type} · Stage {stage.seq + 1}

@@ -153,10 +153,7 @@ function WorkspaceChrome({
 
       <div>{children}</div>
 
-      <MobileTournamentNav
-        tournamentId={tournament.id}
-        pendingCount={pendingCount}
-      />
+      <MobileTournamentNav tournamentId={tournament.id} pendingCount={pendingCount} />
 
       {canManage ? (
         <EditTournamentDialog tournament={tournament} open={editOpen} onOpenChange={onEditOpen} />
