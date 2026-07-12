@@ -52,13 +52,22 @@ export function useDeleteMappingTemplate() {
 
 // ---- preview + commit ----
 
-export function useCommitImport(divisionId: string) {
+export function useCommitImport(divisionId: string, tournamentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: ImportRequest) => opsApi.commitImport(divisionId, body),
     onSuccess: () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.divisions.registrations(divisionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(divisionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.tournaments.participants(tournamentId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.readiness.tournament(tournamentId),
       });
     },
   });

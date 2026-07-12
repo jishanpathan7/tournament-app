@@ -27,7 +27,7 @@ def build_venue_view(venue: Venue) -> VenueView:
     )
 
 
-def build_court_view(court: Court) -> CourtView:
+def build_court_view(court: Court, assigned_tournament_count: int = 0) -> CourtView:
     return CourtView(
         id=court.id,
         venue_id=court.venue_id,
@@ -35,6 +35,7 @@ def build_court_view(court: Court) -> CourtView:
         name=court.name,
         status=court.status,
         created_at=court.created_at,
+        assigned_tournament_count=assigned_tournament_count,
     )
 
 
@@ -93,8 +94,9 @@ async def update_court(
     return court
 
 
-async def list_courts(session: AsyncSession, org_id: uuid.UUID) -> Sequence[Court]:
-    return await repo.list_courts(session, org_id)
+async def list_courts_with_counts(session: AsyncSession, org_id: uuid.UUID) -> list[CourtView]:
+    rows = await repo.list_courts_with_assignment_counts(session, org_id)
+    return [build_court_view(court, count) for court, count in rows]
 
 
 async def get_court(session: AsyncSession, org_id: uuid.UUID, court_id: uuid.UUID) -> Court:

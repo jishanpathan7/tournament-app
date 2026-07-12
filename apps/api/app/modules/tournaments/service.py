@@ -13,6 +13,8 @@ import random
 import uuid
 from typing import Any
 
+from sqlalchemy import delete as sa_delete
+from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, ValidationError
@@ -38,6 +40,7 @@ from app.db.models import (
     SportProfile,
     Stage,
     Tournament,
+    TournamentCourt,
 )
 from app.engine import (
     AdvancementRequest,
@@ -163,7 +166,7 @@ async def update_tournament(
     settings: dict[str, Any] | None,
     auto_schedule: bool | None = None,
     venue_id: uuid.UUID | None = None,
-    clear_venue: bool = False,
+    clear_venue: bool | None = None,
 ) -> Tournament:
     tournament = await _require_tournament(session, org_id, tournament_id)
     if name is not None:
@@ -205,6 +208,15 @@ async def delete_tournament(
 ) -> None:
     """Soft-delete — hides the tournament from console and public surfaces."""
     tournament = await _require_tournament(session, org_id, tournament_id)
+    # Release court assignments and match court refs so courts aren't stuck after soft-delete.
+    await session.execute(
+        sa_delete(TournamentCourt).where(TournamentCourt.tournament_id == tournament_id)
+    )
+    await session.execute(
+        sa_update(Match)
+        .where(Match.tournament_id == tournament_id, Match.court_id.isnot(None))
+        .values(court_id=None)
+    )
     tournament.deleted_at = _now()
     await session.flush()
     await _audit_event(

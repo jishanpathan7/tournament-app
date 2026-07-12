@@ -119,6 +119,8 @@ export type PairingRunView = Schemas["PairingRunView"];
 export type UpdateProposedTeamRequest = Schemas["UpdateProposedTeamRequest"];
 export type SwapMembersRequest = Schemas["SwapMembersRequest"];
 export type PublishPairingResponse = Schemas["PublishPairingResponse"];
+export type PartnerWarning = Schemas["PartnerWarning"];
+export type PartnerWarningsResponse = Schemas["PartnerWarningsResponse"];
 
 // ---- public microsite (anonymous — never fields tracing back to a user account) ----
 export type PublicOrgView = Schemas["PublicOrgView"];

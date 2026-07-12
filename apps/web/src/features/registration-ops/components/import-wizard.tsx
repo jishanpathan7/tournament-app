@@ -94,7 +94,7 @@ export function ImportWizard({
   const templates = useMappingTemplates(sourceKey || undefined);
   const saveTemplate = useSaveMappingTemplate();
   const deleteTemplate = useDeleteMappingTemplate();
-  const commit = useCommitImport(divisionId);
+  const commit = useCommitImport(divisionId, tournamentId);
 
   const selectedSource: ImportSourceInfo | undefined = sources.data?.find(
     (s) => s.key === sourceKey,
@@ -112,7 +112,7 @@ export function ImportWizard({
       try {
         const res = await opsApi.detectColumns({ source: sourceKey, raw: text });
         setColumns(res.columns);
-        setMapping({});
+        setMapping(res.suggestedMapping ?? {});
         setStep("map");
       } catch (e) {
         toast.error(errorMessage(e, "Couldn't parse file"));

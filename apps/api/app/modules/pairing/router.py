@@ -25,6 +25,7 @@ from app.modules.pairing.schemas import (
     AddDuplicatePairRequest,
     GeneratePairingRequest,
     PairingRunView,
+    PartnerWarningsResponse,
     ProposedTeamView,
     PublishPairingResponse,
     RepairPairingResponse,
@@ -60,6 +61,20 @@ async def generate_pairing(
         squad_id=body.squad_id,
     )
     return await service.build_run_view(session, principal.organization_id, run)
+
+
+@router.get(
+    "/divisions/{division_id}/pairing/partner-warnings",
+    response_model=PartnerWarningsResponse,
+)
+async def get_partner_warnings(
+    division_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> PartnerWarningsResponse:
+    return await service.get_partner_warnings(
+        session, org_id=principal.organization_id, division_id=division_id
+    )
 
 
 @router.get("/divisions/{division_id}/pairing", response_model=PairingRunView | None)

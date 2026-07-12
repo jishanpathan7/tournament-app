@@ -87,8 +87,7 @@ async def list_courts(
     principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_request_session),
 ) -> list[CourtView]:
-    rows = await service.list_courts(session, principal.organization_id)
-    return [service.build_court_view(c) for c in rows]
+    return await service.list_courts_with_counts(session, principal.organization_id)
 
 
 @router.delete(

@@ -42,13 +42,18 @@ from app.modules.pairing.schemas import (
     EntrantView,
     PairingRunView,
     PairingSummary,
+    PartnerWarning,
+    PartnerWarningsResponse,
     ProposedTeamView,
 )
 from app.modules.registrations.entrant import (
     entrant_display_name,
     entrant_has_external_identity,
 )
-from app.modules.registrations.partner_resolution import preferred_partner_id_for
+from app.modules.registrations.partner_resolution import (
+    normalize_partner_name,
+    preferred_partner_id_for,
+)
 from app.modules.squads.repository import (
     cross_squad_forbidden_registration_pairs,
     list_squads,
@@ -537,6 +542,45 @@ async def _materialize_team(
     for reg in regs:
         reg.status = RegistrationStatus.APPROVED.value
     await session.flush()
+
+
+async def get_partner_warnings(
+    session: AsyncSession, *, org_id: uuid.UUID, division_id: uuid.UUID
+) -> PartnerWarningsResponse:
+    """Scan approved registrations for unresolvable partner name preferences."""
+    ctx = await _load_context(session, org_id, division_id)
+    warnings: list[PartnerWarning] = []
+
+    for reg in ctx.entrants:
+        form = reg.form_response or {}
+        partner_name = form.get("preferredPartnerName")
+        if not partner_name:
+            continue
+        # Already resolved — no warning needed.
+        if form.get("preferredPartnerRegistrationId") and preferred_partner_id_for(
+            reg, by_id=ctx.by_id
+        ):
+            continue
+
+        player_name = str(form.get("name") or reg.id)
+        key = normalize_partner_name(str(partner_name))
+        matches = [
+            r
+            for r in ctx.entrants
+            if r.id != reg.id
+            and normalize_partner_name(str((r.form_response or {}).get("name", ""))) == key
+        ]
+        reason = "ambiguous" if len(matches) > 1 else "not_found"
+        warnings.append(
+            PartnerWarning(
+                registration_id=reg.id,
+                player_name=player_name,
+                requested_partner_name=str(partner_name),
+                reason=reason,
+            )
+        )
+
+    return PartnerWarningsResponse(warnings=warnings, total=len(warnings))
 
 
 # ---- context + helpers ----

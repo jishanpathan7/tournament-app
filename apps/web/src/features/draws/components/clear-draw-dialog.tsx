@@ -23,15 +23,17 @@ import { errorMessage } from "@/lib/problem";
 export function ClearDrawDialog({
   stageId,
   divisionId,
+  tournamentId,
   open,
   onOpenChange,
 }: {
   stageId: string;
   divisionId: string;
+  tournamentId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const clear = useClearDraw(stageId, divisionId);
+  const clear = useClearDraw(stageId, divisionId, tournamentId);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

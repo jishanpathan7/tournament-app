@@ -50,7 +50,11 @@ export function DrawOverview({
     [participants.data],
   );
 
-  const matches = useStageMatches(stageId, { enabled: !!stage?.drawn });
+  const matchesQuery = useStageMatches(stageId, { enabled: !!stage?.drawn });
+  const matches = {
+    ...matchesQuery,
+    data: matchesQuery.data?.filter((m) => m.contestKind !== "tie"),
+  };
   const standings = useStandings(stageId, {
     enabled: !!stage?.drawn && stage?.type === "round_robin",
   });
@@ -104,6 +108,7 @@ export function DrawOverview({
       <DrawSetupPanel
         stage={stage}
         divisionId={divisionId}
+        tournamentId={tournament.data.id}
         approvedCount={approvedCount}
         canManage={canManage}
         tournamentSlug={tournament.data.slug}

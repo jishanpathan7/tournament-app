@@ -1,4 +1,3 @@
-import type { TournamentStatus } from "@tournament/api-client";
 import {
   LayoutDashboard,
   Radio,
@@ -25,28 +24,22 @@ export const TOURNAMENT_NAV: TournamentNavItem[] = [
   { key: "participants", label: "Participants", icon: UserRound, hrefSuffix: "/players" },
   { key: "setup", label: "Setup", icon: SlidersHorizontal, hrefSuffix: "/setup" },
   { key: "live", label: "Live", icon: Radio, hrefSuffix: "/matches" },
-  { key: "results", label: "Results", icon: Trophy, hrefSuffix: "" },
+  { key: "results", label: "Results", icon: Trophy, hrefSuffix: "/results" },
   { key: "staff", label: "Staff", icon: Users, hrefSuffix: "/staff" },
 ];
-
-const AFTER_STATUSES = new Set<TournamentStatus>(["completed", "archived"]);
 
 function tournamentBase(tournamentId: string) {
   return `/console/tournaments/${tournamentId}`;
 }
 
 /** Map any tournament sub-route to one of the five primary tabs. */
-export function resolveTournamentNavKey(
-  pathname: string,
-  tournamentId: string,
-  status: TournamentStatus,
-): TournamentNavKey {
+export function resolveTournamentNavKey(pathname: string, tournamentId: string): TournamentNavKey {
   const base = tournamentBase(tournamentId);
   const isDashboard =
     pathname === base || pathname === `${base}/` || pathname.startsWith(`${base}#`);
 
   if (isDashboard) {
-    return AFTER_STATUSES.has(status) ? "results" : "overview";
+    return "overview";
   }
 
   const rel = pathname.slice(base.length);
@@ -79,6 +72,10 @@ export function resolveTournamentNavKey(
     return "live";
   }
 
+  if (rel.startsWith("/results")) {
+    return "results";
+  }
+
   if (rel.startsWith("/staff")) {
     return "staff";
   }
@@ -87,16 +84,13 @@ export function resolveTournamentNavKey(
 }
 
 export function tournamentNavHref(tournamentId: string, item: TournamentNavItem): string {
-  const base = tournamentBase(tournamentId);
-  if (item.key === "results") return `${base}#results`;
-  return `${base}${item.hrefSuffix}`;
+  return `${tournamentBase(tournamentId)}${item.hrefSuffix}`;
 }
 
 export function isTournamentNavActive(
   pathname: string,
   tournamentId: string,
-  status: TournamentStatus,
   item: TournamentNavItem,
 ): boolean {
-  return resolveTournamentNavKey(pathname, tournamentId, status) === item.key;
+  return resolveTournamentNavKey(pathname, tournamentId) === item.key;
 }

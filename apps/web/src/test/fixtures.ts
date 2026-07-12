@@ -248,6 +248,7 @@ export function makeCourt(overrides: Partial<CourtView> = {}): CourtView {
     name: overrides.name ?? `Court ${seq}`,
     status: overrides.status ?? "active",
     createdAt: overrides.createdAt ?? "2026-01-01T00:00:00Z",
+    assignedTournamentCount: overrides.assignedTournamentCount ?? 0,
   };
 }
 

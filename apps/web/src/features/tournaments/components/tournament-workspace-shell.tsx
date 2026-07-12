@@ -124,7 +124,7 @@ function WorkspaceChrome({
         aria-label="Tournament workspace"
       >
         {TOURNAMENT_NAV.map((item) => {
-          const active = isTournamentNavActive(pathname, tournament.id, status, item);
+          const active = isTournamentNavActive(pathname, tournament.id, item);
           const Icon = item.icon;
           const showBadge = item.key === "participants" && pendingCount > 0;
 
@@ -155,7 +155,6 @@ function WorkspaceChrome({
 
       <MobileTournamentNav
         tournamentId={tournament.id}
-        status={status}
         pendingCount={pendingCount}
       />
 

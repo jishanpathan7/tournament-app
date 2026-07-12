@@ -33,6 +33,15 @@ function invalidatePairingParticipants(
   });
 }
 
+/** Partner name warnings — unresolvable preferredPartnerName entries before pairing. */
+export function usePartnerWarnings(divisionId: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["divisions", divisionId, "partner-warnings"],
+    queryFn: () => pairingApi.getPartnerWarnings(divisionId),
+    enabled: options?.enabled ?? true,
+  });
+}
+
 /** The current draft pairing run for a division (or a specific squad within it). */
 export function usePairing(divisionId: string, options?: { enabled?: boolean; squadId?: string }) {
   const squadId = options?.squadId;
@@ -107,6 +116,10 @@ export function usePublishPairing(divisionId: string, tournamentId: string, squa
     mutationFn: (runId: string) => pairingApi.publishPairing(runId),
     onSuccess: () => {
       invalidatePairingParticipants(queryClient, divisionId, tournamentId);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.readiness.tournament(tournamentId),
+      });
     },
   });
 }
@@ -119,6 +132,10 @@ export function usePublishAllSquadPairings(divisionId: string, tournamentId: str
       pairingApi.publishAllSquadPairings(runs),
     onSuccess: () => {
       invalidatePairingParticipants(queryClient, divisionId, tournamentId);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.readiness.tournament(tournamentId),
+      });
     },
   });
 }

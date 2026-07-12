@@ -33,6 +33,7 @@ class DetectColumnsRequest(ApiModel):
 class DetectColumnsResponse(ApiModel):
     columns: list[str]
     sample_rows: list[dict[str, str]]
+    suggested_mapping: dict[str, str] = {}
 
 
 class ImportRequest(ApiModel):

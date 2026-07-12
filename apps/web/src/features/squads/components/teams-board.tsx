@@ -12,6 +12,14 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   DropdownMenu,
@@ -67,6 +75,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const [pairingSquad, setPairingSquad] = useState<SquadView | null>(null);
   const [expandedSquadIds, setExpandedSquadIds] = useState<Set<string>>(new Set());
   const [setupOpen, setSetupOpen] = useState(false);
+  const [noDraftTeamsOpen, setNoDraftTeamsOpen] = useState(false);
 
   const divisions = useDivisions(tournamentId);
   const firstDivisionId = divisions.data?.[0]?.id ?? null;
@@ -264,11 +273,27 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-52">
-        <DropdownMenuItem asChild>
-          <Link href={`/console/tournaments/${tournamentId}/draft-ceremony`}>
-            <Dices className="h-4 w-4" />
-            Draft Ceremony
-          </Link>
+        <DropdownMenuItem
+          onSelect={(e) => {
+            if (!board?.squads.length) {
+              e.preventDefault();
+              setSetupOpen(false);
+              setNoDraftTeamsOpen(true);
+            }
+          }}
+          asChild={!!board?.squads.length}
+        >
+          {board?.squads.length ? (
+            <Link href={`/console/tournaments/${tournamentId}/draft-ceremony`}>
+              <Dices className="h-4 w-4" />
+              Draft Ceremony
+            </Link>
+          ) : (
+            <>
+              <Dices className="h-4 w-4" />
+              Draft Ceremony
+            </>
+          )}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         {TEAM_COUNT_PRESETS.map((count) => (
@@ -511,6 +536,23 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
           </div>
         </div>
       ) : null}
+
+      <Dialog open={noDraftTeamsOpen} onOpenChange={setNoDraftTeamsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create teams first</DialogTitle>
+            <DialogDescription>
+              The Draft Ceremony needs at least one team to run. Use &quot;Auto N teams&quot; or
+              create teams manually, then assign players before starting the ceremony.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button tone="candy" size="sm" onClick={() => setNoDraftTeamsOpen(false)}>
+              Got it
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -32,12 +32,14 @@ import { errorMessage } from "@/lib/problem";
 export function DrawSetupPanel({
   stage,
   divisionId,
+  tournamentId,
   approvedCount,
   canManage,
   tournamentSlug,
 }: {
   stage: StageResponse;
   divisionId: string;
+  tournamentId: string;
   approvedCount: number;
   canManage: boolean;
   tournamentSlug?: string;
@@ -178,6 +180,7 @@ export function DrawSetupPanel({
       <GenerateDrawDialog
         stageId={stage.id}
         divisionId={divisionId}
+        tournamentId={tournamentId}
         format={stage.type}
         readiness={readiness}
         open={generateOpen}
@@ -186,12 +189,14 @@ export function DrawSetupPanel({
       <ClearDrawDialog
         stageId={stage.id}
         divisionId={divisionId}
+        tournamentId={tournamentId}
         open={clearOpen}
         onOpenChange={setClearOpen}
       />
       <AdvanceToKnockoutDialog
         stageId={stage.id}
         divisionId={divisionId}
+        tournamentId={tournamentId}
         open={advanceOpen}
         onOpenChange={setAdvanceOpen}
       />

@@ -46,6 +46,49 @@ IMPORT_FIELDS: tuple[tuple[str, str, bool], ...] = (
 )
 _REQUIRED = {key for key, _label, required in IMPORT_FIELDS if required}
 
+# Keyword hints for auto-mapping: if any hint is a substring of a column header
+# (case-insensitive) the column is pre-mapped to that field. More specific hints
+# should come before general ones to avoid false positives.
+_FIELD_HINTS: dict[str, list[str]] = {
+    "preferredPartnerName": [
+        "preferred partner",
+        "partner name",
+        "partner preference",
+        "enter your partner",
+        "partner",
+        "pair with",
+        "paired with",
+    ],
+    "skillLevel": ["skill level", "skill", "level", "rating", "grade"],
+    "email": ["email", "e-mail", "mail"],
+    "name": ["full name", "player name", "participant name", "name"],
+}
+
+
+def suggest_mapping(columns: list[str]) -> dict[str, str]:
+    """Return a field_key → column_name mapping inferred from column headers.
+
+    Each column is matched against ``_FIELD_HINTS`` in field order. The first
+    hint that is a substring of the (normalised) column header wins. A column is
+    never mapped to more than one field; a field is never claimed by more than
+    one column.
+    """
+    mapping: dict[str, str] = {}
+    claimed_columns: set[str] = set()
+    for field_key, hints in _FIELD_HINTS.items():
+        if field_key in mapping:
+            continue
+        for col in columns:
+            if col in claimed_columns:
+                continue
+            col_lower = col.strip().lower()
+            if any(hint in col_lower for hint in hints):
+                mapping[field_key] = col
+                claimed_columns.add(col)
+                break
+    return mapping
+
+
 # Lenient skill-label normalization so "Adv", "advanced", "3" all resolve.
 _SKILL_ALIASES: dict[str, str] = {
     "beginner": SkillLevel.BEGINNER.value,
@@ -74,9 +117,11 @@ def list_source_info() -> list[ImportSourceInfo]:
     ]
 
 
-def detect_columns(source_key: str, raw: str) -> tuple[list[str], list[dict[str, str]]]:
+def detect_columns(
+    source_key: str, raw: str
+) -> tuple[list[str], list[dict[str, str]], dict[str, str]]:
     table = _parse(source_key, raw)
-    return table.columns, table.rows[:5]
+    return table.columns, table.rows[:5], suggest_mapping(table.columns)
 
 
 @dataclass

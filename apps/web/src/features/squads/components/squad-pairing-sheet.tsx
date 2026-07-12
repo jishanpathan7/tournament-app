@@ -11,6 +11,7 @@ import {
   useAddDuplicatePair,
   useGeneratePairing,
   usePairing,
+  usePartnerWarnings,
   usePublishPairing,
   useSwapMembers,
   useUpdateProposedTeam,
@@ -44,6 +45,7 @@ export function SquadPairingSheet({
   const squadId = squad.id;
 
   const pairing = usePairing(divisionId, { squadId });
+  const warnings = usePartnerWarnings(divisionId);
   const generate = useGeneratePairing(divisionId, squadId);
   const publish = usePublishPairing(divisionId, tournamentId, squadId);
   const updateTeam = useUpdateProposedTeam(divisionId, squadId);
@@ -137,6 +139,11 @@ export function SquadPairingSheet({
   }
 
   const entrantsMap = run ? entrantsById(run) : new Map();
+
+  // Filter partner warnings to only players in this squad.
+  const squadWarnings = (warnings.data?.warnings ?? []).filter(
+    (w) => !run || entrantsMap.has(w.registrationId),
+  );
   const teams = run ? sortedTeams(run) : [];
   const stats = run ? pairingStats(run) : null;
   const isPublished = run?.status === "published";
@@ -184,6 +191,38 @@ export function SquadPairingSheet({
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
+        {squadWarnings.length > 0 && (
+          <div className="mb-4 flex flex-col gap-2 rounded-2xl border-2 border-yellow-400 bg-yellow-50 p-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600" />
+              <span className="text-sm font-semibold text-yellow-800">
+                {squadWarnings.length} unresolved partner preference
+                {squadWarnings.length === 1 ? "" : "s"}
+              </span>
+            </div>
+            <p className="text-xs text-yellow-700">
+              These players listed a preferred partner whose name didn&apos;t match any approved
+              registration. Check for typos — they&apos;ll be paired by skill balance instead.
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {squadWarnings.map((w) => (
+                <div
+                  key={w.registrationId}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-yellow-300 bg-white px-3 py-2 text-sm"
+                >
+                  <span className="font-medium">{w.playerName}</span>
+                  <span className="text-yellow-700">
+                    wants &ldquo;{w.requestedPartnerName}&rdquo;
+                  </span>
+                  <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold capitalize text-yellow-800">
+                    {w.reason === "ambiguous" ? "ambiguous name" : "not found"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {pairing.isLoading ? (
           <div className="text-muted-foreground flex items-center gap-2 text-sm">
             <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
