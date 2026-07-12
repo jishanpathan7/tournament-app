@@ -29,18 +29,20 @@ const TAKE_OPTIONS = [2, 4, 8, 16] as const;
 export function AdvanceToKnockoutDialog({
   stageId,
   divisionId,
+  tournamentId,
   open,
   onOpenChange,
   onSuccess,
 }: {
   stageId: string;
   divisionId: string;
+  tournamentId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: (newStageId: string) => void;
 }) {
   const [take, setTake] = useState<number>(4);
-  const advance = useAdvanceToKnockout(stageId, divisionId);
+  const advance = useAdvanceToKnockout(stageId, divisionId, tournamentId);
 
   function handleConfirm() {
     advance.mutate(take, {

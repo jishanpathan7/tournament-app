@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -51,6 +51,34 @@ async def list_courts(session: AsyncSession, org_id: uuid.UUID) -> Sequence[Cour
         .order_by(Court.name)
     )
     return (await session.execute(stmt)).scalars().all()
+
+
+async def list_courts_with_assignment_counts(
+    session: AsyncSession, org_id: uuid.UUID
+) -> Sequence[tuple[Court, int]]:
+    """Return each court paired with how many active (non-deleted) tournaments it's assigned to."""
+    count_subq = (
+        select(
+            TournamentCourt.court_id,
+            func.count(TournamentCourt.id).label("assignment_count"),
+        )
+        .join(Tournament, Tournament.id == TournamentCourt.tournament_id)
+        .where(
+            TournamentCourt.organization_id == org_id,
+            Tournament.deleted_at.is_(None),
+        )
+        .group_by(TournamentCourt.court_id)
+        .subquery()
+    )
+    stmt = (
+        select(Court, func.coalesce(count_subq.c.assignment_count, 0).label("assignment_count"))
+        .where(Court.organization_id == org_id)
+        .outerjoin(count_subq, count_subq.c.court_id == Court.id)
+        .options(selectinload(Court.venue))
+        .order_by(Court.name)
+    )
+    rows = (await session.execute(stmt)).all()
+    return [(row.Court, row.assignment_count) for row in rows]
 
 
 async def get_tournament(

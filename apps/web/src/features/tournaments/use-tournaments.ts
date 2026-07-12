@@ -190,20 +190,25 @@ export function useUpdateStageConfig(stageId: string, divisionId: string) {
   });
 }
 
-export function useGenerateDraw(stageId: string, divisionId: string) {
+export function useGenerateDraw(stageId: string, divisionId: string, tournamentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: tournamentsApi.generateDraw.bind(null, stageId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(stageId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.readiness.tournament(tournamentId),
+      });
     },
   });
 }
 
 /** Wipes a stage's draw so it can be regenerated. Backend rejects (409) once any match has
  * a real submitted result — see `StageResponse.locked`, which mirrors that same guard. */
-export function useClearDraw(stageId: string, divisionId: string) {
+export function useClearDraw(stageId: string, divisionId: string, tournamentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () => tournamentsApi.clearDraw(stageId),
@@ -211,16 +216,24 @@ export function useClearDraw(stageId: string, divisionId: string) {
       void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(stageId) });
       void queryClient.invalidateQueries({ queryKey: queryKeys.stages.standings(stageId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.readiness.tournament(tournamentId),
+      });
     },
   });
 }
 
-export function useAdvanceToKnockout(stageId: string, divisionId: string) {
+export function useAdvanceToKnockout(stageId: string, divisionId: string, tournamentId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (take: number) => tournamentsApi.advanceToKnockout(stageId, { take }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.stages(divisionId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.stages.matches(stageId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
     },
   });
 }

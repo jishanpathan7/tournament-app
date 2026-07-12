@@ -74,7 +74,7 @@ describe("useGenerateDraw", () => {
     });
     const client = createTestQueryClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
-    const { result } = renderHook(() => useGenerateDraw("stage-1", "div-1"), {
+    const { result } = renderHook(() => useGenerateDraw("stage-1", "div-1", "tournament-1"), {
       wrapper: ({ children }) => <Providers client={client}>{children}</Providers>,
     });
 
@@ -95,7 +95,9 @@ describe("useGenerateDraw", () => {
 
   it("surfaces a failed generation", async () => {
     vi.mocked(tournamentsApi.generateDraw).mockRejectedValue(new Error("too few participants"));
-    const { result } = renderHook(() => useGenerateDraw("stage-1", "div-1"), { wrapper });
+    const { result } = renderHook(() => useGenerateDraw("stage-1", "div-1", "tournament-1"), {
+      wrapper,
+    });
 
     result.current.mutate({ overrideReadiness: false });
 
@@ -110,7 +112,7 @@ describe("useClearDraw", () => {
     vi.mocked(tournamentsApi.clearDraw).mockResolvedValue(undefined);
     const client = createTestQueryClient();
     const invalidateSpy = vi.spyOn(client, "invalidateQueries");
-    const { result } = renderHook(() => useClearDraw("stage-1", "div-1"), {
+    const { result } = renderHook(() => useClearDraw("stage-1", "div-1", "tournament-1"), {
       wrapper: ({ children }) => <Providers client={client}>{children}</Providers>,
     });
 
@@ -125,7 +127,9 @@ describe("useClearDraw", () => {
 
   it("surfaces a blocked clear (locked draw)", async () => {
     vi.mocked(tournamentsApi.clearDraw).mockRejectedValue(new Error("already scored"));
-    const { result } = renderHook(() => useClearDraw("stage-1", "div-1"), { wrapper });
+    const { result } = renderHook(() => useClearDraw("stage-1", "div-1", "tournament-1"), {
+      wrapper,
+    });
 
     result.current.mutate();
 

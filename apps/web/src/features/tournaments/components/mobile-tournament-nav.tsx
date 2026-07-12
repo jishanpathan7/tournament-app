@@ -1,6 +1,5 @@
 "use client";
 
-import type { TournamentStatus } from "@tournament/api-client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -14,11 +13,9 @@ import { cn } from "@/lib/utils";
 /** Fixed bottom navigation for tournament workspace on small screens. */
 export function MobileTournamentNav({
   tournamentId,
-  status,
   pendingCount,
 }: {
   tournamentId: string;
-  status: TournamentStatus;
   pendingCount?: number;
 }) {
   const pathname = usePathname();
@@ -30,7 +27,7 @@ export function MobileTournamentNav({
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
         {TOURNAMENT_NAV.map((item) => {
-          const active = isTournamentNavActive(pathname, tournamentId, status, item);
+          const active = isTournamentNavActive(pathname, tournamentId, item);
           const Icon = item.icon;
           const showBadge = item.key === "participants" && (pendingCount ?? 0) > 0;
 

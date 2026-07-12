@@ -95,3 +95,15 @@ class AddDuplicatePairRequest(ApiModel):
 
     unpaired_id: uuid.UUID
     duplicate_id: uuid.UUID
+
+
+class PartnerWarning(ApiModel):
+    registration_id: uuid.UUID
+    player_name: str
+    requested_partner_name: str
+    reason: str  # "not_found" | "ambiguous"
+
+
+class PartnerWarningsResponse(ApiModel):
+    warnings: list[PartnerWarning]
+    total: int

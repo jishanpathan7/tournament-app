@@ -27,6 +27,7 @@ import { ApiError, errorMessage } from "@/lib/problem";
 export function GenerateDrawDialog({
   stageId,
   divisionId,
+  tournamentId,
   format,
   readiness,
   open,
@@ -35,13 +36,14 @@ export function GenerateDrawDialog({
 }: {
   stageId: string;
   divisionId: string;
+  tournamentId: string;
   format: string;
   readiness: DrawReadiness;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onGenerated?: () => void;
 }) {
-  const generate = useGenerateDraw(stageId, divisionId);
+  const generate = useGenerateDraw(stageId, divisionId, tournamentId);
   const [error, setError] = useState<string | null>(null);
   const [checkinWarning, setCheckinWarning] = useState<string | null>(null);
   const [overrideReadiness, setOverrideReadiness] = useState(false);

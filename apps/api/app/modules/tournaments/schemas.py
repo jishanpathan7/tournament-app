@@ -28,7 +28,7 @@ class UpdateTournamentRequest(ApiModel):
     settings: dict[str, Any] | None = None
     auto_schedule: bool | None = None
     venue_id: uuid.UUID | None = None
-    clear_venue: bool = False
+    clear_venue: bool | None = None
 
 
 class StatusTransitionRequest(ApiModel):

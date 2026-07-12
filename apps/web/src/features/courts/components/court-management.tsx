@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronDown, LayoutGrid, Plus, Trash2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useState } from "react";
 
 import {
@@ -181,39 +182,77 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
           </button>
           {existingCourtsOpen ? (
             <div className="flex flex-col gap-2 p-4">
-              {unassignedCourts.map((c) => (
-                <div
-                  key={c.id}
-                  className="border-ink/10 flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
-                >
-                  <span className="font-medium">
-                    {c.venueName} · {c.name}
-                  </span>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      tone="paper"
-                      size="sm"
-                      disabled={assignCourt.isPending}
-                      onClick={() =>
-                        assignCourt.mutate(
-                          { courtId: c.id },
-                          { onError: (e) => toast.error(errorMessage(e, "Couldn't assign court")) },
-                        )
-                      }
+              <TooltipProvider>
+                {unassignedCourts.map((c) => {
+                  const inUse = c.assignedTournamentCount > 0;
+                  return (
+                    <div
+                      key={c.id}
+                      className="border-ink/10 flex items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
                     >
-                      Assign
-                    </Button>
-                    <Button
-                      tone="ghost"
-                      size="sm"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
+                      <div className="flex min-w-0 items-center gap-2">
+                        <span className="font-medium">
+                          {c.venueName} · {c.name}
+                        </span>
+                        {inUse ? (
+                          <Badge tone="muted" className="shrink-0 text-xs">
+                            In use by {c.assignedTournamentCount} tournament
+                            {c.assignedTournamentCount === 1 ? "" : "s"}
+                          </Badge>
+                        ) : null}
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1">
+                        <Button
+                          tone="paper"
+                          size="sm"
+                          disabled={assignCourt.isPending}
+                          onClick={() =>
+                            assignCourt.mutate(
+                              { courtId: c.id },
+                              {
+                                onError: (e) =>
+                                  toast.error(errorMessage(e, "Couldn't assign court")),
+                              },
+                            )
+                          }
+                        >
+                          Assign
+                        </Button>
+                        {inUse ? (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span className="inline-flex">
+                                <Button
+                                  tone="ghost"
+                                  size="sm"
+                                  className="text-destructive/40 hover:text-destructive/40 cursor-not-allowed"
+                                  disabled
+                                  aria-label="Cannot delete — court is in use by another tournament"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              Assigned to {c.assignedTournamentCount} other tournament
+                              {c.assignedTournamentCount === 1 ? "" : "s"} — unassign it there first
+                            </TooltipContent>
+                          </Tooltip>
+                        ) : (
+                          <Button
+                            tone="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => setDeleteTarget({ id: c.id, name: c.name })}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </TooltipProvider>
             </div>
           ) : null}
         </div>

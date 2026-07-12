@@ -21,7 +21,7 @@ export function DrawStatusSummary({
 }) {
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-2">
         <CardTitle className="flex items-center gap-2 text-lg">
           <GitMerge className="h-5 w-5" strokeWidth={2.25} />
           Bracket status
@@ -33,6 +33,12 @@ export function DrawStatusSummary({
             {drawProgress.drawn}/{drawProgress.total}
           </Badge>
         </CardTitle>
+        <Link
+          href={`/console/tournaments/${tournamentId}/draws`}
+          className="text-candy-dark shrink-0 text-xs font-semibold"
+        >
+          Manage draws →
+        </Link>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {divisions.map((division) => {

@@ -8,11 +8,7 @@ import uuid
 from pydantic import Field
 
 from app.api.schemas import ApiModel
-
-
-class CreateVenueRequest(ApiModel):
-    name: str = Field(min_length=1, max_length=200)
-    address: str | None = None
+from app.modules.venues.schemas import CreateVenueRequest as CreateVenueRequest  # noqa: F401
 
 
 class VenueView(ApiModel):
@@ -41,6 +37,7 @@ class CourtView(ApiModel):
     name: str
     status: str
     created_at: datetime.datetime
+    assigned_tournament_count: int = 0
 
 
 class AssignCourtRequest(ApiModel):

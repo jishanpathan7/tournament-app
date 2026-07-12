@@ -57,8 +57,10 @@ async def detect_columns(
     body: DetectColumnsRequest,
     _principal: Principal = Depends(_manage),
 ) -> DetectColumnsResponse:
-    columns, sample = import_service.detect_columns(body.source, body.raw)
-    return DetectColumnsResponse(columns=columns, sample_rows=sample)
+    columns, sample, suggested_mapping = import_service.detect_columns(body.source, body.raw)
+    return DetectColumnsResponse(
+        columns=columns, sample_rows=sample, suggested_mapping=suggested_mapping
+    )
 
 
 @router.post("/divisions/{division_id}/imports/preview", response_model=ImportPreview)

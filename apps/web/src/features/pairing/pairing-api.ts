@@ -1,6 +1,7 @@
 import type {
   GeneratePairingRequest,
   PairingRunView,
+  PartnerWarningsResponse,
   ProposedTeamView,
   PublishPairingResponse,
   SwapMembersRequest,
@@ -62,6 +63,10 @@ export async function publishAllSquadPairings(
     published += 1;
   }
   return published;
+}
+
+export function getPartnerWarnings(divisionId: string): Promise<PartnerWarningsResponse> {
+  return apiGet<PartnerWarningsResponse>(`/divisions/${divisionId}/pairing/partner-warnings`);
 }
 
 /** Resolve an odd-one-out player: choose an existing player to partner them,

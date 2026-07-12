@@ -1,6 +1,7 @@
 "use client";
 
-import { Sparkles, Trophy, Users, Wand2 } from "lucide-react";
+import type { PartnerWarning } from "@tournament/api-client";
+import { AlertTriangle, Sparkles, Trophy, Users, Wand2 } from "lucide-react";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -16,6 +17,7 @@ import { entrantsById, pairingStats, skillMeta, sortedTeams } from "@/features/p
 import {
   useGeneratePairing,
   usePairing,
+  usePartnerWarnings,
   usePublishPairing,
   useSwapMembers,
   useUpdateProposedTeam,
@@ -40,6 +42,7 @@ export function PairingBoard({
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
 
   const pairing = usePairing(divisionId);
+  const warnings = usePartnerWarnings(divisionId);
   const generate = useGeneratePairing(divisionId);
   const publish = usePublishPairing(divisionId, tournamentId);
   const updateTeam = useUpdateProposedTeam(divisionId);
@@ -118,6 +121,10 @@ export function PairingBoard({
         actions={action}
       />
 
+      {warnings.data && warnings.data.total > 0 ? (
+        <PartnerWarningsCard warnings={warnings.data.warnings} />
+      ) : null}
+
       {pairing.isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Skeleton className="h-44 rounded-2xl" />
@@ -168,6 +175,40 @@ export function PairingBoard({
         loading={publish.isPending}
         onConfirm={onPublish}
       />
+    </div>
+  );
+}
+
+function PartnerWarningsCard({ warnings }: { warnings: PartnerWarning[] }) {
+  return (
+    <div className="border-yellow bg-yellow-tint flex flex-col gap-3 rounded-2xl border-2 p-4">
+      <div className="flex items-center gap-2">
+        <AlertTriangle className="text-yellow h-4 w-4 shrink-0" />
+        <span className="text-sm font-semibold">
+          {warnings.length} unresolved partner preference
+          {warnings.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <p className="text-muted-foreground text-sm">
+        These players listed a preferred partner whose name didn&apos;t match any approved
+        registration. They&apos;ll be paired by skill balance instead. Check for typos in the
+        registration form.
+      </p>
+      <div className="flex flex-col gap-1.5">
+        {warnings.map((w) => (
+          <div
+            key={w.registrationId}
+            className="border-ink/10 bg-card flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border px-3 py-2 text-sm"
+          >
+            <span className="font-medium">{w.playerName}</span>
+            <span className="text-muted-foreground">wants</span>
+            <span className="font-medium">&ldquo;{w.requestedPartnerName}&rdquo;</span>
+            <Badge tone="yellow" className="ml-auto capitalize">
+              {w.reason === "ambiguous" ? "ambiguous name" : "not found"}
+            </Badge>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
