@@ -1,6 +1,8 @@
 import type { QueryClient } from "@tanstack/react-query";
 
-import { publicQueryKeys } from "@/features/public/query-keys";
+import { queryKeys } from "@/lib/query-keys";
+
+const publicQueryKeys = queryKeys.public;
 
 /** Invalidate public microsite caches that mirror live match / court state. */
 export function invalidatePublicLiveCaches(

@@ -400,6 +400,24 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
           <Button tone="paper" size="sm" onClick={collapseAll}>
             Collapse all
           </Button>
+          {canManage ? (
+            board.squads.length ? (
+              <Link
+                href={`/console/tournaments/${tournamentId}/draft-ceremony`}
+                className="text-candy-dark text-sm font-semibold"
+              >
+                Draft Ceremony →
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="text-candy-dark text-sm font-semibold"
+                onClick={() => setNoDraftTeamsOpen(true)}
+              >
+                Draft Ceremony →
+              </button>
+            )
+          ) : null}
         </div>
       ) : null}
 

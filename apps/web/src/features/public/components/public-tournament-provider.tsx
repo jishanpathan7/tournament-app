@@ -5,7 +5,6 @@ import type { PublicTournamentView } from "@tournament/api-client";
 import { createContext, useContext } from "react";
 
 import { invalidatePublicLiveCaches } from "@/features/public/public-live-cache";
-import { publicQueryKeys } from "@/features/public/query-keys";
 import { usePublicTournament } from "@/features/public/use-public-tournament";
 import { usePublicRealtime } from "@/hooks/use-public-realtime";
 import { REALTIME_EVENTS } from "@/lib/realtime";

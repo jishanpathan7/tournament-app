@@ -26,7 +26,7 @@ export function MobileTournamentNav({
       aria-label="Tournament navigation"
     >
       <ul className="mx-auto flex max-w-lg items-stretch justify-around px-1 pb-[env(safe-area-inset-bottom)]">
-        {TOURNAMENT_NAV.map((item) => {
+        {TOURNAMENT_NAV.filter((item) => item.key !== "staff").map((item) => {
           const active = isTournamentNavActive(pathname, tournamentId, item);
           const Icon = item.icon;
           const showBadge = item.key === "participants" && (pendingCount ?? 0) > 0;

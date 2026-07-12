@@ -50,10 +50,9 @@ export function DrawStatusSummary({
                 <p className="text-muted-foreground text-xs">No stages</p>
               ) : (
                 stages.map((stage) => (
-                  <Link
+                  <div
                     key={stage.id}
-                    href={`/console/tournaments/${tournamentId}/divisions/${division.id}/stages/${stage.id}/draw`}
-                    className="text-muted-foreground hover:text-foreground flex items-center justify-between text-xs"
+                    className="text-muted-foreground flex items-center justify-between text-xs"
                   >
                     <span>
                       {getFormat(stage.type)?.label ?? stage.type} · Stage {stage.seq + 1}
@@ -61,7 +60,7 @@ export function DrawStatusSummary({
                     <Badge tone={stage.drawn ? "mint" : "muted"}>
                       {stage.drawn ? "Built" : "Not built"}
                     </Badge>
-                  </Link>
+                  </div>
                 ))
               )}
             </div>
