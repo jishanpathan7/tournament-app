@@ -1,16 +1,16 @@
 "use client";
 
-import { Calendar, GitMerge, Layers, LayoutGrid, MapPin, Users } from "lucide-react";
+import { Calendar, GitMerge, LayoutGrid, MapPin, Users } from "lucide-react";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useTournamentCourts } from "@/features/courts/use-courts";
 import {
   useTournamentMatches,
   useTournamentStages,
 } from "@/features/matches/use-tournament-matches";
-import { useDivisions } from "@/features/tournaments/use-tournaments";
 
 function HubCard({
   icon: Icon,
@@ -18,12 +18,14 @@ function HubCard({
   description,
   badge,
   href,
+  loading,
 }: {
   icon: React.ElementType;
   title: string;
   description: string;
   badge?: { label: string; tone: "mint" | "muted" | "candy" | "yellow" };
   href: string;
+  loading?: boolean;
 }) {
   return (
     <Link href={href} className="block">
@@ -34,7 +36,11 @@ function HubCard({
               <Icon className="text-muted-foreground h-4 w-4" strokeWidth={2.25} />
               {title}
             </span>
-            {badge ? <Badge tone={badge.tone}>{badge.label}</Badge> : null}
+            {loading ? (
+              <Skeleton className="h-5 w-16 rounded-full" />
+            ) : badge ? (
+              <Badge tone={badge.tone}>{badge.label}</Badge>
+            ) : null}
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -48,12 +54,12 @@ function HubCard({
 export function SetupHub({ tournamentId }: { tournamentId: string }) {
   const base = `/console/tournaments/${tournamentId}`;
 
-  const divisions = useDivisions(tournamentId);
   const stages = useTournamentStages(tournamentId);
   const courts = useTournamentCourts(tournamentId);
   const matches = useTournamentMatches(tournamentId);
 
-  const divisionCount = divisions.data?.length ?? 0;
+  const isLoading = stages.isLoading || courts.isLoading || matches.isLoading;
+
   const stageCount = stages.data?.length ?? 0;
   const drawnCount = stages.data?.filter((s) => s.drawn).length ?? 0;
   const courtCount = courts.data?.length ?? 0;
@@ -69,17 +75,6 @@ export function SetupHub({ tournamentId }: { tournamentId: string }) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <HubCard
-        icon={Layers}
-        title="Divisions"
-        description="Event categories and stages within this tournament."
-        badge={
-          divisionCount > 0
-            ? { label: `${divisionCount} division${divisionCount !== 1 ? "s" : ""}`, tone: "mint" }
-            : { label: "None yet", tone: "muted" }
-        }
-        href={`${base}/setup`}
-      />
-      <HubCard
         icon={Users}
         title="Players"
         description="Import, approve, and check in participants."
@@ -90,6 +85,7 @@ export function SetupHub({ tournamentId }: { tournamentId: string }) {
         title="Draws"
         description="Generate brackets and group stage draws."
         badge={drawBadge}
+        loading={isLoading}
         href={`${base}/draws`}
       />
       <HubCard
@@ -101,6 +97,7 @@ export function SetupHub({ tournamentId }: { tournamentId: string }) {
             ? { label: `${courtCount} court${courtCount !== 1 ? "s" : ""}`, tone: "mint" }
             : { label: "None yet", tone: "muted" }
         }
+        loading={isLoading}
         href={`${base}/courts`}
       />
       <HubCard
@@ -112,12 +109,13 @@ export function SetupHub({ tournamentId }: { tournamentId: string }) {
             ? { label: `${matchCount} match${matchCount !== 1 ? "es" : ""}`, tone: "mint" }
             : { label: "Not scheduled", tone: "muted" }
         }
+        loading={isLoading}
         href={`${base}/schedule`}
       />
       <HubCard
         icon={LayoutGrid}
         title="Teams"
-        description="Assign players to franchise teams and run draft ceremony."
+        description="Manage franchise teams and run the draft ceremony — for team-format events."
         href={`${base}/teams`}
       />
     </div>

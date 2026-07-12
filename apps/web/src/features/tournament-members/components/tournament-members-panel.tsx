@@ -1,9 +1,12 @@
 "use client";
 
 import type { TournamentMemberResponse, TournamentRole } from "@tournament/api-client";
-import { Clock, MoreHorizontal, RefreshCw, Trash2, UserPlus } from "lucide-react";
+import { Clock, MoreHorizontal, RefreshCw, Trash2, UserPlus, Users } from "lucide-react";
 import { useState } from "react";
 
+import { EmptyState } from "@/components/common/empty-state";
+import { PageHeader } from "@/components/common/page-header";
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -66,54 +69,66 @@ function MemberRow({
 }) {
   const updateRole = useUpdateMemberRole(tournamentId);
   const remove = useRemoveMember(tournamentId);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   return (
-    <div className="flex items-center gap-3 py-3">
-      {/* Avatar — presence indicator slot: replace outer div with relative + dot when realtime added */}
-      <Avatar className="h-9 w-9 shrink-0">
-        <AvatarFallback className="text-xs font-semibold">{initials(member.name)}</AvatarFallback>
-      </Avatar>
-      <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{member.name}</p>
-        {/* Activity attribution slot: replace second line with last_action when event log is wired */}
-        <p className="text-muted-foreground truncate text-xs">{member.email}</p>
+    <>
+      <div className="flex items-center gap-3 py-3">
+        {/* Avatar — presence indicator slot: replace outer div with relative + dot when realtime added */}
+        <Avatar className="h-9 w-9 shrink-0">
+          <AvatarFallback className="text-xs font-semibold">{initials(member.name)}</AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">{member.name}</p>
+          {/* Activity attribution slot: replace second line with last_action when event log is wired */}
+          <p className="text-muted-foreground truncate text-xs">{member.email}</p>
+        </div>
+        <Select
+          value={member.tournamentRole}
+          onValueChange={(v) =>
+            updateRole.mutate({ userId: member.userId, tournamentRole: v as TournamentRole })
+          }
+          disabled={updateRole.isPending}
+        >
+          <SelectTrigger className="w-40 text-xs">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {ROLE_OPTIONS.map((r) => (
+              <SelectItem key={r} value={r} className="text-xs">
+                {ROLE_LABELS[r]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button tone="ghost" size="icon" className="h-8 w-8 shrink-0">
+              <MoreHorizontal className="h-4 w-4" />
+              <span className="sr-only">Member options</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              onClick={() => setConfirmRemove(true)}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              Remove
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
-      <Select
-        value={member.tournamentRole}
-        onValueChange={(v) =>
-          updateRole.mutate({ userId: member.userId, tournamentRole: v as TournamentRole })
-        }
-        disabled={updateRole.isPending}
-      >
-        <SelectTrigger className="w-40 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {ROLE_OPTIONS.map((r) => (
-            <SelectItem key={r} value={r} className="text-xs">
-              {ROLE_LABELS[r]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button tone="ghost" size="icon" className="h-8 w-8 shrink-0">
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Member options</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            className="text-destructive focus:text-destructive"
-            onClick={() => remove.mutate(member.userId)}
-          >
-            <Trash2 className="mr-2 h-4 w-4" />
-            Remove
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+      <ConfirmDialog
+        open={confirmRemove}
+        onOpenChange={setConfirmRemove}
+        title={`Remove ${member.name}?`}
+        description="They'll lose access to this tournament immediately."
+        confirmLabel="Remove"
+        loading={remove.isPending}
+        onConfirm={() => remove.mutate(member.userId)}
+      />
+    </>
   );
 }
 
@@ -176,19 +191,18 @@ export function TournamentMembersPanel({ tournamentId }: { tournamentId: string 
   const total = members.length + pendingInvites.length;
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-xl font-semibold">Staff</h2>
-          <p className="text-muted-foreground text-sm">
-            People with access to manage this tournament
-          </p>
-        </div>
-        <Button onClick={() => setInviteOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Add staff
-        </Button>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        eyebrow="Tournament"
+        title="Staff"
+        description="People with access to manage this tournament."
+        actions={
+          <Button tone="candy" size="sm" onClick={() => setInviteOpen(true)}>
+            <UserPlus className="h-4 w-4" />
+            Add staff
+          </Button>
+        }
+      />
 
       <div className="rounded-lg border">
         <div className="divide-y">
@@ -206,9 +220,12 @@ export function TournamentMembersPanel({ tournamentId }: { tournamentId: string 
               ))}
             </>
           ) : total === 0 ? (
-            <div className="text-muted-foreground px-4 py-10 text-center text-sm">
-              No staff yet. Add people to help run this tournament.
-            </div>
+            <EmptyState
+              icon={Users}
+              title="No staff yet"
+              description="Add people to help run this tournament."
+              className="py-10"
+            />
           ) : (
             <>
               {members.map((m) => (
