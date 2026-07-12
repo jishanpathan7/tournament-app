@@ -22,6 +22,7 @@ import {
   useSwapMembers,
   useUpdateProposedTeam,
 } from "@/features/pairing/use-pairing";
+import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { errorMessage } from "@/lib/problem";
@@ -41,6 +42,8 @@ export function PairingBoard({
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
 
+  const divisions = useDivisions(tournamentId);
+  const division = divisions.data?.find((d) => d.id === divisionId);
   const pairing = usePairing(divisionId);
   const warnings = usePartnerWarnings(divisionId);
   const generate = useGeneratePairing(divisionId);
@@ -117,7 +120,11 @@ export function PairingBoard({
       <PageHeader
         eyebrow="Smart pairing"
         title="Team pairing"
-        description="Skill-balanced doubles teams — review, adjust, and publish."
+        description={
+          division?.name
+            ? `Pairs for ${division.name} — review, adjust, and publish.`
+            : "Skill-balanced doubles teams — review, adjust, and publish."
+        }
         actions={action}
       />
 

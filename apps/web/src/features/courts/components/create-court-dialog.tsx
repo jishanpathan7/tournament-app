@@ -112,6 +112,9 @@ export function CreateCourtDialog({
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="venue">Venue</Label>
+            <p className="text-muted-foreground text-xs">
+              Group courts by location — e.g. &ldquo;Sports Hall A&rdquo;.
+            </p>
             <Select value={venueId} onValueChange={setVenueId}>
               <SelectTrigger id="venue" aria-label="Venue">
                 <SelectValue placeholder="Choose a venue" />

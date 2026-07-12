@@ -108,6 +108,8 @@ function RegistrationLinkBox({ slug }: { slug: string }) {
 function Step1Hero({ tournamentId }: { tournamentId: string }) {
   const transition = useTransitionStatus(tournamentId);
   const { data: tournament } = useTournament(tournamentId);
+  const { data: divisions } = useDivisions(tournamentId);
+  const hasDivisions = (divisions?.length ?? 0) > 0;
   const [justOpened, setJustOpened] = useState(false);
 
   if (justOpened && tournament?.slug) {
@@ -131,31 +133,37 @@ function Step1Hero({ tournamentId }: { tournamentId: string }) {
           Your tournament is in Draft — players can&apos;t register yet. Add your details, then open
           registration to accept entries.
         </p>
-        <Button
-          tone="candy"
-          size="sm"
-          className="shrink-0"
-          disabled={transition.isPending}
-          onClick={() =>
-            transition.mutate(
-              { status: "registration" },
-              {
-                onSuccess: () => {
-                  toast.success("Registration is now open");
-                  setJustOpened(true);
+        {hasDivisions ? (
+          <Button
+            tone="candy"
+            size="sm"
+            className="shrink-0"
+            disabled={transition.isPending}
+            onClick={() =>
+              transition.mutate(
+                { status: "registration" },
+                {
+                  onSuccess: () => {
+                    toast.success("Registration is now open");
+                    setJustOpened(true);
+                  },
+                  onError: (e) => toast.error(errorMessage(e, "Couldn't open registration")),
                 },
-                onError: (e) => toast.error(errorMessage(e, "Couldn't open registration")),
-              },
-            )
-          }
-        >
-          {transition.isPending ? (
-            <Spinner className="text-white" />
-          ) : (
-            <Send className="h-4 w-4" strokeWidth={2.25} />
-          )}
-          Open registration
-        </Button>
+              )
+            }
+          >
+            {transition.isPending ? (
+              <Spinner className="text-white" />
+            ) : (
+              <Send className="h-4 w-4" strokeWidth={2.25} />
+            )}
+            Open registration
+          </Button>
+        ) : (
+          <Button asChild tone="paper" size="sm" className="shrink-0">
+            <Link href={`/console/tournaments/${tournamentId}/setup`}>Add a division first →</Link>
+          </Button>
+        )}
       </div>
     </HeroShell>
   );
