@@ -6,6 +6,7 @@ import { ErrorState } from "@/components/common/error-state";
 import { LoadingPanel } from "@/components/common/loading";
 import { DivisionsSection } from "@/features/tournaments/components/detail/divisions-section";
 import { OverviewPanel } from "@/features/tournaments/components/detail/overview-panel";
+import { SetupHub } from "@/features/tournaments/setup/setup-hub";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { ApiError } from "@/lib/problem";
@@ -32,6 +33,13 @@ export default function TournamentSetupPage({ params }: { params: Promise<{ id: 
   return (
     <div className="flex flex-col gap-8">
       <OverviewPanel tournament={tournament} />
+      <section className="flex flex-col gap-3">
+        <h2 className="font-serif text-xl font-semibold tracking-tight">Setup</h2>
+        <p className="text-muted-foreground text-sm">
+          Everything needed to configure and run this tournament.
+        </p>
+        <SetupHub tournamentId={id} />
+      </section>
       <section className="flex flex-col gap-3">
         <h2 className="font-serif text-xl font-semibold tracking-tight">Event types</h2>
         <p className="text-muted-foreground text-sm">

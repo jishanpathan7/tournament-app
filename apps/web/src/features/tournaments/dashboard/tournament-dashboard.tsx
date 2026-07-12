@@ -95,7 +95,11 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
   return (
     <div className="flex flex-col gap-6">
       {showPrepTracker ? (
-        <MobileTournamentOverview tournamentId={tournamentId} currentStep={step} />
+        <MobileTournamentOverview
+          tournamentId={tournamentId}
+          currentStep={step}
+          franchiseMode={data.stepSignals.franchiseMode}
+        />
       ) : null}
 
       <div className="flex flex-col gap-6">
@@ -108,7 +112,11 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
         />
         {showPrepTracker ? (
           <div className="hidden md:block">
-            <TournamentStepTracker step={step} variant="primary" />
+            <TournamentStepTracker
+              step={step}
+              variant="primary"
+              franchiseMode={data.stepSignals.franchiseMode}
+            />
           </div>
         ) : null}
 

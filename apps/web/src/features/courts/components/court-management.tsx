@@ -124,7 +124,7 @@ export function CourtManagement({ tournamentId }: { tournamentId: string }) {
       <PageHeader
         eyebrow="Operations"
         title="Courts"
-        description="Courts assigned to this tournament — scheduling only places matches on courts listed here."
+        description="Courts assigned to this tournament — scheduling only places matches on courts listed here. Courts are shared across your organization and available to all your tournaments."
         actions={
           canManage ? (
             <div className="flex flex-wrap gap-2">

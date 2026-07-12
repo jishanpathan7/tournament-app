@@ -165,6 +165,7 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
             <Button
               tone="paper"
               size="sm"
+              disabled={!matches.data?.length}
               onClick={() =>
                 void downloadCsv(
                   `${env.apiUrl}/api/v1/tournaments/${tournamentId}/export/matches.csv`,

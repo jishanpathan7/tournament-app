@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { STEP_META, type TournamentStep } from "@/features/tournaments/dashboard/config";
 import { cn } from "@/lib/utils";
 
-const PREP_STEPS: TournamentStep[] = [1, 2, 3, 4, 5, 6, 7];
+const ALL_PREP_STEPS: TournamentStep[] = [1, 2, 3, 4, 5, 6, 7];
+const FRANCHISE_SKIP: Set<TournamentStep> = new Set([3, 4]);
 
 function stepHref(tournamentId: string, step: TournamentStep): string | null {
   const base = `/console/tournaments/${tournamentId}`;
@@ -35,13 +36,20 @@ function stepHref(tournamentId: string, step: TournamentStep): string | null {
 export function MobileTournamentOverview({
   tournamentId,
   currentStep,
+  franchiseMode = true,
 }: {
   tournamentId: string;
   currentStep: TournamentStep;
+  franchiseMode?: boolean;
 }) {
+  const PREP_STEPS = franchiseMode
+    ? ALL_PREP_STEPS
+    : ALL_PREP_STEPS.filter((s) => !FRANCHISE_SKIP.has(s));
+  const totalSteps = PREP_STEPS.length;
+
   return (
     <div className="flex flex-col gap-3 md:hidden">
-      {PREP_STEPS.map((step) => {
+      {PREP_STEPS.map((step, idx) => {
         const meta = STEP_META[step];
         const isCurrent = step === currentStep;
         const isDone = step < currentStep;
@@ -71,7 +79,7 @@ export function MobileTournamentOverview({
                 )}
                 <div className="min-w-0 flex-1">
                   <p className="text-2xs text-muted-foreground font-mono font-semibold uppercase tracking-widest">
-                    Step {step} of 7
+                    Step {idx + 1} of {totalSteps}
                   </p>
                   <p className="font-semibold">{meta.label}</p>
                   {isCurrent ? (
