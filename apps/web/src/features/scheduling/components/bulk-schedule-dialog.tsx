@@ -14,7 +14,6 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/sonner";
 import { DEFAULT_DURATION_MINUTES, toDatetimeLocalValue } from "@/features/scheduling/config";
 import { useBulkAssignSchedule } from "@/features/scheduling/use-schedule";
@@ -77,7 +76,11 @@ export function BulkScheduleDialog({
           toast.success(`Scheduled ${result.results.length} matches`);
           onOpenChange(false);
         },
-        onError: (e) => setError(errorMessage(e, "Couldn't bulk-schedule")),
+        onError: (e) => {
+          const msg = errorMessage(e, "Couldn't schedule matches");
+          setError(msg);
+          toast.error(msg);
+        },
       },
     );
   };
@@ -131,9 +134,14 @@ export function BulkScheduleDialog({
           >
             Cancel
           </Button>
-          <Button tone="candy" size="sm" onClick={handleSubmit} disabled={bulkAssign.isPending}>
-            {bulkAssign.isPending ? <Spinner className="text-white" /> : null}
-            Schedule all
+          <Button
+            tone="candy"
+            size="sm"
+            onClick={handleSubmit}
+            loading={bulkAssign.isPending}
+            disabled={bulkAssign.isPending}
+          >
+            {bulkAssign.isPending ? `Scheduling ${unscheduled.length} matches…` : "Schedule all"}
           </Button>
         </DialogFooter>
       </DialogContent>

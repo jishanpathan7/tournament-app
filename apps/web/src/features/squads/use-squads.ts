@@ -6,6 +6,7 @@ import {
   assignSquadMember,
   autoDistributeSquads,
   createSquad,
+  deleteSquad,
   getSquads,
   removeSquadMember,
   updateSquad,
@@ -13,6 +14,7 @@ import {
 import type {
   AutoDistributeRequest,
   CreateSquadRequest,
+  TournamentSquadsView,
   UpdateSquadRequest,
 } from "@/features/squads/types";
 
@@ -65,5 +67,46 @@ export function useRemoveSquadMember(tournamentId: string) {
     mutationFn: ({ squadId, registrationId }: { squadId: string; registrationId: string }) =>
       removeSquadMember(squadId, registrationId),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+  });
+}
+
+export function useDeleteSquad(tournamentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (squadId: string) => deleteSquad(squadId),
+    onMutate: async (squadId) => {
+      await qc.cancelQueries({ queryKey: key(tournamentId) });
+      const prev = qc.getQueryData<TournamentSquadsView>(key(tournamentId));
+      if (prev) {
+        const target = prev.squads.find((s) => s.id === squadId);
+        const returnedToPool: TournamentSquadsView["unassigned"] = target
+          ? target.members.map((m) => ({
+              registrationId: m.registrationId,
+              displayName: m.displayName,
+              skillLevel: m.skillLevel,
+              divisionId: m.divisionId,
+              divisionName: m.divisionName,
+              skillWeight: m.skillWeight,
+              status: "approved",
+            }))
+          : [];
+        qc.setQueryData<TournamentSquadsView>(key(tournamentId), {
+          ...prev,
+          squads: prev.squads.filter((s) => s.id !== squadId),
+          unassigned: [...prev.unassigned, ...returnedToPool],
+          summary: {
+            ...prev.summary,
+            squadCount: prev.summary.squadCount - 1,
+            assigned: prev.summary.assigned - (target?.memberCount ?? 0),
+            unassigned: prev.summary.unassigned + (target?.memberCount ?? 0),
+          },
+        });
+      }
+      return { prev };
+    },
+    onError: (_err, _squadId, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key(tournamentId), ctx.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
   });
 }

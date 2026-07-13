@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, Check, UserPlus, X } from "lucide-react";
+import { AlertTriangle, Check, Users, UserPlus, X } from "lucide-react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -222,7 +222,23 @@ export function SquadPairingSheet({
 
       {/* Body */}
       <div className="flex-1 overflow-y-auto px-5 py-4">
-        {pairsAreStale && (
+        {squad.memberCount < 2 ? (
+          <div className="flex h-full flex-col items-center justify-center gap-4 py-12 text-center">
+            <Users className="text-muted-foreground h-10 w-10" />
+            <div>
+              <h3 className="font-semibold">Not enough players</h3>
+              <p className="text-muted-foreground mt-1 text-sm">
+                {squad.memberCount === 0
+                  ? `${squad.name} has no players yet. Add players from the Teams board first.`
+                  : `${squad.name} needs at least 2 players to generate pairs. Add one more player first.`}
+              </p>
+            </div>
+            <Button tone="paper" size="sm" onClick={onClose}>
+              Back to Teams
+            </Button>
+          </div>
+        ) : null}
+        {pairsAreStale && squad.memberCount >= 2 && (
           <div className="mb-4 flex flex-col gap-2 rounded-2xl border-2 border-orange-400 bg-orange-50 p-4">
             <div className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 shrink-0 text-orange-600" />
@@ -236,278 +252,291 @@ export function SquadPairingSheet({
             </p>
           </div>
         )}
-        {isManualPairing && !isPublished ? (
-          <ManualPairingBuilder
-            run={run}
-            squad={squad}
-            divisionId={divisionId}
-            squadWarnings={squadWarnings}
-            busy={busy}
-            isPublished={isPublished}
-            onInitRun={() =>
-              generate.mutate(
-                { manual: true, forcedGroups: [], forbiddenPairs: [] },
-                {
-                  onSuccess: () => {},
-                  onError: (e) => toast.error(errorMessage(e, "Couldn't start pairing")),
-                },
-              )
-            }
-            onCreatePair={(memberIds) =>
-              createManualPair.mutate(memberIds, {
-                onError: (e) => toast.error(errorMessage(e, "Couldn't create pair")),
-              })
-            }
-            onDeletePair={(teamId) =>
-              deleteProposedTeam.mutate(teamId, {
-                onError: (e) => toast.error(errorMessage(e, "Couldn't delete pair")),
-              })
-            }
-            onToggleLock={(team) =>
-              updateTeam.mutate(
-                { teamId: team.id, body: { locked: !team.locked, clearTeamName: false } },
-                { onError: (e) => toast.error(errorMessage(e, "Couldn't update")) },
-              )
-            }
-            onAssignPartner={setAssigningFor}
-            assigningFor={assigningFor}
-            onPickDuplicate={onPickDuplicate}
-          />
-        ) : (
-          <>
-            {squadWarnings.length > 0 && (
-              <div className="mb-4 flex flex-col gap-2 rounded-2xl border-2 border-yellow-400 bg-yellow-50 p-4">
-                <div className="flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600" />
-                  <span className="text-sm font-semibold text-yellow-800">
-                    {squadWarnings.length} unresolved partner preference
-                    {squadWarnings.length === 1 ? "" : "s"}
-                  </span>
-                </div>
-                <p className="text-xs text-yellow-700">
-                  These players listed a preferred partner whose name didn&apos;t match any approved
-                  registration. Check for typos — they&apos;ll be paired by skill balance instead.
-                </p>
-                <div className="flex flex-col gap-1.5">
-                  {squadWarnings.map((w) => (
-                    <div
-                      key={w.registrationId}
-                      className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-yellow-300 bg-white px-3 py-2 text-sm"
-                    >
-                      <span className="font-medium">{w.playerName}</span>
-                      <span className="text-yellow-700">
-                        wants &ldquo;{w.requestedPartnerName}&rdquo;
-                      </span>
-                      <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold capitalize text-yellow-800">
-                        {w.reason === "ambiguous" ? "ambiguous name" : "not found"}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {pairing.isLoading ? (
-              <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                Loading…
-              </div>
-            ) : !run || run.teams.length === 0 ? (
-              <div className="flex flex-col items-center gap-4 py-12 text-center">
-                <p className="text-muted-foreground text-sm">
-                  No pairs generated yet for <strong>{squad.name}</strong>.
-                </p>
-                <Button tone="candy" size="sm" onClick={onGenerate} disabled={busy}>
-                  Generate Doubles Pairs
-                </Button>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-4">
-                {/* Stats bar */}
-                {stats && (
-                  <div className="bg-muted/30 flex flex-wrap gap-4 rounded-xl border px-4 py-3 text-sm">
-                    <span>
-                      <strong>{stats.teamCount}</strong> pairs
-                    </span>
-                    <span className="text-muted-foreground">·</span>
-                    <span>
-                      <strong>{stats.entrantCount}</strong> players
-                    </span>
-                    {stats.unpairedCount > 0 && (
-                      <>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="font-semibold text-yellow-600">
-                          {stats.unpairedCount} unpaired
-                        </span>
-                      </>
-                    )}
-                    {duplicatePlayerIds.size > 0 && (
-                      <>
-                        <span className="text-muted-foreground">·</span>
-                        <span className="font-semibold text-yellow-600">
-                          {duplicatePlayerIds.size} playing twice
-                        </span>
-                      </>
-                    )}
-                    <span className="text-muted-foreground">·</span>
-                    <span className="text-muted-foreground">
-                      Avg confidence {Math.round(stats.averageConfidence * 100)}%
+        {squad.memberCount >= 2 &&
+          (isManualPairing && !isPublished ? (
+            <ManualPairingBuilder
+              run={run}
+              squad={squad}
+              divisionId={divisionId}
+              squadWarnings={squadWarnings}
+              busy={busy}
+              isPublished={isPublished}
+              onInitRun={() =>
+                generate.mutate(
+                  { manual: true, forcedGroups: [], forbiddenPairs: [] },
+                  {
+                    onSuccess: () => {},
+                    onError: (e) => toast.error(errorMessage(e, "Couldn't start pairing")),
+                  },
+                )
+              }
+              onCreatePair={(memberIds) =>
+                createManualPair.mutate(memberIds, {
+                  onError: (e) => toast.error(errorMessage(e, "Couldn't create pair")),
+                })
+              }
+              onDeletePair={(teamId) =>
+                deleteProposedTeam.mutate(teamId, {
+                  onError: (e) => toast.error(errorMessage(e, "Couldn't delete pair")),
+                })
+              }
+              onToggleLock={(team) =>
+                updateTeam.mutate(
+                  { teamId: team.id, body: { locked: !team.locked, clearTeamName: false } },
+                  { onError: (e) => toast.error(errorMessage(e, "Couldn't update")) },
+                )
+              }
+              onAssignPartner={setAssigningFor}
+              assigningFor={assigningFor}
+              onPickDuplicate={onPickDuplicate}
+            />
+          ) : (
+            <>
+              {squadWarnings.length > 0 && (
+                <div className="mb-4 flex flex-col gap-2 rounded-2xl border-2 border-yellow-400 bg-yellow-50 p-4">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600" />
+                    <span className="text-sm font-semibold text-yellow-800">
+                      {squadWarnings.length} unresolved partner preference
+                      {squadWarnings.length === 1 ? "" : "s"}
                     </span>
                   </div>
-                )}
+                  <p className="text-xs text-yellow-700">
+                    These players listed a preferred partner whose name didn&apos;t match any
+                    approved registration. Check for typos — they&apos;ll be paired by skill balance
+                    instead.
+                  </p>
+                  <div className="flex flex-col gap-1.5">
+                    {squadWarnings.map((w) => (
+                      <div
+                        key={w.registrationId}
+                        className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-yellow-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <span className="font-medium">{w.playerName}</span>
+                        <span className="text-yellow-700">
+                          wants &ldquo;{w.requestedPartnerName}&rdquo;
+                        </span>
+                        <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-semibold capitalize text-yellow-800">
+                          {w.reason === "ambiguous" ? "ambiguous name" : "not found"}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-                {/* ── Odd-player banner ────────────────────────────────────────── */}
-                {unpairedEntrants.length > 0 && (
-                  <div className="flex flex-col gap-3 rounded-2xl border-2 border-yellow-400 bg-yellow-50 p-4">
-                    <div className="flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600" />
-                      <p className="text-sm font-semibold text-yellow-800">
-                        {unpairedEntrants.length === 1
-                          ? "One player needs a partner"
-                          : `${unpairedEntrants.length} players need a partner`}
-                      </p>
+              {pairing.isLoading ? (
+                <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                  Loading…
+                </div>
+              ) : !run || run.teams.length === 0 ? (
+                <div className="flex flex-col items-center gap-4 py-12 text-center">
+                  <p className="text-muted-foreground text-sm">
+                    No pairs generated yet for <strong>{squad.name}</strong>.
+                  </p>
+                  <Button
+                    tone="candy"
+                    size="sm"
+                    onClick={onGenerate}
+                    loading={generate.isPending}
+                    disabled={busy}
+                  >
+                    {generate.isPending ? "Generating pairs…" : "Generate Doubles Pairs"}
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {/* Stats bar */}
+                  {stats && (
+                    <div className="bg-muted/30 flex flex-wrap gap-4 rounded-xl border px-4 py-3 text-sm">
+                      <span>
+                        <strong>{stats.teamCount}</strong> pairs
+                      </span>
+                      <span className="text-muted-foreground">·</span>
+                      <span>
+                        <strong>{stats.entrantCount}</strong> players
+                      </span>
+                      {stats.unpairedCount > 0 && (
+                        <>
+                          <span className="text-muted-foreground">·</span>
+                          <span className="font-semibold text-yellow-600">
+                            {stats.unpairedCount} unpaired
+                          </span>
+                        </>
+                      )}
+                      {duplicatePlayerIds.size > 0 && (
+                        <>
+                          <span className="text-muted-foreground">·</span>
+                          <span className="font-semibold text-yellow-600">
+                            {duplicatePlayerIds.size} playing twice
+                          </span>
+                        </>
+                      )}
+                      <span className="text-muted-foreground">·</span>
+                      <span className="text-muted-foreground">
+                        Avg confidence {Math.round(stats.averageConfidence * 100)}%
+                      </span>
                     </div>
-                    <p className="text-xs text-yellow-700">
-                      {squad.name} has an odd number of players. Choose an existing player to
-                      partner the player below — they will play in two pairs.
-                    </p>
+                  )}
 
-                    {unpairedEntrants.map((entrant) => {
-                      if (!entrant) return null;
-                      const skill = skillMeta(entrant.skillLevel);
-                      const isAssigning = assigningFor === entrant.registrationId;
+                  {/* ── Odd-player banner ────────────────────────────────────────── */}
+                  {unpairedEntrants.length > 0 && (
+                    <div className="flex flex-col gap-3 rounded-2xl border-2 border-yellow-400 bg-yellow-50 p-4">
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-yellow-600" />
+                        <p className="text-sm font-semibold text-yellow-800">
+                          {unpairedEntrants.length === 1
+                            ? "One player needs a partner"
+                            : `${unpairedEntrants.length} players need a partner`}
+                        </p>
+                      </div>
+                      <p className="text-xs text-yellow-700">
+                        {squad.name} has an odd number of players. Choose an existing player to
+                        partner the player below — they will play in two pairs.
+                      </p>
 
-                      return (
-                        <div key={entrant.registrationId} className="flex flex-col gap-3">
-                          {/* Unpaired player chip */}
-                          <div className="flex items-center justify-between rounded-xl border-2 border-yellow-300 bg-white px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <UserPlus className="h-4 w-4 text-yellow-600" />
-                              <span className="font-medium">{entrant.displayName}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span
-                                className={cn(
-                                  "rounded-full border px-2 py-0.5 text-xs font-semibold",
-                                  skill.tone === "pink" &&
-                                    "border-pink-200 bg-pink-50 text-pink-700",
-                                  skill.tone === "candy" &&
-                                    "border-purple-200 bg-purple-50 text-purple-700",
-                                  skill.tone === "mint" &&
-                                    "border-emerald-200 bg-emerald-50 text-emerald-700",
-                                  skill.tone === "muted" &&
-                                    "border-gray-200 bg-gray-50 text-gray-600",
-                                )}
-                              >
-                                {skill.label}
-                              </span>
-                              {!isPublished && (
-                                <Button
-                                  tone={isAssigning ? "paper" : "candy"}
-                                  size="sm"
-                                  disabled={busy}
-                                  onClick={() =>
-                                    setAssigningFor(isAssigning ? null : entrant.registrationId)
-                                  }
+                      {unpairedEntrants.map((entrant) => {
+                        if (!entrant) return null;
+                        const skill = skillMeta(entrant.skillLevel);
+                        const isAssigning = assigningFor === entrant.registrationId;
+
+                        return (
+                          <div key={entrant.registrationId} className="flex flex-col gap-3">
+                            {/* Unpaired player chip */}
+                            <div className="flex items-center justify-between rounded-xl border-2 border-yellow-300 bg-white px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <UserPlus className="h-4 w-4 text-yellow-600" />
+                                <span className="font-medium">{entrant.displayName}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={cn(
+                                    "rounded-full border px-2 py-0.5 text-xs font-semibold",
+                                    skill.tone === "pink" &&
+                                      "border-pink-200 bg-pink-50 text-pink-700",
+                                    skill.tone === "candy" &&
+                                      "border-purple-200 bg-purple-50 text-purple-700",
+                                    skill.tone === "mint" &&
+                                      "border-emerald-200 bg-emerald-50 text-emerald-700",
+                                    skill.tone === "muted" &&
+                                      "border-gray-200 bg-gray-50 text-gray-600",
+                                  )}
                                 >
-                                  {isAssigning ? "Cancel" : "Assign partner"}
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Inline player picker */}
-                          {isAssigning && (
-                            <div className="flex flex-col gap-2 rounded-xl border-2 border-yellow-300 bg-white p-3">
-                              <p className="text-xs font-semibold text-yellow-800">
-                                Pick who plays a second match with{" "}
-                                <strong>{entrant.displayName}</strong>:
-                              </p>
-                              <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
-                                {[...pairedIds]
-                                  .filter((id) => id !== entrant.registrationId)
-                                  .map((id) => {
-                                    const candidate = entrantsMap.get(id);
-                                    if (!candidate) return null;
-                                    const cSkill = skillMeta(candidate.skillLevel);
-                                    return (
-                                      <button
-                                        key={id}
-                                        type="button"
-                                        disabled={busy}
-                                        onClick={() => onPickDuplicate(id)}
-                                        className="flex w-full items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-left text-sm transition-colors hover:border-yellow-400 hover:bg-yellow-100 disabled:opacity-50"
-                                      >
-                                        <span className="font-medium">{candidate.displayName}</span>
-                                        <span className="flex items-center gap-1.5">
-                                          {duplicatePlayerIds.has(id) && (
-                                            <span className="text-2xs rounded-full bg-yellow-200 px-1.5 py-0.5 font-semibold text-yellow-800">
-                                              Already plays twice
-                                            </span>
-                                          )}
-                                          <span
-                                            className={cn(
-                                              "rounded-full border px-2 py-0.5 text-xs font-semibold",
-                                              cSkill.tone === "pink" &&
-                                                "border-pink-200 bg-pink-50 text-pink-700",
-                                              cSkill.tone === "candy" &&
-                                                "border-purple-200 bg-purple-50 text-purple-700",
-                                              cSkill.tone === "mint" &&
-                                                "border-emerald-200 bg-emerald-50 text-emerald-700",
-                                              cSkill.tone === "muted" &&
-                                                "border-gray-200 bg-gray-50 text-gray-600",
-                                            )}
-                                          >
-                                            {cSkill.label}
-                                          </span>
-                                          <Check className="h-3.5 w-3.5 text-yellow-600 opacity-0 group-hover:opacity-100" />
-                                        </span>
-                                      </button>
-                                    );
-                                  })}
+                                  {skill.label}
+                                </span>
+                                {!isPublished && (
+                                  <Button
+                                    tone={isAssigning ? "paper" : "candy"}
+                                    size="sm"
+                                    disabled={busy}
+                                    onClick={() =>
+                                      setAssigningFor(isAssigning ? null : entrant.registrationId)
+                                    }
+                                  >
+                                    {isAssigning ? "Cancel" : "Assign partner"}
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                          )}
-                        </div>
-                      );
-                    })}
+
+                            {/* Inline player picker */}
+                            {isAssigning && (
+                              <div className="flex flex-col gap-2 rounded-xl border-2 border-yellow-300 bg-white p-3">
+                                <p className="text-xs font-semibold text-yellow-800">
+                                  Pick who plays a second match with{" "}
+                                  <strong>{entrant.displayName}</strong>:
+                                </p>
+                                <div className="flex max-h-56 flex-col gap-1.5 overflow-y-auto">
+                                  {[...pairedIds]
+                                    .filter((id) => id !== entrant.registrationId)
+                                    .map((id) => {
+                                      const candidate = entrantsMap.get(id);
+                                      if (!candidate) return null;
+                                      const cSkill = skillMeta(candidate.skillLevel);
+                                      return (
+                                        <button
+                                          key={id}
+                                          type="button"
+                                          disabled={busy}
+                                          onClick={() => onPickDuplicate(id)}
+                                          className="flex w-full items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 px-3 py-2 text-left text-sm transition-colors hover:border-yellow-400 hover:bg-yellow-100 disabled:opacity-50"
+                                        >
+                                          <span className="font-medium">
+                                            {candidate.displayName}
+                                          </span>
+                                          <span className="flex items-center gap-1.5">
+                                            {duplicatePlayerIds.has(id) && (
+                                              <span className="text-2xs rounded-full bg-yellow-200 px-1.5 py-0.5 font-semibold text-yellow-800">
+                                                Already plays twice
+                                              </span>
+                                            )}
+                                            <span
+                                              className={cn(
+                                                "rounded-full border px-2 py-0.5 text-xs font-semibold",
+                                                cSkill.tone === "pink" &&
+                                                  "border-pink-200 bg-pink-50 text-pink-700",
+                                                cSkill.tone === "candy" &&
+                                                  "border-purple-200 bg-purple-50 text-purple-700",
+                                                cSkill.tone === "mint" &&
+                                                  "border-emerald-200 bg-emerald-50 text-emerald-700",
+                                                cSkill.tone === "muted" &&
+                                                  "border-gray-200 bg-gray-50 text-gray-600",
+                                              )}
+                                            >
+                                              {cSkill.label}
+                                            </span>
+                                            <Check className="h-3.5 w-3.5 text-yellow-600 opacity-0 group-hover:opacity-100" />
+                                          </span>
+                                        </button>
+                                      );
+                                    })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Swap mode hint */}
+                  {selectedMember && !assigningFor && (
+                    <p className="text-candy-dark text-sm font-semibold">
+                      Click another player to swap, or click the same player to cancel.
+                    </p>
+                  )}
+
+                  {/* Team cards grid */}
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {teams.map((team, i) => (
+                      <ProposedTeamCard
+                        key={team.id}
+                        team={team}
+                        entrants={entrantsMap}
+                        index={i}
+                        selectedMemberId={selectedMember}
+                        canManage={!isPublished && assigningFor === null}
+                        busy={busy}
+                        duplicatePlayerIds={duplicatePlayerIds}
+                        preferenceConflicts={prefConflicts}
+                        onSelectMember={onSelectMember}
+                        onToggleLock={() =>
+                          updateTeam.mutate(
+                            {
+                              teamId: team.id,
+                              body: { locked: !team.locked, clearTeamName: false },
+                            },
+                            { onError: (e) => toast.error(errorMessage(e, "Couldn't update")) },
+                          )
+                        }
+                      />
+                    ))}
                   </div>
-                )}
-
-                {/* Swap mode hint */}
-                {selectedMember && !assigningFor && (
-                  <p className="text-candy-dark text-sm font-semibold">
-                    Click another player to swap, or click the same player to cancel.
-                  </p>
-                )}
-
-                {/* Team cards grid */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {teams.map((team, i) => (
-                    <ProposedTeamCard
-                      key={team.id}
-                      team={team}
-                      entrants={entrantsMap}
-                      index={i}
-                      selectedMemberId={selectedMember}
-                      canManage={!isPublished && assigningFor === null}
-                      busy={busy}
-                      duplicatePlayerIds={duplicatePlayerIds}
-                      preferenceConflicts={prefConflicts}
-                      onSelectMember={onSelectMember}
-                      onToggleLock={() =>
-                        updateTeam.mutate(
-                          { teamId: team.id, body: { locked: !team.locked, clearTeamName: false } },
-                          { onError: (e) => toast.error(errorMessage(e, "Couldn't update")) },
-                        )
-                      }
-                    />
-                  ))}
                 </div>
-              </div>
-            )}
-          </>
-        )}
+              )}
+            </>
+          ))}
       </div>
 
       {/* Footer */}
@@ -524,13 +553,20 @@ export function SquadPairingSheet({
             </>
           ) : (
             <>
-              <Button tone="paper" size="sm" onClick={onGenerate} disabled={busy || isPublished}>
-                Regenerate
+              <Button
+                tone="paper"
+                size="sm"
+                onClick={onGenerate}
+                loading={generate.isPending}
+                disabled={busy || isPublished}
+              >
+                {generate.isPending ? "Regenerating…" : "Regenerate"}
               </Button>
               <Button
                 tone="candy"
                 size="sm"
                 onClick={onPublish}
+                loading={publish.isPending}
                 disabled={busy || isPublished || (run.unpairedIds?.length ?? 0) > 0}
                 title={
                   (run.unpairedIds?.length ?? 0) > 0
@@ -538,7 +574,11 @@ export function SquadPairingSheet({
                     : undefined
                 }
               >
-                {isPublished ? "Locked ✓" : "Lock & Confirm Pairs"}
+                {publish.isPending
+                  ? "Publishing…"
+                  : isPublished
+                    ? "Locked ✓"
+                    : "Lock & Confirm Pairs"}
               </Button>
             </>
           )}

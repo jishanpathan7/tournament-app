@@ -2,6 +2,7 @@ import { Slot } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
 
+import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 
 /**
@@ -41,12 +42,31 @@ const buttonVariants = cva(
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  loading?: boolean;
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, tone, size, asChild = false, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button";
-    return <Comp ref={ref} className={cn(buttonVariants({ tone, size }), className)} {...props} />;
+  ({ className, tone, size, asChild = false, loading, disabled, children, ...props }, ref) => {
+    if (asChild) {
+      return (
+        <Slot ref={ref} className={cn(buttonVariants({ tone, size }), className)} {...props}>
+          {children}
+        </Slot>
+      );
+    }
+    const spinnerClass = tone === "candy" || tone === "ink" ? "text-white" : undefined;
+    return (
+      <button
+        ref={ref}
+        className={cn(buttonVariants({ tone, size }), className)}
+        disabled={disabled || loading}
+        aria-busy={loading || undefined}
+        {...props}
+      >
+        {loading && <Spinner className={spinnerClass} />}
+        {children}
+      </button>
+    );
   },
 );
 Button.displayName = "Button";

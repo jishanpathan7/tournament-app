@@ -14,7 +14,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/sonner";
 import type { DrawReadiness } from "@/features/draws/config";
 import { getFormat } from "@/features/tournaments/config";
@@ -121,6 +120,7 @@ export function GenerateDrawDialog({
             type="button"
             tone="candy"
             size="sm"
+            loading={generate.isPending}
             disabled={generate.isPending || (!!checkinWarning && !overrideReadiness)}
             onClick={() => {
               setError(null);
@@ -144,12 +144,8 @@ export function GenerateDrawDialog({
               );
             }}
           >
-            {generate.isPending ? (
-              <Spinner className="text-white" />
-            ) : (
-              <Shuffle className="h-4 w-4" strokeWidth={2.25} />
-            )}
-            Generate draw
+            {!generate.isPending && <Shuffle className="h-4 w-4" strokeWidth={2.25} />}
+            {generate.isPending ? "Generating draw…" : "Generate draw"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,11 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import type { RegistrationResponse, SubmitRegistrationRequest } from "@tournament/api-client";
+import type {
+  BulkApproveResult,
+  RegistrationResponse,
+  SubmitRegistrationRequest,
+} from "@tournament/api-client";
 
 import * as registrationsApi from "@/features/registrations/registrations-api";
 import { queryKeys } from "@/lib/query-keys";
@@ -97,23 +101,34 @@ export interface BulkActionResult {
   failed: { id: string; error: unknown }[];
 }
 
+/** Single-request bulk approve via the backend's approve-all endpoint. */
+export function useBulkApproveRegistrations(divisionId: string) {
+  const queryClient = useQueryClient();
+  const key = queryKeys.divisions.registrations(divisionId);
+  return useMutation({
+    mutationFn: (): Promise<BulkApproveResult> =>
+      registrationsApi.bulkApproveRegistrations(divisionId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: key });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(divisionId),
+      });
+    },
+  });
+}
+
 /**
- * Fan out a per-registration action across a selection (no bulk endpoint exists — the
- * backend only accepts one id at a time). Applies the same optimistic flip to every
- * selected row, settles independently per id via `Promise.allSettled`, and reports which
- * ones failed so the UI can show a precise "3 of 5 approved" summary rather than an
- * all-or-nothing result.
+ * Fan out a per-registration reject across a selection (no bulk reject endpoint — only
+ * approve-all exists). Settles independently per id via `Promise.allSettled`.
  */
-function useBulkRegistrationAction(
-  divisionId: string,
-  actionFn: (registrationId: string) => Promise<unknown>,
-  optimisticStatus: string,
-) {
+export function useBulkRejectRegistrations(divisionId: string) {
   const queryClient = useQueryClient();
   const key = queryKeys.divisions.registrations(divisionId);
   return useMutation({
     mutationFn: async (registrationIds: string[]): Promise<BulkActionResult> => {
-      const results = await Promise.allSettled(registrationIds.map((id) => actionFn(id)));
+      const results = await Promise.allSettled(
+        registrationIds.map((id) => registrationsApi.rejectRegistration(id)),
+      );
       const succeeded: string[] = [];
       const failed: BulkActionResult["failed"] = [];
       results.forEach((result, i) => {
@@ -130,7 +145,7 @@ function useBulkRegistrationAction(
         const ids = new Set(registrationIds);
         queryClient.setQueryData<RegistrationResponse[]>(
           key,
-          previous.map((r) => (ids.has(r.id) ? { ...r, status: optimisticStatus } : r)),
+          previous.map((r) => (ids.has(r.id) ? { ...r, status: "rejected" } : r)),
         );
       }
       return { previous };
@@ -145,12 +160,4 @@ function useBulkRegistrationAction(
       });
     },
   });
-}
-
-export function useBulkApproveRegistrations(divisionId: string) {
-  return useBulkRegistrationAction(divisionId, registrationsApi.approveRegistration, "approved");
-}
-
-export function useBulkRejectRegistrations(divisionId: string) {
-  return useBulkRegistrationAction(divisionId, registrationsApi.rejectRegistration, "rejected");
 }
