@@ -39,3 +39,7 @@ export async function assignSquadMember(squadId: string, body: AssignMemberReque
 export async function removeSquadMember(squadId: string, registrationId: string): Promise<void> {
   await api.delete(`/squads/${squadId}/members/${registrationId}`);
 }
+
+export async function deleteSquad(squadId: string): Promise<void> {
+  await api.delete(`/squads/${squadId}`);
+}

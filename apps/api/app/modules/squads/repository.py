@@ -9,8 +9,17 @@ from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.enums import RegistrationStatus
-from app.db.models import Division, Registration, SportProfile, Squad, SquadMember, Tournament, User
+from app.db.enums import PairingRunStatus, RegistrationStatus
+from app.db.models import (
+    Division,
+    PairingRun,
+    Registration,
+    SportProfile,
+    Squad,
+    SquadMember,
+    Tournament,
+    User,
+)
 
 _ACTIVE_REG = {
     RegistrationStatus.SUBMITTED.value,
@@ -179,3 +188,16 @@ async def load_submitter_names(
     stmt = select(User.id, User.name).where(User.id.in_(user_ids))
     rows = (await session.execute(stmt)).all()
     return {row[0]: row[1] for row in rows}
+
+
+async def has_published_pairing_run_for_squad(
+    session: AsyncSession, org_id: uuid.UUID, squad_id: uuid.UUID
+) -> bool:
+    """True if a published pairing run exists whose config.squadId matches this squad."""
+    stmt = select(PairingRun.id).where(
+        PairingRun.organization_id == org_id,
+        PairingRun.status == PairingRunStatus.PUBLISHED.value,
+        PairingRun.config["squadId"].astext == str(squad_id),
+    )
+    result = await session.execute(stmt)
+    return result.scalar_one_or_none() is not None

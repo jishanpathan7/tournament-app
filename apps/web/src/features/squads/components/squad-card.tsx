@@ -1,8 +1,9 @@
 "use client";
 
-import { CheckCircle2, ChevronDown, GitMerge, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronDown, GitMerge, Loader2, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { ConfirmDialog } from "@/components/common/confirm-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,6 +102,8 @@ export function SquadCard({
   onSetCaptain,
   onRename,
   onOpenPairing,
+  onDelete,
+  deleteLoading,
 }: {
   squad: SquadView;
   expanded: boolean;
@@ -115,10 +118,13 @@ export function SquadCard({
   onSetCaptain: (registrationId: string) => void;
   onRename: (name: string) => void;
   onOpenPairing: () => void;
+  onDelete?: () => void;
+  deleteLoading?: boolean;
 }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingName, setEditingName] = useState(false);
   const [nameDraft, setNameDraft] = useState(squad.name);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const borderTint = squadBorderTint(squad.sortOrder);
 
   function commitRename() {
@@ -129,96 +135,128 @@ export function SquadCard({
 
   if (expanded) {
     return (
-      <div
-        className={cn(
-          "border-ink shadow-sticker-xs flex flex-col overflow-hidden rounded-2xl border-2 border-l-4",
-          borderTint,
-        )}
-      >
-        <div className="border-ink/10 flex items-center justify-between gap-2 border-b px-3 py-2">
-          <div className="min-w-0 flex-1">
-            {editingName && canManage ? (
-              <Input
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                onBlur={commitRename}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") commitRename();
-                  if (e.key === "Escape") {
-                    setNameDraft(squad.name);
-                    setEditingName(false);
-                  }
-                }}
-                className="h-8 text-sm font-semibold"
-                autoFocus
-              />
-            ) : (
-              <button
-                type="button"
-                className={cn(
-                  "truncate text-left font-serif text-base font-semibold",
-                  canManage && "hover:underline",
-                )}
-                onClick={() => canManage && setEditingName(true)}
-                disabled={!canManage}
-              >
-                {squad.name}
-              </button>
-            )}
-            <p className="text-muted-foreground text-xs">
-              {squad.memberCount} players · skill {squad.totalSkillWeight.toFixed(1)}
-            </p>
-          </div>
-          <div className="flex shrink-0 items-center gap-1">
-            {highlightAssign && canManage ? (
-              <Button tone="candy" size="sm" onClick={onAssign} className="h-8 px-2 text-xs">
-                Assign here
-              </Button>
-            ) : null}
-            <Button
-              tone="ghost"
-              size="icon-sm"
-              onClick={onToggleExpand}
-              aria-label="Collapse team"
-              aria-expanded
-            >
-              <ChevronDown className="h-4 w-4 rotate-180" />
-            </Button>
-          </div>
-        </div>
-
-        {squad.memberCount > 4 ? (
-          <div className="border-ink/10 border-b px-3 py-2">
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search players…"
-              className="h-8 text-sm"
-            />
-          </div>
-        ) : null}
-
-        <SquadColumn
-          squad={squad}
-          canManage={canManage}
-          highlightAssign={highlightAssign}
-          searchQuery={searchQuery}
-          hideHeader
-          onAssign={onAssign}
-          onRemove={onRemove}
-          onSetCaptain={onSetCaptain}
-          onRename={onRename}
-        />
-
-        {divisionId ? (
-          <SquadPairingFooter
-            squad={squad}
-            divisionId={divisionId}
-            canManage={canManage}
-            onOpen={onOpenPairing}
+      <>
+        {onDelete ? (
+          <ConfirmDialog
+            open={confirmDelete}
+            onOpenChange={setConfirmDelete}
+            title={`Delete ${squad.name}?`}
+            description={
+              squad.memberCount > 0
+                ? `${squad.memberCount} player${squad.memberCount === 1 ? "" : "s"} will return to the unassigned pool.`
+                : "This team has no players and will be permanently removed."
+            }
+            confirmLabel="Delete team"
+            confirmTone="pink"
+            loading={deleteLoading}
+            onConfirm={() => {
+              onDelete();
+              setConfirmDelete(false);
+            }}
           />
         ) : null}
-      </div>
+        <div
+          className={cn(
+            "border-ink shadow-sticker-xs flex flex-col overflow-hidden rounded-2xl border-2 border-l-4",
+            borderTint,
+          )}
+        >
+          <div className="border-ink/10 flex items-center justify-between gap-2 border-b px-3 py-2">
+            <div className="min-w-0 flex-1">
+              {editingName && canManage ? (
+                <Input
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  onBlur={commitRename}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") commitRename();
+                    if (e.key === "Escape") {
+                      setNameDraft(squad.name);
+                      setEditingName(false);
+                    }
+                  }}
+                  className="h-8 text-sm font-semibold"
+                  autoFocus
+                />
+              ) : (
+                <button
+                  type="button"
+                  className={cn(
+                    "truncate text-left font-serif text-base font-semibold",
+                    canManage && "hover:underline",
+                  )}
+                  onClick={() => canManage && setEditingName(true)}
+                  disabled={!canManage}
+                >
+                  {squad.name}
+                </button>
+              )}
+              <p className="text-muted-foreground text-xs">
+                {squad.memberCount} players · skill {squad.totalSkillWeight.toFixed(1)}
+              </p>
+            </div>
+            <div className="flex shrink-0 items-center gap-1">
+              {highlightAssign && canManage ? (
+                <Button tone="candy" size="sm" onClick={onAssign} className="h-8 px-2 text-xs">
+                  Assign here
+                </Button>
+              ) : null}
+              {canManage && onDelete ? (
+                <Button
+                  tone="ghost"
+                  size="icon-sm"
+                  onClick={() => setConfirmDelete(true)}
+                  aria-label="Delete team"
+                  className="text-muted-foreground hover:text-destructive"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              ) : null}
+              <Button
+                tone="ghost"
+                size="icon-sm"
+                onClick={onToggleExpand}
+                aria-label="Collapse team"
+                aria-expanded
+              >
+                <ChevronDown className="h-4 w-4 rotate-180" />
+              </Button>
+            </div>
+          </div>
+
+          {squad.memberCount > 4 ? (
+            <div className="border-ink/10 border-b px-3 py-2">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search players…"
+                className="h-8 text-sm"
+              />
+            </div>
+          ) : null}
+
+          <SquadColumn
+            squad={squad}
+            canManage={canManage}
+            highlightAssign={highlightAssign}
+            searchQuery={searchQuery}
+            hideHeader
+            onAssign={onAssign}
+            onRemove={onRemove}
+            onSetCaptain={onSetCaptain}
+            onRename={onRename}
+          />
+
+          {divisionId ? (
+            <SquadPairingFooter
+              squad={squad}
+              divisionId={divisionId}
+              canManage={canManage}
+              onOpen={onOpenPairing}
+            />
+          ) : null}
+        </div>
+      </>
     );
   }
 

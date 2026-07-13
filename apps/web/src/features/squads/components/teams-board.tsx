@@ -47,6 +47,7 @@ import {
   useAssignSquadMember,
   useAutoDistributeSquads,
   useCreateSquad,
+  useDeleteSquad,
   useRemoveSquadMember,
   useSquads,
   useUpdateSquad,
@@ -71,6 +72,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const assign = useAssignSquadMember(tournamentId);
   const remove = useRemoveSquadMember(tournamentId);
   const updateSquad = useUpdateSquad(tournamentId);
+  const deleteSquad = useDeleteSquad(tournamentId);
 
   const [selectedRegistrationId, setSelectedRegistrationId] = useState<string | null>(null);
   const [draggingId, setDraggingId] = useState<string | null>(null);
@@ -523,6 +525,16 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
                       )
                     }
                     onOpenPairing={() => setPairingSquad(squad)}
+                    onDelete={
+                      canManage
+                        ? () =>
+                            deleteSquad.mutate(squad.id, {
+                              onError: (err) =>
+                                toast.error(errorMessage(err, "Couldn't delete team")),
+                            })
+                        : undefined
+                    }
+                    deleteLoading={deleteSquad.isPending && deleteSquad.variables === squad.id}
                   />
                 );
               })}

@@ -131,6 +131,10 @@ async def delete_squad(
     squad = await repo.get_squad(session, org_id, squad_id)
     if squad is None:
         raise NotFoundError("Team not found")
+    if await repo.has_published_pairing_run_for_squad(session, org_id, squad_id):
+        raise ConflictError(
+            "This team has published pairs. Discard the pairs before deleting the team."
+        )
     tournament_id = squad.tournament_id
     await session.delete(squad)
 

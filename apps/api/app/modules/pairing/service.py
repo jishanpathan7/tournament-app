@@ -639,18 +639,19 @@ def _materialize_team(
 
     No session.flush() calls — callers must flush once after all teams are materialized.
 
-    Why no flush needed for team_row.id: UUIDPrimaryKeyMixin uses `default=uuid7`,
-    which is a Python-side callable applied at object construction time. team_row.id is
-    set by SQLAlchemy immediately when Team(...) is called, before any INSERT happens.
-    This lets RosterEntry(team_id=team_row.id) be created without needing the DB to
-    assign the PK first.
+    team_id is generated explicitly here because `mapped_column(default=uuid7)` is a
+    column-level default that SQLAlchemy only invokes when building the INSERT statement,
+    NOT at Python object construction time. Without an explicit id, team_row.id is None
+    until the flush, which would make the FK on RosterEntry and Participant null and
+    violate the ck_participants_participant_kind_refs check constraint.
     """
     member_names = [_entrant_name(reg) for reg in regs]
     name = team.team_name or (
         " / ".join(member_names) if member_names else f"Team {str(team.id)[:8]}"
     )
     captain = regs[0].submitted_by if regs else None
-    team_row = Team(organization_id=org_id, name=name, captain_user_id=captain)
+    team_id = uuid.uuid4()
+    team_row = Team(id=team_id, organization_id=org_id, name=name, captain_user_id=captain)
     session.add(team_row)
     for reg in regs:
         user = user_cache.get(reg.submitted_by)
@@ -658,7 +659,7 @@ def _materialize_team(
         session.add(
             RosterEntry(
                 organization_id=org_id,
-                team_id=team_row.id,
+                team_id=team_id,
                 user_id=None if entrant_has_external_identity(reg) else reg.submitted_by,
                 external_name=entrant_display_name(reg, account_name=account_name),
             )
@@ -667,7 +668,7 @@ def _materialize_team(
         organization_id=org_id,
         division_id=ctx.division.id,
         kind=ParticipantKind.PAIR.value,
-        team_id=team_row.id,
+        team_id=team_id,
         display_name=name,
         status=ParticipantStatus.APPROVED.value,
     )

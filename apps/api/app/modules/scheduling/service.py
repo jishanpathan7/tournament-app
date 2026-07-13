@@ -324,7 +324,14 @@ async def _do_assign(
     # (unlike `scoring.score_match`) nothing downstream here re-selects this row to
     # incidentally repopulate it, so `build_match_view` would otherwise trigger an
     # implicit lazy load outside an async-safe context.
-    await session.refresh(match, attribute_names=["updated_at"])
+    if _scheduled_cache is not None:
+        # Bulk path: also refresh `participants` — the flush expires the collection that
+        # was populated by selectinload, and evaluate_conflicts accesses `other.participants`
+        # synchronously in subsequent iterations (no await in the for loop), which raises
+        # MissingGreenlet if the relationship is lazy-loaded at that point.
+        await session.refresh(match, attribute_names=["updated_at", "participants"])
+    else:
+        await session.refresh(match, attribute_names=["updated_at"])
 
     # Maintain the in-memory scheduled cache for subsequent iterations in bulk_assign.
     # This ensures later items in the same batch see earlier assignments as conflicts.
