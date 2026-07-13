@@ -51,6 +51,8 @@ import {
   useSquads,
   useUpdateSquad,
 } from "@/features/squads/use-squads";
+import { PairingModeCard } from "@/features/tournaments/setup/pairing-mode-card";
+import { usePairCreationMode } from "@/features/tournaments/use-pair-creation-mode";
 import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { queryKeys } from "@/lib/query-keys";
@@ -76,6 +78,9 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const [expandedSquadIds, setExpandedSquadIds] = useState<Set<string>>(new Set());
   const [setupOpen, setSetupOpen] = useState(false);
   const [noDraftTeamsOpen, setNoDraftTeamsOpen] = useState(false);
+  const [tapHintDismissed, setTapHintDismissed] = useState(false);
+
+  const { isManual: isManualPairing } = usePairCreationMode(tournamentId);
 
   const divisions = useDivisions(tournamentId);
   const firstDivisionId = divisions.data?.[0]?.id ?? null;
@@ -372,11 +377,13 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         generateMatchesPending={publishAllPairings.isPending}
       />
 
+      {canManage && <PairingModeCard tournamentId={tournamentId} />}
+
       {board.squads.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">
           {workflow.playersAssigned && needsGenerateCount > 0 && canManage ? (
             <Button tone="candy" size="sm" onClick={openRemainingPairingQueue}>
-              Generate remaining pairs ({needsGenerateCount})
+              {isManualPairing ? "Create" : "Generate"} remaining pairs ({needsGenerateCount})
             </Button>
           ) : null}
           {workflow.readyForDraw && canManage ? (
@@ -425,6 +432,21 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         <p className="text-candy-dark text-sm font-semibold">
           Select a team to assign the highlighted player, or click again to cancel.
         </p>
+      ) : null}
+
+      {/* Mobile tap-to-assign hint — shown once when there are unassigned players */}
+      {canManage && hasUnassigned && !tapHintDismissed && !selectedRegistrationId ? (
+        <div className="border-candy/30 bg-candy-tint/50 flex items-start justify-between gap-3 rounded-xl border px-3 py-2.5 sm:hidden">
+          <p className="text-candy-dark text-sm">Tap a player, then tap a team to assign them.</p>
+          <button
+            type="button"
+            onClick={() => setTapHintDismissed(true)}
+            className="text-candy-dark/60 hover:text-candy-dark shrink-0 text-lg leading-none"
+            aria-label="Dismiss hint"
+          >
+            ×
+          </button>
+        </div>
       ) : null}
 
       {board.squads.length === 0 && board.unassigned.length === 0 ? (
@@ -549,7 +571,13 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
               squad={pairingSquad}
               divisionId={firstDivisionId}
               tournamentId={tournamentId}
+              isManualPairing={isManualPairing}
               onClose={() => setPairingSquad(null)}
+              onNext={
+                workflow.nextSquad && workflow.nextSquad.id !== pairingSquad.id
+                  ? () => setPairingSquad(workflow.nextSquad!)
+                  : undefined
+              }
             />
           </div>
         </div>

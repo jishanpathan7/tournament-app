@@ -3718,6 +3718,45 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": ["pairing"],
+        "summary": "Delete a manually-created pair from a draft run",
+        "operationId": "pairing_delete_proposed_team",
+        "parameters": [
+          {
+            "name": "team_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Team Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/pairing/runs/{run_id}/swap": {
@@ -3842,6 +3881,57 @@
         },
         "responses": {
           "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingRunView"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/pairing/runs/{run_id}/teams": {
+      "post": {
+        "tags": ["pairing"],
+        "summary": "Add a manually-created pair to a draft run",
+        "operationId": "pairing_create_manual_pair",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateManualPairRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": "Successful Response",
             "content": {
               "application/json": {
@@ -7479,6 +7569,24 @@
         "required": ["email", "role"],
         "title": "CreateInviteRequest"
       },
+      "CreateManualPairRequest": {
+        "properties": {
+          "memberIds": {
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 1,
+            "title": "Memberids"
+          }
+        },
+        "type": "object",
+        "required": ["memberIds"],
+        "title": "CreateManualPairRequest",
+        "description": "Create a pair manually within a draft PairingRun.\n\n``member_ids`` must contain 1\u20132 registration ids. Each id must be an entrant in the\nrun's division (or squad) and must not already belong to an unpublished team in this\nrun."
+      },
       "CreateMatchScorekeeperLinkRequest": {
         "properties": {
           "expiresInHours": {
@@ -8383,6 +8491,11 @@
               }
             ],
             "title": "Squadid"
+          },
+          "manual": {
+            "type": "boolean",
+            "title": "Manual",
+            "default": false
           }
         },
         "type": "object",
@@ -8519,6 +8632,11 @@
           "updateExisting": {
             "type": "boolean",
             "title": "Updateexisting",
+            "default": false
+          },
+          "autoApprove": {
+            "type": "boolean",
+            "title": "Autoapprove",
             "default": false
           }
         },
@@ -12322,6 +12440,30 @@
               }
             ],
             "title": "Autoschedule"
+          },
+          "pairCreationMode": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paircreationmode"
+          },
+          "matchDurationMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 240.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matchdurationminutes"
           },
           "venueId": {
             "anyOf": [

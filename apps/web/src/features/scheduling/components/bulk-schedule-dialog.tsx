@@ -31,6 +31,7 @@ export function BulkScheduleDialog({
   defaultStart,
   open,
   onOpenChange,
+  defaultDuration = DEFAULT_DURATION_MINUTES,
 }: {
   tournamentId: string;
   unscheduled: MatchView[];
@@ -38,10 +39,11 @@ export function BulkScheduleDialog({
   defaultStart: Date;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultDuration?: number;
 }) {
   const bulkAssign = useBulkAssignSchedule(tournamentId);
   const [startAt, setStartAt] = useState(() => toDatetimeLocalValue(defaultStart));
-  const [duration, setDuration] = useState(DEFAULT_DURATION_MINUTES);
+  const [duration, setDuration] = useState(defaultDuration);
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = () => {

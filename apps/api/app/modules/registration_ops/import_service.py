@@ -279,6 +279,7 @@ async def commit(
     raw: str,
     mapping: dict[str, str],
     update_existing: bool,
+    auto_approve: bool = False,
 ) -> ImportBatch:
     division = await _require_division(session, org_id, division_id)
     table = _parse(source, raw)
@@ -290,7 +291,11 @@ async def commit(
     imported = updated = skipped = 0
     for row in evaluated:
         if row.status == "new":
-            session.add(_registration_from_row(org_id, actor_id, division_id, row))
+            session.add(
+                _registration_from_row(
+                    org_id, actor_id, division_id, row, auto_approve=auto_approve
+                )
+            )
             imported += 1
         elif row.status == "update" and row.existing_id is not None:
             reg = await session.get(Registration, row.existing_id)
@@ -343,13 +348,22 @@ async def commit(
 
 
 def _registration_from_row(
-    org_id: uuid.UUID, actor_id: uuid.UUID, division_id: uuid.UUID, row: _EvaluatedRow
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    division_id: uuid.UUID,
+    row: _EvaluatedRow,
+    *,
+    auto_approve: bool = False,
 ) -> Registration:
     reg = Registration(
         organization_id=org_id,
         division_id=division_id,
         submitted_by=actor_id,  # imported on the entrant's behalf by the organizer
-        status=RegistrationStatus.SUBMITTED.value,
+        status=(
+            RegistrationStatus.APPROVED.value
+            if auto_approve
+            else RegistrationStatus.SUBMITTED.value
+        ),
         form_response={"_organizer_import": True},
     )
     _apply_row(reg, row)

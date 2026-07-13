@@ -1,12 +1,13 @@
 "use client";
 
-import { BarChart3 } from "lucide-react";
+import { BarChart3, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { useMemo } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { participantName } from "@/features/public/config";
 import { usePublicParticipants, usePublicStandings } from "@/features/public/use-public-tournament";
 
@@ -49,7 +50,27 @@ export function PublicStandingsTable({ slug, stageId }: { slug: string; stageId:
         <thead>
           <tr className="border-border text-muted-foreground text-2xs border-b-2 text-left font-mono font-semibold uppercase tracking-[0.14em]">
             <th className="px-4 py-2.5">#</th>
-            <th className="px-4 py-2.5">Participant</th>
+            <th className="px-4 py-2.5">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-flex cursor-help items-center gap-1">
+                      Participant
+                      <HelpCircle className="h-3 w-3 opacity-50" />
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-56 text-xs leading-relaxed">
+                    <p className="font-semibold">Tiebreaker order</p>
+                    <ol className="mt-1 list-decimal pl-4">
+                      <li>Points (3 win / 1 draw / 0 loss)</li>
+                      <li>Game difference (games won − lost)</li>
+                      <li>Head-to-head result</li>
+                      <li>Alphabetical (if still tied)</li>
+                    </ol>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </th>
             <th className="px-4 py-2.5 text-right">W</th>
             <th className="px-4 py-2.5 text-right">D</th>
             <th className="px-4 py-2.5 text-right">L</th>

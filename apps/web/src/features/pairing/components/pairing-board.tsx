@@ -64,7 +64,7 @@ export function PairingBoard({
     setSelectedMember(null);
     setConfirmRegenerate(false);
     generate.mutate(
-      {},
+      { manual: false },
       {
         onSuccess: (r) => toast.success(`Generated ${r.teams.length} teams`),
         onError: (e) => toast.error(errorMessage(e, "Couldn't generate pairings")),

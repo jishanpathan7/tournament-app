@@ -199,6 +199,8 @@ export function useTournamentDashboard(tournamentId: string) {
     participantsById,
     stagesByDivision,
     standingsByStage,
+    registrationsByDivision,
+    participantsByDivision,
     isLoadingCore,
   };
 }

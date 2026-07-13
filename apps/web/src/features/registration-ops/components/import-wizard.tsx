@@ -82,6 +82,7 @@ export function ImportWizard({
   const [columns, setColumns] = useState<string[]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [updateExisting, setUpdateExisting] = useState(false);
+  const [autoApprove, setAutoApprove] = useState(true);
   const [preview, setPreview] = useState<ImportPreview | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [detecting, setDetecting] = useState(false);
@@ -146,6 +147,7 @@ export function ImportWizard({
         raw: rawCsv,
         mapping,
         updateExisting: updateExisting,
+        autoApprove: false,
       });
       setPreview(data);
       setStep("preview");
@@ -177,6 +179,7 @@ export function ImportWizard({
         raw: rawCsv,
         mapping,
         updateExisting: updateExisting,
+        autoApprove: autoApprove,
       },
       {
         onSuccess: (r) => {
@@ -538,6 +541,17 @@ export function ImportWizard({
               </p>
             </div>
           )}
+
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="auto-approve"
+              checked={autoApprove}
+              onCheckedChange={(v) => setAutoApprove(!!v)}
+            />
+            <Label htmlFor="auto-approve" className={d.fieldLabel}>
+              Automatically approve imported registrations
+            </Label>
+          </div>
 
           <div className="flex gap-2">
             <Button tone="paper" size="sm" onClick={() => setStep("map")}>

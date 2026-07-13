@@ -6,7 +6,6 @@ import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -16,6 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/sonner";
 
 import { useGenerateInviteLink, useInviteMember } from "../use-tournament-members";
 
@@ -65,6 +65,12 @@ const ROLE_OPTIONS: RoleOption[] = [
   },
 ];
 
+const EMAIL_RE = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+
+function extractEmails(raw: string): string[] {
+  return [...new Set((raw.match(EMAIL_RE) ?? []).map((e) => e.toLowerCase()))];
+}
+
 export function InviteMemberDialog({
   tournamentId,
   open,
@@ -74,26 +80,52 @@ export function InviteMemberDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [email, setEmail] = useState("");
+  const [emailsRaw, setEmailsRaw] = useState("");
   const [role, setRole] = useState<TournamentRole>("organizer");
   const [copied, setCopied] = useState(false);
+  const [sending, setSending] = useState(false);
   const invite = useInviteMember(tournamentId);
   const generateLink = useGenerateInviteLink(tournamentId);
 
   const selectedRole = ROLE_OPTIONS.find((o) => o.value === role)!;
+  const parsedEmails = extractEmails(emailsRaw);
+  const hasEmails = parsedEmails.length > 0;
 
-  function handleEmailInvite(e: React.FormEvent) {
+  async function handleEmailInvite(e: React.FormEvent) {
     e.preventDefault();
-    invite.mutate(
-      { email, tournamentRole: role },
-      {
-        onSuccess: () => {
-          onOpenChange(false);
-          setEmail("");
-          setRole("organizer");
-        },
-      },
-    );
+    if (!hasEmails) return;
+    setSending(true);
+    let ok = 0;
+    let failed = 0;
+    for (const email of parsedEmails) {
+      await new Promise<void>((resolve) => {
+        invite.mutate(
+          { email, tournamentRole: role },
+          {
+            onSuccess: () => {
+              ok++;
+              resolve();
+            },
+            onError: () => {
+              failed++;
+              resolve();
+            },
+          },
+        );
+      });
+    }
+    setSending(false);
+    if (ok > 0) {
+      toast.success(ok === 1 ? "Invite sent" : `${ok} invite${ok === 1 ? "" : "s"} sent`);
+    }
+    if (failed > 0) {
+      toast.error(`${failed} invite${failed === 1 ? "" : "s"} failed`);
+    }
+    if (ok > 0) {
+      onOpenChange(false);
+      setEmailsRaw("");
+      setRole("organizer");
+    }
   }
 
   function handleCopyLink() {
@@ -132,36 +164,39 @@ export function InviteMemberDialog({
                 ))}
               </SelectContent>
             </Select>
-            {/* Responsibility description */}
             <p className="text-muted-foreground text-xs">
               <span className="text-foreground font-medium">{selectedRole.label}:</span>{" "}
               {selectedRole.responsibility.toLowerCase()}. Access: {selectedRole.access}.
             </p>
           </div>
 
-          {/* Email invite */}
+          {/* Email invite — supports single address or comma/newline-separated bulk paste */}
           <form onSubmit={handleEmailInvite} className="space-y-3">
             <div className="space-y-1.5">
               <Label htmlFor="invite-email">Send invite by email</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="invite-email"
-                  type="email"
-                  placeholder="colleague@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoFocus
-                />
-                <Button type="submit" disabled={invite.isPending || !email} className="shrink-0">
-                  {invite.isPending ? (
-                    <Spinner className="h-4 w-4" />
-                  ) : (
-                    <Mail className="h-4 w-4" />
-                  )}
-                  <span className="ml-2">Send</span>
-                </Button>
-              </div>
+              <textarea
+                id="invite-email"
+                rows={3}
+                placeholder={"colleague@example.com\nOr paste multiple, comma-separated"}
+                value={emailsRaw}
+                onChange={(e) => setEmailsRaw(e.target.value)}
+                autoFocus
+                className="border-input placeholder:text-muted-foreground focus-visible:ring-ring flex w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+              />
+              {parsedEmails.length > 1 && (
+                <p className="text-muted-foreground text-xs">
+                  {parsedEmails.length} addresses detected
+                </p>
+              )}
             </div>
+            <Button type="submit" disabled={sending || !hasEmails} className="w-full">
+              {sending ? <Spinner className="mr-2 h-4 w-4" /> : <Mail className="mr-2 h-4 w-4" />}
+              {sending
+                ? "Sending…"
+                : parsedEmails.length > 1
+                  ? `Send ${parsedEmails.length} invites`
+                  : "Send invite"}
+            </Button>
           </form>
 
           {/* Divider */}

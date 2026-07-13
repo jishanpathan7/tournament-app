@@ -102,6 +102,7 @@ async def commit_import(
         raw=body.raw,
         mapping=body.mapping,
         update_existing=body.update_existing,
+        auto_approve=body.auto_approve,
     )
     return ImportResult(
         batch_id=batch.id,

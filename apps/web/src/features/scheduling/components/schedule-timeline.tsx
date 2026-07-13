@@ -12,6 +12,7 @@ import {
 } from "@dnd-kit/core";
 import type { ConflictView, MatchView } from "@tournament/api-client";
 import { CalendarClock, ListPlus } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -23,8 +24,8 @@ import { BulkScheduleDialog } from "@/features/scheduling/components/bulk-schedu
 import { ScheduleLane } from "@/features/scheduling/components/schedule-lane";
 import { ScheduleMatchCard } from "@/features/scheduling/components/schedule-match-card";
 import {
-  DEFAULT_DURATION_MINUTES,
   bucketMatches,
+  effectiveDurationMinutes,
   suggestNextSlot,
 } from "@/features/scheduling/config";
 import { useAssignSchedule, useClearSchedule } from "@/features/scheduling/use-schedule";
@@ -66,6 +67,9 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
     [participants.data],
   );
   const buckets = useMemo(() => bucketMatches(matches.data ?? []), [matches.data]);
+  const duration = effectiveDurationMinutes(
+    tournament.data?.settings as Record<string, unknown> | undefined,
+  );
   const activeCourts = useMemo(
     () => (courts.data ?? []).map((a) => a.court).filter((c) => c.status === "active"),
     [courts.data],
@@ -102,18 +106,14 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
     if (targetLane === match.courtId) return; // dropped back on the same lane
 
     const courtMatches = (buckets.byCourt.get(targetLane) ?? []).filter((m) => m.id !== matchId);
-    const nextSlot = suggestNextSlot(
-      courtMatches,
-      DEFAULT_DURATION_MINUTES,
-      tournament.data?.startsAt ?? null,
-    );
+    const nextSlot = suggestNextSlot(courtMatches, duration, tournament.data?.startsAt ?? null);
     assignSchedule.mutate(
       {
         matchId,
         body: {
           courtId: targetLane,
           scheduledAt: nextSlot.toISOString(),
-          durationMinutes: DEFAULT_DURATION_MINUTES,
+          durationMinutes: duration,
         },
       },
       {
@@ -136,7 +136,7 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
     assignSchedule.mutate(
       {
         matchId,
-        body: { courtId: match.courtId, scheduledAt, durationMinutes: DEFAULT_DURATION_MINUTES },
+        body: { courtId: match.courtId, scheduledAt, durationMinutes: duration },
       },
       {
         onSuccess: (result) => {
@@ -180,9 +180,14 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
       {(courts.data ?? []).length === 0 ? (
         <EmptyState
           icon={CalendarClock}
-          eyebrow="No courts assigned"
-          title="Assign a court before scheduling"
-          description="Head to Courts to assign at least one court to this tournament, then come back here to schedule matches."
+          eyebrow="No courts yet"
+          title="Add courts before scheduling"
+          description="You need at least one active court to assign matches to."
+          action={
+            <Button asChild tone="candy" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/courts`}>Add courts →</Link>
+            </Button>
+          }
         />
       ) : (
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
@@ -232,6 +237,7 @@ export function ScheduleTimeline({ tournamentId }: { tournamentId: string }) {
         unscheduled={buckets.unscheduled}
         activeCourts={activeCourts}
         defaultStart={tournament.data?.startsAt ? new Date(tournament.data.startsAt) : new Date()}
+        defaultDuration={duration}
         open={bulkOpen}
         onOpenChange={setBulkOpen}
       />

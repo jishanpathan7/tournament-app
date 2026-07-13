@@ -23,6 +23,7 @@ from app.core import authz
 from app.modules.pairing import service
 from app.modules.pairing.schemas import (
     AddDuplicatePairRequest,
+    CreateManualPairRequest,
     GeneratePairingRequest,
     PairingRunView,
     PartnerWarningsResponse,
@@ -59,6 +60,7 @@ async def generate_pairing(
         forced_groups=body.forced_groups,
         forbidden_pairs=body.forbidden_pairs,
         squad_id=body.squad_id,
+        manual=body.manual,
     )
     return await service.build_run_view(session, principal.organization_id, run)
 
@@ -190,6 +192,49 @@ async def add_duplicate_pair(
         run_id=run_id,
         unpaired_id=body.unpaired_id,
         duplicate_id=body.duplicate_id,
+    )
+    return await service.build_run_view(session, principal.organization_id, run)
+
+
+@router.post(
+    "/pairing/runs/{run_id}/teams",
+    response_model=PairingRunView,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(authed_csrf)],
+    summary="Add a manually-created pair to a draft run",
+)
+async def create_manual_pair(
+    run_id: uuid.UUID,
+    body: CreateManualPairRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> PairingRunView:
+    run = await service.create_manual_pair(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        run_id=run_id,
+        member_ids=body.member_ids,
+    )
+    return await service.build_run_view(session, principal.organization_id, run)
+
+
+@router.delete(
+    "/pairing/teams/{team_id}",
+    response_model=PairingRunView,
+    dependencies=[Depends(authed_csrf)],
+    summary="Delete a manually-created pair from a draft run",
+)
+async def delete_proposed_team(
+    team_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> PairingRunView:
+    run = await service.delete_proposed_team(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        team_id=team_id,
     )
     return await service.build_run_view(session, principal.organization_id, run)
 

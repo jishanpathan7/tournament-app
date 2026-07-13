@@ -64,8 +64,13 @@ export function registrationEntrantLabel(
 /** Team/player names from the opaque `formResponse`, without assuming a sport-specific shape. */
 export function formResponseSummary(formResponse: Record<string, unknown>): string | null {
   const teamName = typeof formResponse.teamName === "string" ? formResponse.teamName : null;
+  const partner =
+    typeof formResponse.preferredPartnerName === "string"
+      ? formResponse.preferredPartnerName
+      : null;
   const players = Array.isArray(formResponse.players) ? formResponse.players : null;
   if (teamName) return teamName;
+  if (partner) return partner;
   if (players) {
     const names = players
       .map((p) => (typeof p === "object" && p && "name" in p ? String(p.name) : null))

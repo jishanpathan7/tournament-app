@@ -27,6 +27,8 @@ class UpdateTournamentRequest(ApiModel):
     ends_at: datetime.datetime | None = None
     settings: dict[str, Any] | None = None
     auto_schedule: bool | None = None
+    pair_creation_mode: str | None = None
+    match_duration_minutes: int | None = Field(default=None, ge=5, le=240)
     venue_id: uuid.UUID | None = None
     clear_venue: bool | None = None
 

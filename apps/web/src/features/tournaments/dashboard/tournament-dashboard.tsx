@@ -107,6 +107,7 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
           tournamentId={tournamentId}
           step={step}
           signals={data.stepSignals}
+          readiness={data.readiness.data}
           canManage={canManage}
           resultsPublishedAt={tournament.resultsPublishedAt}
         />
@@ -114,6 +115,7 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
           <div className="hidden md:block">
             <TournamentStepTracker
               step={step}
+              tournamentId={tournamentId}
               variant="primary"
               franchiseMode={data.stepSignals.franchiseMode}
             />
@@ -125,6 +127,8 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
             tournamentId={tournamentId}
             divisions={data.divisions.data ?? []}
             totals={data.registrationTotals}
+            registrationsByDivision={data.registrationsByDivision}
+            participantsByDivision={data.participantsByDivision}
             canManage={canManage}
           />
         ) : null}
