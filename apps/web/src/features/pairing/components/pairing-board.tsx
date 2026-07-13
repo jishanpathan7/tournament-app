@@ -105,16 +105,17 @@ export function PairingBoard({
     });
   }
 
-  const generateLabel = run ? "Regenerate" : "Generate teams";
   const action = canManage ? (
     <div className="flex items-center gap-2">
       <Button
         tone="paper"
         size="sm"
         onClick={run ? () => setConfirmRegenerate(true) : onGenerate}
+        loading={generate.isPending}
         disabled={busy || published}
       >
-        <Wand2 className="h-4 w-4" /> {generateLabel}
+        {!generate.isPending && <Wand2 className="h-4 w-4" />}
+        {generate.isPending ? "Generating…" : run ? "Regenerate" : "Generate teams"}
       </Button>
       {run && !published ? (
         <Button tone="candy" size="sm" onClick={() => setConfirmPublish(true)} disabled={busy}>

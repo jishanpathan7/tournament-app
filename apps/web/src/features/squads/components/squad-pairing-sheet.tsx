@@ -317,8 +317,14 @@ export function SquadPairingSheet({
                 <p className="text-muted-foreground text-sm">
                   No pairs generated yet for <strong>{squad.name}</strong>.
                 </p>
-                <Button tone="candy" size="sm" onClick={onGenerate} disabled={busy}>
-                  Generate Doubles Pairs
+                <Button
+                  tone="candy"
+                  size="sm"
+                  onClick={onGenerate}
+                  loading={generate.isPending}
+                  disabled={busy}
+                >
+                  {generate.isPending ? "Generating pairs…" : "Generate Doubles Pairs"}
                 </Button>
               </div>
             ) : (
@@ -524,13 +530,20 @@ export function SquadPairingSheet({
             </>
           ) : (
             <>
-              <Button tone="paper" size="sm" onClick={onGenerate} disabled={busy || isPublished}>
-                Regenerate
+              <Button
+                tone="paper"
+                size="sm"
+                onClick={onGenerate}
+                loading={generate.isPending}
+                disabled={busy || isPublished}
+              >
+                {generate.isPending ? "Regenerating…" : "Regenerate"}
               </Button>
               <Button
                 tone="candy"
                 size="sm"
                 onClick={onPublish}
+                loading={publish.isPending}
                 disabled={busy || isPublished || (run.unpairedIds?.length ?? 0) > 0}
                 title={
                   (run.unpairedIds?.length ?? 0) > 0
@@ -538,7 +551,11 @@ export function SquadPairingSheet({
                     : undefined
                 }
               >
-                {isPublished ? "Locked ✓" : "Lock & Confirm Pairs"}
+                {publish.isPending
+                  ? "Publishing…"
+                  : isPublished
+                    ? "Locked ✓"
+                    : "Lock & Confirm Pairs"}
               </Button>
             </>
           )}

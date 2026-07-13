@@ -2,8 +2,10 @@
 
 import { useCallback, useRef, useState } from "react";
 
+import { toast } from "@/components/ui/sonner";
 import type { SquadView, UnassignedRegistrationView } from "@/features/squads/types";
 import { useAssignSquadMember, useSquads } from "@/features/squads/use-squads";
+import { errorMessage } from "@/lib/problem";
 
 export type CeremonyPhase = "intro" | "main" | "complete";
 
@@ -81,10 +83,15 @@ export function useCeremony(tournamentId: string) {
 
     setIsAssigning(true);
     try {
-      await assignMutation.mutateAsync({
-        squadId: targetId,
-        registrationId: player.registrationId,
-      });
+      await assignMutation
+        .mutateAsync({
+          squadId: targetId,
+          registrationId: player.registrationId,
+        })
+        .catch((e) => {
+          toast.error(errorMessage(e, "Couldn't assign player"));
+          throw e;
+        });
       assignedIds.current = new Set([...assignedIds.current, player.registrationId]);
 
       const record: Assignment = {

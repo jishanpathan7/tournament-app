@@ -1,5 +1,6 @@
 import type {
   ApproveResult,
+  BulkApproveResult,
   ParticipantResponse,
   RegistrationResponse,
   SubmitRegistrationRequest,
@@ -49,6 +50,13 @@ export async function waitlistRegistration(registrationId: string): Promise<Regi
 export async function withdrawRegistration(registrationId: string): Promise<RegistrationResponse> {
   const { data } = await api.post<RegistrationResponse>(
     `/registrations/${registrationId}/withdraw`,
+  );
+  return data;
+}
+
+export async function bulkApproveRegistrations(divisionId: string): Promise<BulkApproveResult> {
+  const { data } = await api.post<BulkApproveResult>(
+    `/divisions/${divisionId}/registrations/approve-all`,
   );
   return data;
 }

@@ -10,7 +10,6 @@ import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/sonner";
 import { TableSkeleton } from "@/components/common/loading";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -190,19 +189,19 @@ export function RegistrationManagement({
                   <Button
                     tone="candy"
                     size="sm"
+                    loading={bulkApprove.isPending}
                     disabled={bulkApprove.isPending}
                     onClick={() =>
-                      bulkApprove.mutate(allPendingIds, {
-                        onSuccess: () =>
+                      bulkApprove.mutate(undefined, {
+                        onSuccess: (r) =>
                           toast.success(
-                            `Approved ${allPendingIds.length} registration${allPendingIds.length !== 1 ? "s" : ""}`,
+                            `Approved ${r.approved} registration${r.approved !== 1 ? "s" : ""}${r.waitlisted ? ` · ${r.waitlisted} waitlisted` : ""}`,
                           ),
                         onError: () => toast.error("Couldn't approve all — try again"),
                       })
                     }
                   >
-                    {bulkApprove.isPending ? <Spinner /> : null}
-                    Approve all
+                    {bulkApprove.isPending ? `Approving ${allPendingIds.length}…` : "Approve all"}
                   </Button>
                 </div>
               ) : null;

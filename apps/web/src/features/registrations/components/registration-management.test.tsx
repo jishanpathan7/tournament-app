@@ -166,10 +166,10 @@ describe("RegistrationManagement", () => {
       makeRegistration({ id: "r-2", submittedBy: "u-bob", status: "submitted" }),
     ]);
     vi.mocked(registrationsApi.listParticipants).mockResolvedValue([]);
-    vi.mocked(registrationsApi.approveRegistration).mockResolvedValue({
-      registrationId: "r-1",
-      status: "approved",
-      participantId: "p-1",
+    vi.mocked(registrationsApi.bulkApproveRegistrations).mockResolvedValue({
+      approved: 2,
+      waitlisted: 0,
+      skipped: 0,
     });
     renderWithProviders(
       <RegistrationManagement tournamentId={TOURNAMENT_ID} divisionId={DIVISION_ID} />,
@@ -181,9 +181,11 @@ describe("RegistrationManagement", () => {
     await user.click(checkboxes[1]!);
 
     const toolbar = screen.getByText("2 selected").closest("div")!;
-    await user.click(within(toolbar).getByRole("button", { name: "Approve" }));
+    await user.click(within(toolbar).getByRole("button", { name: "Approve All" }));
 
-    await waitFor(() => expect(registrationsApi.approveRegistration).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(registrationsApi.bulkApproveRegistrations).toHaveBeenCalledWith(DIVISION_ID),
+    );
   });
 
   it("hides the Registrations tab, checkboxes, and export for a non-managing role", async () => {

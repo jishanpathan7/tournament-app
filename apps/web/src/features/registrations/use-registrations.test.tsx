@@ -196,31 +196,28 @@ describe("useRejectRegistration / useWaitlistRegistration / useWithdrawRegistrat
   });
 });
 
-describe("useBulkApproveRegistrations (fan-out, no bulk endpoint)", () => {
+describe("useBulkApproveRegistrations (single bulk endpoint)", () => {
   beforeEach(() => vi.resetAllMocks());
 
-  it("reports a precise per-id summary on partial failure", async () => {
-    const regs = [
-      makeRegistration({ id: "r-1", status: "submitted" }),
-      makeRegistration({ id: "r-2", status: "rejected" }),
-    ];
+  it("calls bulkApproveRegistrations and returns BulkApproveResult", async () => {
     const client = createTestQueryClient();
-    client.setQueryData(queryKeys.divisions.registrations(DIVISION_ID), regs);
-    vi.mocked(registrationsApi.listRegistrations).mockResolvedValue(regs);
-    vi.mocked(registrationsApi.approveRegistration).mockImplementation((id: string) =>
-      id === "r-1"
-        ? Promise.resolve({ registrationId: id, status: "approved", participantId: "p-1" })
-        : Promise.reject(new Error("registration is rejected, cannot approve")),
-    );
+    vi.mocked(registrationsApi.bulkApproveRegistrations).mockResolvedValue({
+      approved: 5,
+      waitlisted: 1,
+      skipped: 0,
+    });
 
     const { result } = renderHook(() => useBulkApproveRegistrations(DIVISION_ID), {
       wrapper: wrapperWith(client),
     });
 
-    result.current.mutate(["r-1", "r-2"]);
+    result.current.mutate(undefined);
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.succeeded).toEqual(["r-1"]);
-    expect(result.current.data?.failed.map((f) => f.id)).toEqual(["r-2"]);
+    expect(vi.mocked(registrationsApi.bulkApproveRegistrations).mock.calls[0]?.[0]).toBe(
+      DIVISION_ID,
+    );
+    expect(result.current.data?.approved).toBe(5);
+    expect(result.current.data?.waitlisted).toBe(1);
   });
 });

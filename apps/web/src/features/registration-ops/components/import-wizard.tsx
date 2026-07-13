@@ -561,12 +561,14 @@ export function ImportWizard({
               tone="candy"
               size="sm"
               onClick={handleCommit}
+              loading={commit.isPending}
               disabled={
                 commit.isPending || (preview.summary.new === 0 && preview.summary.update === 0)
               }
             >
-              {commit.isPending ? <Spinner className="text-white" /> : null}
-              Import {preview.summary.new + preview.summary.update} rows
+              {commit.isPending
+                ? `Importing ${preview.summary.new + preview.summary.update} rows…`
+                : `Import ${preview.summary.new + preview.summary.update} rows`}
             </Button>
           </div>
         </div>
