@@ -297,6 +297,7 @@ async def _do_assign(
     _tournament_court_cache: dict[uuid.UUID, TournamentCourt | None] | None = None,
     _scheduled_cache: list[Match] | None = None,
     _kinds_cache: dict[uuid.UUID, str] | None = None,
+    _skip_broadcast: bool = False,
 ) -> list[ConflictView]:
     conflicts = await evaluate_conflicts(
         session,
@@ -354,7 +355,8 @@ async def _do_assign(
         event_type=action,
         payload={"id": str(match.id), "organizationId": str(org_id)},
     )
-    await _broadcast(org_id, match)
+    if not _skip_broadcast:
+        await _broadcast(org_id, match)
     await _notify(session, org_id, match, rescheduled=was_scheduled)
 
     return [c for c in conflicts if c.kind not in HARD_CONFLICT_KINDS]
@@ -456,8 +458,18 @@ async def bulk_assign(
                 _tournament_court_cache=tc_cache,
                 _scheduled_cache=scheduled_cache,
                 _kinds_cache=kinds_cache,
+                _skip_broadcast=True,
             )
             results.append((match, soft))
+
+    # Emit one SSE event for the whole batch instead of N per-match broadcasts.
+    # Per-match broadcasts would trigger N frontend query invalidations for the
+    # same matches list, causing N redundant GET refetches.
+    broadcaster = get_broadcaster()
+    batch_payload = {"tournamentId": str(tournament_id)}
+    for channel in (org_channel(org_id), tournament_channel(tournament_id)):
+        await broadcaster.publish(channel, events.RT_MATCH_SCHEDULED, batch_payload)
+
     return results
 
 

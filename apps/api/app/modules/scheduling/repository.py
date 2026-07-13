@@ -13,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.db.enums import ContestKind
 from app.db.models import Court, Match, Participant, TournamentCourt
 
 
@@ -109,7 +110,11 @@ async def list_tournament_matches_with_participants(
     scheduled/unscheduled/pending buckets."""
     stmt = (
         select(Match)
-        .where(Match.tournament_id == tournament_id, Match.organization_id == org_id)
+        .where(
+            Match.tournament_id == tournament_id,
+            Match.organization_id == org_id,
+            Match.contest_kind != ContestKind.TIE.value,
+        )
         .options(
             selectinload(Match.participants), selectinload(Match.round), selectinload(Match.group)
         )
