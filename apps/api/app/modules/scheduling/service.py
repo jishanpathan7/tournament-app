@@ -13,6 +13,7 @@ assign/move/detect-conflicts workflow, so it's intentionally not wired in here).
 from __future__ import annotations
 
 import datetime
+import logging
 import uuid
 from collections.abc import Sequence
 
@@ -22,6 +23,7 @@ from app.api.errors import NotFoundError, ValidationError
 from app.core.audit import record as audit_record
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster
+from app.core.perf import timed
 from app.db.enums import CourtStatus, MatchStatus, NotificationChannel
 from app.db.models import Match, Registration, Tournament
 from app.modules.courts import repository as courts_repo
@@ -35,6 +37,8 @@ from app.modules.scheduling.schemas import ConflictView, CourtQueueView, Schedul
 from app.modules.scoring import repository as scoring_repo
 from app.modules.scoring import service as scoring_service
 from app.realtime.channels import org_channel, tournament_channel
+
+_logger = logging.getLogger("app.scheduling")
 
 register_template(
     NotificationTemplate(
@@ -345,22 +349,30 @@ async def bulk_assign(
     """All-or-nothing: one item hitting a hard conflict raises, rolling back the whole
     batch via the caller's request-scoped transaction. Items are applied in order, so
     a later item's conflict check sees every earlier item's assignment in this batch."""
-    tournament = await _require_tournament(session, org_id, tournament_id)
+    item_count = len(items)
+    async with timed("bulk_assign.fetch_tournament", _logger, extra={"item_count": item_count}):
+        tournament = await _require_tournament(session, org_id, tournament_id)
     results: list[tuple[Match, list[ConflictView]]] = []
-    for match_id, court_id, scheduled_at, duration_minutes in items:
-        match = await _require_match(session, org_id, match_id)
+    for i, (match_id, court_id, scheduled_at, duration_minutes) in enumerate(items):
+        async with timed("bulk_assign.fetch_match", _logger, extra={"item_index": i}):
+            match = await _require_match(session, org_id, match_id)  # PERF: N SELECT per item
         if match.tournament_id != tournament_id:
             raise NotFoundError(f"Match not found in this tournament: {match_id}")
-        soft = await _do_assign(
-            session,
-            org_id=org_id,
-            actor_id=actor_id,
-            match=match,
-            tournament=tournament,
-            court_id=court_id,
-            scheduled_at=scheduled_at,
-            duration_minutes=duration_minutes,
-        )
+        async with timed(
+            "bulk_assign.do_assign",  # PERF: re-fetches all scheduled matches each iteration
+            _logger,
+            extra={"item_index": i},
+        ):
+            soft = await _do_assign(
+                session,
+                org_id=org_id,
+                actor_id=actor_id,
+                match=match,
+                tournament=tournament,
+                court_id=court_id,
+                scheduled_at=scheduled_at,
+                duration_minutes=duration_minutes,
+            )
         results.append((match, soft))
     return results
 

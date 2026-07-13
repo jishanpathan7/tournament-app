@@ -5,6 +5,7 @@ rules are reimplemented here. Never commits — the request session owns the tra
 
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Any
 
@@ -14,6 +15,7 @@ from app.api.errors import ConflictError, NotFoundError, PermissionDeniedError, 
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster, get_sport_registry
+from app.core.perf import timed
 from app.db.enums import (
     ParticipantKind,
     ParticipantStatus,
@@ -32,6 +34,8 @@ from app.modules.registrations.entrant import (
     form_entrant_name,
 )
 from app.realtime.channels import org_channel
+
+logger = logging.getLogger("app.registrations")
 
 _APPROVABLE = {RegistrationStatus.SUBMITTED.value, RegistrationStatus.WAITLISTED.value}
 
@@ -82,16 +86,21 @@ async def submit_registration(
 async def approve_registration(
     session: AsyncSession, *, org_id: uuid.UUID, actor_id: uuid.UUID, registration_id: uuid.UUID
 ) -> tuple[Registration, Participant | None]:
-    registration = await _require_registration(session, org_id, registration_id)
+    async with timed("approve.fetch_registration", logger):
+        registration = await _require_registration(session, org_id, registration_id)
     if registration.status not in _APPROVABLE:
         raise ConflictError(f"registration is {registration.status}, cannot approve")
     # Lock the division row so concurrent approve calls cannot both see capacity
     # as available and both approve past the limit.
-    division = await _require_division(session, org_id, registration.division_id, for_update=True)
+    async with timed("approve.fetch_division_for_update", logger):
+        division = await _require_division(
+            session, org_id, registration.division_id, for_update=True
+        )
 
     # Capacity → waitlist instead of approve.
     if division.capacity is not None:
-        approved = await repo.count_approved(session, org_id, division.id)
+        async with timed("approve.count_approved", logger):
+            approved = await repo.count_approved(session, org_id, division.id)
         if approved >= division.capacity:
             registration.status = RegistrationStatus.WAITLISTED.value
             await session.flush()
@@ -103,21 +112,25 @@ async def approve_registration(
                 registration.id,
                 division.id,
             )
-            tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+            async with timed("approve.fetch_tournament_for_waitlist_notify", logger):
+                tournament = await repo.get_tournament(session, org_id, division.tournament_id)
             if tournament is not None:
-                await reg_notifications.notify_waitlisted(
-                    session,
-                    org_id=org_id,
-                    registration=registration,
-                    tournament=tournament,
-                    division=division,
-                )
+                async with timed("approve.notify_waitlisted", logger):
+                    await reg_notifications.notify_waitlisted(
+                        session,
+                        org_id=org_id,
+                        registration=registration,
+                        tournament=tournament,
+                        division=division,
+                    )
             return registration, None
 
-    participant = await _build_participant(session, org_id, division, registration)
+    async with timed("approve.build_participant", logger):
+        participant = await _build_participant(session, org_id, division, registration)
     registration.status = RegistrationStatus.APPROVED.value
     registration.participant_id = participant.id
-    await session.flush()
+    async with timed("approve.flush_status", logger):
+        await session.flush()
     await _audit_event(
         session,
         org_id,
@@ -127,15 +140,17 @@ async def approve_registration(
         division.id,
         after={"participantId": str(participant.id)},
     )
-    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+    async with timed("approve.fetch_tournament_for_notify", logger):
+        tournament = await repo.get_tournament(session, org_id, division.tournament_id)
     if tournament is not None:
-        await reg_notifications.notify_approved(
-            session,
-            org_id=org_id,
-            registration=registration,
-            tournament=tournament,
-            division=division,
-        )
+        async with timed("approve.notify_approved", logger):
+            await reg_notifications.notify_approved(
+                session,
+                org_id=org_id,
+                registration=registration,
+                tournament=tournament,
+                division=division,
+            )
     return registration, participant
 
 

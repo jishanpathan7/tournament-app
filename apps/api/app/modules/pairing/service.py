@@ -9,6 +9,7 @@ registration module uses. Never commits — the request session owns the transac
 
 from __future__ import annotations
 
+import logging
 import uuid
 from decimal import Decimal
 from typing import Any
@@ -19,6 +20,7 @@ from app.api.errors import ConflictError, NotFoundError, ValidationError
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster, get_sport_registry, get_team_formation_engine
+from app.core.perf import timed
 from app.db.enums import PairingRunStatus, ParticipantKind, ParticipantStatus, RegistrationStatus
 from app.db.models import (
     PairingRun,
@@ -60,6 +62,8 @@ from app.modules.squads.repository import (
     squad_membership_by_registration,
 )
 from app.realtime.channels import org_channel
+
+_logger = logging.getLogger("app.pairing")
 
 DUPLICATE_PAIR_REASON = "Duplicate pair — plays twice"
 
@@ -509,27 +513,36 @@ async def publish(
 ) -> tuple[int, int]:
     """Materialize a draft run's teams into Team + pair Participant rows, linking each
     source registration. Returns (published_teams, unpaired_count)."""
-    run = await _require_draft_run(session, org_id, run_id, lock=True)
-    # Re-scope to the squad so that franchise runs (APPROVED registrations) are found.
-    squad_id = _extract_squad_id(run)
-    ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
+    async with timed("publish.load_run_and_context", _logger, extra={"run_id": str(run_id)}):
+        run = await _require_draft_run(session, org_id, run_id, lock=True)
+        # Re-scope to the squad so that franchise runs (APPROVED registrations) are found.
+        squad_id = _extract_squad_id(run)
+        ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
 
+    team_count = len(run.proposed_teams)
     paired_ids: set[str] = set()
     published = 0
-    for team in run.proposed_teams:
-        members = [str(m) for m in team.member_ids]
-        regs = [ctx.by_id.get(m) for m in members]
-        if any(r is None for r in regs):
-            raise ConflictError(
-                "a proposed team references an entrant that is no longer eligible; regenerate",
-                code="stale_pairing",
-            )
-        await _materialize_team(session, org_id, ctx, team, [r for r in regs if r is not None])
-        paired_ids.update(members)
-        published += 1
+    async with timed("publish.materialize_all_teams", _logger, extra={"team_count": team_count}):
+        for team in run.proposed_teams:
+            members = [str(m) for m in team.member_ids]
+            regs = [ctx.by_id.get(m) for m in members]
+            if any(r is None for r in regs):
+                raise ConflictError(
+                    "a proposed team references an entrant that is no longer eligible; regenerate",
+                    code="stale_pairing",
+                )
+            async with timed(
+                "publish.materialize_one_team", _logger, extra={"member_count": len(members)}
+            ):
+                await _materialize_team(
+                    session, org_id, ctx, team, [r for r in regs if r is not None]
+                )
+            paired_ids.update(members)
+            published += 1
 
     run.status = PairingRunStatus.PUBLISHED.value
-    await session.flush()
+    async with timed("publish.flush_run_status", _logger):
+        await session.flush()
 
     unpaired = sum(1 for r in ctx.entrants if str(r.id) not in paired_ids)
     await _emit(session, org_id, actor_id, run, events.PAIRING_PUBLISHED)
@@ -610,9 +623,11 @@ async def _materialize_team(
     captain = regs[0].submitted_by if regs else None
     team_row = Team(organization_id=org_id, name=name, captain_user_id=captain)
     session.add(team_row)
-    await session.flush()
+    async with timed("materialize.flush_team", _logger):
+        await session.flush()  # PERF: 1 flush per team; see report
     for reg in regs:
-        user = await repo.get_user(session, reg.submitted_by)
+        async with timed("materialize.get_user", _logger):
+            user = await repo.get_user(session, reg.submitted_by)  # PERF: N+1 per member
         account_name = user.name if user else None
         session.add(
             RosterEntry(
@@ -631,13 +646,15 @@ async def _materialize_team(
         status=ParticipantStatus.APPROVED.value,
     )
     session.add(participant)
-    await session.flush()
+    async with timed("materialize.flush_roster_and_participant", _logger):
+        await session.flush()  # PERF: 2nd flush per team; see report
     # A pair Participant is owned by TWO registrations, so we can't use the 1:1
     # registrations.participant_id link (unique) — the roster carries the members. We
     # just move the source registrations to `approved`, which drops them from the pool.
     for reg in regs:
         reg.status = RegistrationStatus.APPROVED.value
-    await session.flush()
+    async with timed("materialize.flush_reg_status", _logger):
+        await session.flush()  # PERF: 3rd flush per team; see report
 
 
 async def get_partner_warnings(

@@ -9,6 +9,7 @@ Never commits — the request session owns the transaction.
 
 from __future__ import annotations
 
+import logging
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -19,6 +20,7 @@ from app.api.errors import NotFoundError, ValidationError
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster
+from app.core.perf import timed
 from app.db.enums import RegistrationStatus, SkillLevel
 from app.db.models import Division, ImportBatch, MappingTemplate, Registration
 from app.modules.registration_ops import events
@@ -35,6 +37,8 @@ from app.modules.registration_ops.schemas import (
 )
 from app.modules.registrations.partner_resolution import resolve_preferred_partner_ids
 from app.realtime.channels import org_channel
+
+_logger = logging.getLogger("app.import")
 
 # The canonical fields any source maps onto. Adding a field here is the only change
 # needed to import a new attribute — sources stay dumb (columns → strings).
@@ -282,36 +286,42 @@ async def commit(
     auto_approve: bool = False,
 ) -> ImportBatch:
     division = await _require_division(session, org_id, division_id)
-    table = _parse(source, raw)
-    existing = _existing_index(await repo.list_registrations(session, org_id, division_id))
-    evaluated = _evaluate(
-        table.columns, table.rows, mapping, existing, update_existing=update_existing
-    )
+    async with timed("import_commit.parse_and_evaluate", _logger):
+        table = _parse(source, raw)
+        existing = _existing_index(await repo.list_registrations(session, org_id, division_id))
+        evaluated = _evaluate(
+            table.columns, table.rows, mapping, existing, update_existing=update_existing
+        )
 
+    row_count = len(evaluated)
     imported = updated = skipped = 0
-    for row in evaluated:
-        if row.status == "new":
-            session.add(
-                _registration_from_row(
-                    org_id, actor_id, division_id, row, auto_approve=auto_approve
+    async with timed("import_commit.insert_rows", _logger, extra={"row_count": row_count}):
+        for row in evaluated:
+            if row.status == "new":
+                session.add(
+                    _registration_from_row(
+                        org_id, actor_id, division_id, row, auto_approve=auto_approve
+                    )
                 )
-            )
-            imported += 1
-        elif row.status == "update" and row.existing_id is not None:
-            reg = await session.get(Registration, row.existing_id)
-            if reg is not None:
-                _apply_row(reg, row)
-                updated += 1
-            else:  # pragma: no cover - raced deletion
+                imported += 1
+            elif row.status == "update" and row.existing_id is not None:
+                reg = await session.get(Registration, row.existing_id)  # PERF: N+1 for updates
+                if reg is not None:
+                    _apply_row(reg, row)
+                    updated += 1
+                else:  # pragma: no cover - raced deletion
+                    skipped += 1
+            else:
                 skipped += 1
-        else:
-            skipped += 1
-    await session.flush()
+    async with timed("import_commit.flush_inserts", _logger):
+        await session.flush()
 
     # Link partner-name columns to registration ids so Smart Pairing honors pre-formed pairs.
-    division_regs = await repo.list_registrations(session, org_id, division_id)
-    resolve_preferred_partner_ids(division_regs)
-    await session.flush()
+    async with timed("import_commit.resolve_partners", _logger):
+        division_regs = await repo.list_registrations(session, org_id, division_id)
+        resolve_preferred_partner_ids(division_regs)
+    async with timed("import_commit.flush_partner_ids", _logger):
+        await session.flush()
 
     batch = ImportBatch(
         organization_id=org_id,
