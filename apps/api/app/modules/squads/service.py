@@ -11,7 +11,7 @@ from app.api.errors import ConflictError, NotFoundError, ValidationError
 from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_sport_registry
-from app.db.models import Registration, Squad, SquadMember
+from app.db.models import Registration, Squad, SquadMember, Tournament
 from app.engine.squad_distribution import snake_distribute
 from app.modules.registrations.entrant import entrant_display_name
 from app.modules.squads import events
@@ -38,7 +38,7 @@ async def get_board(
     tournament = await repo.get_tournament(session, org_id, tournament_id)
     if tournament is None:
         raise NotFoundError("Tournament not found")
-    return await _build_board(session, org_id, tournament_id)
+    return await _build_board(session, org_id, tournament_id, tournament=tournament)
 
 
 async def create_squad(
@@ -78,7 +78,7 @@ async def create_squad(
         {"squad_id": str(squad.id), "tournament_id": str(tournament_id)},
     )
 
-    board = await _build_board(session, org_id, tournament_id)
+    board = await _build_board(session, org_id, tournament_id, tournament=tournament)
     return _find_squad_view(board, squad.id)
 
 
@@ -317,7 +317,7 @@ async def auto_distribute(
         {"tournament_id": str(tournament_id), "team_count": team_count},
     )
 
-    board = await _build_board(session, org_id, tournament_id)
+    board = await _build_board(session, org_id, tournament_id, tournament=tournament)
     return AutoDistributeResponse(squads=board.squads, summary=board.summary)
 
 
@@ -348,9 +348,13 @@ async def _eligible_registration(
 
 
 async def _build_board(
-    session: AsyncSession, org_id: uuid.UUID, tournament_id: uuid.UUID
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    tournament: Tournament | None = None,
 ) -> TournamentSquadsView:
-    tournament = await repo.get_tournament(session, org_id, tournament_id)
+    if tournament is None:
+        tournament = await repo.get_tournament(session, org_id, tournament_id)
     if tournament is None:
         raise NotFoundError("Tournament not found")
 
