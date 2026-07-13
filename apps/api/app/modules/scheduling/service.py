@@ -16,6 +16,7 @@ import datetime
 import logging
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -25,7 +26,7 @@ from app.core.events import emit_event
 from app.core.factory import get_broadcaster
 from app.core.perf import timed
 from app.db.enums import CourtStatus, MatchStatus, NotificationChannel
-from app.db.models import Match, Registration, Tournament
+from app.db.models import Court, Match, Registration, Tournament, TournamentCourt
 from app.modules.courts import repository as courts_repo
 from app.modules.courts import service as courts_service
 from app.modules.notifications.email_queue import queue_email
@@ -105,10 +106,19 @@ async def evaluate_conflicts(
     court_id: uuid.UUID,
     scheduled_at: datetime.datetime,
     duration_minutes: int,
+    # --- optional bulk-path caches: when provided, DB calls are skipped ---
+    _court_cache: dict[uuid.UUID, Court] | None = None,
+    _tournament_court_cache: dict[uuid.UUID, TournamentCourt | None] | None = None,
+    _scheduled_cache: list[Match] | None = None,
+    _kinds_cache: dict[uuid.UUID, str] | None = None,
 ) -> list[ConflictView]:
     """Every problem with this hypothetical (or about-to-be-saved) assignment — hard
     (structurally impossible, see ``HARD_CONFLICT_KINDS``) and soft (overlaps another
-    match) alike. Read-only; never mutates."""
+    match) alike. Read-only; never mutates.
+
+    The *_cache params are only passed by bulk_assign to avoid N DB round-trips;
+    the single-assign path leaves them None, preserving identical behavior.
+    """
     conflicts: list[ConflictView] = []
 
     if match.status == MatchStatus.PENDING.value:
@@ -122,7 +132,11 @@ async def evaluate_conflicts(
             )
         )
 
-    court = await courts_repo.get_court(session, org_id, court_id)
+    if _court_cache is not None:
+        court: Court | None = _court_cache.get(court_id)
+    else:
+        court = await courts_repo.get_court(session, org_id, court_id)
+
     if court is None:
         conflicts.append(
             ConflictView(
@@ -133,9 +147,12 @@ async def evaluate_conflicts(
             )
         )
     else:
-        assignment = await courts_repo.get_tournament_court(
-            session, org_id, tournament.id, court_id
-        )
+        if _tournament_court_cache is not None:
+            assignment: TournamentCourt | None = _tournament_court_cache.get(court_id)
+        else:
+            assignment = await courts_repo.get_tournament_court(
+                session, org_id, tournament.id, court_id
+            )
         if assignment is None:
             conflicts.append(
                 ConflictView(
@@ -176,16 +193,26 @@ async def evaluate_conflicts(
         )
 
     participant_ids = {mp.participant_id for mp in match.participants}
-    others = await repo.list_scheduled_matches(
-        session, org_id, tournament.id, exclude_match_id=match.id
-    )
-    all_ids = set(participant_ids)
-    for other in others:
-        all_ids |= {mp.participant_id for mp in other.participants}
-    kinds = await repo.participant_kinds(session, org_id, all_ids)
+
+    if _scheduled_cache is not None:
+        # Filter in Python — the cache is maintained by bulk_assign after each assignment.
+        others: Sequence[Match] = [m for m in _scheduled_cache if m.id != match.id]
+    else:
+        others = await repo.list_scheduled_matches(
+            session, org_id, tournament.id, exclude_match_id=match.id
+        )
+
+    if _kinds_cache is not None:
+        kinds: dict[uuid.UUID, str] = _kinds_cache
+    else:
+        all_ids = set(participant_ids)
+        for other in others:
+            all_ids |= {mp.participant_id for mp in other.participants}
+        kinds = await repo.participant_kinds(session, org_id, all_ids)
 
     for other in others:
         # `list_scheduled_matches` filters to `scheduled_at IS NOT NULL` at the DB level.
+        # For the cached path, only scheduled matches are in the cache (maintained by bulk_assign).
         assert other.scheduled_at is not None
         other_start, other_end = _window(
             other.scheduled_at, other.duration_minutes or DEFAULT_DURATION_MINUTES
@@ -266,6 +293,10 @@ async def _do_assign(
     court_id: uuid.UUID,
     scheduled_at: datetime.datetime,
     duration_minutes: int,
+    _court_cache: dict[uuid.UUID, Court] | None = None,
+    _tournament_court_cache: dict[uuid.UUID, TournamentCourt | None] | None = None,
+    _scheduled_cache: list[Match] | None = None,
+    _kinds_cache: dict[uuid.UUID, str] | None = None,
 ) -> list[ConflictView]:
     conflicts = await evaluate_conflicts(
         session,
@@ -275,6 +306,10 @@ async def _do_assign(
         court_id=court_id,
         scheduled_at=scheduled_at,
         duration_minutes=duration_minutes,
+        _court_cache=_court_cache,
+        _tournament_court_cache=_tournament_court_cache,
+        _scheduled_cache=_scheduled_cache,
+        _kinds_cache=_kinds_cache,
     )
     hard = [c for c in conflicts if c.kind in HARD_CONFLICT_KINDS]
     if hard:
@@ -290,6 +325,11 @@ async def _do_assign(
     # incidentally repopulate it, so `build_match_view` would otherwise trigger an
     # implicit lazy load outside an async-safe context.
     await session.refresh(match, attribute_names=["updated_at"])
+
+    # Maintain the in-memory scheduled cache for subsequent iterations in bulk_assign.
+    # This ensures later items in the same batch see earlier assignments as conflicts.
+    if _scheduled_cache is not None:
+        _scheduled_cache.append(match)
 
     action = events.MATCH_RESCHEDULED if was_scheduled else events.MATCH_SCHEDULED
     audit_record(
@@ -348,21 +388,54 @@ async def bulk_assign(
 ) -> list[tuple[Match, list[ConflictView]]]:
     """All-or-nothing: one item hitting a hard conflict raises, rolling back the whole
     batch via the caller's request-scoped transaction. Items are applied in order, so
-    a later item's conflict check sees every earlier item's assignment in this batch."""
+    a later item's conflict check sees every earlier item's assignment in this batch.
+
+    Why faster than the single-assign loop:
+    - All matches loaded in ONE batch query (not N individual SELECT per item).
+    - All courts + TournamentCourt assignments loaded in ONE batch query each.
+    - list_scheduled_matches called ONCE before the loop; in-memory list updated
+      after each flush (via _scheduled_cache mutated inside _do_assign).
+    - participant_kinds loaded ONCE for all participant_ids in the batch.
+    Result: O(N) DB round-trips → O(1) pre-load queries + N flushes.
+    """
     item_count = len(items)
     async with timed("bulk_assign.fetch_tournament", _logger, extra={"item_count": item_count}):
         tournament = await _require_tournament(session, org_id, tournament_id)
+
+    match_ids = [mid for mid, _cid, _sat, _dur in items]
+    court_ids = list({cid for _mid, cid, _sat, _dur in items})
+
+    async with timed("bulk_assign.preload", _logger, extra={"item_count": item_count}):
+        matches_dict = await repo.get_matches_by_ids(session, org_id, match_ids)
+        court_cache = await repo.get_courts_by_ids(session, org_id, court_ids)
+        tc_cache: dict[uuid.UUID, Any] = await repo.get_tournament_courts_by_court_ids(
+            session, org_id, tournament_id, court_ids
+        )
+        # Scheduled matches snapshot: used to check conflicts for all items.
+        # _do_assign appends each newly-assigned match to this list so later
+        # iterations see earlier assignments in the same batch.
+        scheduled_cache: list[Match] = list(
+            await repo.list_scheduled_matches(session, org_id, tournament_id)
+        )
+        # Participant kinds for all participants involved — both batch matches and
+        # already-scheduled matches (needed for team_overlap vs participant_overlap).
+        all_participant_ids: set[uuid.UUID] = set()
+        for m in matches_dict.values():
+            for mp in m.participants:
+                all_participant_ids.add(mp.participant_id)
+        for m in scheduled_cache:
+            for mp in m.participants:
+                all_participant_ids.add(mp.participant_id)
+        kinds_cache = await repo.participant_kinds(session, org_id, all_participant_ids)
+
     results: list[tuple[Match, list[ConflictView]]] = []
-    for i, (match_id, court_id, scheduled_at, duration_minutes) in enumerate(items):
-        async with timed("bulk_assign.fetch_match", _logger, extra={"item_index": i}):
-            match = await _require_match(session, org_id, match_id)  # PERF: N SELECT per item
-        if match.tournament_id != tournament_id:
-            raise NotFoundError(f"Match not found in this tournament: {match_id}")
-        async with timed(
-            "bulk_assign.do_assign",  # PERF: re-fetches all scheduled matches each iteration
-            _logger,
-            extra={"item_index": i},
-        ):
+    async with timed("bulk_assign.loop", _logger, extra={"item_count": item_count}):
+        for i, (match_id, court_id, scheduled_at, duration_minutes) in enumerate(items):
+            match = matches_dict.get(match_id)
+            if match is None:
+                raise NotFoundError(f"Match not found: {match_id}")
+            if match.tournament_id != tournament_id:
+                raise NotFoundError(f"Match not found in this tournament: {match_id}")
             soft = await _do_assign(
                 session,
                 org_id=org_id,
@@ -372,8 +445,12 @@ async def bulk_assign(
                 court_id=court_id,
                 scheduled_at=scheduled_at,
                 duration_minutes=duration_minutes,
+                _court_cache=court_cache,
+                _tournament_court_cache=tc_cache,
+                _scheduled_cache=scheduled_cache,
+                _kinds_cache=kinds_cache,
             )
-        results.append((match, soft))
+            results.append((match, soft))
     return results
 
 

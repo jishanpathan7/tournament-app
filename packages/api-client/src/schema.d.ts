@@ -1111,6 +1111,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/divisions/{division_id}/registrations/approve-all": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Approve All Registrations */
+    post: operations["registrations_approve_all_registrations"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/registrations/{registration_id}/approve": {
     parameters: {
       query?: never;
@@ -2510,6 +2527,15 @@ export interface components {
       /** Squads */
       squads: components["schemas"]["SquadView"][];
       summary: components["schemas"]["SquadSummary"];
+    };
+    /** BulkApproveResult */
+    BulkApproveResult: {
+      /** Approved */
+      approved: number;
+      /** Waitlisted */
+      waitlisted: number;
+      /** Skipped */
+      skipped: number;
     };
     /** BulkCheckInRequest */
     BulkCheckInRequest: {
@@ -7191,6 +7217,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["ParticipantResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  registrations_approve_all_registrations: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        division_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["BulkApproveResult"];
         };
       };
       /** @description Validation Error */

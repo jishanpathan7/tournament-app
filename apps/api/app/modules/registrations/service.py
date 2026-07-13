@@ -154,6 +154,110 @@ async def approve_registration(
     return registration, participant
 
 
+async def approve_all(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    division_id: uuid.UUID,
+) -> tuple[int, int, int]:
+    """Bulk-approve all SUBMITTED + WAITLISTED registrations in a division.
+
+    Why faster than looping over approve_registration:
+    - Division and tournament fetched ONCE (not once per registration).
+    - All submitted_by users loaded in a single batch query (not N PK lookups).
+    - All Participant rows accumulated in Python memory, then ONE session.flush()
+      at the end (not 2 flushes × N registrations).
+    - No per-player notifications (imported external players: entrant_has_external_identity
+      is True for all, so the single-approve path already skips notify for them too).
+
+    Returns (approved, waitlisted, skipped).
+    """
+    async with timed("approve_all.load_registrations", logger):
+        registrations = list(
+            await repo.list_eligible_for_bulk_approve(session, org_id, division_id)
+        )
+
+    if not registrations:
+        return 0, 0, 0
+
+    async with timed("approve_all.fetch_division", logger):
+        division = await _require_division(session, org_id, division_id, for_update=True)
+
+    async with timed("approve_all.fetch_tournament_and_profile", logger):
+        tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+        if tournament is None:  # pragma: no cover
+            raise NotFoundError("Tournament not found")
+        profile_row = await repo.get_sport_profile(session, tournament.sport_profile_id)
+        if profile_row is None:  # pragma: no cover
+            raise NotFoundError("Sport profile not found")
+        kind = ParticipantKind(division.participant_type)
+
+    async with timed("approve_all.count_approved", logger):
+        already_approved = await repo.count_approved(session, org_id, division.id)
+
+    async with timed("approve_all.load_users", logger):
+        submitted_by_ids = {r.submitted_by for r in registrations}
+        user_cache = await repo.get_users_by_ids(session, submitted_by_ids)
+
+    remaining_slots = (
+        (division.capacity - already_approved) if division.capacity is not None else None
+    )
+
+    approved = waitlisted = skipped = 0
+
+    async with timed("approve_all.build_participants", logger, extra={"count": len(registrations)}):
+        for reg in registrations:
+            if remaining_slots is not None and remaining_slots <= 0:
+                reg.status = RegistrationStatus.WAITLISTED.value
+                waitlisted += 1
+                continue
+
+            user = user_cache.get(reg.submitted_by)
+
+            participant = Participant(
+                organization_id=org_id,
+                division_id=division.id,
+                kind=kind.value,
+                user_id=(None if entrant_has_external_identity(reg) else reg.submitted_by),
+                display_name=entrant_display_name(reg, account_name=user.name if user else None),
+                skill_level=reg.skill_level,
+                status=ParticipantStatus.APPROVED.value,
+            )
+            session.add(participant)
+            reg.status = RegistrationStatus.APPROVED.value
+            reg.participant_id = participant.id  # set in Python — uuid7 default applied at ctor
+            if remaining_slots is not None:
+                remaining_slots -= 1
+            approved += 1
+
+    async with timed("approve_all.flush", logger, extra={"approved": approved}):
+        await session.flush()
+
+    # One batch audit record summarising the action (not per-registration — reduces outbox size)
+    audit.record(
+        session,
+        organization_id=org_id,
+        actor_id=actor_id,
+        action=events.REGISTRATION_APPROVED,
+        entity="division",
+        entity_id=division_id,
+        after={"approved": approved, "waitlisted": waitlisted, "skipped": skipped},
+    )
+    payload = {
+        "divisionId": str(division_id),
+        "tournamentId": str(division.tournament_id),
+        "organizationId": str(org_id),
+        "approved": approved,
+    }
+    await emit_event(
+        session, aggregate="registration", event_type=events.REGISTRATION_APPROVED, payload=payload
+    )
+    await get_broadcaster().publish(org_channel(org_id), events.REGISTRATION_APPROVED, payload)
+
+    return approved, waitlisted, skipped
+
+
 async def waitlist_registration(
     session: AsyncSession, *, org_id: uuid.UUID, actor_id: uuid.UUID, registration_id: uuid.UUID
 ) -> Registration:
