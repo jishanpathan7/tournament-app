@@ -113,6 +113,19 @@ async def get_user(session: AsyncSession, uid: uuid.UUID) -> User | None:
     return await session.get(User, uid)
 
 
+async def get_registrations_by_ids(
+    session: AsyncSession, org_id: uuid.UUID, ids: Collection[uuid.UUID]
+) -> dict[uuid.UUID, Registration]:
+    """Batch-load registrations by primary key — one SELECT instead of N session.get calls."""
+    if not ids:
+        return {}
+    stmt = select(Registration).where(
+        Registration.id.in_(ids), Registration.organization_id == org_id
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return {r.id: r for r in rows}
+
+
 async def get_users_by_ids(
     session: AsyncSession, ids: Collection[uuid.UUID]
 ) -> dict[uuid.UUID, User]:

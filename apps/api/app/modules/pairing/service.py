@@ -56,6 +56,9 @@ from app.modules.registrations.partner_resolution import (
     normalize_partner_name,
     preferred_partner_id_for,
 )
+from app.modules.registrations.repository import (
+    get_registrations_by_ids as _batch_load_registrations,
+)
 from app.modules.registrations.repository import get_users_by_ids as _batch_load_users
 from app.modules.squads.repository import (
     cross_squad_forbidden_registration_pairs,
@@ -588,12 +591,18 @@ async def repair_published_rosters(
             code="stale_pairing",
         )
 
+    # Batch-load all registrations and users upfront — eliminates 2×N×M round-trips.
+    all_member_ids = [uuid.UUID(str(mid)) for pt in proposed for mid in pt.member_ids]
+    reg_by_id = await _batch_load_registrations(session, org_id, all_member_ids)
+    submitted_by_ids = {r.submitted_by for r in reg_by_id.values() if r.submitted_by}
+    user_by_id = await _batch_load_users(session, submitted_by_ids)
+
     repaired = 0
     for proposed_team, participant in zip(proposed, participants, strict=True):
         regs: list[Registration] = []
         for member_id in proposed_team.member_ids:
-            reg = await session.get(Registration, uuid.UUID(str(member_id)))
-            if reg is None or reg.organization_id != org_id:
+            reg = reg_by_id.get(uuid.UUID(str(member_id)))
+            if reg is None:
                 raise ValidationError(
                     f"registration {member_id} not found for this division",
                     code="stale_pairing",
@@ -617,7 +626,7 @@ async def repair_published_rosters(
                 "roster size does not match pairing members", code="stale_pairing"
             )
         for entry, reg in zip(entries, regs, strict=True):
-            user = await repo.get_user(session, reg.submitted_by)
+            user = user_by_id.get(reg.submitted_by) if reg.submitted_by else None
             account_name = user.name if user else None
             entry.external_name = entrant_display_name(reg, account_name=account_name)
             entry.user_id = None if entrant_has_external_identity(reg) else reg.submitted_by
