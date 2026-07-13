@@ -639,11 +639,11 @@ def _materialize_team(
 
     No session.flush() calls — callers must flush once after all teams are materialized.
 
-    team_id is generated explicitly here because `mapped_column(default=uuid7)` is a
-    column-level default that SQLAlchemy only invokes when building the INSERT statement,
-    NOT at Python object construction time. Without an explicit id, team_row.id is None
-    until the flush, which would make the FK on RosterEntry and Participant null and
-    violate the ck_participants_participant_kind_refs check constraint.
+    ``mapped_column(default=uuid7)`` on UUIDPrimaryKeyMixin is a column-level default
+    invoked only at INSERT generation time, NOT at Python object construction. Without
+    an explicit ``id``, ``team_row.id`` is None until the flush, which would make
+    ``RosterEntry(team_id=team_row.id)`` insert a NULL FK and violate the check
+    constraint on ``participants``. We generate the UUID up front and pass it explicitly.
     """
     member_names = [_entrant_name(reg) for reg in regs]
     name = team.team_name or (
@@ -668,7 +668,7 @@ def _materialize_team(
         organization_id=org_id,
         division_id=ctx.division.id,
         kind=ParticipantKind.PAIR.value,
-        team_id=team_id,
+        team=team_row,
         display_name=name,
         status=ParticipantStatus.APPROVED.value,
     )
