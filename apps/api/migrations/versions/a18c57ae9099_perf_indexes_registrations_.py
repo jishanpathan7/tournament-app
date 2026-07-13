@@ -10,9 +10,8 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
-
-revision: str = 'a18c57ae9099'
-down_revision: Union[str, None] = '0021_org_in_app_notifs'
+revision: str = "a18c57ae9099"
+down_revision: Union[str, None] = "0021_org_in_app_notifs"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
@@ -23,6 +22,7 @@ def upgrade() -> None:
         "notifications",
         ["recipient_user_id", "status"],
         unique=False,
+        if_not_exists=True,
     )
     op.create_index(
         "ix_pairing_runs_config_gin",
@@ -30,18 +30,21 @@ def upgrade() -> None:
         ["config"],
         unique=False,
         postgresql_using="gin",
+        if_not_exists=True,
     )
     op.create_index(
         "ix_registrations_division_status",
         "registrations",
         ["division_id", "status"],
         unique=False,
+        if_not_exists=True,
     )
     op.create_index(
         op.f("ix_registrations_submitted_by"),
         "registrations",
         ["submitted_by"],
         unique=False,
+        if_not_exists=True,
     )
 
 
