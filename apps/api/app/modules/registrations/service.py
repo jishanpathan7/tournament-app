@@ -71,7 +71,6 @@ async def submit_registration(
     await _audit_event(
         session, org_id, user_id, events.REGISTRATION_SUBMITTED, registration.id, division.id
     )
-    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
     if tournament is not None:
         await reg_notifications.notify_submitted(
             session,
