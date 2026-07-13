@@ -393,9 +393,9 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
               tone="candy"
               size="sm"
               onClick={handleGenerateMatches}
-              disabled={publishAllPairings.isPending}
+              loading={publishAllPairings.isPending}
             >
-              Generate Matches
+              {publishAllPairings.isPending ? "Generating…" : "Generate Matches"}
             </Button>
           ) : null}
           {workflow.playersAssigned && needsLockCount > 0 && !workflow.readyForDraw && canManage ? (

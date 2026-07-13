@@ -85,10 +85,10 @@ export function WorkflowProgress({
                 tone="mint"
                 size="sm"
                 onClick={onGenerateMatches}
-                disabled={generateMatchesPending}
+                loading={generateMatchesPending}
               >
-                Generate Matches
-                <ArrowRight className="h-4 w-4" />
+                {generateMatchesPending ? "Generating…" : "Generate Matches"}
+                {!generateMatchesPending && <ArrowRight className="h-4 w-4" />}
               </Button>
             ) : (
               <Button asChild tone="mint" size="sm">
