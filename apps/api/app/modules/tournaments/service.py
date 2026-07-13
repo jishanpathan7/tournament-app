@@ -782,6 +782,11 @@ async def _persist_structure(
         session.add(rnd)
         round_id_by_key[round_plan.key] = rid
 
+    # Groups and rounds must be persisted before matches reference their IDs via FK.
+    # Match.round is viewonly=True so SQLAlchemy's UoW won't order Round→Match for us;
+    # a single flush here keeps us at 2 round-trips instead of the original 500+.
+    await session.flush()
+
     seed_to_participant = {i + 1: participants[i] for i in range(len(participants))}
     participant_by_str = {str(p.id): p for p in participants}
 
