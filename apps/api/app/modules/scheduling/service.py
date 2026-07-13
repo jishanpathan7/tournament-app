@@ -324,9 +324,10 @@ async def _do_assign(
     # bulk path, `participants` is also expired (selectinload doesn't survive a flush),
     # and `evaluate_conflicts` accesses `other.participants` synchronously in the for
     # loop on the next iteration — triggering a lazy load from the main greenlet raises
-    # MissingGreenlet. Refresh both in the bulk path; single-assign only needs `updated_at`.
+    # MissingGreenlet. Refresh all relationships that build_match_view accesses synchronously
+    # (participants, round, group). Single-assign only needs `updated_at`.
     if _scheduled_cache is not None:
-        await session.refresh(match, attribute_names=["updated_at", "participants", "round"])
+        await session.refresh(match, attribute_names=["updated_at", "participants", "round", "group"])
     else:
         await session.refresh(match, attribute_names=["updated_at"])
 
