@@ -139,6 +139,13 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
 
 class Registration(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     __tablename__ = "registrations"
+    __table_args__ = (
+        Index(
+            "ix_registrations_division_status",
+            "division_id",
+            "status",
+        ),
+    )
 
     division_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
@@ -147,7 +154,7 @@ class Registration(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
         index=True,
     )
     submitted_by: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     form_response: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, server_default=text("'{}'::jsonb")
@@ -198,6 +205,7 @@ class PairingRun(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     """
 
     __tablename__ = "pairing_runs"
+    __table_args__ = (Index("ix_pairing_runs_config_gin", "config", postgresql_using="gin"),)
 
     division_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

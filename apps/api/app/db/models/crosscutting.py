@@ -95,6 +95,7 @@ class File(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
 
 class Notification(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     __tablename__ = "notifications"
+    __table_args__ = (Index("ix_notifications_recipient_status", "recipient_user_id", "status"),)
 
     recipient_user_id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
