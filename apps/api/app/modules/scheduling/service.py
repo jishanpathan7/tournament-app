@@ -327,7 +327,9 @@ async def _do_assign(
     # MissingGreenlet. Refresh all relationships that build_match_view accesses synchronously
     # (participants, round, group). Single-assign only needs `updated_at`.
     if _scheduled_cache is not None:
-        await session.refresh(match, attribute_names=["updated_at", "participants", "round", "group"])
+        await session.refresh(
+            match, attribute_names=["updated_at", "participants", "round", "group"]
+        )
     else:
         await session.refresh(match, attribute_names=["updated_at"])
 
