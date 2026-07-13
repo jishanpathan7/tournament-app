@@ -668,7 +668,7 @@ def _materialize_team(
         organization_id=org_id,
         division_id=ctx.division.id,
         kind=ParticipantKind.PAIR.value,
-        team_id=team_id,
+        team=team_row,
         display_name=name,
         status=ParticipantStatus.APPROVED.value,
     )

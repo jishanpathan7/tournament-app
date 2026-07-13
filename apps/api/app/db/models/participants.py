@@ -127,6 +127,7 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
     )
 
     division: Mapped[Division] = relationship(back_populates="participants")
+    team: Mapped[Team | None] = relationship()
     squad: Mapped[Squad | None] = relationship(viewonly=True)
     match_links: Mapped[list[MatchParticipant]] = relationship(
         back_populates="participant", cascade="all, delete-orphan", passive_deletes=True
