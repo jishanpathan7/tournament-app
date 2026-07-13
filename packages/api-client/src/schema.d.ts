@@ -1428,7 +1428,8 @@ export interface paths {
     get?: never;
     put?: never;
     post?: never;
-    delete?: never;
+    /** Delete a manually-created pair from a draft run */
+    delete: operations["pairing_delete_proposed_team"];
     options?: never;
     head?: never;
     /** Update Team */
@@ -1483,6 +1484,23 @@ export interface paths {
      * @description When a squad has an odd number of players the engine leaves one player unpaired. The captain resolves this by choosing an existing player to partner the odd-one-out, allowing that player to compete in two pairs.  The resulting pair is locked so a regenerate does not remove it.
      */
     post: operations["pairing_add_duplicate_pair"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/pairing/runs/{run_id}/teams": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /** Add a manually-created pair to a draft run */
+    post: operations["pairing_create_manual_pair"];
     delete?: never;
     options?: never;
     head?: never;
@@ -2742,6 +2760,18 @@ export interface components {
       email: string;
       role: components["schemas"]["OrgRole"];
     };
+    /**
+     * CreateManualPairRequest
+     * @description Create a pair manually within a draft PairingRun.
+     *
+     *     ``member_ids`` must contain 1–2 registration ids. Each id must be an entrant in the
+     *     run's division (or squad) and must not already belong to an unpublished team in this
+     *     run.
+     */
+    CreateManualPairRequest: {
+      /** Memberids */
+      memberIds: string[];
+    };
     /** CreateMatchScorekeeperLinkRequest */
     CreateMatchScorekeeperLinkRequest: {
       /**
@@ -3102,6 +3132,11 @@ export interface components {
       forbiddenPairs?: string[][];
       /** Squadid */
       squadId?: string | null;
+      /**
+       * Manual
+       * @default false
+       */
+      manual: boolean;
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -4801,6 +4836,8 @@ export interface components {
       } | null;
       /** Autoschedule */
       autoSchedule?: boolean | null;
+      /** Paircreationmode */
+      pairCreationMode?: string | null;
       /** Venueid */
       venueId?: string | null;
       /** Clearvenue */
@@ -7762,6 +7799,37 @@ export interface operations {
       };
     };
   };
+  pairing_delete_proposed_team: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        team_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PairingRunView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   pairing_update_team: {
     parameters: {
       query?: never;
@@ -7880,6 +7948,41 @@ export interface operations {
     responses: {
       /** @description Successful Response */
       200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["PairingRunView"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  pairing_create_manual_pair: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        run_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CreateManualPairRequest"];
+      };
+    };
+    responses: {
+      /** @description Successful Response */
+      201: {
         headers: {
           [name: string]: unknown;
         };

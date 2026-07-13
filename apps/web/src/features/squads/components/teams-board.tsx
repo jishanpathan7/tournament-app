@@ -51,6 +51,7 @@ import {
   useSquads,
   useUpdateSquad,
 } from "@/features/squads/use-squads";
+import { usePairCreationMode } from "@/features/tournaments/use-pair-creation-mode";
 import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { queryKeys } from "@/lib/query-keys";
@@ -76,6 +77,8 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const [expandedSquadIds, setExpandedSquadIds] = useState<Set<string>>(new Set());
   const [setupOpen, setSetupOpen] = useState(false);
   const [noDraftTeamsOpen, setNoDraftTeamsOpen] = useState(false);
+
+  const { isManual: isManualPairing } = usePairCreationMode(tournamentId);
 
   const divisions = useDivisions(tournamentId);
   const firstDivisionId = divisions.data?.[0]?.id ?? null;
@@ -376,7 +379,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         <div className="flex flex-wrap items-center gap-2">
           {workflow.playersAssigned && needsGenerateCount > 0 && canManage ? (
             <Button tone="candy" size="sm" onClick={openRemainingPairingQueue}>
-              Generate remaining pairs ({needsGenerateCount})
+              {isManualPairing ? "Create" : "Generate"} remaining pairs ({needsGenerateCount})
             </Button>
           ) : null}
           {workflow.readyForDraw && canManage ? (
@@ -549,6 +552,7 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
               squad={pairingSquad}
               divisionId={firstDivisionId}
               tournamentId={tournamentId}
+              isManualPairing={isManualPairing}
               onClose={() => setPairingSquad(null)}
             />
           </div>

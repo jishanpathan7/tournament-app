@@ -124,6 +124,30 @@ export function usePublishPairing(divisionId: string, tournamentId: string, squa
   });
 }
 
+/** Add a pair manually to a draft run (manual pairing mode). */
+export function useCreateManualPair(divisionId: string, runId: string, squadId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (memberIds: string[]) => pairingApi.createManualPair(runId, memberIds),
+    onSuccess: (run) => {
+      queryClient.setQueryData(queryKeys.divisions.pairing(divisionId, squadId), run);
+      invalidateDivisionPairing(queryClient, divisionId);
+    },
+  });
+}
+
+/** Delete an unlocked pair from a draft run (manual pairing mode). */
+export function useDeleteProposedTeam(divisionId: string, squadId?: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (teamId: string) => pairingApi.deleteProposedTeam(teamId),
+    onSuccess: (run) => {
+      queryClient.setQueryData(queryKeys.divisions.pairing(divisionId, squadId), run);
+      invalidateDivisionPairing(queryClient, divisionId);
+    },
+  });
+}
+
 /** Lock all squad draft pairings before draw generation. */
 export function usePublishAllSquadPairings(divisionId: string, tournamentId: string) {
   const queryClient = useQueryClient();

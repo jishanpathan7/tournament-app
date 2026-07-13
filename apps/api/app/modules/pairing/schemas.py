@@ -21,6 +21,19 @@ class GeneratePairingRequest(ApiModel):
     forbidden_pairs: list[list[uuid.UUID]] = Field(default_factory=list)
     # When set, pair only the members of this squad (franchise / SIBL flow).
     squad_id: uuid.UUID | None = None
+    # When True, skip the engine and create an empty draft for manual pair building.
+    manual: bool = False
+
+
+class CreateManualPairRequest(ApiModel):
+    """Create a pair manually within a draft PairingRun.
+
+    ``member_ids`` must contain 1–2 registration ids. Each id must be an entrant in the
+    run's division (or squad) and must not already belong to an unpublished team in this
+    run.
+    """
+
+    member_ids: list[uuid.UUID] = Field(min_length=1, max_length=2)
 
 
 class EntrantView(ApiModel):

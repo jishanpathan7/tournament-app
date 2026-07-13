@@ -4,6 +4,7 @@ import {
   CalendarClock,
   Check,
   CheckCircle2,
+  Circle,
   Copy,
   ExternalLink,
   GitMerge,
@@ -23,6 +24,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
+import { usePairCreationMode } from "@/features/tournaments/use-pair-creation-mode";
 import { useTournament } from "@/features/tournaments/use-tournaments";
 import { GoLiveDialog } from "@/features/tournaments/dashboard/components/go-live-dialog";
 import {
@@ -30,6 +32,7 @@ import {
   type TournamentStep,
   type StepSignals,
 } from "@/features/tournaments/dashboard/config";
+import type { TournamentReadinessView } from "@tournament/api-client";
 import {
   useDivisions,
   usePublishTournament,
@@ -193,6 +196,20 @@ function Step2Hero({ tournamentId }: { tournamentId: string }) {
 // ─── Step 3: Create Teams ─────────────────────────────────────────────────────
 
 function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
+  const { mode: pairMode } = usePairCreationMode(tournamentId);
+  const update = useUpdateTournament(tournamentId);
+
+  function setPairMode(value: "auto" | "manual") {
+    update.mutate(
+      { pairCreationMode: value },
+      {
+        onSuccess: () =>
+          toast.success(value === "manual" ? "Manual pairing enabled" : "Auto pairing enabled"),
+        onError: (e) => toast.error(errorMessage(e, "Couldn't update setting")),
+      },
+    );
+  }
+
   return (
     <HeroShell step={3} title={STEP_META[3].label}>
       <div className="flex flex-col gap-3">
@@ -201,6 +218,60 @@ function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: S
             ? "Players are imported. Assign them to teams on the Setup tab, or run the draft ceremony."
             : "Divide approved players into teams. Use auto-distribute or assign manually on Setup."}
         </p>
+        {signals.franchiseMode && (
+          <div className="flex flex-col gap-1.5 rounded-md border p-3">
+            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
+              How should doubles pairs be created?
+            </p>
+            {(
+              [
+                {
+                  value: "auto",
+                  label: "Automatically",
+                  description: "Playlane generates fair pairs using player skills.",
+                  recommended: true,
+                },
+                {
+                  value: "manual",
+                  label: "Manually",
+                  description: "Team captains create their own doubles pairs.",
+                  recommended: false,
+                },
+              ] as const
+            ).map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={update.isPending}
+                onClick={() => setPairMode(opt.value)}
+                className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors ${
+                  pairMode === opt.value
+                    ? "border-candy bg-candy/5"
+                    : "hover:border-muted hover:bg-muted/40 border-transparent"
+                }`}
+              >
+                <span
+                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
+                    pairMode === opt.value ? "border-candy" : "border-muted-foreground/40"
+                  }`}
+                >
+                  {pairMode === opt.value && <span className="bg-candy h-2 w-2 rounded-full" />}
+                </span>
+                <span className="flex flex-col gap-0.5">
+                  <span className="text-sm font-semibold">
+                    {opt.label}
+                    {opt.recommended && (
+                      <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+                        (Recommended)
+                      </span>
+                    )}
+                  </span>
+                  <span className="text-muted-foreground text-xs">{opt.description}</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
         <div className="flex flex-wrap gap-2">
           {signals.franchiseMode ? (
             <Button asChild tone="candy" size="sm">
@@ -224,8 +295,21 @@ function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: S
 
 // ─── Step 4: Pair Each Team ───────────────────────────────────────────────────
 
-function Step4Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
+function Step4Hero({
+  tournamentId,
+  signals,
+  readiness,
+}: {
+  tournamentId: string;
+  signals: StepSignals;
+  readiness: TournamentReadinessView | undefined;
+}) {
   const { data: divisions = [] } = useDivisions(tournamentId);
+
+  const pairedByDivisionId = new Map(
+    (readiness?.divisions ?? []).map((d) => [d.divisionId, d.unpairedEntrants === 0]),
+  );
+
   return (
     <HeroShell step={4} title={STEP_META[4].label}>
       <div className="flex flex-col gap-3">
@@ -243,14 +327,21 @@ function Step4Hero({ tournamentId, signals }: { tournamentId: string; signals: S
               </Link>
             </Button>
           ) : (
-            divisions.map((d) => (
-              <Button key={d.id} asChild tone="candy" size="sm">
-                <Link href={`/console/tournaments/${tournamentId}/divisions/${d.id}/pairing`}>
-                  <GitMerge className="h-4 w-4" strokeWidth={2.25} />
-                  {d.name}
-                </Link>
-              </Button>
-            ))
+            divisions.map((d) => {
+              const done = pairedByDivisionId.get(d.id) ?? false;
+              return (
+                <Button key={d.id} asChild tone={done ? "paper" : "candy"} size="sm">
+                  <Link href={`/console/tournaments/${tournamentId}/divisions/${d.id}/pairing`}>
+                    {done ? (
+                      <CheckCircle2 className="h-4 w-4 text-green-600" strokeWidth={2.25} />
+                    ) : (
+                      <Circle className="h-4 w-4" strokeWidth={2.25} />
+                    )}
+                    {d.name}
+                  </Link>
+                </Button>
+              );
+            })
           )}
         </div>
       </div>
@@ -268,7 +359,7 @@ function Step5Hero({ tournamentId }: { tournamentId: string }) {
           Mark attendance and confirm everyone is ready before generating the draw.
         </p>
         <Button asChild tone="candy" size="sm">
-          <Link href={`/console/tournaments/${tournamentId}/readiness`}>
+          <Link href={`/console/tournaments/${tournamentId}/players`}>
             <CheckCircle2 className="h-4 w-4" strokeWidth={2.25} />
             Open check-in
           </Link>
@@ -486,12 +577,14 @@ export function PhaseHeroCard({
   tournamentId,
   step,
   signals,
+  readiness,
   canManage,
   resultsPublishedAt,
 }: {
   tournamentId: string;
   step: TournamentStep;
   signals: StepSignals;
+  readiness: TournamentReadinessView | undefined;
   canManage: boolean;
   resultsPublishedAt: string | null;
 }) {
@@ -505,7 +598,7 @@ export function PhaseHeroCard({
     case 3:
       return <Step3Hero tournamentId={tournamentId} signals={signals} />;
     case 4:
-      return <Step4Hero tournamentId={tournamentId} signals={signals} />;
+      return <Step4Hero tournamentId={tournamentId} signals={signals} readiness={readiness} />;
     case 5:
       return <Step5Hero tournamentId={tournamentId} />;
     case 6:

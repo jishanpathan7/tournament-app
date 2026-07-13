@@ -1,6 +1,7 @@
 "use client";
 
 import { CheckCircle2, Circle, Dot } from "lucide-react";
+import Link from "next/link";
 
 import { cn } from "@/lib/utils";
 import { STEP_META, type TournamentStep } from "@/features/tournaments/dashboard/config";
@@ -24,10 +25,12 @@ function StepIcon({ status }: { status: StepStatus }) {
 
 export function TournamentStepTracker({
   step,
+  tournamentId,
   variant = "sidebar",
   franchiseMode = true,
 }: {
   step: TournamentStep;
+  tournamentId?: string;
   variant?: "sidebar" | "primary";
   franchiseMode?: boolean;
 }) {
@@ -51,36 +54,40 @@ export function TournamentStepTracker({
           const status = stepStatus(s, step);
           const meta = STEP_META[s];
           const isCurrent = status === "current";
-
-          return (
-            <li key={s}>
-              <div
-                className={cn(
-                  "flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors",
-                  isCurrent ? "bg-muted" : "hover:bg-muted/50",
-                )}
-              >
-                <div className="mt-0.5">
-                  <StepIcon status={status} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p
-                    className={cn(
-                      "text-sm font-semibold leading-tight",
-                      status === "pending" ? "text-muted-foreground" : "text-foreground",
-                    )}
-                  >
-                    {meta.label}
-                  </p>
-                  {isCurrent && variant === "primary" ? (
-                    <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
-                      {meta.description}
-                    </p>
-                  ) : null}
-                </div>
+          const href =
+            tournamentId && meta.hrefSuffix
+              ? `/console/tournaments/${tournamentId}${meta.hrefSuffix}`
+              : undefined;
+          const inner = (
+            <div
+              className={cn(
+                "flex items-start gap-2.5 rounded-lg px-2 py-2 transition-colors",
+                isCurrent ? "bg-muted" : "hover:bg-muted/50",
+                href && "cursor-pointer",
+              )}
+            >
+              <div className="mt-0.5">
+                <StepIcon status={status} />
               </div>
-            </li>
+              <div className="min-w-0 flex-1">
+                <p
+                  className={cn(
+                    "text-sm font-semibold leading-tight",
+                    status === "pending" ? "text-muted-foreground" : "text-foreground",
+                  )}
+                >
+                  {meta.label}
+                </p>
+                {isCurrent && variant === "primary" ? (
+                  <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
+                    {meta.description}
+                  </p>
+                ) : null}
+              </div>
+            </div>
           );
+
+          return <li key={s}>{href ? <Link href={href}>{inner}</Link> : inner}</li>;
         })}
       </ol>
     </div>

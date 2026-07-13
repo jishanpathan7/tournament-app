@@ -78,3 +78,18 @@ export async function addDuplicatePair(
   const { data } = await api.post<PairingRunView>(`/pairing/runs/${runId}/duplicate-pair`, body);
   return data;
 }
+
+/** Manually create a pair within a draft run (manual pairing mode). */
+export async function createManualPair(
+  runId: string,
+  memberIds: string[],
+): Promise<PairingRunView> {
+  const { data } = await api.post<PairingRunView>(`/pairing/runs/${runId}/teams`, { memberIds });
+  return data;
+}
+
+/** Delete a manually-created (unlocked) pair from a draft run. */
+export async function deleteProposedTeam(teamId: string): Promise<PairingRunView> {
+  const { data } = await api.delete<PairingRunView>(`/pairing/teams/${teamId}`);
+  return data;
+}

@@ -36,57 +36,67 @@ export interface StepSignals {
 
 export const STEP_META: Record<
   TournamentStep,
-  { label: string; description: string; phase: DashboardPhase }
+  { label: string; description: string; phase: DashboardPhase; hrefSuffix: string }
 > = {
   1: {
     label: "Event setup",
     description: "Name your event and open registration when you're ready.",
     phase: "before",
+    hrefSuffix: "/setup",
   },
   2: {
     label: "Add participants",
     description: "Import players and approve anyone waiting to join.",
     phase: "before",
+    hrefSuffix: "/players",
   },
   3: {
     label: "Assign to teams",
     description: "Split players into balanced teams before pairing.",
     phase: "before",
+    hrefSuffix: "/teams",
   },
   4: {
     label: "Generate pairs",
     description: "Create balanced doubles pairs within each team.",
     phase: "before",
+    hrefSuffix: "/teams",
   },
   5: {
     label: "Check-in",
     description: "Mark who's here before you build brackets.",
     phase: "before",
+    hrefSuffix: "/players",
   },
   6: {
     label: "Build brackets",
     description: "Generate fixtures or knockout brackets for each event.",
     phase: "before",
+    hrefSuffix: "/draws",
   },
   7: {
     label: "Schedule & go live",
     description: "Set up courts, assign matches, then start the event.",
     phase: "before",
+    hrefSuffix: "/schedule",
   },
   8: {
     label: "Tournament Live",
     description: "Monitor courts, score matches, track standings in real time.",
     phase: "during",
+    hrefSuffix: "/matches",
   },
   9: {
     label: "Tournament Results",
     description: "Review results, publish standings, and export data.",
     phase: "after",
+    hrefSuffix: "/results",
   },
   10: {
     label: "Tournament Archive",
     description: "Read-only historical record of the tournament.",
     phase: "after",
+    hrefSuffix: "",
   },
 };
 

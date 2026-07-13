@@ -205,6 +205,7 @@ async def update_tournament(
         ends_at=body.ends_at,
         settings=body.settings,
         auto_schedule=body.auto_schedule,
+        pair_creation_mode=body.pair_creation_mode,
         venue_id=body.venue_id,
         clear_venue=body.clear_venue,
     )

@@ -88,12 +88,16 @@ async def generate(
     forced_groups: list[list[uuid.UUID]],
     forbidden_pairs: list[list[uuid.UUID]],
     squad_id: uuid.UUID | None = None,
+    manual: bool = False,
 ) -> PairingRun:
     """(Re)generate the draft for a division.
 
     When *squad_id* is provided only members of that squad are eligible — this is the
     franchise/SIBL flow where intra-team pairs must be formed after the draft ceremony.
     Any locked teams in the existing draft are carried over; the old draft is discarded.
+
+    When *manual* is True, skip the engine entirely and return an empty draft run.
+    The organizer builds pairs by calling ``create_manual_pair`` on the returned run.
     """
     ctx = await _load_context(session, org_id, division_id, squad_id=squad_id)
 
@@ -112,6 +116,22 @@ async def generate(
     carried_locked, carried_names, deferred_dup = _carry_locked(prior)
     if prior is not None:
         prior.status = PairingRunStatus.DISCARDED.value
+
+    if manual:
+        manual_config: dict[str, Any] = {"manual": True}
+        if squad_id is not None:
+            manual_config["squadId"] = str(squad_id)
+        run = PairingRun(
+            organization_id=org_id,
+            division_id=division_id,
+            status=PairingRunStatus.DRAFT.value,
+            rng_seed=None,
+            config=manual_config,
+        )
+        session.add(run)
+        await session.flush()
+        await _emit(session, org_id, actor_id, run, events.PAIRING_GENERATED)
+        return run
 
     forced_member_ids = {m for group in carried_locked for m in group}
     exclude_ids = {m for members, _ in deferred_dup for m in members if m not in forced_member_ids}
@@ -199,6 +219,82 @@ async def generate(
         )
     await session.flush()
 
+    await _emit(session, org_id, actor_id, run, events.PAIRING_GENERATED)
+    return run
+
+
+async def create_manual_pair(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    run_id: uuid.UUID,
+    member_ids: list[uuid.UUID],
+) -> PairingRun:
+    """Add a manually-created pair to a draft run.
+
+    Each member_id must be an entrant in the run's division/squad and must not already
+    belong to an un-locked team in this run (i.e. must still be in the available pool).
+    Returns the updated run so the caller can rebuild the view in one round-trip.
+    """
+    run = await _require_draft_run(session, org_id, run_id)
+    _squad_id_str: str | None = (run.config or {}).get("squadId")
+    _squad_id: uuid.UUID | None = uuid.UUID(_squad_id_str) if _squad_id_str else None
+    ctx = await _load_context(session, org_id, run.division_id, squad_id=_squad_id)
+
+    # Build set of registration ids already claimed by any team in this run
+    await session.refresh(run, attribute_names=["proposed_teams"])
+    claimed: set[str] = set()
+    for team in run.proposed_teams:
+        for existing_mid in team.member_ids:
+            claimed.add(str(existing_mid))
+
+    entrant_ids = {str(r.id) for r in ctx.entrants}
+    for mid in member_ids:
+        if str(mid) not in entrant_ids:
+            raise ValidationError(
+                f"Registration {mid} is not an entrant in this run", code="invalid_member"
+            )
+        if str(mid) in claimed:
+            raise ConflictError(
+                f"Registration {mid} is already paired in this run", code="already_paired"
+            )
+
+    session.add(
+        ProposedTeam(
+            organization_id=org_id,
+            pairing_run_id=run.id,
+            member_ids=[str(m) for m in member_ids],  # stored as str UUIDs per schema
+            strength=Decimal(0),
+            confidence=Decimal(0),
+            reasons=["Manually created"],
+            locked=False,
+            team_name=None,
+        )
+    )
+    await session.flush()
+    await _emit(session, org_id, actor_id, run, events.PAIRING_GENERATED)
+    return run
+
+
+async def delete_proposed_team(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    team_id: uuid.UUID,
+) -> PairingRun:
+    """Delete a manually-created proposed team from a draft run.
+
+    Locked teams cannot be deleted — the caller must unlock first.
+    Returns the updated run.
+    """
+    team = await _require_draft_team(session, org_id, team_id)
+    if team.locked:
+        raise ConflictError("Cannot delete a locked pair — unlock it first", code="team_locked")
+    run = await _require_draft_run(session, org_id, team.pairing_run_id)
+    await session.delete(team)
+    await session.flush()
     await _emit(session, org_id, actor_id, run, events.PAIRING_GENERATED)
     return run
 

@@ -81,7 +81,12 @@ describe("PairingBoard", () => {
 
     const buttons = await screen.findAllByRole("button", { name: /generate teams/i });
     await user.click(buttons[0]!);
-    await waitFor(() => expect(pairingApi.generatePairing).toHaveBeenCalledWith(DIVISION_ID, {}));
+    await waitFor(() =>
+      expect(pairingApi.generatePairing).toHaveBeenCalledWith(
+        DIVISION_ID,
+        expect.objectContaining({ manual: false }),
+      ),
+    );
   });
 
   it("swaps two members across teams via two clicks", async () => {
