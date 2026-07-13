@@ -24,7 +24,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
-import { usePairCreationMode } from "@/features/tournaments/use-pair-creation-mode";
 import { useTournament } from "@/features/tournaments/use-tournaments";
 import { GoLiveDialog } from "@/features/tournaments/dashboard/components/go-live-dialog";
 import {
@@ -196,20 +195,6 @@ function Step2Hero({ tournamentId }: { tournamentId: string }) {
 // ─── Step 3: Create Teams ─────────────────────────────────────────────────────
 
 function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
-  const { mode: pairMode } = usePairCreationMode(tournamentId);
-  const update = useUpdateTournament(tournamentId);
-
-  function setPairMode(value: "auto" | "manual") {
-    update.mutate(
-      { pairCreationMode: value },
-      {
-        onSuccess: () =>
-          toast.success(value === "manual" ? "Manual pairing enabled" : "Auto pairing enabled"),
-        onError: (e) => toast.error(errorMessage(e, "Couldn't update setting")),
-      },
-    );
-  }
-
   return (
     <HeroShell step={3} title={STEP_META[3].label}>
       <div className="flex flex-col gap-3">
@@ -218,60 +203,6 @@ function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: S
             ? "Players are imported. Assign them to teams on the Setup tab, or run the draft ceremony."
             : "Divide approved players into teams. Use auto-distribute or assign manually on Setup."}
         </p>
-        {signals.franchiseMode && (
-          <div className="flex flex-col gap-1.5 rounded-md border p-3">
-            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
-              How should doubles pairs be created?
-            </p>
-            {(
-              [
-                {
-                  value: "auto",
-                  label: "Automatically",
-                  description: "Playlane generates fair pairs using player skills.",
-                  recommended: true,
-                },
-                {
-                  value: "manual",
-                  label: "Manually",
-                  description: "Team captains create their own doubles pairs.",
-                  recommended: false,
-                },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.value}
-                type="button"
-                disabled={update.isPending}
-                onClick={() => setPairMode(opt.value)}
-                className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition-colors ${
-                  pairMode === opt.value
-                    ? "border-candy bg-candy/5"
-                    : "hover:border-muted hover:bg-muted/40 border-transparent"
-                }`}
-              >
-                <span
-                  className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${
-                    pairMode === opt.value ? "border-candy" : "border-muted-foreground/40"
-                  }`}
-                >
-                  {pairMode === opt.value && <span className="bg-candy h-2 w-2 rounded-full" />}
-                </span>
-                <span className="flex flex-col gap-0.5">
-                  <span className="text-sm font-semibold">
-                    {opt.label}
-                    {opt.recommended && (
-                      <span className="text-muted-foreground ml-1.5 text-xs font-normal">
-                        (Recommended)
-                      </span>
-                    )}
-                  </span>
-                  <span className="text-muted-foreground text-xs">{opt.description}</span>
-                </span>
-              </button>
-            ))}
-          </div>
-        )}
         <div className="flex flex-wrap gap-2">
           {signals.franchiseMode ? (
             <Button asChild tone="candy" size="sm">
@@ -287,6 +218,11 @@ function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: S
               Teams
             </Link>
           </Button>
+          {signals.franchiseMode ? (
+            <Button asChild tone="paper" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/setup`}>Pairing settings →</Link>
+            </Button>
+          ) : null}
         </div>
       </div>
     </HeroShell>
