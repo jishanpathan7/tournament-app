@@ -2832,6 +2832,47 @@
         }
       }
     },
+    "/api/v1/divisions/{division_id}/registrations/approve-all": {
+      "post": {
+        "tags": ["registrations"],
+        "summary": "Approve All Registrations",
+        "operationId": "registrations_approve_all_registrations",
+        "parameters": [
+          {
+            "name": "division_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Division Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkApproveResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/registrations/{registration_id}/approve": {
       "post": {
         "tags": ["registrations"],
@@ -7049,6 +7090,25 @@
         "type": "object",
         "required": ["squads", "summary"],
         "title": "AutoDistributeResponse"
+      },
+      "BulkApproveResult": {
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "title": "Approved"
+          },
+          "waitlisted": {
+            "type": "integer",
+            "title": "Waitlisted"
+          },
+          "skipped": {
+            "type": "integer",
+            "title": "Skipped"
+          }
+        },
+        "type": "object",
+        "required": ["approved", "waitlisted", "skipped"],
+        "title": "BulkApproveResult"
       },
       "BulkCheckInRequest": {
         "properties": {

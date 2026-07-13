@@ -13,7 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.models import Match, Participant
+from app.db.models import Court, Match, Participant, TournamentCourt
 
 
 async def list_scheduled_matches(
@@ -52,6 +52,54 @@ async def participant_kinds(
     )
     rows = (await session.execute(stmt)).all()
     return {row[0]: row[1] for row in rows}
+
+
+async def get_courts_by_ids(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    court_ids: Sequence[uuid.UUID],
+) -> dict[uuid.UUID, Court]:
+    """Batch-load courts — avoids N get_court calls in bulk scheduling."""
+    if not court_ids:
+        return {}
+    stmt = select(Court).where(Court.organization_id == org_id, Court.id.in_(court_ids))
+    rows = (await session.execute(stmt)).scalars().all()
+    return {c.id: c for c in rows}
+
+
+async def get_matches_by_ids(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    match_ids: Sequence[uuid.UUID],
+) -> dict[uuid.UUID, Match]:
+    """Batch-load matches with participants in one query — avoids N SELECT per bulk item."""
+    if not match_ids:
+        return {}
+    stmt = (
+        select(Match)
+        .where(Match.organization_id == org_id, Match.id.in_(match_ids))
+        .options(selectinload(Match.participants))
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return {m.id: m for m in rows}
+
+
+async def get_tournament_courts_by_court_ids(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    court_ids: Sequence[uuid.UUID],
+) -> dict[uuid.UUID, TournamentCourt]:
+    """Batch-load TournamentCourt assignments for the given court ids."""
+    if not court_ids:
+        return {}
+    stmt = select(TournamentCourt).where(
+        TournamentCourt.organization_id == org_id,
+        TournamentCourt.tournament_id == tournament_id,
+        TournamentCourt.court_id.in_(court_ids),
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return {tc.court_id: tc for tc in rows}
 
 
 async def list_tournament_matches_with_participants(

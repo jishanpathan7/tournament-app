@@ -56,6 +56,7 @@ from app.modules.registrations.partner_resolution import (
     normalize_partner_name,
     preferred_partner_id_for,
 )
+from app.modules.registrations.repository import get_users_by_ids as _batch_load_users
 from app.modules.squads.repository import (
     cross_squad_forbidden_registration_pairs,
     list_squads,
@@ -520,6 +521,22 @@ async def publish(
         ctx = await _load_context(session, org_id, run.division_id, squad_id=squad_id)
 
     team_count = len(run.proposed_teams)
+
+    # Batch-load all submitted_by users in one query before the materialization loop.
+    # Why faster: N members × 1 PK lookup per member → 1 SELECT WHERE id = ANY($1).
+    # The prior code called repo.get_user() per member which, for imported external
+    # players, still fired a DB round-trip even though the result was discarded.
+    all_submitted_by: set[uuid.UUID] = set()
+    for team in run.proposed_teams:
+        for mid in team.member_ids:
+            reg = ctx.by_id.get(str(mid))
+            if reg is not None:
+                all_submitted_by.add(reg.submitted_by)
+    async with timed(
+        "publish.batch_load_users", _logger, extra={"user_count": len(all_submitted_by)}
+    ):
+        user_cache = await _batch_load_users(session, all_submitted_by)
+
     paired_ids: set[str] = set()
     published = 0
     async with timed("publish.materialize_all_teams", _logger, extra={"team_count": team_count}):
@@ -531,17 +548,18 @@ async def publish(
                     "a proposed team references an entrant that is no longer eligible; regenerate",
                     code="stale_pairing",
                 )
-            async with timed(
-                "publish.materialize_one_team", _logger, extra={"member_count": len(members)}
-            ):
-                await _materialize_team(
-                    session, org_id, ctx, team, [r for r in regs if r is not None]
-                )
+            _materialize_team(
+                session, org_id, ctx, team, [r for r in regs if r is not None], user_cache
+            )
             paired_ids.update(members)
             published += 1
 
     run.status = PairingRunStatus.PUBLISHED.value
-    async with timed("publish.flush_run_status", _logger):
+    # Single flush covers all Team + RosterEntry + Participant INSERTs + reg status UPDATEs.
+    # Why faster: eliminated 3 flushes × N teams (the original per-team flushes existed
+    # because flush 1 was needed for team_row.id as FK, but uuid7 default is applied at
+    # Python object construction time, so team_row.id is available without a flush).
+    async with timed("publish.single_flush", _logger, extra={"team_count": team_count}):
         await session.flush()
 
     unpaired = sum(1 for r in ctx.entrants if str(r.id) not in paired_ids)
@@ -609,30 +627,39 @@ async def repair_published_rosters(
     return repaired
 
 
-async def _materialize_team(
+def _materialize_team(
     session: AsyncSession,
     org_id: uuid.UUID,
     ctx: _Context,
     team: ProposedTeam,
     regs: list[Registration],
+    user_cache: dict[uuid.UUID, Any],
 ) -> None:
+    """Add Team + RosterEntry + Participant rows to the session in memory.
+
+    No session.flush() calls — callers must flush once after all teams are materialized.
+
+    ``mapped_column(default=uuid7)`` on UUIDPrimaryKeyMixin is a column-level default
+    invoked only at INSERT generation time, NOT at Python object construction. Without
+    an explicit ``id``, ``team_row.id`` is None until the flush, which would make
+    ``RosterEntry(team_id=team_row.id)`` insert a NULL FK and violate the check
+    constraint on ``participants``. We generate the UUID up front and pass it explicitly.
+    """
     member_names = [_entrant_name(reg) for reg in regs]
     name = team.team_name or (
         " / ".join(member_names) if member_names else f"Team {str(team.id)[:8]}"
     )
     captain = regs[0].submitted_by if regs else None
-    team_row = Team(organization_id=org_id, name=name, captain_user_id=captain)
+    team_id = uuid.uuid4()
+    team_row = Team(id=team_id, organization_id=org_id, name=name, captain_user_id=captain)
     session.add(team_row)
-    async with timed("materialize.flush_team", _logger):
-        await session.flush()  # PERF: 1 flush per team; see report
     for reg in regs:
-        async with timed("materialize.get_user", _logger):
-            user = await repo.get_user(session, reg.submitted_by)  # PERF: N+1 per member
+        user = user_cache.get(reg.submitted_by)
         account_name = user.name if user else None
         session.add(
             RosterEntry(
                 organization_id=org_id,
-                team_id=team_row.id,
+                team_id=team_id,
                 user_id=None if entrant_has_external_identity(reg) else reg.submitted_by,
                 external_name=entrant_display_name(reg, account_name=account_name),
             )
@@ -641,20 +668,16 @@ async def _materialize_team(
         organization_id=org_id,
         division_id=ctx.division.id,
         kind=ParticipantKind.PAIR.value,
-        team_id=team_row.id,
+        team=team_row,
         display_name=name,
         status=ParticipantStatus.APPROVED.value,
     )
     session.add(participant)
-    async with timed("materialize.flush_roster_and_participant", _logger):
-        await session.flush()  # PERF: 2nd flush per team; see report
     # A pair Participant is owned by TWO registrations, so we can't use the 1:1
     # registrations.participant_id link (unique) — the roster carries the members. We
     # just move the source registrations to `approved`, which drops them from the pool.
     for reg in regs:
         reg.status = RegistrationStatus.APPROVED.value
-    async with timed("materialize.flush_reg_status", _logger):
-        await session.flush()  # PERF: 3rd flush per team; see report
 
 
 async def get_partner_warnings(

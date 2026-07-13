@@ -125,6 +125,18 @@ GUC (`SET LOCAL app.current_org`). Three deployment requirements follow:
   query with no context returns **zero rows** — connect the app as a **non-superuser** role
   (Neon's default role is non-superuser, so FORCE applies; never run the app as a superuser).
 
+## Neon warm-up (free-tier cold-start prevention)
+
+Neon's free tier suspends compute after **5 minutes of inactivity** → cold start adds 1–4s to the first request. Fix with a free UptimeRobot monitor that keeps the DB active:
+
+1. Sign up at [uptimerobot.com](https://uptimerobot.com) (free, no credit card).
+2. Add a new **HTTP(S)** monitor:
+   - URL: `https://<your-railway-url>/api/v1/health/ready`
+   - Interval: **every 4 minutes** (keeps Neon under the 5-min suspend threshold)
+3. That's it. `/api/v1/health/ready` runs `SELECT 1` so every ping also touches the DB.
+
+`statement_cache_size=0` is already set unconditionally in `app/db/session.py` — correct for Neon's PgBouncer pooled endpoint.
+
 ## Upgrade triggers (when free stops being enough)
 
 | Signal | Action |

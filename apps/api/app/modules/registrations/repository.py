@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import uuid
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -111,6 +111,37 @@ async def get_sport_profile(session: AsyncSession, pid: uuid.UUID) -> SportProfi
 
 async def get_user(session: AsyncSession, uid: uuid.UUID) -> User | None:
     return await session.get(User, uid)
+
+
+async def get_users_by_ids(
+    session: AsyncSession, ids: Collection[uuid.UUID]
+) -> dict[uuid.UUID, User]:
+    """Batch-load users by primary key — one SELECT instead of N identity-map lookups."""
+    if not ids:
+        return {}
+    stmt = select(User).where(User.id.in_(ids))
+    rows = (await session.execute(stmt)).scalars().all()
+    return {u.id: u for u in rows}
+
+
+async def list_eligible_for_bulk_approve(
+    session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
+) -> Sequence[Registration]:
+    """Registrations in SUBMITTED or WAITLISTED status — candidates for approve-all."""
+    from app.db.enums import RegistrationStatus
+
+    stmt = (
+        select(Registration)
+        .where(
+            Registration.division_id == division_id,
+            Registration.organization_id == org_id,
+            Registration.status.in_(
+                [RegistrationStatus.SUBMITTED.value, RegistrationStatus.WAITLISTED.value]
+            ),
+        )
+        .order_by(Registration.created_at)
+    )
+    return (await session.execute(stmt)).scalars().all()
 
 
 async def get_team_with_roster(

@@ -37,6 +37,12 @@ class ApproveResult(ApiModel):
     participant_id: uuid.UUID | None
 
 
+class BulkApproveResult(ApiModel):
+    approved: int
+    waitlisted: int
+    skipped: int
+
+
 class ParticipantResponse(ApiModel):
     id: uuid.UUID
     division_id: uuid.UUID

@@ -27,6 +27,7 @@ from app.modules.registrations import repository as repo
 from app.modules.registrations import service
 from app.modules.registrations.schemas import (
     ApproveResult,
+    BulkApproveResult,
     ParticipantResponse,
     RegistrationResponse,
     RosterEntryItem,
@@ -124,6 +125,25 @@ async def list_participants(
 ) -> list[ParticipantResponse]:
     rows = await repo.list_participants(session, principal.organization_id, division_id)
     return [_participant_response(p) for p in rows]
+
+
+@router.post(
+    "/divisions/{division_id}/registrations/approve-all",
+    response_model=BulkApproveResult,
+    dependencies=[Depends(authed_csrf)],
+)
+async def approve_all_registrations(
+    division_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> BulkApproveResult:
+    approved, waitlisted, skipped = await service.approve_all(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        division_id=division_id,
+    )
+    return BulkApproveResult(approved=approved, waitlisted=waitlisted, skipped=skipped)
 
 
 @router.post(
