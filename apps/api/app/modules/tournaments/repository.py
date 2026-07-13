@@ -183,50 +183,28 @@ async def tournament_activity(
     """Audit trail across a tournament's own record plus every division/stage/match it
     owns — backs the Match Center's tournament-wide activity timeline. ``AuditLog`` has
     no direct ``tournament_id`` (it's polymorphic across entity kinds via `entity` +
-    `entity_id`), so this collects the owned entity ids first, then matches any of them."""
-    division_ids = (
-        (
-            await session.execute(
-                select(Division.id).where(
-                    Division.tournament_id == tid, Division.organization_id == org_id
-                )
-            )
-        )
-        .scalars()
-        .all()
+    `entity_id`), so subqueries inline the id lookups into a single DB round-trip."""
+    div_sub = select(Division.id).where(
+        Division.tournament_id == tid, Division.organization_id == org_id
     )
-    stage_ids = (
-        (
-            await session.execute(
-                select(Stage.id)
-                .join(Division, Division.id == Stage.division_id)
-                .where(Division.tournament_id == tid, Stage.organization_id == org_id)
-            )
-        )
-        .scalars()
-        .all()
+    stage_sub = (
+        select(Stage.id)
+        .join(Division, Division.id == Stage.division_id)
+        .where(Division.tournament_id == tid, Stage.organization_id == org_id)
     )
-    match_ids = (
-        (
-            await session.execute(
-                select(Match.id).where(Match.tournament_id == tid, Match.organization_id == org_id)
-            )
-        )
-        .scalars()
-        .all()
-    )
-
-    conditions = [and_(AuditLog.entity == "tournament", AuditLog.entity_id == tid)]
-    if division_ids:
-        conditions.append(and_(AuditLog.entity == "division", AuditLog.entity_id.in_(division_ids)))
-    if stage_ids:
-        conditions.append(and_(AuditLog.entity == "stage", AuditLog.entity_id.in_(stage_ids)))
-    if match_ids:
-        conditions.append(and_(AuditLog.entity == "match", AuditLog.entity_id.in_(match_ids)))
+    match_sub = select(Match.id).where(Match.tournament_id == tid, Match.organization_id == org_id)
 
     stmt = (
         select(AuditLog)
-        .where(AuditLog.organization_id == org_id, or_(*conditions))
+        .where(
+            AuditLog.organization_id == org_id,
+            or_(
+                and_(AuditLog.entity == "tournament", AuditLog.entity_id == tid),
+                and_(AuditLog.entity == "division", AuditLog.entity_id.in_(div_sub)),
+                and_(AuditLog.entity == "stage", AuditLog.entity_id.in_(stage_sub)),
+                and_(AuditLog.entity == "match", AuditLog.entity_id.in_(match_sub)),
+            ),
+        )
         .order_by(AuditLog.created_at.desc())
         .limit(limit)
     )

@@ -14,6 +14,7 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import NotFoundError, ValidationError
@@ -296,6 +297,20 @@ async def commit(
     row_count = len(evaluated)
     imported = updated = skipped = 0
     async with timed("import_commit.insert_rows", _logger, extra={"row_count": row_count}):
+        update_ids = [
+            row.existing_id
+            for row in evaluated
+            if row.status == "update" and row.existing_id is not None
+        ]
+        existing_by_id: dict[uuid.UUID, Registration] = {}
+        if update_ids:
+            rows_db = (
+                (await session.execute(select(Registration).where(Registration.id.in_(update_ids))))
+                .scalars()
+                .all()
+            )
+            existing_by_id = {r.id: r for r in rows_db}
+
         for row in evaluated:
             if row.status == "new":
                 session.add(
@@ -305,7 +320,7 @@ async def commit(
                 )
                 imported += 1
             elif row.status == "update" and row.existing_id is not None:
-                reg = await session.get(Registration, row.existing_id)  # PERF: N+1 for updates
+                reg = existing_by_id.get(row.existing_id)
                 if reg is not None:
                     _apply_row(reg, row)
                     updated += 1
