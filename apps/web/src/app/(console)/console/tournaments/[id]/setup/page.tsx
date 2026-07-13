@@ -6,7 +6,6 @@ import { ErrorState } from "@/components/common/error-state";
 import { LoadingPanel } from "@/components/common/loading";
 import { DivisionsSection } from "@/features/tournaments/components/detail/divisions-section";
 import { OverviewPanel } from "@/features/tournaments/components/detail/overview-panel";
-import { PairingModeCard } from "@/features/tournaments/setup/pairing-mode-card";
 import { SetupHub } from "@/features/tournaments/setup/setup-hub";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
@@ -41,15 +40,6 @@ export default function TournamentSetupPage({ params }: { params: Promise<{ id: 
         </p>
         <SetupHub tournamentId={id} />
       </section>
-      {canManage && (
-        <section className="flex flex-col gap-3">
-          <h2 className="font-serif text-xl font-semibold tracking-tight">Pairing</h2>
-          <p className="text-muted-foreground text-sm">
-            Controls how doubles pairs are created within franchise teams.
-          </p>
-          <PairingModeCard tournamentId={id} />
-        </section>
-      )}
       <section className="flex flex-col gap-3">
         <h2 className="font-serif text-xl font-semibold tracking-tight">Event types</h2>
         <p className="text-muted-foreground text-sm">

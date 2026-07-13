@@ -51,6 +51,7 @@ import {
   useSquads,
   useUpdateSquad,
 } from "@/features/squads/use-squads";
+import { PairingModeCard } from "@/features/tournaments/setup/pairing-mode-card";
 import { usePairCreationMode } from "@/features/tournaments/use-pair-creation-mode";
 import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
@@ -374,6 +375,8 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
         onGenerateMatches={workflow.readyForDraw && canManage ? handleGenerateMatches : undefined}
         generateMatchesPending={publishAllPairings.isPending}
       />
+
+      {canManage && <PairingModeCard tournamentId={tournamentId} />}
 
       {board.squads.length > 0 ? (
         <div className="flex flex-wrap items-center gap-2">

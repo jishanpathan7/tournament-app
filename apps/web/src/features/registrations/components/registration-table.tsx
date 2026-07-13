@@ -1,6 +1,6 @@
 "use client";
 
-import type { MemberItem, ParticipantResponse, RegistrationResponse } from "@tournament/api-client";
+import type { MemberItem, RegistrationResponse } from "@tournament/api-client";
 import type { KeyboardEvent } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +38,6 @@ export function RegistrationTable({
   divisionId,
   canManage,
   membersById,
-  participantsByRegistrationId,
   selected,
   onToggleSelect,
   onToggleSelectAll,
@@ -48,7 +47,6 @@ export function RegistrationTable({
   divisionId: string;
   canManage: boolean;
   membersById: Map<string, MemberItem>;
-  participantsByRegistrationId: Map<string, ParticipantResponse>;
   selected: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleSelectAll: () => void;
@@ -81,7 +79,6 @@ export function RegistrationTable({
       <TableBody>
         {registrations.map((registration) => {
           const meta = statusMeta(registration.status);
-          const participant = participantsByRegistrationId.get(registration.id) ?? null;
           return (
             <TableRow
               key={registration.id}
@@ -105,7 +102,7 @@ export function RegistrationTable({
                 {registrationEntrantLabel(registration, membersById)}
               </TableCell>
               <TableCell className="text-muted-foreground">
-                {participant?.displayName ?? formResponseSummary(registration.formResponse) ?? "—"}
+                {formResponseSummary(registration.formResponse) ?? "—"}
               </TableCell>
               <TableCell className="text-muted-foreground">
                 {registration.skillLevel ?? "—"}

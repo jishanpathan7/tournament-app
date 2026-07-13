@@ -256,7 +256,6 @@ export function RegistrationManagement({
                   divisionId={divisionId}
                   canManage={canManage}
                   membersById={membersById}
-                  participantsByRegistrationId={participantsByRegistrationId}
                   selected={selected}
                   onToggleSelect={toggleSelect}
                   onToggleSelectAll={toggleSelectAll}
