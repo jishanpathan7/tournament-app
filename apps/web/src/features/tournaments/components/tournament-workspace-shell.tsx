@@ -1,7 +1,7 @@
 "use client";
 
 import type { TournamentResponse, TournamentStatus } from "@tournament/api-client";
-import { ArrowLeft, Pencil } from "lucide-react";
+import { ArrowLeft, ExternalLink, Pencil } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -88,6 +88,8 @@ function WorkspaceChrome({
 }) {
   const sport = getSport(tournament.sportKey);
   const status = tournament.status as TournamentStatus;
+  const resultsVisible = status === "completed" || status === "archived";
+  const visibleNav = TOURNAMENT_NAV.filter((item) => item.key !== "results" || resultsVisible);
 
   return (
     <div className="flex flex-col gap-5 pb-20 md:pb-0">
@@ -109,6 +111,14 @@ function WorkspaceChrome({
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {tournament.slug ? (
+            <Button asChild tone="ghost" size="sm">
+              <a href={`/t/${tournament.slug}`} target="_blank" rel="noopener noreferrer">
+                <ExternalLink className="h-4 w-4" strokeWidth={2.25} />
+                Public page
+              </a>
+            </Button>
+          ) : null}
           {canManage ? (
             <Button tone="paper" size="sm" onClick={() => onEditOpen(true)}>
               <Pencil className="h-4 w-4" strokeWidth={2.25} />
@@ -123,7 +133,7 @@ function WorkspaceChrome({
         className="border-ink hidden gap-1 border-b-2 pb-0 md:flex"
         aria-label="Tournament workspace"
       >
-        {TOURNAMENT_NAV.map((item) => {
+        {visibleNav.map((item) => {
           const active = isTournamentNavActive(pathname, tournament.id, item);
           const Icon = item.icon;
           const showBadge = item.key === "participants" && pendingCount > 0;
@@ -153,7 +163,11 @@ function WorkspaceChrome({
 
       <div>{children}</div>
 
-      <MobileTournamentNav tournamentId={tournament.id} pendingCount={pendingCount} />
+      <MobileTournamentNav
+        tournamentId={tournament.id}
+        pendingCount={pendingCount}
+        hideResultsTab={!resultsVisible}
+      />
 
       {canManage ? (
         <EditTournamentDialog tournament={tournament} open={editOpen} onOpenChange={onEditOpen} />

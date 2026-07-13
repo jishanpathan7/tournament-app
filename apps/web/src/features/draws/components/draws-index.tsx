@@ -1,12 +1,14 @@
 "use client";
 
 import type { StageResponse } from "@tournament/api-client";
-import { CheckCircle2, ChevronRight, Circle } from "lucide-react";
+import { CheckCircle2, ChevronRight, Circle, GitMerge, Layers } from "lucide-react";
 import Link from "next/link";
 
+import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { LoadingPanel } from "@/components/common/loading";
 import { PageHeader } from "@/components/common/page-header";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { FranchiseTiesPage } from "@/features/franchise-ties/components/franchise-ties-board";
@@ -80,7 +82,17 @@ function DivisionDrawCard({
         {isLoading ? (
           <p className="text-muted-foreground text-sm">Loading stages…</p>
         ) : !stages || stages.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No stages configured for this division.</p>
+          <EmptyState
+            icon={Layers}
+            title="No stages"
+            description="Add stages to this division in Setup to generate a draw."
+            action={
+              <Button asChild tone="paper" size="sm">
+                <Link href={`/console/tournaments/${tournamentId}/setup`}>Go to Setup →</Link>
+              </Button>
+            }
+            className="py-6"
+          />
         ) : (
           <div className="flex flex-col gap-2">
             {stages.map((stage) => (
@@ -139,9 +151,16 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
         description="Generate and review the bracket or round-robin draw for each division."
       />
       {!divisions || divisions.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          No divisions found. Create divisions first before generating draws.
-        </p>
+        <EmptyState
+          icon={GitMerge}
+          title="No divisions yet"
+          description="Create at least one division in Setup before generating draws."
+          action={
+            <Button asChild tone="paper" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/setup`}>Go to Setup →</Link>
+            </Button>
+          }
+        />
       ) : (
         <div className="flex flex-col gap-4">
           {divisions.map((division) => (

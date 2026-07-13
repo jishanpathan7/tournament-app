@@ -1,4 +1,4 @@
-import { LayoutDashboard, type LucideIcon, Settings, Trophy } from "lucide-react";
+import { LayoutDashboard, type LucideIcon, Settings, Trophy, Users } from "lucide-react";
 
 import { ACTIONS, type Action } from "@/lib/permissions";
 
@@ -23,6 +23,13 @@ export const ORG_NAV: NavItem[] = [
     label: "Tournaments",
     href: "/console/tournaments",
     icon: Trophy,
+    matchPrefix: true,
+  },
+  {
+    label: "People",
+    href: "/console/people",
+    icon: Users,
+    requiredAction: ACTIONS.ORG_READ,
     matchPrefix: true,
   },
   {

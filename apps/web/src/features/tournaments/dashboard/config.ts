@@ -325,7 +325,7 @@ export function deriveAlerts(input: DeriveAlertsInput): DashboardAlert[] {
         id: "pending-checkin",
         tone: "warning",
         message: `${readiness.totalPending} participant${readiness.totalPending === 1 ? "" : "s"} still pending check-in`,
-        href: `${tournamentBase}/readiness`,
+        href: `${tournamentBase}/players`,
       });
     }
   }

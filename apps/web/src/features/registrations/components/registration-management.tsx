@@ -137,10 +137,18 @@ export function RegistrationManagement({
         description="Review entrants, manage approvals, and keep capacity under control."
         actions={
           canManage ? (
-            <Button tone="paper" size="sm" onClick={() => exportCsv()}>
-              <Download className="h-4 w-4" strokeWidth={2.25} />
-              Export CSV
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild tone="paper" size="sm">
+                <Link href={`/console/tournaments/${tournamentId}/divisions/${divisionId}/import`}>
+                  <UserPlus className="h-4 w-4" strokeWidth={2.25} />
+                  Import players
+                </Link>
+              </Button>
+              <Button tone="paper" size="sm" onClick={() => exportCsv()}>
+                <Download className="h-4 w-4" strokeWidth={2.25} />
+                Export CSV
+              </Button>
+            </div>
           ) : undefined
         }
       />

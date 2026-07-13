@@ -22,6 +22,7 @@ import {
   useSwapMembers,
   useUpdateProposedTeam,
 } from "@/features/pairing/use-pairing";
+import { useDivisions } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { errorMessage } from "@/lib/problem";
@@ -41,6 +42,8 @@ export function PairingBoard({
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
 
+  const divisions = useDivisions(tournamentId);
+  const division = divisions.data?.find((d) => d.id === divisionId);
   const pairing = usePairing(divisionId);
   const warnings = usePartnerWarnings(divisionId);
   const generate = useGeneratePairing(divisionId);
@@ -52,11 +55,14 @@ export function PairingBoard({
 
   const [selectedMember, setSelectedMember] = useState<string | null>(null);
   const [confirmPublish, setConfirmPublish] = useState(false);
+  const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+  const [published, setPublished] = useState(false);
 
   const busy = generate.isPending || publish.isPending || swap.isPending || updateTeam.isPending;
 
   function onGenerate() {
     setSelectedMember(null);
+    setConfirmRegenerate(false);
     generate.mutate(
       {},
       {
@@ -93,6 +99,7 @@ export function PairingBoard({
       onSuccess: (res) => {
         toast.success(`Published ${res.publishedTeams} teams`);
         setConfirmPublish(false);
+        setPublished(true);
       },
       onError: (e) => toast.error(errorMessage(e, "Couldn't publish teams")),
     });
@@ -101,13 +108,20 @@ export function PairingBoard({
   const generateLabel = run ? "Regenerate" : "Generate teams";
   const action = canManage ? (
     <div className="flex items-center gap-2">
-      <Button tone="paper" size="sm" onClick={onGenerate} disabled={busy}>
+      <Button
+        tone="paper"
+        size="sm"
+        onClick={run ? () => setConfirmRegenerate(true) : onGenerate}
+        disabled={busy || published}
+      >
         <Wand2 className="h-4 w-4" /> {generateLabel}
       </Button>
-      {run ? (
+      {run && !published ? (
         <Button tone="candy" size="sm" onClick={() => setConfirmPublish(true)} disabled={busy}>
           <Trophy className="h-4 w-4" /> Publish
         </Button>
+      ) : run && published ? (
+        <Badge tone="mint">Teams published</Badge>
       ) : null}
     </div>
   ) : null;
@@ -117,7 +131,11 @@ export function PairingBoard({
       <PageHeader
         eyebrow="Smart pairing"
         title="Team pairing"
-        description="Skill-balanced doubles teams — review, adjust, and publish."
+        description={
+          division?.name
+            ? `Pairs for ${division.name} — review, adjust, and publish.`
+            : "Skill-balanced doubles teams — review, adjust, and publish."
+        }
         actions={action}
       />
 
@@ -174,6 +192,16 @@ export function PairingBoard({
         confirmLabel="Publish teams"
         loading={publish.isPending}
         onConfirm={onPublish}
+      />
+
+      <ConfirmDialog
+        open={confirmRegenerate}
+        onOpenChange={setConfirmRegenerate}
+        title="Regenerate pairings?"
+        description="This will discard all current pairs, including locked ones. This can't be undone."
+        confirmLabel="Regenerate"
+        loading={generate.isPending}
+        onConfirm={onGenerate}
       />
     </div>
   );

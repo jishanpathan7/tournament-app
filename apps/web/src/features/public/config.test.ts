@@ -120,37 +120,29 @@ describe("applyFixtureFilters", () => {
 });
 
 describe("fixtureBucket", () => {
-  const now = new Date("2026-07-29T12:00:00Z");
-
-  it("buckets terminal statuses as completed regardless of schedule", () => {
-    expect(fixtureBucket(makeMatch({ status: "completed" }), now)).toBe("completed");
-    expect(fixtureBucket(makeMatch({ status: "walkover" }), now)).toBe("completed");
+  it("buckets terminal statuses as completed", () => {
+    expect(fixtureBucket(makeMatch({ status: "completed" }))).toBe("completed");
+    expect(fixtureBucket(makeMatch({ status: "walkover" }))).toBe("completed");
   });
 
-  it("buckets a same-day scheduled match as today", () => {
-    const match = makeMatch({ status: "scheduled", scheduledAt: "2026-07-29T18:00:00Z" });
-    expect(fixtureBucket(match, now)).toBe("today");
-  });
-
-  it("buckets everything else as upcoming", () => {
-    expect(fixtureBucket(makeMatch({ status: "scheduled", scheduledAt: null }), now)).toBe(
-      "upcoming",
-    );
-    expect(fixtureBucket(makeMatch({ status: "pending" }), now)).toBe("upcoming");
+  it("buckets everything non-terminal as upcoming", () => {
+    expect(fixtureBucket(makeMatch({ status: "scheduled", scheduledAt: null }))).toBe("upcoming");
+    expect(fixtureBucket(makeMatch({ status: "pending" }))).toBe("upcoming");
+    expect(
+      fixtureBucket(makeMatch({ status: "scheduled", scheduledAt: "2026-07-29T18:00:00Z" })),
+    ).toBe("upcoming");
   });
 });
 
 describe("groupByBucket", () => {
-  it("partitions matches into today/upcoming/completed", () => {
-    const now = new Date("2026-07-29T12:00:00Z");
+  it("partitions matches into upcoming/completed", () => {
     const matches = [
       makeMatch({ id: "m-1", status: "completed" }),
       makeMatch({ id: "m-2", status: "scheduled", scheduledAt: "2026-07-29T18:00:00Z" }),
       makeMatch({ id: "m-3", status: "pending" }),
     ];
-    const buckets = groupByBucket(matches, now);
+    const buckets = groupByBucket(matches);
     expect(buckets.completed.map((m) => m.id)).toEqual(["m-1"]);
-    expect(buckets.today.map((m) => m.id)).toEqual(["m-2"]);
-    expect(buckets.upcoming.map((m) => m.id)).toEqual(["m-3"]);
+    expect(buckets.upcoming.map((m) => m.id)).toEqual(["m-2", "m-3"]);
   });
 });

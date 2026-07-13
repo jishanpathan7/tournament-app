@@ -25,11 +25,16 @@ function StepIcon({ status }: { status: StepStatus }) {
 export function TournamentStepTracker({
   step,
   variant = "sidebar",
+  franchiseMode = true,
 }: {
   step: TournamentStep;
   variant?: "sidebar" | "primary";
+  franchiseMode?: boolean;
 }) {
-  const visibleSteps = STEPS.filter((s) => STEP_META[s].phase !== "after" || s === step);
+  const visibleSteps = STEPS.filter(
+    (s) =>
+      (STEP_META[s].phase !== "after" || s === step) && (franchiseMode || (s !== 3 && s !== 4)),
+  );
 
   return (
     <div

@@ -1,6 +1,7 @@
 "use client";
 
 import { Download, Radio, Swords, Timer } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -165,6 +166,7 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
             <Button
               tone="paper"
               size="sm"
+              disabled={!matches.data?.length}
               onClick={() =>
                 void downloadCsv(
                   `${env.apiUrl}/api/v1/tournaments/${tournamentId}/export/matches.csv`,
@@ -232,6 +234,11 @@ export function MatchCenter({ tournamentId }: { tournamentId: string }) {
           title="No matches yet"
           description="Generate a draw for a stage to start scheduling matches."
           className="py-14"
+          action={
+            <Button asChild tone="paper" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/draws`}>Go to Draws →</Link>
+            </Button>
+          }
         />
       ) : filtered.length === 0 ? (
         <EmptyState

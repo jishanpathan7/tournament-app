@@ -111,32 +111,20 @@ export function applyFixtureFilters(
   });
 }
 
-/** "Today" / "Upcoming" / "Completed" buckets for the Fixtures page. A match with no
- * `scheduledAt` (true for everything today — scheduling isn't built yet) falls back to
- * its status: pending/scheduled -> upcoming, everything terminal -> completed. */
-export type FixtureBucket = "today" | "upcoming" | "completed";
+/** "Upcoming" / "Completed" buckets for the Fixtures page. "Today" is omitted because
+ * match scheduling is not yet implemented — scheduledAt is always null. */
+export type FixtureBucket = "upcoming" | "completed";
 
 const TERMINAL_STATUSES = new Set(["completed", "walkover", "no_show", "cancelled"]);
 
-export function fixtureBucket(match: MatchView, now: Date = new Date()): FixtureBucket {
+export function fixtureBucket(match: MatchView): FixtureBucket {
   if (TERMINAL_STATUSES.has(match.status)) return "completed";
-  if (match.scheduledAt) {
-    const day = new Date(match.scheduledAt);
-    const sameDay =
-      day.getFullYear() === now.getFullYear() &&
-      day.getMonth() === now.getMonth() &&
-      day.getDate() === now.getDate();
-    if (sameDay) return "today";
-  }
   return "upcoming";
 }
 
-export function groupByBucket(
-  matches: MatchView[],
-  now: Date = new Date(),
-): Record<FixtureBucket, MatchView[]> {
-  const buckets: Record<FixtureBucket, MatchView[]> = { today: [], upcoming: [], completed: [] };
-  for (const m of matches) buckets[fixtureBucket(m, now)].push(m);
+export function groupByBucket(matches: MatchView[]): Record<FixtureBucket, MatchView[]> {
+  const buckets: Record<FixtureBucket, MatchView[]> = { upcoming: [], completed: [] };
+  for (const m of matches) buckets[fixtureBucket(m)].push(m);
   return buckets;
 }
 
@@ -197,11 +185,8 @@ export function applyFixtureRowFilters(
   });
 }
 
-export function groupRowsByBucket(
-  rows: FixtureRow[],
-  now: Date = new Date(),
-): Record<FixtureBucket, FixtureRow[]> {
-  const buckets: Record<FixtureBucket, FixtureRow[]> = { today: [], upcoming: [], completed: [] };
-  for (const row of rows) buckets[fixtureBucket(row.match, now)].push(row);
+export function groupRowsByBucket(rows: FixtureRow[]): Record<FixtureBucket, FixtureRow[]> {
+  const buckets: Record<FixtureBucket, FixtureRow[]> = { upcoming: [], completed: [] };
+  for (const row of rows) buckets[fixtureBucket(row.match)].push(row);
   return buckets;
 }
