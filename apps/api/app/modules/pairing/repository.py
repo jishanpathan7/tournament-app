@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -139,6 +141,18 @@ async def list_approved_registrations(
     return (await session.execute(stmt)).scalars().all()
 
 
+def _squad_filter(squad_id: uuid.UUID | None) -> Any:
+    """SQLAlchemy WHERE clause fragment for scoping PairingRun by squad.
+
+    Division-wide runs have no ``squadId`` key in config; per-squad runs store it as a
+    string UUID. Pushing this into SQL avoids loading all runs + proposed_teams into
+    memory just to Python-filter one row.
+    """
+    if squad_id is None:
+        return ~PairingRun.config.cast(JSONB).has_key("squadId")  # noqa: W601
+    return PairingRun.config["squadId"].as_string() == str(squad_id)
+
+
 async def get_active_run(
     session: AsyncSession,
     org_id: uuid.UUID,
@@ -156,15 +170,13 @@ async def get_active_run(
             PairingRun.division_id == division_id,
             PairingRun.organization_id == org_id,
             PairingRun.status == PairingRunStatus.DRAFT.value,
+            _squad_filter(squad_id),
         )
         .options(selectinload(PairingRun.proposed_teams))
         .order_by(PairingRun.created_at.desc())
+        .limit(1)
     )
-    runs = (await session.execute(stmt)).scalars().all()
-    if squad_id is None:
-        return next((r for r in runs if not (r.config or {}).get("squadId")), None)
-    target = str(squad_id)
-    return next((r for r in runs if (r.config or {}).get("squadId") == target), None)
+    return (await session.execute(stmt)).scalars().first()
 
 
 async def get_current_run(
@@ -186,23 +198,17 @@ async def get_current_run(
             PairingRun.division_id == division_id,
             PairingRun.organization_id == org_id,
             PairingRun.status.in_([PairingRunStatus.DRAFT.value, PairingRunStatus.PUBLISHED.value]),
+            _squad_filter(squad_id),
         )
         .options(selectinload(PairingRun.proposed_teams))
         .order_by(PairingRun.created_at.desc())
     )
     runs = list((await session.execute(stmt)).scalars().all())
-
-    if squad_id is None:
-        scoped = [r for r in runs if not (r.config or {}).get("squadId")]
-    else:
-        target = str(squad_id)
-        scoped = [r for r in runs if (r.config or {}).get("squadId") == target]
-
-    draft = next((r for r in scoped if r.status == PairingRunStatus.DRAFT.value), None)
+    draft = next((r for r in runs if r.status == PairingRunStatus.DRAFT.value), None)
     return (
         draft
         if draft is not None
-        else next((r for r in scoped if r.status == PairingRunStatus.PUBLISHED.value), None)
+        else next((r for r in runs if r.status == PairingRunStatus.PUBLISHED.value), None)
     )
 
 

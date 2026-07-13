@@ -297,6 +297,7 @@ async def _do_assign(
     _tournament_court_cache: dict[uuid.UUID, TournamentCourt | None] | None = None,
     _scheduled_cache: list[Match] | None = None,
     _kinds_cache: dict[uuid.UUID, str] | None = None,
+    _email_cache: dict[uuid.UUID, str | None] | None = None,
     _skip_broadcast: bool = False,
 ) -> list[ConflictView]:
     conflicts = await evaluate_conflicts(
@@ -357,7 +358,7 @@ async def _do_assign(
     )
     if not _skip_broadcast:
         await _broadcast(org_id, match)
-    await _notify(session, org_id, match, rescheduled=was_scheduled)
+    await _notify(session, org_id, match, rescheduled=was_scheduled, _email_cache=_email_cache)
 
     return [c for c in conflicts if c.kind not in HARD_CONFLICT_KINDS]
 
@@ -436,6 +437,11 @@ async def bulk_assign(
             for mp in m.participants:
                 all_participant_ids.add(mp.participant_id)
         kinds_cache = await repo.participant_kinds(session, org_id, all_participant_ids)
+        # Batch-load participant emails: replaces N per-participant registration queries
+        # inside _notify with a single IN(...) query for all batch participant IDs.
+        email_cache = await repo.get_participant_emails_by_ids(
+            session, org_id, list(all_participant_ids)
+        )
 
     results: list[tuple[Match, list[ConflictView]]] = []
     async with timed("bulk_assign.loop", _logger, extra={"item_count": item_count}):
@@ -458,6 +464,7 @@ async def bulk_assign(
                 _tournament_court_cache=tc_cache,
                 _scheduled_cache=scheduled_cache,
                 _kinds_cache=kinds_cache,
+                _email_cache=email_cache,
                 _skip_broadcast=True,
             )
             results.append((match, soft))
@@ -536,7 +543,12 @@ async def _participant_email(
 
 
 async def _notify(
-    session: AsyncSession, org_id: uuid.UUID, match: Match, *, rescheduled: bool
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    match: Match,
+    *,
+    rescheduled: bool,
+    _email_cache: dict[uuid.UUID, str | None] | None = None,
 ) -> None:
     email_template = "match_rescheduled" if rescheduled else "match_scheduled"
     for mp in match.participants:
@@ -552,7 +564,10 @@ async def _notify(
                     type=events.NOTIFY_MATCH_RESCHEDULED,
                     data={"matchId": str(match.id), "tournamentId": str(match.tournament_id)},
                 )
-        email = await _participant_email(session, org_id, mp.participant_id)
+        if _email_cache is not None:
+            email = _email_cache.get(mp.participant_id)
+        else:
+            email = await _participant_email(session, org_id, mp.participant_id)
         if email:
             await queue_email(
                 session,
@@ -578,29 +593,9 @@ async def auto_schedule_next(
     Soft conflicts (overlap warnings) are logged and silently ignored — auto-scheduling
     never blocks on warnings.
     """
-    matches = await repo.list_tournament_matches_with_participants(session, org_id, tournament.id)
-    _TERMINAL = frozenset(
-        {
-            MatchStatus.COMPLETED.value,
-            MatchStatus.WALKOVER.value,
-            MatchStatus.NO_SHOW.value,
-            MatchStatus.CANCELLED.value,
-        }
-    )
-    candidates = sorted(
-        [
-            m
-            for m in matches
-            if m.status not in _TERMINAL
-            and m.status != MatchStatus.PENDING.value
-            and (m.court_id is None or m.scheduled_at is None)
-        ],
-        key=lambda m: (m.round.seq if m.round else 0, m.created_at),
-    )
-    if not candidates:
+    next_match = await repo.get_next_schedulable_match(session, org_id, tournament.id)
+    if next_match is None:
         return None
-
-    next_match = candidates[0]
     scheduled_at = _now()
     duration = next_match.duration_minutes or DEFAULT_DURATION_MINUTES
     _system_actor = actor_id or tournament.organization_id

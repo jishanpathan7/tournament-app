@@ -42,6 +42,7 @@ from app.db.models import (
     Tournament,
     TournamentCourt,
 )
+from app.db.types import uuid7 as _uuid7
 from app.engine import (
     AdvancementRequest,
     ByeRef,
@@ -760,29 +761,42 @@ async def _persist_structure(
     plan: StructurePlan,
     participants: list[Participant],
 ) -> dict[str, Any]:
+    # Pre-assign IDs so we can build all FK references in-memory before any flush.
     group_id_by_key: dict[str, uuid.UUID] = {}
     for group_plan in plan.groups:
-        group = Group(organization_id=org_id, stage_id=stage.id, name=group_plan.name)
+        gid = _uuid7()
+        group = Group(id=gid, organization_id=org_id, stage_id=stage.id, name=group_plan.name)
         session.add(group)
-        await session.flush()
-        group_id_by_key[group_plan.key] = group.id
+        group_id_by_key[group_plan.key] = gid
 
     round_id_by_key: dict[str, uuid.UUID] = {}
     for round_plan in plan.rounds:
+        rid = _uuid7()
         rnd = Round(
-            organization_id=org_id, stage_id=stage.id, seq=round_plan.seq, label=round_plan.label
+            id=rid,
+            organization_id=org_id,
+            stage_id=stage.id,
+            seq=round_plan.seq,
+            label=round_plan.label,
         )
         session.add(rnd)
-        await session.flush()
-        round_id_by_key[round_plan.key] = rnd.id
+        round_id_by_key[round_plan.key] = rid
+
+    # Groups and rounds must be persisted before matches reference their IDs via FK.
+    # Match.round is viewonly=True so SQLAlchemy's UoW won't order Round→Match for us;
+    # a single flush here keeps us at 2 round-trips instead of the original 500+.
+    await session.flush()
 
     seed_to_participant = {i + 1: participants[i] for i in range(len(participants))}
     participant_by_str = {str(p.id): p for p in participants}
 
     # Pass 1: create Match rows so winner_of refs can be translated to real UUIDs.
+    # IDs are pre-generated so MatchParticipant FKs can be set in Pass 2 without a flush.
     match_by_key: dict[str, Match] = {}
     for match_plan in plan.matches:
+        mid = _uuid7()
         match = Match(
+            id=mid,
             organization_id=org_id,
             tournament_id=tournament_id,
             stage_id=stage.id,
@@ -793,7 +807,6 @@ async def _persist_structure(
             source_refs={},
         )
         session.add(match)
-        await session.flush()
         match_by_key[match_plan.key] = match
 
     scheduled = pending = 0

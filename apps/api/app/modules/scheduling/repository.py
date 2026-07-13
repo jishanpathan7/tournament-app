@@ -13,8 +13,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.enums import ContestKind
-from app.db.models import Court, Match, Participant, TournamentCourt
+from app.db.enums import ContestKind, MatchStatus
+from app.db.models import Court, Match, Participant, Registration, TournamentCourt
 
 
 async def list_scheduled_matches(
@@ -106,7 +106,7 @@ async def get_tournament_courts_by_court_ids(
 async def list_tournament_matches_with_participants(
     session: AsyncSession, org_id: uuid.UUID, tournament_id: uuid.UUID
 ) -> Sequence[Match]:
-    """Every match in the tournament — the source for the queue view's
+    """Every non-tie match in the tournament — the source for the queue view's
     scheduled/unscheduled/pending buckets."""
     stmt = (
         select(Match)
@@ -121,3 +121,64 @@ async def list_tournament_matches_with_participants(
         .order_by(Match.scheduled_at.nulls_last(), Match.created_at, Match.id)
     )
     return (await session.execute(stmt)).scalars().all()
+
+
+_AUTO_SCHEDULE_TERMINAL = frozenset(
+    [
+        MatchStatus.COMPLETED.value,
+        MatchStatus.WALKOVER.value,
+        MatchStatus.NO_SHOW.value,
+        MatchStatus.CANCELLED.value,
+    ]
+)
+
+
+async def get_next_schedulable_match(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+) -> Match | None:
+    """Single targeted query for auto_schedule_next — avoids full match scan.
+
+    Returns the first unscheduled non-pending non-terminal non-tie match ordered
+    by round sequence then creation time.
+    """
+    stmt = (
+        select(Match)
+        .where(
+            Match.tournament_id == tournament_id,
+            Match.organization_id == org_id,
+            Match.contest_kind != ContestKind.TIE.value,
+            Match.status.not_in(list(_AUTO_SCHEDULE_TERMINAL)),
+            Match.status != MatchStatus.PENDING.value,
+            (Match.court_id.is_(None) | Match.scheduled_at.is_(None)),
+        )
+        .options(selectinload(Match.participants), selectinload(Match.round))
+        .order_by(Match.created_at, Match.id)
+        .limit(1)
+    )
+    return (await session.execute(stmt)).scalars().first()
+
+
+async def get_participant_emails_by_ids(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    participant_ids: Sequence[uuid.UUID],
+) -> dict[uuid.UUID, str | None]:
+    """Batch-load participant emails from their approved registrations.
+
+    Returns a mapping of participant_id → email string (or None if not found).
+    Replaces per-participant ``_participant_email`` calls in the bulk schedule path.
+    """
+    if not participant_ids:
+        return {}
+    stmt = select(Registration.participant_id, Registration.form_response).where(
+        Registration.organization_id == org_id,
+        Registration.participant_id.in_(participant_ids),
+    )
+    rows = (await session.execute(stmt)).all()
+    result: dict[uuid.UUID, str | None] = {}
+    for participant_id, form_response in rows:
+        email = (form_response or {}).get("email")
+        result[participant_id] = str(email).strip() if email else None
+    return result
