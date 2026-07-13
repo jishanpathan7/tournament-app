@@ -65,11 +65,16 @@ export function DrawSetupPanel({
           <div className="border-ink bg-candy-tint text-candy-dark shadow-sticker-xs flex h-10 w-10 items-center justify-center rounded-full border-2">
             <Icon className="h-5 w-5" strokeWidth={2.25} />
           </div>
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-0.5">
             <CardTitle className="text-lg">{format?.label ?? stage.type}</CardTitle>
             <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.16em]">
               Stage {stage.seq + 1}
             </span>
+            {format?.description ? (
+              <p className="text-muted-foreground mt-1 max-w-sm text-xs leading-snug">
+                {format.description}
+              </p>
+            ) : null}
           </div>
         </div>
         <Badge tone={stage.drawn ? "mint" : "muted"}>{stage.drawn ? "Drawn" : "Not drawn"}</Badge>

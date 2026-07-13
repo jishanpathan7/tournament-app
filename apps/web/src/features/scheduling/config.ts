@@ -9,6 +9,13 @@ import type { ConflictView, MatchView, ParticipantResponse } from "@tournament/a
 
 export const DEFAULT_DURATION_MINUTES = 30;
 
+/** Resolve the effective match duration from tournament settings, with fallback. */
+export function effectiveDurationMinutes(settings: Record<string, unknown> | undefined): number {
+  const v = settings?.["match_duration_minutes"];
+  if (typeof v === "number" && v >= 5 && v <= 240) return v;
+  return DEFAULT_DURATION_MINUTES;
+}
+
 const TERMINAL_STATUSES = new Set(["completed", "walkover", "no_show", "cancelled"]);
 
 export interface ScheduleBuckets {

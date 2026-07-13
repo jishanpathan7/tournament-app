@@ -145,7 +145,7 @@ export function deriveStepSignals(
   };
 }
 
-export type AlertTone = "warning" | "info" | "error";
+export type AlertTone = "warning" | "info" | "error" | "success";
 
 export interface DashboardAlert {
   id: string;
@@ -401,6 +401,35 @@ export function deriveAlerts(input: DeriveAlertsInput): DashboardAlert[] {
       tone: "info",
       message: "Most matches are done — prepare to publish results when finished",
     });
+  }
+
+  // Milestone confirmations — show a success card when a major phase transition completes.
+  if (phase === "before" && readiness) {
+    const signals = deriveStepSignals(readiness, registrationTotals, drawProgress, queue);
+    if (signals.pairingPublished && signals.squadsReady) {
+      alerts.push({
+        id: "milestone-pairs-done",
+        tone: "success",
+        message: "All pairs confirmed — move on to check-in then draw generation.",
+        href: `${tournamentBase}/players`,
+      });
+    }
+    if (signals.drawComplete) {
+      alerts.push({
+        id: "milestone-draw-done",
+        tone: "success",
+        message: "Draw complete — set up courts and schedule matches to go live.",
+        href: `${tournamentBase}/schedule`,
+      });
+    }
+    if (signals.courtsReady) {
+      alerts.push({
+        id: "milestone-schedule-done",
+        tone: "success",
+        message: "Schedule ready — start the tournament when everyone is checked in.",
+        href: `${tournamentBase}/setup`,
+      });
+    }
   }
 
   return alerts;

@@ -166,6 +166,7 @@ async def update_tournament(
     settings: dict[str, Any] | None,
     auto_schedule: bool | None = None,
     pair_creation_mode: str | None = None,
+    match_duration_minutes: int | None = None,
     venue_id: uuid.UUID | None = None,
     clear_venue: bool | None = None,
 ) -> Tournament:
@@ -184,6 +185,11 @@ async def update_tournament(
         tournament.settings = {
             **(tournament.settings or {}),
             "pair_creation_mode": pair_creation_mode,
+        }
+    if match_duration_minutes is not None:
+        tournament.settings = {
+            **(tournament.settings or {}),
+            "match_duration_minutes": match_duration_minutes,
         }
     if settings is not None:
         profile = get_sport_registry().get(await _sport_key(session, tournament))

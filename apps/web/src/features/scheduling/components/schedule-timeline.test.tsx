@@ -59,7 +59,7 @@ describe("ScheduleTimeline", () => {
     vi.mocked(courtsApi.listTournamentCourts).mockResolvedValue([]);
     renderWithProviders(<ScheduleTimeline tournamentId={TOURNAMENT_ID} />);
 
-    expect(await screen.findByText("Assign a court before scheduling")).toBeInTheDocument();
+    expect(await screen.findByText("Add courts before scheduling")).toBeInTheDocument();
   });
 
   it("renders the Unscheduled lane and one lane per assigned court", async () => {

@@ -26,6 +26,7 @@ export function ProposedTeamCard({
   onToggleLock,
   busy,
   duplicatePlayerIds,
+  preferenceConflicts,
 }: {
   team: ProposedTeamView;
   entrants: Map<string, EntrantView>;
@@ -37,6 +38,8 @@ export function ProposedTeamCard({
   busy: boolean;
   /** Registration ids that appear in more than one team (play twice). */
   duplicatePlayerIds?: ReadonlySet<string>;
+  /** registrationId → requested partner name, for entrants whose preference wasn't honored. */
+  preferenceConflicts?: ReadonlyMap<string, string>;
 }) {
   const isDuplicatePair = team.reasons.includes("Duplicate pair — plays twice");
 
@@ -89,6 +92,7 @@ export function ProposedTeamCard({
           const skill = skillMeta(entrant?.skillLevel);
           const selected = selectedMemberId === memberId;
           const playsAgain = duplicatePlayerIds?.has(memberId) ?? false;
+          const wantedPartner = preferenceConflicts?.get(memberId);
           const chip = (
             <span className="flex min-w-0 flex-1 items-center justify-between gap-2">
               <span className="truncate font-medium">{entrant?.displayName ?? "Unknown"}</span>
@@ -96,6 +100,11 @@ export function ProposedTeamCard({
                 {playsAgain && (
                   <Badge tone="yellow" className="text-2xs">
                     Plays twice
+                  </Badge>
+                )}
+                {wantedPartner && (
+                  <Badge tone="yellow" className="text-2xs" title={`Requested: ${wantedPartner}`}>
+                    Wanted {wantedPartner}
                   </Badge>
                 )}
                 <Badge tone={skill.tone}>{skill.label}</Badge>

@@ -44,6 +44,7 @@ class ImportRequest(ApiModel):
     raw: str
     mapping: dict[str, str] = Field(default_factory=dict)  # targetField -> sourceColumn
     update_existing: bool = False
+    auto_approve: bool = False
 
 
 class PreviewRow(ApiModel):

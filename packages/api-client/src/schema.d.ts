@@ -3208,6 +3208,11 @@ export interface components {
        * @default false
        */
       updateExisting: boolean;
+      /**
+       * Autoapprove
+       * @default false
+       */
+      autoApprove: boolean;
     };
     /** ImportResult */
     ImportResult: {
@@ -4838,6 +4843,8 @@ export interface components {
       autoSchedule?: boolean | null;
       /** Paircreationmode */
       pairCreationMode?: string | null;
+      /** Matchdurationminutes */
+      matchDurationMinutes?: number | null;
       /** Venueid */
       venueId?: string | null;
       /** Clearvenue */

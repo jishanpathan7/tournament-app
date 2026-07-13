@@ -91,13 +91,14 @@ export const FORMATS: FormatOption[] = [
   {
     key: "round_robin",
     label: "Round Robin",
-    description: "Everyone plays everyone; ranked by points.",
+    description:
+      "Team format — each pair plays every other pair. Ranked by points (3 win / 1 draw / 0 loss), then game difference.",
     icon: Repeat,
   },
   {
     key: "single_elim",
     label: "Single Elimination",
-    description: "Knockout bracket; lose once and you're out.",
+    description: "Knockout bracket — lose once and you're out. Best of 3 by default.",
     icon: Network,
   },
   {

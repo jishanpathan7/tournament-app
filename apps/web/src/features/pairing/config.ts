@@ -44,6 +44,35 @@ export function sortedTeams(run: PairingRunView): ProposedTeamView[] {
   });
 }
 
+/**
+ * Returns a map of registrationId → requestedPartnerDisplayName for every entrant
+ * whose preferred partner was resolved (preferredPartnerId set) but not honored
+ * (they ended up in a different team). Used to render "Wanted [Name]" badges.
+ */
+export function preferenceConflicts(run: PairingRunView): Map<string, string> {
+  const byId = entrantsById(run);
+  // Build a map of registrationId → teammates for quick lookup
+  const teammates = new Map<string, Set<string>>();
+  for (const team of run.teams) {
+    const memberSet = new Set(team.memberIds);
+    for (const mid of team.memberIds) {
+      teammates.set(mid, memberSet);
+    }
+  }
+  const conflicts = new Map<string, string>();
+  for (const entrant of run.entrants) {
+    if (!entrant.preferredPartnerId) continue;
+    const prefId = entrant.preferredPartnerId;
+    const myTeam = teammates.get(entrant.registrationId);
+    if (!myTeam || !myTeam.has(prefId)) {
+      // Preference not honored — find the requested partner's display name
+      const preferredName = byId.get(prefId)?.displayName ?? "their requested partner";
+      conflicts.set(entrant.registrationId, preferredName);
+    }
+  }
+  return conflicts;
+}
+
 export interface PairingStats {
   teamCount: number;
   entrantCount: number;

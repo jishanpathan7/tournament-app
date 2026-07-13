@@ -8633,6 +8633,11 @@
             "type": "boolean",
             "title": "Updateexisting",
             "default": false
+          },
+          "autoApprove": {
+            "type": "boolean",
+            "title": "Autoapprove",
+            "default": false
           }
         },
         "type": "object",
@@ -12446,6 +12451,19 @@
               }
             ],
             "title": "Paircreationmode"
+          },
+          "matchDurationMinutes": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 240.0,
+                "minimum": 5.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Matchdurationminutes"
           },
           "venueId": {
             "anyOf": [

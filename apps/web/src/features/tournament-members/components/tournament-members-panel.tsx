@@ -1,7 +1,8 @@
 "use client";
 
 import type { TournamentMemberResponse, TournamentRole } from "@tournament/api-client";
-import { Clock, MoreHorizontal, RefreshCw, Trash2, UserPlus, Users } from "lucide-react";
+import { Clock, Link2, MoreHorizontal, RefreshCw, Trash2, UserPlus, Users } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -189,6 +190,9 @@ export function TournamentMembersPanel({ tournamentId }: { tournamentId: string 
   const members = data?.members ?? [];
   const pendingInvites = data?.pendingInvites ?? [];
   const total = members.length + pendingInvites.length;
+  const hasScorekeepers =
+    members.some((m) => m.tournamentRole === "scorekeeper") ||
+    pendingInvites.some((inv) => inv.tournamentRole === "scorekeeper");
 
   return (
     <div className="flex flex-col gap-6">
@@ -250,6 +254,22 @@ export function TournamentMembersPanel({ tournamentId }: { tournamentId: string 
           )}
         </div>
       </div>
+
+      {hasScorekeepers && (
+        <div className="border-candy/30 bg-candy/5 flex items-start gap-3 rounded-2xl border-2 p-4">
+          <Link2 className="text-candy mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold">Share scorekeeper links</p>
+            <p className="text-muted-foreground mt-0.5 text-sm">
+              Scorekeepers need a court-specific link to enter scores — no Playlane account
+              required.
+            </p>
+          </div>
+          <Button asChild tone="candy" size="sm" className="shrink-0">
+            <Link href={`/console/tournaments/${tournamentId}/scorekeeper`}>Get links →</Link>
+          </Button>
+        </div>
+      )}
 
       <InviteMemberDialog
         tournamentId={tournamentId}

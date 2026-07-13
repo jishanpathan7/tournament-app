@@ -6,7 +6,13 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { ProposedTeamCard } from "@/features/pairing/components/proposed-team-card";
-import { entrantsById, pairingStats, skillMeta, sortedTeams } from "@/features/pairing/config";
+import {
+  entrantsById,
+  pairingStats,
+  preferenceConflicts,
+  skillMeta,
+  sortedTeams,
+} from "@/features/pairing/config";
 import {
   useAddDuplicatePair,
   useCreateManualPair,
@@ -40,12 +46,15 @@ export function SquadPairingSheet({
   tournamentId,
   isManualPairing = false,
   onClose,
+  onNext,
 }: {
   squad: SquadView;
   divisionId: string;
   tournamentId: string;
   isManualPairing?: boolean;
   onClose: () => void;
+  /** If provided, show "Next team →" in the published footer to jump straight to that squad. */
+  onNext?: () => void;
 }) {
   const squadId = squad.id;
 
@@ -181,6 +190,9 @@ export function SquadPairingSheet({
 
   // All paired member ids (for filtering the "pick duplicate" list).
   const pairedIds = new Set(teams.flatMap((t) => t.memberIds));
+
+  // Preference conflict map: entrants whose requested partner wasn't honored.
+  const prefConflicts = run && !isPublished ? preferenceConflicts(run) : new Map<string, string>();
 
   // Unpaired players — sorted by skill weight descending for consistent display.
   const unpairedEntrants = (run?.unpairedIds ?? [])
@@ -481,6 +493,7 @@ export function SquadPairingSheet({
                       canManage={!isPublished && assigningFor === null}
                       busy={busy}
                       duplicatePlayerIds={duplicatePlayerIds}
+                      preferenceConflicts={prefConflicts}
                       onSelectMember={onSelectMember}
                       onToggleLock={() =>
                         updateTeam.mutate(
@@ -500,22 +513,35 @@ export function SquadPairingSheet({
       {/* Footer */}
       {run && run.teams.length > 0 && (
         <div className="flex items-center justify-between gap-3 border-t px-5 py-4">
-          <Button tone="paper" size="sm" onClick={onGenerate} disabled={busy || isPublished}>
-            Regenerate
-          </Button>
-          <Button
-            tone="candy"
-            size="sm"
-            onClick={onPublish}
-            disabled={busy || isPublished || (run.unpairedIds?.length ?? 0) > 0}
-            title={
-              (run.unpairedIds?.length ?? 0) > 0
-                ? "Resolve unpaired players before locking"
-                : undefined
-            }
-          >
-            {isPublished ? "Locked ✓" : "Lock & Confirm Pairs"}
-          </Button>
+          {isPublished && onNext ? (
+            <>
+              <Button tone="paper" size="sm" onClick={onClose}>
+                Done
+              </Button>
+              <Button tone="candy" size="sm" onClick={onNext}>
+                Next team →
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button tone="paper" size="sm" onClick={onGenerate} disabled={busy || isPublished}>
+                Regenerate
+              </Button>
+              <Button
+                tone="candy"
+                size="sm"
+                onClick={onPublish}
+                disabled={busy || isPublished || (run.unpairedIds?.length ?? 0) > 0}
+                title={
+                  (run.unpairedIds?.length ?? 0) > 0
+                    ? "Resolve unpaired players before locking"
+                    : undefined
+                }
+              >
+                {isPublished ? "Locked ✓" : "Lock & Confirm Pairs"}
+              </Button>
+            </>
+          )}
         </div>
       )}
     </div>
