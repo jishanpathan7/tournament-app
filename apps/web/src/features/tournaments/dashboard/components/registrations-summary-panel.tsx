@@ -59,7 +59,7 @@ export function RegistrationsSummaryPanel({
                 <div className="min-w-0 flex-1">
                   {canManage ? (
                     <Link
-                      href={`/console/tournaments/${tournamentId}/registrations?division=${d.id}`}
+                      href={`/console/tournaments/${tournamentId}/divisions/${d.id}/registrations`}
                       className="text-sm font-medium hover:underline"
                     >
                       {d.name}
