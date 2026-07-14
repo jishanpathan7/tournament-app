@@ -18,6 +18,7 @@ import {
   formatScheduledTime,
   matchPrimaryAction,
 } from "@/features/matches/config";
+import { ScorekeeperCopyButton } from "@/features/scoring/components/scorekeeper-copy-button";
 import { getFormat } from "@/features/tournaments/config";
 import { cn } from "@/lib/utils";
 
@@ -100,18 +101,21 @@ export function MatchCard({
             <p className="mt-2 font-mono text-sm font-semibold tabular-nums">{score}</p>
           ) : null}
         </div>
-        <Button
-          type="button"
-          tone={primary.action === "score" || primary.action === "start" ? "candy" : "paper"}
-          size="sm"
-          className="shrink-0"
-          onClick={(e) => {
-            e.stopPropagation();
-            onPrimaryAction(match.id);
-          }}
-        >
-          {primary.label}
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          {match.status === "live" && <ScorekeeperCopyButton matchId={match.id} />}
+          <Button
+            type="button"
+            tone={primary.action === "score" || primary.action === "start" ? "candy" : "paper"}
+            size="sm"
+            className="shrink-0"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPrimaryAction(match.id);
+            }}
+          >
+            {primary.label}
+          </Button>
+        </div>
       </div>
     </Shell>
   );

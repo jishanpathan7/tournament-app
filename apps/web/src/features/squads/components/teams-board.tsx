@@ -5,7 +5,6 @@ import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { useQueries } from "@tanstack/react-query";
 import { ChevronDown, Dices, MoreHorizontal, Users, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -31,7 +30,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import { getPairing } from "@/features/pairing/pairing-api";
-import { usePublishAllSquadPairings } from "@/features/pairing/use-pairing";
 import { SquadCard } from "@/features/squads/components/squad-card";
 import { SquadPairingSheet } from "@/features/squads/components/squad-pairing-sheet";
 import { UnassignedPool } from "@/features/squads/components/unassigned-pool";
@@ -62,7 +60,6 @@ import { errorMessage } from "@/lib/problem";
 
 /** Franchise team board — assign registrations to balanced squads before pairing. */
 export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
-  const router = useRouter();
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
 
@@ -86,8 +83,6 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
 
   const divisions = useDivisions(tournamentId);
   const firstDivisionId = divisions.data?.[0]?.id ?? null;
-  const publishAllPairings = usePublishAllSquadPairings(firstDivisionId ?? "", tournamentId);
-
   const board = squads.data;
   const squadIds = board?.squads.map((s) => s.id) ?? [];
 
@@ -241,35 +236,6 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
     else toast.info("Every team already has pairs — use Generate Matches to continue");
   }
 
-  function draftRunsToPublish() {
-    return squadIds.flatMap((squadId, index) => {
-      const run = pairingQueries[index]?.data;
-      if (!run || run.status !== "draft" || run.teams.length === 0) return [];
-      return [{ runId: run.id, status: run.status }];
-    });
-  }
-
-  function handleGenerateMatches() {
-    if (!board || !firstDivisionId) return;
-    const drafts = draftRunsToPublish();
-    if (drafts.length === 0) {
-      router.push(`/console/tournaments/${tournamentId}/draws`);
-      return;
-    }
-    publishAllPairings.mutate(drafts, {
-      onSuccess: (lockedCount) => {
-        if (lockedCount > 0) {
-          toast.success(
-            `Locked pairs for ${lockedCount} team${lockedCount !== 1 ? "s" : ""} — opening brackets`,
-          );
-        }
-        router.push(`/console/tournaments/${tournamentId}/draws`);
-      },
-      onError: (err) =>
-        toast.error(errorMessage(err, "Couldn't lock pairs before generating matches")),
-    });
-  }
-
   const setupActions = canManage ? (
     <DropdownMenu open={setupOpen} onOpenChange={setSetupOpen}>
       <DropdownMenuTrigger asChild>
@@ -373,10 +339,9 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
       <WorkflowProgress
         workflow={workflow}
         tournamentId={tournamentId}
+        divisionId={firstDivisionId ?? undefined}
         assigned={board.summary.assigned}
         onNextAction={workflow.nextSquad ? openNextUnpairedSquad : undefined}
-        onGenerateMatches={workflow.readyForDraw && canManage ? handleGenerateMatches : undefined}
-        generateMatchesPending={publishAllPairings.isPending}
       />
 
       {canManage && <PairingModeCard tournamentId={tournamentId} />}
@@ -389,13 +354,16 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             </Button>
           ) : null}
           {workflow.readyForDraw && canManage ? (
-            <Button
-              tone="candy"
-              size="sm"
-              onClick={handleGenerateMatches}
-              loading={publishAllPairings.isPending}
-            >
-              {publishAllPairings.isPending ? "Generating…" : "Generate Matches"}
+            <Button asChild tone="candy" size="sm">
+              <Link
+                href={
+                  firstDivisionId
+                    ? `/console/tournaments/${tournamentId}/divisions/${firstDivisionId}/attendance`
+                    : `/console/tournaments/${tournamentId}/players`
+                }
+              >
+                Go to Check-in
+              </Link>
             </Button>
           ) : null}
           {workflow.playersAssigned && needsLockCount > 0 && !workflow.readyForDraw && canManage ? (

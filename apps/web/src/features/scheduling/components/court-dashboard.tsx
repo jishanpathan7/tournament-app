@@ -73,8 +73,12 @@ export function CourtDashboard({ tournamentId }: { tournamentId: string }) {
                   <Badge tone="pink">Delayed</Badge>
                 ) : !c.currentMatch ? (
                   <Badge tone="mint">Free</Badge>
-                ) : (
+                ) : c.currentMatch.status === "live" ? (
                   <Badge tone="candy">Live</Badge>
+                ) : (
+                  <Badge tone={matchStatusMeta(c.currentMatch.status).tone}>
+                    {matchStatusMeta(c.currentMatch.status).label}
+                  </Badge>
                 )}
               </div>
               {c.currentMatch ? (

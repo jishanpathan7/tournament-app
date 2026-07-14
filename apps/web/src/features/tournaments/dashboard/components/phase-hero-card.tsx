@@ -288,6 +288,12 @@ function Step4Hero({
 // ─── Step 5: Check-in & Readiness ────────────────────────────────────────────
 
 function Step5Hero({ tournamentId }: { tournamentId: string }) {
+  const { data: step5Divisions = [] } = useDivisions(tournamentId);
+  const firstDivisionId = step5Divisions[0]?.id;
+  const checkInHref = firstDivisionId
+    ? `/console/tournaments/${tournamentId}/divisions/${firstDivisionId}/attendance`
+    : `/console/tournaments/${tournamentId}/players`;
+
   return (
     <HeroShell step={5} title={STEP_META[5].label}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -295,7 +301,7 @@ function Step5Hero({ tournamentId }: { tournamentId: string }) {
           Mark attendance and confirm everyone is ready before generating the draw.
         </p>
         <Button asChild tone="candy" size="sm">
-          <Link href={`/console/tournaments/${tournamentId}/players`}>
+          <Link href={checkInHref}>
             <CheckCircle2 className="h-4 w-4" strokeWidth={2.25} />
             Open check-in
           </Link>

@@ -141,7 +141,9 @@ export function deriveStepSignals(
     checkInReady,
     drawComplete: drawProgress.total > 0 && drawProgress.drawn === drawProgress.total,
     courtsReady: (queue?.courts.length ?? 0) > 0 && (queue?.unscheduled.length ?? 0) === 0,
-    franchiseMode: (readiness?.squadCount ?? 0) > 0,
+    franchiseMode:
+      (readiness?.squadCount ?? 0) > 0 ||
+      (readiness?.divisions ?? []).some((d) => d.participantType === "squad"),
   };
 }
 

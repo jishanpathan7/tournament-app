@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Swords, Trophy } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
@@ -48,6 +49,8 @@ export function FranchiseTiesBoard({
   const generateKo = useGenerateFranchiseKnockoutDraw(stageId, tournamentId, sourceStageId);
   const isKnockout = mode === "knockout";
 
+  const isPending = generate.isPending || generateKo.isPending;
+
   const onGenerate = () => {
     const mutation = isKnockout ? generateKo : generate;
     mutation.mutate(isKnockout ? advanceCount : undefined, {
@@ -63,6 +66,15 @@ export function FranchiseTiesBoard({
 
   return (
     <div className="flex flex-col gap-6">
+      {isPending && (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-card border-border flex flex-col items-center gap-4 rounded-2xl border p-8 shadow-xl">
+            <Spinner className="h-8 w-8" />
+            <p className="text-foreground text-sm font-medium">Generating matches between teams…</p>
+            <p className="text-muted-foreground text-xs">This may take a moment</p>
+          </div>
+        </div>
+      )}
       <PageHeader
         eyebrow="Team draw"
         title={isKnockout ? "Knockout finals" : "Team matches"}
@@ -77,7 +89,8 @@ export function FranchiseTiesBoard({
               tone="mint"
               size="sm"
               onClick={onGenerate}
-              disabled={generate.isPending || generateKo.isPending}
+              loading={isPending}
+              disabled={isPending}
             >
               <Trophy className="h-4 w-4" />
               {isKnockout ? "Generate Knockout Finals" : "Generate Matches"}

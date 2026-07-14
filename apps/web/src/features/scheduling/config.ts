@@ -33,6 +33,9 @@ export function bucketMatches(matches: MatchView[]): ScheduleBuckets {
   const pending: MatchView[] = [];
 
   for (const match of matches) {
+    // TIE matches are squad-vs-squad containers — not schedulable on courts.
+    // Only LEG (pair matches within a tie) and standard matches appear here.
+    if (match.contestKind === "tie") continue;
     if (match.status === "pending") {
       pending.push(match);
     } else if (!match.courtId || !match.scheduledAt) {

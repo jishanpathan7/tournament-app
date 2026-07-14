@@ -25,10 +25,22 @@ _VALID = {s.value for s in AttendanceStatus}
 
 
 def roster_for_check_in(participants: Sequence[Participant]) -> list[Participant]:
-    """Event-day check-in is per player — hide pair/squad rows once doubles are published."""
+    """Event-day check-in roster.
+
+    Singles/mixed draws: individuals are the check-in unit; once pairs are published
+    the individual rows are suppressed in favour of pair rows.
+    Franchise-squad draws: only pair participants exist (no individual rows), so
+    pairs are returned directly.
+    """
     approved = [p for p in participants if p.status == ParticipantStatus.APPROVED.value]
-    if any(p.kind == ParticipantKind.PAIR.value for p in approved):
-        return [p for p in approved if p.kind == ParticipantKind.INDIVIDUAL.value]
+    individuals = [p for p in approved if p.kind == ParticipantKind.INDIVIDUAL.value]
+    pairs = [p for p in approved if p.kind == ParticipantKind.PAIR.value]
+    if pairs and individuals:
+        # Mixed draw: pairs published alongside individuals — check in by individual.
+        return individuals
+    if pairs:
+        # Franchise squad: only pairs exist — check in by pair.
+        return pairs
     return approved
 
 
@@ -56,8 +68,9 @@ def _apply(participant: Participant, status: str) -> None:
 
 async def list_attendance(
     session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
-) -> Sequence[Participant]:
-    return await repo.list_participants(session, org_id, division_id)
+) -> list[Participant]:
+    all_participants = await repo.list_participants(session, org_id, division_id)
+    return roster_for_check_in(all_participants)
 
 
 async def set_attendance(

@@ -19,17 +19,15 @@ const WORKFLOW_STEPS = [
 export function WorkflowProgress({
   workflow,
   tournamentId,
+  divisionId,
   assigned,
   onNextAction,
-  onGenerateMatches,
-  generateMatchesPending,
 }: {
   workflow: WorkflowState;
   tournamentId: string;
+  divisionId?: string;
   assigned: number;
   onNextAction?: () => void;
-  onGenerateMatches?: () => void;
-  generateMatchesPending?: boolean;
 }) {
   const { currentStep, pairedCount, draftCount, generatedCount, totalSquads, nextSquad } = workflow;
 
@@ -80,24 +78,18 @@ export function WorkflowProgress({
           </div>
 
           {workflow.readyForDraw ? (
-            onGenerateMatches ? (
-              <Button
-                tone="mint"
-                size="sm"
-                onClick={onGenerateMatches}
-                loading={generateMatchesPending}
+            <Button asChild tone="mint" size="sm">
+              <Link
+                href={
+                  divisionId
+                    ? `/console/tournaments/${tournamentId}/divisions/${divisionId}/attendance`
+                    : `/console/tournaments/${tournamentId}/players`
+                }
               >
-                {generateMatchesPending ? "Generating…" : "Generate Matches"}
-                {!generateMatchesPending && <ArrowRight className="h-4 w-4" />}
-              </Button>
-            ) : (
-              <Button asChild tone="mint" size="sm">
-                <Link href={`/console/tournaments/${tournamentId}/draws`}>
-                  Generate Matches
-                  <ArrowRight className="h-4 w-4" />
-                </Link>
-              </Button>
-            )
+                Go to Check-in
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
           ) : nextSquad && onNextAction ? (
             <Button tone="candy" size="sm" onClick={onNextAction}>
               Generate pairs for {nextSquad.name}

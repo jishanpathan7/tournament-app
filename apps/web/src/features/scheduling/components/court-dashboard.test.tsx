@@ -68,7 +68,7 @@ describe("CourtDashboard", () => {
     expect(screen.getByText("Court 2")).toBeInTheDocument();
     expect(screen.getByText("Aarav K. vs Mei L.")).toBeInTheDocument();
     expect(screen.getByText("Court is free")).toBeInTheDocument();
-    expect(screen.getByText("Live")).toBeInTheDocument();
+    expect(screen.getAllByText("Scheduled").length).toBeGreaterThan(0);
     expect(screen.getByText("Free")).toBeInTheDocument();
   });
 });
