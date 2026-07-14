@@ -16,6 +16,7 @@ import {
   getPublicCheckInSession,
 } from "@/features/registration-ops/checkin-link-api";
 import { errorMessage } from "@/lib/problem";
+import { queryKeys } from "@/lib/query-keys";
 
 /** Public self check-in — pick your name, confirm once. */
 export function PublicCheckInView({ token }: { token: string }) {
@@ -25,7 +26,7 @@ export function PublicCheckInView({ token }: { token: string }) {
   const [done, setDone] = useState(false);
 
   const session = useQuery({
-    queryKey: ["checkin", token, "session"],
+    queryKey: queryKeys.tokenSessions.checkin(token),
     queryFn: () => getPublicCheckInSession(token),
     retry: false,
   });
@@ -34,7 +35,7 @@ export function PublicCheckInView({ token }: { token: string }) {
     mutationFn: (participantId: string) => confirmPublicCheckIn(token, participantId),
     onSuccess: () => {
       setDone(true);
-      void queryClient.invalidateQueries({ queryKey: ["checkin", token, "session"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tokenSessions.checkin(token) });
       toast.success("You're checked in!");
     },
     onError: (err) => toast.error(errorMessage(err, "Check-in failed")),

@@ -206,6 +206,23 @@ export function deriveMatchProgress(matches: MatchView[]): MatchProgress {
   return { total, terminal, pct };
 }
 
+/** Derive registration totals from the readiness payload — avoids the per-division fan-out
+ * that `deriveRegistrationTotals` requires. Uses the registration status counts added in P0.2. */
+export function deriveRegistrationTotalsFromReadiness(
+  readiness: TournamentReadinessView | undefined,
+): RegistrationTotals {
+  if (!readiness) return { approved: 0, pending: 0, waitlisted: 0, rejected: 0 };
+  return readiness.divisions.reduce(
+    (acc, d) => ({
+      approved: acc.approved + d.approved,
+      pending: acc.pending + (d.registrationsSubmitted ?? 0),
+      waitlisted: acc.waitlisted + (d.registrationsWaitlisted ?? 0),
+      rejected: acc.rejected + (d.registrationsRejected ?? 0),
+    }),
+    { approved: 0, pending: 0, waitlisted: 0, rejected: 0 },
+  );
+}
+
 export function deriveRegistrationTotals(
   registrationsByDivision: Map<string, RegistrationResponse[]>,
   participantsByDivision: Map<string, ParticipantResponse[]>,

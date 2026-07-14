@@ -62,6 +62,13 @@ def _division_readiness(
     # for doubles, awaiting pairing) — the "missing players / partners" signal.
     unpaired = sum(1 for r in registrations if r.participant_id is None and r.status in _ACTIVE_REG)
 
+    # Registration lifecycle counts for the capacity panel (different from attendance pending).
+    regs_submitted = sum(1 for r in registrations if r.status == RegistrationStatus.SUBMITTED.value)
+    regs_waitlisted = sum(
+        1 for r in registrations if r.status == RegistrationStatus.WAITLISTED.value
+    )
+    regs_rejected = sum(1 for r in registrations if r.status == RegistrationStatus.REJECTED.value)
+
     blockers: list[str] = []
     if approved_count < _MIN_TO_DRAW:
         blockers.append(f"needs at least {_MIN_TO_DRAW} approved participants")
@@ -92,6 +99,9 @@ def _division_readiness(
         ready_for_draw=ready_for_draw,
         ready_for_start=ready_for_start,
         blockers=blockers,
+        registrations_submitted=regs_submitted,
+        registrations_waitlisted=regs_waitlisted,
+        registrations_rejected=regs_rejected,
     )
 
 

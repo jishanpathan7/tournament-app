@@ -82,6 +82,29 @@ export const queryKeys = {
 
   health: ["health"] as const,
 
+  franchiseTies: {
+    standings: (stageId: string) => ["franchise-standings", stageId] as const,
+    board: (stageId: string) => ["franchise-ties", stageId] as const,
+  },
+
+  portal: {
+    home: () => ["portal", "home"] as const,
+  },
+
+  scorekeeperLink: {
+    match: (matchId: string) => ["scorekeeper-match-link", matchId] as const,
+  },
+
+  checkinLink: {
+    division: (divisionId: string) => ["checkin-link", divisionId] as const,
+  },
+
+  // Token-scoped sessions — live outside the main authenticated cache.
+  tokenSessions: {
+    scorekeeper: (token: string) => ["scorekeeper", token, "session"] as const,
+    checkin: (token: string) => ["checkin", token, "session"] as const,
+  },
+
   tournamentMembers: {
     list: (tournamentId: string) => ["tournament-members", tournamentId] as const,
   },

@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
 import * as matchLinkApi from "@/features/scoring/scorekeeper-match-api";
 import { errorMessage } from "@/lib/problem";
+import { queryKeys } from "@/lib/query-keys";
 
 /** Generate a unique public link for this match — scorekeeper lands directly on scoring. */
 export function ScorekeeperMatchLinkPanel({
@@ -26,7 +27,7 @@ export function ScorekeeperMatchLinkPanel({
   const [recipientName, setRecipientName] = useState("");
 
   const activeLink = useQuery({
-    queryKey: ["scorekeeper-match-link", matchId],
+    queryKey: queryKeys.scorekeeperLink.match(matchId),
     queryFn: () => matchLinkApi.getMatchScorekeeperLink(matchId),
   });
 
@@ -38,7 +39,7 @@ export function ScorekeeperMatchLinkPanel({
       }),
     onSuccess: (link) => {
       setCreatedUrl(link.url);
-      void queryClient.invalidateQueries({ queryKey: ["scorekeeper-match-link", matchId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.scorekeeperLink.match(matchId) });
       toast.success(
         recipientEmail.trim()
           ? "Scorekeeper link sent by email"
@@ -52,7 +53,7 @@ export function ScorekeeperMatchLinkPanel({
     mutationFn: () => matchLinkApi.revokeMatchScorekeeperLink(matchId),
     onSuccess: () => {
       setCreatedUrl(null);
-      void queryClient.invalidateQueries({ queryKey: ["scorekeeper-match-link", matchId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.scorekeeperLink.match(matchId) });
       toast.success("Scorekeeper link revoked");
     },
     onError: (err) => toast.error(errorMessage(err)),

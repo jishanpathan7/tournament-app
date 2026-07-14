@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import * as checkinApi from "@/features/registration-ops/checkin-link-api";
 import { errorMessage } from "@/lib/problem";
+import { queryKeys } from "@/lib/query-keys";
 
 /** Organizer panel — QR + link for division self check-in. */
 export function CheckInLinkPanel({ divisionId }: { divisionId: string }) {
@@ -16,7 +17,7 @@ export function CheckInLinkPanel({ divisionId }: { divisionId: string }) {
   const [createdUrl, setCreatedUrl] = useState<string | null>(null);
 
   const activeLink = useQuery({
-    queryKey: ["checkin-link", divisionId],
+    queryKey: queryKeys.checkinLink.division(divisionId),
     queryFn: () => checkinApi.getDivisionCheckInLink(divisionId),
   });
 
@@ -24,7 +25,7 @@ export function CheckInLinkPanel({ divisionId }: { divisionId: string }) {
     mutationFn: () => checkinApi.createDivisionCheckInLink(divisionId),
     onSuccess: (link) => {
       setCreatedUrl(link.url ?? null);
-      void queryClient.invalidateQueries({ queryKey: ["checkin-link", divisionId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.checkinLink.division(divisionId) });
       toast.success("Check-in QR ready — display at the venue entrance");
     },
     onError: (err) => toast.error(errorMessage(err)),

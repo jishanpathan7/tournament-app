@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import * as matchLinkApi from "@/features/scoring/scorekeeper-match-api";
 import { errorMessage } from "@/lib/problem";
+import { queryKeys } from "@/lib/query-keys";
 
 /** One-click copy of the scorekeeper link for a live match. Fetches the active link;
  * auto-creates one if none exists. Shows inline next to the primary action button. */
@@ -14,14 +15,14 @@ export function ScorekeeperCopyButton({ matchId }: { matchId: string }) {
   const queryClient = useQueryClient();
 
   const activeLink = useQuery({
-    queryKey: ["scorekeeper-match-link", matchId],
+    queryKey: queryKeys.scorekeeperLink.match(matchId),
     queryFn: () => matchLinkApi.getMatchScorekeeperLink(matchId),
   });
 
   const create = useMutation({
     mutationFn: () => matchLinkApi.createMatchScorekeeperLink(matchId),
     onSuccess: async (link) => {
-      void queryClient.invalidateQueries({ queryKey: ["scorekeeper-match-link", matchId] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.scorekeeperLink.match(matchId) });
       if (link.url) {
         await navigator.clipboard.writeText(link.url);
         toast.success("Scorekeeper link copied");

@@ -55,6 +55,16 @@ def _init() -> None:
             future=True,
             pool_pre_ping=True,
             connect_args=connect_args,
+            # Neon free tier allows ~5 concurrent connections; cap the pool so
+            # we never exhaust it and requests fail fast (pool_timeout) rather
+            # than queuing indefinitely.  With 1 Railway worker: 3+2 = 5 max.
+            pool_size=3,
+            max_overflow=2,
+            pool_timeout=20,
+            # Recycle connections after 10 minutes — Neon drops idle connections
+            # at the PgBouncer layer and pool_pre_ping alone adds a round-trip;
+            # recycling avoids using a connection Neon already closed.
+            pool_recycle=600,
         )
         _sessionmaker = async_sessionmaker(_engine, expire_on_commit=False)
 

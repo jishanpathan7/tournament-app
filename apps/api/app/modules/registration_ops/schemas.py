@@ -137,6 +137,11 @@ class DivisionReadinessView(ApiModel):
     ready_for_draw: bool  # enough checked-in participants, not yet drawn
     ready_for_start: bool  # drawn + everyone in the draw checked in
     blockers: list[str]
+    # Registration lifecycle counts — distinct from attendance `pending` above.
+    # submitted = awaiting organizer approval; these drive the dashboard capacity panel.
+    registrations_submitted: int = 0
+    registrations_waitlisted: int = 0
+    registrations_rejected: int = 0
 
 
 class TournamentReadinessView(ApiModel):
