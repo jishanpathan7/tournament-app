@@ -183,14 +183,10 @@ async def approve_all(
     async with timed("approve_all.fetch_division", logger):
         division = await _require_division(session, org_id, division_id, for_update=True)
 
-    async with timed("approve_all.fetch_tournament_and_profile", logger):
+    async with timed("approve_all.fetch_tournament", logger):
         tournament = await repo.get_tournament(session, org_id, division.tournament_id)
         if tournament is None:  # pragma: no cover
             raise NotFoundError("Tournament not found")
-        profile_row = await repo.get_sport_profile(session, tournament.sport_profile_id)
-        if profile_row is None:  # pragma: no cover
-            raise NotFoundError("Sport profile not found")
-        kind = ParticipantKind(division.participant_type)
 
     async with timed("approve_all.count_approved", logger):
         already_approved = await repo.count_approved(session, org_id, division.id)
@@ -217,7 +213,7 @@ async def approve_all(
             participant = Participant(
                 organization_id=org_id,
                 division_id=division.id,
-                kind=kind.value,
+                kind=ParticipantKind.INDIVIDUAL.value,
                 user_id=(None if entrant_has_external_identity(reg) else reg.submitted_by),
                 display_name=entrant_display_name(reg, account_name=user.name if user else None),
                 skill_level=reg.skill_level,
