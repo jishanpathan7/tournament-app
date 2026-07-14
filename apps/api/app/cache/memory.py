@@ -35,6 +35,10 @@ class InMemoryCache:
     async def delete(self, key: str) -> None:
         self._store.pop(key, None)
 
+    async def delete_many(self, keys: list[str]) -> None:
+        for key in keys:
+            self._store.pop(key, None)
+
     async def clear(self) -> None:
         """Drop everything (not part of the port; handy for tests/admin)."""
         self._store.clear()

@@ -45,6 +45,21 @@ class Cache(Protocol):
 
     async def delete(self, key: str) -> None: ...
 
+    async def delete_many(self, keys: list[str]) -> None: ...
+
+
+@runtime_checkable
+class Lock(Protocol):
+    """Distributed mutex. MVP: no-op (single instance is safe). Scale: Redis SETNX.
+
+    acquire returns True if the lock was obtained, False if already held.
+    Callers must release in a finally block; TTL is a safety net for leaked locks.
+    """
+
+    async def acquire(self, key: str, *, ttl: int) -> bool: ...
+
+    async def release(self, key: str) -> None: ...
+
 
 @runtime_checkable
 class Storage(Protocol):

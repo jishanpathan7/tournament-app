@@ -10,7 +10,7 @@ from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from app.core.config import get_settings
-from app.core.ports import Cache, EmailChannel, JobQueue, LoginThrottle, PubSub, Storage
+from app.core.ports import Cache, EmailChannel, JobQueue, Lock, LoginThrottle, PubSub, Storage
 from app.core.throttle import build_throttle
 from app.emails.log_channel import LogEmailChannel
 
@@ -36,10 +36,28 @@ def get_login_throttle() -> LoginThrottle:
 
 @lru_cache
 def get_cache() -> Cache:
-    """In-process TTL cache at MVP; a RedisCache slots in here when REDIS_URL is set."""
+    """In-process TTL cache at MVP; RedisCache when REDIS_URL is set."""
+    settings = get_settings()
+    if settings.redis_url:
+        from app.cache.redis_cache import RedisCache
+
+        return RedisCache(settings.redis_url)
     from app.cache.memory import InMemoryCache
 
     return InMemoryCache()
+
+
+@lru_cache
+def get_lock() -> Lock:
+    """No-op lock at MVP (single instance); RedisLock when REDIS_URL is set."""
+    settings = get_settings()
+    if settings.redis_url:
+        from app.locks.redis_lock import RedisLock
+
+        return RedisLock(settings.redis_url)
+    from app.locks.noop_lock import NoopLock
+
+    return NoopLock()
 
 
 @lru_cache

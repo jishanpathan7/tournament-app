@@ -18,9 +18,15 @@ from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, ValidationError
+from app.cache import keys as cache_keys
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_advancement_engine, get_format_registry, get_sport_registry
+from app.core.factory import (
+    get_advancement_engine,
+    get_cache,
+    get_format_registry,
+    get_sport_registry,
+)
 from app.db.enums import (
     AttendanceStatus,
     MatchOutcome,
@@ -209,6 +215,7 @@ async def update_tournament(
     await session.flush()
     await session.refresh(tournament, attribute_names=["venue"])
     await _audit_event(session, org_id, actor_id, events.TOURNAMENT_UPDATED, tournament.id)
+    await get_cache().delete(cache_keys.public_tournament_keys(tournament.id)["overview"])
     return tournament
 
 
@@ -298,6 +305,7 @@ async def transition_status(
             type="tournament.completed",
             data={"tournament_id": str(tournament.id), "tournament_name": tournament.name},
         )
+    await get_cache().delete(cache_keys.public_tournament_keys(tournament.id)["overview"])
     return tournament
 
 
@@ -352,6 +360,7 @@ async def publish(
                 recipient_emails=emails,
                 recipient_user_ids=user_ids,
             )
+    await get_cache().delete_many(list(cache_keys.public_tournament_keys(tournament.id).values()))
     return tournament
 
 

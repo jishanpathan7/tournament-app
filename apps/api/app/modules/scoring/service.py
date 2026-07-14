@@ -19,9 +19,10 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, PreconditionFailedError, ValidationError
+from app.cache import keys as cache_keys
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_broadcaster, get_sport_registry
+from app.core.factory import get_broadcaster, get_cache, get_sport_registry
 from app.db.enums import (
     ContestKind,
     IdempotencyStatus,
@@ -463,6 +464,11 @@ async def _emit(
         event_type=events.STANDINGS_RECOMPUTE,
         payload={"stageId": str(match.stage_id), "organizationId": str(org_id)},
     )
+    # Evict public standings cache for this stage — recompute worker will update DB rows;
+    # next public read will re-populate from the fresh standings.
+    cache = get_cache()
+    await cache.delete(cache_keys.public_standings_key(match.tournament_id, match.stage_id))
+    await cache.delete(cache_keys.public_tournament_keys(match.tournament_id)["schedule"])
 
 
 async def _broadcast_started(org_id: uuid.UUID, match: Match) -> None:
