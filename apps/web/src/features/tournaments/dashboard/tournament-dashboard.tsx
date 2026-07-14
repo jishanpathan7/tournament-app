@@ -127,6 +127,7 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
             tournamentId={tournamentId}
             divisions={data.divisions.data ?? []}
             totals={data.registrationTotals}
+            readinessDivisionsByDivision={data.readinessDivisionsByDivision}
             registrationsByDivision={data.registrationsByDivision}
             participantsByDivision={data.participantsByDivision}
             canManage={canManage}

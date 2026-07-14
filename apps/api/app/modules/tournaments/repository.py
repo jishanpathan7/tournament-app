@@ -142,6 +142,35 @@ async def stage_has_scored_matches(
     return int((await session.execute(stmt)).scalar_one()) > 0
 
 
+async def stage_draw_stats(
+    session: AsyncSession, org_id: uuid.UUID, stage_ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, tuple[int, bool]]:
+    """Return {stage_id: (match_count, has_scored)} for all given stage ids.
+
+    Two aggregate queries replace the previous per-stage pair (2N queries → 2 total).
+    """
+    if not stage_ids:
+        return {}
+
+    count_stmt = (
+        select(Match.stage_id, func.count().label("cnt"))
+        .where(Match.stage_id.in_(stage_ids), Match.organization_id == org_id)
+        .group_by(Match.stage_id)
+    )
+    count_rows = (await session.execute(count_stmt)).all()
+    counts: dict[uuid.UUID, int] = {row.stage_id: row.cnt for row in count_rows}
+
+    scored_stmt = (
+        select(Match.stage_id)
+        .distinct()
+        .join(MatchResultEvent, MatchResultEvent.match_id == Match.id)
+        .where(Match.stage_id.in_(stage_ids), Match.organization_id == org_id)
+    )
+    scored_ids: set[uuid.UUID] = {row[0] for row in (await session.execute(scored_stmt)).all()}
+
+    return {sid: (counts.get(sid, 0), sid in scored_ids) for sid in stage_ids}
+
+
 async def delete_stage_draw(session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID) -> None:
     """Delete everything a draw persisted for a stage (Standings, Matches — which cascade
     their MatchParticipant/MatchResultEvent rows —, Rounds, Groups), leaving the Stage
@@ -188,6 +217,17 @@ async def get_sport_profile_by_key(
 
 async def get_sport_profile(session: AsyncSession, pid: uuid.UUID) -> SportProfile | None:
     return await session.get(SportProfile, pid)
+
+
+async def list_sport_profiles_by_ids(
+    session: AsyncSession, ids: Sequence[uuid.UUID]
+) -> dict[uuid.UUID, SportProfile]:
+    """Batch fetch sport profiles by id — single IN query instead of N session.get calls."""
+    if not ids:
+        return {}
+    stmt = select(SportProfile).where(SportProfile.id.in_(ids))
+    rows = (await session.execute(stmt)).scalars().all()
+    return {p.id: p for p in rows}
 
 
 async def tournament_activity(

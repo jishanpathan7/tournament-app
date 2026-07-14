@@ -23,7 +23,7 @@ from app.api.deps import (
     require_permission,
 )
 from app.core import authz
-from app.db.models import Division, Stage, Tournament
+from app.db.models import Division, SportProfile, Stage, Tournament
 from app.modules.registrations import repository as registrations_repo
 from app.modules.scoring import repository as scoring_repo
 from app.modules.tournaments import repository as repo
@@ -57,6 +57,40 @@ _delete = require_permission(authz.TOURNAMENT_DELETE)
 
 async def _tournament_response(session: AsyncSession, tournament: Tournament) -> TournamentResponse:
     profile = await repo.get_sport_profile(session, tournament.sport_profile_id)
+    return TournamentResponse(
+        id=tournament.id,
+        slug=tournament.slug,
+        name=tournament.name,
+        sport_key=profile.key if profile else "",
+        status=tournament.status,
+        visibility=tournament.visibility,
+        starts_at=tournament.starts_at,
+        ends_at=tournament.ends_at,
+        settings=tournament.settings,
+        venue_name=(
+            tournament.venue.name if tournament.venue else tournament.settings.get("venue_name")
+        ),
+        venue=(
+            VenueResponse(
+                id=tournament.venue.id,
+                name=tournament.venue.name,
+                address=tournament.venue.address,
+                maps_url=tournament.venue.maps_url,
+            )
+            if tournament.venue
+            else None
+        ),
+        draw_published_at=tournament.draw_published_at,
+        schedule_published_at=tournament.schedule_published_at,
+        results_published_at=tournament.results_published_at,
+        created_at=tournament.created_at,
+    )
+
+
+def _build_tournament_response(
+    tournament: Tournament, profile: "SportProfile | None"
+) -> TournamentResponse:
+    """Sync variant for use when the profile is already loaded (e.g. batch list)."""
     return TournamentResponse(
         id=tournament.id,
         slug=tournament.slug,
@@ -145,7 +179,10 @@ async def list_tournaments(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[TournamentResponse]:
     rows = await repo.list_tournaments(session, principal.organization_id)
-    return [await _tournament_response(session, t) for t in rows]
+    # Batch fetch all sport profiles in one query instead of N session.get calls.
+    profile_ids = list({t.sport_profile_id for t in rows if t.sport_profile_id})
+    profiles = await repo.list_sport_profiles_by_ids(session, profile_ids)
+    return [_build_tournament_response(t, profiles.get(t.sport_profile_id)) for t in rows]
 
 
 @router.get("/tournaments/{tournament_id}", response_model=TournamentResponse)
@@ -310,14 +347,16 @@ async def list_tournament_stages(
 ) -> list[StageResponse]:
     await service._require_tournament(session, principal.organization_id, tournament_id)
     rows = await repo.list_tournament_stages(session, principal.organization_id, tournament_id)
-    result = []
-    for stage in rows:
-        count = await repo.stage_match_count(session, principal.organization_id, stage.id)
-        locked = count > 0 and await repo.stage_has_scored_matches(
-            session, principal.organization_id, stage.id
+    # Batch: 2 aggregate queries replace 2N per-stage queries.
+    stats = await repo.stage_draw_stats(session, principal.organization_id, [s.id for s in rows])
+    return [
+        _stage_response(
+            stage,
+            drawn=stats.get(stage.id, (0, False))[0] > 0,
+            locked=stats.get(stage.id, (0, False))[1],
         )
-        result.append(_stage_response(stage, drawn=count > 0, locked=locked))
-    return result
+        for stage in rows
+    ]
 
 
 @router.get("/tournaments/{tournament_id}/divisions", response_model=list[DivisionResponse])
@@ -391,14 +430,16 @@ async def list_stages(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[StageResponse]:
     rows = await repo.list_stages(session, principal.organization_id, division_id)
-    result = []
-    for stage in rows:
-        count = await repo.stage_match_count(session, principal.organization_id, stage.id)
-        locked = count > 0 and await repo.stage_has_scored_matches(
-            session, principal.organization_id, stage.id
+    # Batch: 2 aggregate queries replace 2N per-stage queries.
+    stats = await repo.stage_draw_stats(session, principal.organization_id, [s.id for s in rows])
+    return [
+        _stage_response(
+            stage,
+            drawn=stats.get(stage.id, (0, False))[0] > 0,
+            locked=stats.get(stage.id, (0, False))[1],
         )
-        result.append(_stage_response(stage, drawn=count > 0, locked=locked))
-    return result
+        for stage in rows
+    ]
 
 
 @router.patch(

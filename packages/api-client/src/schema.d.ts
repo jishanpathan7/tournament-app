@@ -802,6 +802,23 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  "/api/v1/tournaments/{tournament_id}/stages": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Tournament Stages */
+    get: operations["tournaments_list_tournament_stages"];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   "/api/v1/divisions/{division_id}": {
     parameters: {
       query?: never;
@@ -1361,6 +1378,23 @@ export interface paths {
     put?: never;
     /** Bulk Set Attendance */
     post: operations["registration-ops_bulk_set_attendance"];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  "/api/v1/tournaments/{tournament_id}/participants": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** List Tournament Participants */
+    get: operations["registration-ops_list_tournament_participants"];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -2925,6 +2959,21 @@ export interface components {
       readyForStart: boolean;
       /** Blockers */
       blockers: string[];
+      /**
+       * Registrationssubmitted
+       * @default 0
+       */
+      registrationsSubmitted: number;
+      /**
+       * Registrationswaitlisted
+       * @default 0
+       */
+      registrationsWaitlisted: number;
+      /**
+       * Registrationsrejected
+       * @default 0
+       */
+      registrationsRejected: number;
     };
     /** DivisionResponse */
     DivisionResponse: {
@@ -6538,6 +6587,37 @@ export interface operations {
       };
     };
   };
+  tournaments_list_tournament_stages: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        tournament_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["StageResponse"][];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
   tournaments_update_division: {
     parameters: {
       query?: never;
@@ -7720,6 +7800,37 @@ export interface operations {
         };
         content: {
           "application/json": components["schemas"]["BulkCheckInResult"];
+        };
+      };
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["HTTPValidationError"];
+        };
+      };
+    };
+  };
+  "registration-ops_list_tournament_participants": {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        tournament_id: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          "application/json": components["schemas"]["ParticipantResponse"][];
         };
       };
       /** @description Validation Error */

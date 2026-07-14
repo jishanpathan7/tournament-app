@@ -23,6 +23,7 @@ import {
   deriveDrawProgress,
   deriveDuringStats,
   deriveRegistrationTotals,
+  deriveRegistrationTotalsFromReadiness,
   deriveStepSignals,
   deriveTournamentStep,
   getDashboardPhase,
@@ -49,11 +50,16 @@ export function useTournamentDashboard(tournamentId: string) {
   const participants = useTournamentParticipants(tournamentId);
   const activity = useTournamentActivity(tournamentId, { enabled: phase !== "before" });
 
+  // Disable the per-division fan-outs when readiness is loaded — registration status counts
+  // are now embedded in DivisionReadinessView (P0.2). The raw queries fire only as a fallback
+  // before readiness data arrives (phase=before, readiness not yet fetched).
+  const needsRawQueries = phase === "before" && !readiness.data && divisionIds.length > 0;
+
   const registrationQueries = useQueries({
     queries: divisionIds.map((divisionId) => ({
       queryKey: queryKeys.divisions.registrations(divisionId),
       queryFn: () => registrationsApi.listRegistrations(divisionId),
-      enabled: phase === "before" && divisionIds.length > 0,
+      enabled: needsRawQueries,
     })),
   });
 
@@ -61,7 +67,7 @@ export function useTournamentDashboard(tournamentId: string) {
     queries: divisionIds.map((divisionId) => ({
       queryKey: queryKeys.divisions.participants(divisionId),
       queryFn: () => registrationsApi.listParticipants(divisionId),
-      enabled: phase === "before" && divisionIds.length > 0,
+      enabled: needsRawQueries,
     })),
   });
 
@@ -93,10 +99,25 @@ export function useTournamentDashboard(tournamentId: string) {
     return map;
   }, [divisionIds, participantQueries]);
 
+  // Prefer readiness-derived totals (no extra HTTP calls); fall back to raw queries
+  // only during the brief window before readiness data loads.
   const registrationTotals = useMemo(
-    () => deriveRegistrationTotals(registrationsByDivision, participantsByDivision),
-    [registrationsByDivision, participantsByDivision],
+    () =>
+      readiness.data
+        ? deriveRegistrationTotalsFromReadiness(readiness.data)
+        : deriveRegistrationTotals(registrationsByDivision, participantsByDivision),
+    [readiness.data, registrationsByDivision, participantsByDivision],
   );
+
+  const readinessDivisionsByDivision = useMemo(() => {
+    type DivView = NonNullable<typeof readiness.data>["divisions"][number];
+    const map = new Map<string, DivView>();
+    for (const d of readiness.data?.divisions ?? []) {
+      map.set(d.divisionId, d);
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [readiness.data]);
 
   const drawProgress = useMemo(() => deriveDrawProgress(stages.data ?? []), [stages.data]);
 
@@ -201,6 +222,7 @@ export function useTournamentDashboard(tournamentId: string) {
     standingsByStage,
     registrationsByDivision,
     participantsByDivision,
+    readinessDivisionsByDivision,
     isLoadingCore,
   };
 }

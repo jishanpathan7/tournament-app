@@ -1,6 +1,7 @@
 "use client";
 
 import type {
+  DivisionReadinessView,
   DivisionResponse,
   ParticipantResponse,
   RegistrationResponse,
@@ -17,6 +18,7 @@ export function RegistrationsSummaryPanel({
   tournamentId,
   divisions,
   totals,
+  readinessDivisionsByDivision,
   registrationsByDivision,
   participantsByDivision,
   canManage,
@@ -24,6 +26,7 @@ export function RegistrationsSummaryPanel({
   tournamentId: string;
   divisions: DivisionResponse[];
   totals: RegistrationTotals;
+  readinessDivisionsByDivision?: Map<string, DivisionReadinessView>;
   registrationsByDivision?: Map<string, RegistrationResponse[]>;
   participantsByDivision?: Map<string, ParticipantResponse[]>;
   canManage: boolean;
@@ -49,10 +52,19 @@ export function RegistrationsSummaryPanel({
 
         <ul className="divide-border divide-y">
           {divisions.map((d) => {
+            const rdiv = readinessDivisionsByDivision?.get(d.id);
             const regs = registrationsByDivision?.get(d.id) ?? [];
             const parts = participantsByDivision?.get(d.id) ?? [];
-            const hasData = registrationsByDivision?.has(d.id);
-            const summary = hasData ? deriveCapacity(null, regs, parts) : null;
+            // Prefer readiness-embedded counts (no extra HTTP calls); fall back to raw lists.
+            const summary = rdiv
+              ? {
+                  approved: rdiv.approved,
+                  pending: rdiv.registrationsSubmitted ?? 0,
+                  waitlisted: rdiv.registrationsWaitlisted ?? 0,
+                }
+              : registrationsByDivision?.has(d.id)
+                ? deriveCapacity(null, regs, parts)
+                : null;
 
             return (
               <li key={d.id} className="flex items-center justify-between gap-3 py-2.5">
