@@ -76,6 +76,21 @@ async def list_match_events(
     return (await session.execute(stmt)).scalars().all()
 
 
+async def live_match_on_court(
+    session: AsyncSession, org_id: uuid.UUID, court_id: uuid.UUID, exclude_match_id: uuid.UUID
+) -> Match | None:
+    """Return a live match on `court_id` that isn't `exclude_match_id`, or None."""
+    from app.db.enums import MatchStatus  # local import to avoid circular
+
+    stmt = select(Match).where(
+        Match.organization_id == org_id,
+        Match.court_id == court_id,
+        Match.status == MatchStatus.LIVE.value,
+        Match.id != exclude_match_id,
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def get_stage(session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID) -> Stage | None:
     stmt = select(Stage).where(Stage.id == sid, Stage.organization_id == org_id)
     return (await session.execute(stmt)).scalar_one_or_none()

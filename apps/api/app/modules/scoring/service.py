@@ -250,6 +250,17 @@ async def start_match(
     if len(_ordered_sides(match)) != 2:
         raise ValidationError("match does not have two participants to start", code="not_scorable")
 
+    # Prevent two live matches on the same court simultaneously.
+    if match.court_id is not None:
+        blocking = await repo.live_match_on_court(
+            session, org_id, match.court_id, exclude_match_id=match.id
+        )
+        if blocking is not None:
+            raise ConflictError(
+                "court already has a live match in progress",
+                code="court_occupied",
+            )
+
     match.status = MatchStatus.LIVE.value
     await session.flush()
     # DB trigger bumps `updated_at` — refresh before router reads it for ETag / MatchView.

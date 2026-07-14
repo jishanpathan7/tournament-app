@@ -201,6 +201,50 @@ async def test_start_match_rejects_completed(app, client):
     assert body.get("code") == "not_startable"
 
 
+async def test_start_match_rejects_court_already_occupied(app, client):
+    """Two scheduled matches on the same court — starting the first succeeds, second 409s."""
+    tid, _did, sid = await _bracket(client, "round_robin", 3)
+    matches = await _matches(client, sid)
+    assert len(matches) >= 2
+
+    # Create a court, assign it to the tournament, schedule both matches on it.
+    venue = await client.post("/api/v1/venues", json={"name": "Gym"}, headers=_csrf(client))
+    assert venue.status_code == 201, venue.text
+    court = await client.post(
+        "/api/v1/courts",
+        json={"venueId": venue.json()["id"], "name": "Court 1"},
+        headers=_csrf(client),
+    )
+    assert court.status_code == 201, court.text
+    court_id = court.json()["id"]
+
+    assign = await client.post(
+        f"/api/v1/tournaments/{tid}/courts",
+        json={"courtId": court_id},
+        headers=_csrf(client),
+    )
+    assert assign.status_code == 201, assign.text
+
+    scheduled_at = "2026-07-31T10:00:00Z"
+    for m in matches[:2]:
+        resp = await client.patch(
+            f"/api/v1/matches/{m['id']}/schedule",
+            json={"courtId": court_id, "scheduledAt": scheduled_at, "durationMinutes": 30},
+            headers=_csrf(client),
+        )
+        assert resp.status_code == 200, resp.text
+
+    # First start succeeds.
+    s1, r1 = await _start(client, matches[0]["id"])
+    assert s1 == 200, r1.text
+    assert r1.json()["status"] == "live"
+
+    # Second start on the same court must be rejected.
+    s2, r2 = await _start(client, matches[1]["id"])
+    assert s2 == 409, r2.text
+    assert r2.json().get("code") == "court_occupied"
+
+
 # ---- 1. round robin → standings ----
 
 
