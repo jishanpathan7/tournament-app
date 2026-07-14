@@ -12,9 +12,10 @@ from typing import Any
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
+from app.cache import keys as cache_keys
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_broadcaster, get_sport_registry
+from app.core.factory import get_broadcaster, get_cache, get_sport_registry
 from app.core.perf import timed
 from app.db.enums import (
     ParticipantKind,
@@ -150,6 +151,7 @@ async def approve_registration(
                 tournament=tournament,
                 division=division,
             )
+    await get_cache().delete(cache_keys.readiness_key(org_id, division.tournament_id))
     return registration, participant
 
 
@@ -249,6 +251,7 @@ async def approve_all(
         session, aggregate="registration", event_type=events.REGISTRATION_APPROVED, payload=payload
     )
     await get_broadcaster().publish(org_channel(org_id), events.REGISTRATION_APPROVED, payload)
+    await get_cache().delete(cache_keys.readiness_key(org_id, division.tournament_id))
 
     return approved, waitlisted, skipped
 
@@ -278,6 +281,7 @@ async def waitlist_registration(
             tournament=tournament,
             division=division,
         )
+    await get_cache().delete(cache_keys.readiness_key(org_id, division.tournament_id))
     return registration
 
 
@@ -307,6 +311,7 @@ async def reject_registration(
             tournament=tournament,
             division=division,
         )
+    await get_cache().delete(cache_keys.readiness_key(org_id, division.tournament_id))
     return registration
 
 

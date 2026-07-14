@@ -22,8 +22,13 @@ from app.api.deps import (
     get_request_session,
     require_permission,
 )
+from app.cache import get_json
+from app.cache import keys as cache_keys
+from app.cache import set_json
 from app.core import authz
-from app.db.models import Division, SportProfile, Stage, Tournament
+from app.core.factory import get_cache
+from app.core.ports import Cache
+from app.db.models import Division, Stage, Tournament
 from app.modules.registrations import repository as registrations_repo
 from app.modules.scoring import repository as scoring_repo
 from app.modules.tournaments import repository as repo
@@ -87,15 +92,13 @@ async def _tournament_response(session: AsyncSession, tournament: Tournament) ->
     )
 
 
-def _build_tournament_response(
-    tournament: Tournament, profile: "SportProfile | None"
-) -> TournamentResponse:
-    """Sync variant for use when the profile is already loaded (e.g. batch list)."""
+def _build_tournament_response(tournament: Tournament, sport_key: str) -> TournamentResponse:
+    """Sync variant for use when the sport key is already known (e.g. batch list)."""
     return TournamentResponse(
         id=tournament.id,
         slug=tournament.slug,
         name=tournament.name,
-        sport_key=profile.key if profile else "",
+        sport_key=sport_key,
         status=tournament.status,
         visibility=tournament.visibility,
         starts_at=tournament.starts_at,
@@ -177,12 +180,21 @@ async def create_tournament(
 async def list_tournaments(
     principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_request_session),
+    cache: Cache = Depends(get_cache),
 ) -> list[TournamentResponse]:
     rows = await repo.list_tournaments(session, principal.organization_id)
-    # Batch fetch all sport profiles in one query instead of N session.get calls.
     profile_ids = list({t.sport_profile_id for t in rows if t.sport_profile_id})
-    profiles = await repo.list_sport_profiles_by_ids(session, profile_ids)
-    return [_build_tournament_response(t, profiles.get(t.sport_profile_id)) for t in rows]
+    # Sport profiles are static at MVP — cache the id→key map for 1h.
+    ckey = cache_keys.sport_profiles_key(principal.organization_id)
+    cached_profile_keys: dict[str, str] | None = await get_json(cache, ckey)
+    if cached_profile_keys is None:
+        profiles = await repo.list_sport_profiles_by_ids(session, profile_ids)
+        cached_profile_keys = {str(pid): p.key for pid, p in profiles.items()}
+        await set_json(cache, ckey, cached_profile_keys, ttl=3600)
+    return [
+        _build_tournament_response(t, cached_profile_keys.get(str(t.sport_profile_id), ""))
+        for t in rows
+    ]
 
 
 @router.get("/tournaments/{tournament_id}", response_model=TournamentResponse)

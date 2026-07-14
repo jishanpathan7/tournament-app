@@ -46,11 +46,12 @@ def org_settings_key(org_id: _uuid.UUID | str) -> str:
     return f"org:v1:o:{org_id}:settings"
 
 
-# ── system / process-global ───────────────────────────────────────────────────
+# ── org-scoped static data ───────────────────────────────────────────────────
 
 
-def sport_profiles_key() -> str:
-    return "sys:v1:sport_profiles"
+def sport_profiles_key(org_id: _uuid.UUID | str) -> str:
+    """Org-scoped sport profile id→key map. Static at MVP; TTL 3600s, no explicit invalidation."""
+    return f"org:v1:o:{org_id}:sport_profiles"
 
 
 # ── distributed locks ─────────────────────────────────────────────────────────

@@ -19,7 +19,12 @@ from app.api.deps import (
     get_request_session,
     require_permission,
 )
+from app.cache import get_json
+from app.cache import keys as cache_keys
+from app.cache import set_json
 from app.core import authz
+from app.core.factory import get_cache
+from app.core.ports import Cache
 from app.modules.registration_ops import checkin_service, import_service, readiness_service
 from app.modules.registration_ops.schemas import (
     BulkCheckInRequest,
@@ -251,7 +256,14 @@ async def get_readiness(
     tournament_id: uuid.UUID,
     principal: Principal = Depends(get_principal),
     session: AsyncSession = Depends(get_request_session),
+    cache: Cache = Depends(get_cache),
 ) -> TournamentReadinessView:
-    return await readiness_service.tournament_readiness(
+    key = cache_keys.readiness_key(principal.organization_id, tournament_id)
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return TournamentReadinessView(**hit)
+    view = await readiness_service.tournament_readiness(
         session, principal.organization_id, tournament_id
     )
+    await set_json(cache, key, view.model_dump(mode="json"), ttl=30)
+    return view
