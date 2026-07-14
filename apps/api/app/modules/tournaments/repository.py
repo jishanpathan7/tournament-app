@@ -108,6 +108,19 @@ async def list_stages(session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID) 
     return (await session.execute(stmt)).scalars().all()
 
 
+async def list_tournament_stages(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
+) -> Sequence[Stage]:
+    """All stages across the tournament's divisions — single JOIN query."""
+    stmt = (
+        select(Stage)
+        .join(Division, Stage.division_id == Division.id)
+        .where(Division.tournament_id == tid, Stage.organization_id == org_id)
+        .order_by(Stage.division_id, Stage.seq)
+    )
+    return (await session.execute(stmt)).scalars().all()
+
+
 async def stage_match_count(session: AsyncSession, org_id: uuid.UUID, sid: uuid.UUID) -> int:
     stmt = select(func.count()).where(Match.stage_id == sid, Match.organization_id == org_id)
     return int((await session.execute(stmt)).scalar_one())

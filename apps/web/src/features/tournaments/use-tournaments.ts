@@ -140,6 +140,7 @@ export function usePublishTournament(id: string) {
     mutationFn: (body: PublishRequest) => tournamentsApi.publishTournament(id, body),
     onSuccess: (updated) => {
       queryClient.setQueryData(queryKeys.tournaments.detail(id), updated);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.list() });
     },
   });
 }

@@ -36,6 +36,7 @@ from app.modules.registration_ops.schemas import (
     SaveMappingTemplateRequest,
     TournamentReadinessView,
 )
+from app.modules.registrations.schemas import ParticipantResponse
 
 router = APIRouter(tags=["registration-ops"])
 
@@ -210,6 +211,36 @@ async def bulk_set_attendance(
         status=body.status,
     )
     return BulkCheckInResult(updated=updated, attendance=body.status)
+
+
+# ---- tournament-scoped participant list ----
+
+
+@router.get("/tournaments/{tournament_id}/participants", response_model=list[ParticipantResponse])
+async def list_tournament_participants(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> list[ParticipantResponse]:
+    from app.modules.registration_ops import repository as reg_ops_repo
+
+    rows = await reg_ops_repo.list_tournament_participants(
+        session, principal.organization_id, tournament_id
+    )
+    return [
+        ParticipantResponse(
+            id=p.id,
+            division_id=p.division_id,
+            kind=p.kind,
+            display_name=p.display_name,
+            seed=p.seed,
+            status=p.status,
+            user_id=p.user_id,
+            team_id=p.team_id,
+            created_at=p.created_at,
+        )
+        for p in rows
+    ]
 
 
 # ---- readiness ----

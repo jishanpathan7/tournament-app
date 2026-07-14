@@ -302,6 +302,24 @@ async def create_division(
     return _division_response(division)
 
 
+@router.get("/tournaments/{tournament_id}/stages", response_model=list[StageResponse])
+async def list_tournament_stages(
+    tournament_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> list[StageResponse]:
+    await service._require_tournament(session, principal.organization_id, tournament_id)
+    rows = await repo.list_tournament_stages(session, principal.organization_id, tournament_id)
+    result = []
+    for stage in rows:
+        count = await repo.stage_match_count(session, principal.organization_id, stage.id)
+        locked = count > 0 and await repo.stage_has_scored_matches(
+            session, principal.organization_id, stage.id
+        )
+        result.append(_stage_response(stage, drawn=count > 0, locked=locked))
+    return result
+
+
 @router.get("/tournaments/{tournament_id}/divisions", response_model=list[DivisionResponse])
 async def list_divisions(
     tournament_id: uuid.UUID,

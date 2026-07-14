@@ -47,7 +47,7 @@ export function useTournamentDashboard(tournamentId: string) {
   const queue = useScheduleQueue(tournamentId, { enabled: phase === "during" });
   const stages = useTournamentStages(tournamentId);
   const participants = useTournamentParticipants(tournamentId);
-  const activity = useTournamentActivity(tournamentId);
+  const activity = useTournamentActivity(tournamentId, { enabled: phase !== "before" });
 
   const registrationQueries = useQueries({
     queries: divisionIds.map((divisionId) => ({

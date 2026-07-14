@@ -29,6 +29,7 @@ export function usePublicTournament(slug: string, initialData?: PublicTournament
     queryKey: publicQueryKeys.tournament(slug),
     queryFn: () => publicApi.getTournament(slug),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -37,6 +38,7 @@ export function usePublicDivisions(slug: string, initialData?: PublicDivisionVie
     queryKey: publicQueryKeys.divisions(slug),
     queryFn: () => publicApi.listDivisions(slug),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -51,7 +53,6 @@ export function usePublicCourts(slug: string) {
   return useQuery({
     queryKey: publicQueryKeys.courts(slug),
     queryFn: () => publicApi.getCourts(slug),
-    refetchInterval: 30_000,
   });
 }
 
@@ -60,6 +61,7 @@ export function usePublicStages(slug: string, initialData?: PublicStageView[]) {
     queryKey: publicQueryKeys.stages(slug),
     queryFn: () => publicApi.listStages(slug),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -68,6 +70,7 @@ export function usePublicParticipants(slug: string, initialData?: PublicParticip
     queryKey: publicQueryKeys.participants(slug),
     queryFn: () => publicApi.listParticipants(slug),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -80,6 +83,7 @@ export function usePublicParticipant(
     queryKey: publicQueryKeys.participant(slug, participantId),
     queryFn: () => publicApi.getParticipant(slug, participantId),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -88,6 +92,7 @@ export function usePublicMatches(slug: string, initialData?: MatchView[]) {
     queryKey: publicQueryKeys.matches(slug),
     queryFn: () => publicApi.listMatches(slug),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -96,6 +101,7 @@ export function usePublicMatch(slug: string, matchId: string, initialData?: Matc
     queryKey: publicQueryKeys.match(slug, matchId),
     queryFn: () => publicApi.getMatch(slug, matchId),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -108,6 +114,7 @@ export function usePublicMatchEvents(
     queryKey: publicQueryKeys.matchEvents(slug, matchId),
     queryFn: () => publicApi.listMatchEvents(slug, matchId),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
   });
 }
 
@@ -120,6 +127,7 @@ export function usePublicStandings(
     queryKey: publicQueryKeys.standings(slug, stageId ?? ""),
     queryFn: () => publicApi.getStandings(slug, stageId!),
     initialData,
+    staleTime: initialData ? 30_000 : undefined,
     enabled: !!stageId,
   });
 }

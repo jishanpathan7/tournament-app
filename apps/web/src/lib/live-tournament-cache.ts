@@ -151,7 +151,8 @@ export function invalidateFromMatchStartedEvent(
   invalidateLiveTournamentCaches(queryClient, scope, { activity: true });
 }
 
-/** Realtime: match.completed (terminal score / correction). */
+/** Realtime: match.completed (terminal score / correction) — remote clients only.
+ * Local client already swept bracketMeta via reconcileMatchInCaches on mutation success. */
 export function invalidateFromMatchCompletedEvent(
   queryClient: QueryClient,
   data: Record<string, unknown>,
@@ -162,11 +163,10 @@ export function invalidateFromMatchCompletedEvent(
     activity: true,
     standings: true,
     notifications: true,
-    bracketMeta: true,
   });
 }
 
-/** Realtime: bracket.updated */
+/** Realtime: bracket.updated — remote clients only. */
 export function invalidateFromBracketUpdatedEvent(
   queryClient: QueryClient,
   data: Record<string, unknown>,
@@ -175,7 +175,6 @@ export function invalidateFromBracketUpdatedEvent(
   if (!scope) return;
   invalidateLiveTournamentCaches(queryClient, scope, {
     activity: true,
-    bracketMeta: true,
   });
 }
 
