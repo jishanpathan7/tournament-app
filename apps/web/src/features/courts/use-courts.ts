@@ -54,7 +54,6 @@ export function useUpdateCourt() {
       courtsApi.updateCourt(vars.courtId, vars.body),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.courts.list() });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.courts.all });
     },
   });
 }

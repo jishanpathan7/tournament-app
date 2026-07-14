@@ -63,7 +63,8 @@ export function useMarkNotificationRead() {
   return useMutation({
     mutationFn: markRead,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.actionRequired() });
     },
   });
 }
@@ -73,7 +74,8 @@ export function useResolveNotification() {
   return useMutation({
     mutationFn: resolveNotification,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.actionRequired() });
     },
   });
 }
@@ -83,7 +85,10 @@ export function useMarkAllRead() {
   return useMutation({
     mutationFn: markAllRead,
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.unreadCount() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.actionRequired() });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list(false) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.notifications.list(true) });
     },
   });
 }

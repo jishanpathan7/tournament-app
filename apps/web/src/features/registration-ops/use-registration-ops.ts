@@ -114,6 +114,6 @@ export function useTournamentReadiness(tournamentId: string, options?: { enabled
     queryKey: queryKeys.readiness.tournament(tournamentId),
     queryFn: () => opsApi.getTournamentReadiness(tournamentId),
     enabled: options?.enabled ?? true,
-    refetchInterval: 30_000,
+    refetchInterval: 60_000,
   });
 }

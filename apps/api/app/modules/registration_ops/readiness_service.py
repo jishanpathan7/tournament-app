@@ -14,6 +14,7 @@ from app.db.enums import AttendanceStatus, ParticipantKind, ParticipantStatus, R
 from app.db.models import Division, Participant, Registration
 from app.modules.registration_ops import repository as repo
 from app.modules.registration_ops.schemas import DivisionReadinessView, TournamentReadinessView
+from app.modules.registrations import repository as registrations_repo
 from app.modules.squads import repository as squad_repo
 
 _MIN_TO_DRAW = 2
@@ -111,12 +112,23 @@ async def tournament_readiness(
     unassigned_squad = sum(1 for r in eligible_regs if r.id not in assigned_reg_ids)
     squads_ready = squad_count == 0 or unassigned_squad == 0
 
+    all_participants = await repo.list_tournament_participants(session, org_id, tournament_id)
+    all_registrations = await registrations_repo.list_registrations_for_tournament(
+        session, org_id, tournament_id
+    )
+    participants_by_div: dict[uuid.UUID, list[Participant]] = {}
+    for p in all_participants:
+        participants_by_div.setdefault(p.division_id, []).append(p)
+    registrations_by_div: dict[uuid.UUID, list[Registration]] = {}
+    for r in all_registrations:
+        registrations_by_div.setdefault(r.division_id, []).append(r)
+
     views: list[DivisionReadinessView] = []
     total_checked_in = total_pending = 0
     franchise_mode = squad_count > 0
     for division in divisions:
-        participants = await repo.list_participants(session, org_id, division.id)
-        registrations = await repo.list_registrations(session, org_id, division.id)
+        participants = participants_by_div.get(division.id, [])
+        registrations = registrations_by_div.get(division.id, [])
         view = _division_readiness(
             division,
             participants,

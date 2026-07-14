@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import * as api from "@/features/franchise-ties/franchise-ties-api";
+import { queryKeys } from "@/lib/query-keys";
 
 export function useFranchiseStandings(stageId: string | undefined) {
   return useQuery({
@@ -24,9 +25,9 @@ export function useGenerateFranchiseDraw(stageId: string, tournamentId: string) 
     mutationFn: (gamesPerTie?: number) => api.generateFranchiseDraw(stageId, gamesPerTie),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["franchise-ties", stageId] });
-      void queryClient.invalidateQueries({ queryKey: ["tournaments", tournamentId] });
-      void queryClient.invalidateQueries({ queryKey: ["matches"] });
-      void queryClient.invalidateQueries({ queryKey: ["standings"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.stages(tournamentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
     },
   });
 }
@@ -42,9 +43,9 @@ export function useGenerateFranchiseKnockoutDraw(
       api.generateFranchiseKnockoutDraw(stageId, { sourceStageId, advanceCount }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["franchise-ties", stageId] });
-      void queryClient.invalidateQueries({ queryKey: ["tournaments", tournamentId] });
-      void queryClient.invalidateQueries({ queryKey: ["matches"] });
-      void queryClient.invalidateQueries({ queryKey: ["standings"] });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.stages(tournamentId) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.schedule.queue(tournamentId) });
     },
   });
 }
