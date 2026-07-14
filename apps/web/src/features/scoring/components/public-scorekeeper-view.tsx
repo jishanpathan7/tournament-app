@@ -19,6 +19,7 @@ import {
   type ScorekeeperSession,
 } from "@/features/scoring/public-scorekeeper-api";
 import { errorMessage } from "@/lib/problem";
+import { queryKeys } from "@/lib/query-keys";
 
 function PublicScorekeeperScoring({
   token,
@@ -117,7 +118,7 @@ function PublicScorekeeperScoring({
 /** Public scorekeeper — one match per token, lands directly on the mobile scoring UI. */
 export function PublicScorekeeperView({ token }: { token: string }) {
   const session = useQuery({
-    queryKey: ["scorekeeper", token, "session"],
+    queryKey: queryKeys.tokenSessions.scorekeeper(token),
     queryFn: () => publicScorekeeperApi.getSession(token),
     retry: false,
   });
