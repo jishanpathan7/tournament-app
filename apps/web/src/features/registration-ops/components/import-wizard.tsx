@@ -489,7 +489,7 @@ export function ImportWizard({
             )}
           </div>
 
-          <div className="border-border overflow-hidden rounded-2xl border text-foreground">
+          <div className="border-border text-foreground overflow-hidden rounded-2xl border">
             <Table>
               <TableHeader>
                 <TableRow>
