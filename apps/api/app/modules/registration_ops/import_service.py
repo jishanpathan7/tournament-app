@@ -56,6 +56,7 @@ _REQUIRED = {key for key, _label, required in IMPORT_FIELDS if required}
 # should come before general ones to avoid false positives.
 _FIELD_HINTS: dict[str, list[str]] = {
     "preferredPartnerName": [
+        "enter your partner name",
         "preferred partner",
         "partner name",
         "partner preference",
@@ -81,23 +82,27 @@ _FIELD_HINTS: dict[str, list[str]] = {
 def suggest_mapping(columns: list[str]) -> dict[str, str]:
     """Return a field_key → column_name mapping inferred from column headers.
 
-    Each column is matched against ``_FIELD_HINTS`` in field order. The first
-    hint that is a substring of the (normalised) column header wins. A column is
-    never mapped to more than one field; a field is never claimed by more than
-    one column.
+    Hints are tried in priority order (most-specific first). For each hint, all
+    columns are scanned; the first column whose lowercased header contains the hint
+    wins. This means a specific hint like "enter your name" always beats the generic
+    fallback "name", regardless of column order in the CSV.
+
+    A column is never mapped to more than one field; a field is never claimed by
+    more than one column.
     """
     mapping: dict[str, str] = {}
     claimed_columns: set[str] = set()
+    col_lowers = {col: col.strip().lower() for col in columns}
     for field_key, hints in _FIELD_HINTS.items():
-        if field_key in mapping:
-            continue
-        for col in columns:
-            if col in claimed_columns:
-                continue
-            col_lower = col.strip().lower()
-            if any(hint in col_lower for hint in hints):
-                mapping[field_key] = col
-                claimed_columns.add(col)
+        for hint in hints:
+            for col in columns:
+                if col in claimed_columns:
+                    continue
+                if hint in col_lowers[col]:
+                    mapping[field_key] = col
+                    claimed_columns.add(col)
+                    break
+            if field_key in mapping:
                 break
     return mapping
 
