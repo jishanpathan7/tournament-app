@@ -61,10 +61,8 @@ export function PlayersTable({
         <TableRow className="hover:bg-transparent">
           <TableHead>Player</TableHead>
           <TableHead>Skill</TableHead>
-          <TableHead>Gender</TableHead>
           <TableHead>Status</TableHead>
           <TableHead>Check-in</TableHead>
-          <TableHead>Paid</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -93,15 +91,11 @@ export function PlayersTable({
                 </div>
               </TableCell>
               <TableCell className="capitalize">{row.skillLevel ?? "—"}</TableCell>
-              <TableCell>{row.gender ?? "—"}</TableCell>
               <TableCell>
                 <Badge tone={meta.tone}>{playerStatusLabel(row.status)}</Badge>
               </TableCell>
               <TableCell>
                 <BoolCell value={checkedIn ? true : row.status === "approved" ? false : null} />
-              </TableCell>
-              <TableCell>
-                <BoolCell value={row.paid} />
               </TableCell>
             </TableRow>
           );

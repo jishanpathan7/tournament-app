@@ -66,7 +66,7 @@ _FIELD_HINTS: dict[str, list[str]] = {
     ],
     "skillLevel": ["skill level", "skill", "level", "rating", "grade"],
     "email": ["email", "e-mail", "mail"],
-    "name": ["full name", "player name", "participant name", "name"],
+    "name": ["enter your name", "full name", "player name", "participant name", "respondent name", "your name", "name"],
 }
 
 
