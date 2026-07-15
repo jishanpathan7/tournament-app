@@ -65,7 +65,7 @@ _FIELD_HINTS: dict[str, list[str]] = {
         "paired with",
     ],
     "skillLevel": ["skill level", "skill", "level", "rating", "grade"],
-    "email": ["email", "e-mail", "mail"],
+    "email": ["enter your email", "email", "e-mail", "mail"],
     "name": [
         "enter your name",
         "full name",
