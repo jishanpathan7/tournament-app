@@ -153,24 +153,59 @@ function WinnerBurst({ burstKey }: { burstKey: number }) {
   );
 }
 
-// ── Reveal overlay ────────────────────────────────────────────────────────────
+// ── Reveal overlay (tiered player profile card) ───────────────────────────────
 
 interface RevealInfo {
   playerName: string;
   skillLevel: string | null;
+  divisionName: string | null;
   squadName: string;
   squadColor: string;
   wheelRect: DOMRect | null;
 }
 
+/** Per-tier presentation — only applied when Fun Mode + tiered reveals are on. */
+interface TierStyle {
+  eyebrow: string;
+  accent: string;
+  entrance: string;
+  glow: number;
+}
+
+function tierStyle(skillLevel: string | null, tiered: boolean): TierStyle {
+  if (!tiered) {
+    return { eyebrow: "Now joining", accent: "#9db0fb", entrance: "back.out(1.6)", glow: 0.2 };
+  }
+  switch (skillLevel) {
+    case "advanced":
+      return { eyebrow: "⚡ Elite Pick", accent: "#fbbf24", entrance: "back.out(2.2)", glow: 0.4 };
+    case "intermediate":
+      return { eyebrow: "Now joining", accent: "#34d399", entrance: "back.out(1.7)", glow: 0.28 };
+    case "beginner":
+      return {
+        eyebrow: "Welcome aboard",
+        accent: "#f472b6",
+        entrance: "back.out(1.4)",
+        glow: 0.24,
+      };
+    default:
+      return { eyebrow: "Now joining", accent: "#9db0fb", entrance: "back.out(1.5)", glow: 0.22 };
+  }
+}
+
 function RevealOverlay({
   info,
+  tiered,
+  speed,
   onDone,
 }: {
   info: RevealInfo;
+  tiered: boolean;
+  speed: CeremonySpeed;
   onDone: (cardRect: DOMRect | null) => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const tier = tierStyle(info.skillLevel, tiered);
 
   useEffect(() => {
     const el = cardRef.current;
@@ -183,18 +218,18 @@ function RevealOverlay({
 
     const tl = gsap.timeline();
 
-    // Entrance: scale up from wheel position
+    // Entrance: scale up from wheel position with the tier's ease.
     tl.fromTo(
       el,
       { scale: 0.25, opacity: 0, y: 40 },
-      { scale: 1, opacity: 1, y: 0, duration: dur.md, ease: "back.out(1.6)" },
+      { scale: 1, opacity: 1, y: 0, duration: scaled(dur.md, speed), ease: tier.entrance },
     )
-      .to(el, { duration: 1.8 }) // hold
+      .to(el, { duration: scaled(1.8, speed) }) // hold
       .to(el, {
         scale: 0.8,
         opacity: 0,
         y: -24,
-        duration: dur.sm,
+        duration: scaled(dur.sm, speed),
         ease: ease.in,
         onComplete() {
           // Fire fly-to-team with card position
@@ -206,30 +241,43 @@ function RevealOverlay({
     return () => {
       tl.kill();
     };
-  }, [onDone]);
+  }, [onDone, speed, tier.entrance]);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
       <div
         ref={cardRef}
-        className="flex flex-col items-center gap-4 rounded-3xl px-14 py-10 text-center shadow-2xl backdrop-blur-md"
+        className="flex flex-col items-center gap-4 rounded-3xl px-16 py-12 text-center shadow-2xl backdrop-blur-md"
         style={{
           background: `linear-gradient(135deg, ${info.squadColor}22 0%, rgba(30,41,59,0.95) 100%)`,
-          border: `2px solid ${info.squadColor}55`,
-          boxShadow: `0 0 60px ${info.squadColor}33, 0 20px 60px rgba(0,0,0,0.6)`,
+          border: `2px solid ${tier.accent}66`,
+          boxShadow: `0 0 80px ${tier.accent}${Math.round(tier.glow * 100)}, 0 20px 60px rgba(0,0,0,0.6)`,
         }}
       >
-        <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-white/50">
-          Now joining
+        <p
+          className="font-mono text-sm font-bold uppercase tracking-[0.25em]"
+          style={{ color: tier.accent }}
+        >
+          {tier.eyebrow}
         </p>
-        <p className="text-5xl font-black text-white drop-shadow-lg">{info.playerName}</p>
-        {info.skillLevel && (
-          <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/70">
-            {skillLabel(info.skillLevel)}
-          </span>
-        )}
+        <p className="text-6xl font-black text-white drop-shadow-lg">{info.playerName}</p>
+        <div className="flex items-center gap-2">
+          {info.skillLevel && (
+            <span
+              className="rounded-full px-3 py-1 text-sm font-bold"
+              style={{ background: `${tier.accent}22`, color: tier.accent }}
+            >
+              {skillLabel(info.skillLevel)}
+            </span>
+          )}
+          {info.divisionName && (
+            <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/60">
+              {info.divisionName}
+            </span>
+          )}
+        </div>
         <div
-          className="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-black text-white shadow-lg"
+          className="mt-1 flex items-center gap-2 rounded-full px-6 py-2.5 text-base font-black text-white shadow-lg"
           style={{ backgroundColor: info.squadColor }}
         >
           <span>→ {info.squadName}</span>
@@ -740,6 +788,9 @@ function MainScreen({
   settings,
   canUseShield,
   onUseShield,
+  justCompletedSquadId,
+  onClearCompleted,
+  isWildcardActive,
   onAssign,
   onUndo,
   onChangeSkill,
@@ -756,6 +807,9 @@ function MainScreen({
   settings: CeremonySettings;
   canUseShield: boolean;
   onUseShield: (squadId: string) => void;
+  justCompletedSquadId: string | null;
+  onClearCompleted: () => void;
+  isWildcardActive: boolean;
   onAssign: (
     player: UnassignedRegistrationView,
     squadId?: string,
@@ -789,10 +843,28 @@ function MainScreen({
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
   const shieldEnabled = settings.funMode && settings.captainShield;
 
+  // Organizer shortcut: Space bar spins (so the ceremony can be driven hands-free
+  // from across the room). Ignored while typing in an input.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (e.code === "Space" && canSpin) {
+        e.preventDefault();
+        handleSpin();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // handleSpin closes over current render values; re-bind when spinnability changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSpin, isWildcardActive, settings.funMode, settings.onTheClock, currentSquad?.id]);
+
   /** Entry point for the Spin button — gate behind the 3·2·1 countdown. */
   function handleSpin() {
     if (!canSpin || !currentSquad) return;
-    if (settings.funMode && settings.onTheClock) {
+    // Wildcard Finish: the last picks fire rapidly, no countdown, for a crescendo.
+    if (settings.funMode && settings.onTheClock && !isWildcardActive) {
       setCountdownActive(true); // countdown's onDone triggers runSpin
     } else {
       void runSpin();
@@ -840,6 +912,7 @@ function MainScreen({
     setRevealInfo({
       playerName: result.displayName,
       skillLevel: result.skillLevel,
+      divisionName: player.divisionName,
       squadName: result.squadName,
       squadColor: squadAccent(squads.findIndex((s) => s.id === result.squadId)),
       wheelRect,
@@ -907,6 +980,13 @@ function MainScreen({
             }}
           />
 
+          {settings.funMode && isWildcardActive && spinPhase !== "revealing" && (
+            <div className="flex items-center gap-2 rounded-full border border-[#fbbf24]/50 bg-[#fbbf24]/15 px-5 py-2 text-sm font-black uppercase tracking-wider text-[#fbbf24]">
+              <Sparkles className="h-4 w-4" />
+              Wildcard Finish
+            </div>
+          )}
+
           {currentSquad && spinPhase !== "revealing" && (
             <SquadBanner squad={currentSquad} squadIndex={currentSquadIdx} />
           )}
@@ -954,6 +1034,12 @@ function MainScreen({
                   </span>
                 )}
 
+                {canSpin && (
+                  <span className="text-2xs font-mono uppercase tracking-widest text-white/25">
+                    Press Space to spin
+                  </span>
+                )}
+
                 {history.length > 0 && spinPhase === "idle" && (
                   <button
                     onClick={onUndo}
@@ -995,7 +1081,32 @@ function MainScreen({
           }}
         />
       )}
-      {revealInfo && <RevealOverlay info={revealInfo} onDone={handleRevealDone} />}
+      {revealInfo && (
+        <RevealOverlay
+          info={revealInfo}
+          tiered={settings.funMode && settings.tieredReveals}
+          speed={settings.speed}
+          onDone={handleRevealDone}
+        />
+      )}
+      {settings.funMode &&
+        justCompletedSquadId &&
+        spinPhase === "idle" &&
+        !revealInfo &&
+        (() => {
+          const idx = squads.findIndex((s) => s.id === justCompletedSquadId);
+          const squad = squads[idx];
+          if (!squad) return null;
+          return (
+            <TeamCompleteOverlay
+              squad={squad}
+              squadIndex={idx}
+              sessionMembers={history}
+              speed={settings.speed}
+              onDone={onClearCompleted}
+            />
+          );
+        })()}
       {ghostFly && (
         <GhostFly
           name={ghostFly.name}
@@ -1284,6 +1395,85 @@ function CountdownOverlay({ speed, onDone }: { speed: CeremonySpeed; onDone: () 
   );
 }
 
+// ── Team completion celebration ───────────────────────────────────────────────
+
+function TeamCompleteOverlay({
+  squad,
+  squadIndex,
+  sessionMembers,
+  speed,
+  onDone,
+}: {
+  squad: SquadView;
+  squadIndex: number;
+  sessionMembers: { registrationId: string; displayName: string; squadId: string }[];
+  speed: CeremonySpeed;
+  onDone: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const color = squadAccent(squadIndex);
+  const drafted = sessionMembers.filter((a) => a.squadId === squad.id);
+
+  useEffect(() => {
+    const hold = Math.max(1600, scaled(2400, speed));
+    const el = cardRef.current;
+    if (el && !prefersReducedMotion()) {
+      gsap.fromTo(
+        el,
+        { scale: 0.7, opacity: 0, y: 30 },
+        { scale: 1, opacity: 1, y: 0, duration: scaled(dur.md, speed), ease: "back.out(1.5)" },
+      );
+    }
+    const t = setTimeout(onDone, hold);
+    return () => clearTimeout(t);
+  }, [speed, onDone]);
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[62] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <ReactConfetti
+        className="pointer-events-none fixed inset-0"
+        colors={[color, "#fffdf5", CONFETTI_COLORS[0]!]}
+        numberOfPieces={180}
+        recycle={false}
+        gravity={0.22}
+      />
+      <div
+        ref={cardRef}
+        className="flex flex-col items-center gap-5 rounded-[2rem] px-16 py-12 text-center"
+        style={{
+          background: `linear-gradient(160deg, ${color}33 0%, rgba(30,41,59,0.97) 100%)`,
+          border: `2px solid ${color}66`,
+          boxShadow: `0 0 90px ${color}44, 0 24px 70px rgba(0,0,0,0.65)`,
+        }}
+      >
+        <p className="font-mono text-sm font-bold uppercase tracking-[0.3em]" style={{ color }}>
+          Team Complete
+        </p>
+        <p className="text-6xl font-black text-white drop-shadow-lg">{squad.name}</p>
+        <div className="flex max-w-xl flex-wrap justify-center gap-2">
+          {squad.members.map((m) => (
+            <span
+              key={m.registrationId}
+              className="rounded-lg bg-white/10 px-3 py-1 text-sm font-semibold text-white/70"
+            >
+              {m.displayName}
+            </span>
+          ))}
+          {drafted.map((a) => (
+            <span
+              key={a.registrationId}
+              className="rounded-lg px-3 py-1 text-sm font-bold text-white"
+              style={{ backgroundColor: `${color}66` }}
+            >
+              {a.displayName}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
@@ -1414,6 +1604,9 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           settings={ceremony.settings}
           canUseShield={ceremony.canUseShield}
           onUseShield={ceremony.useShield}
+          justCompletedSquadId={ceremony.justCompletedSquadId}
+          onClearCompleted={ceremony.clearJustCompleted}
+          isWildcardActive={ceremony.isWildcardActive}
           onAssign={ceremony.assign}
           onUndo={ceremony.undo}
           onChangeSkill={ceremony.changeSkill}

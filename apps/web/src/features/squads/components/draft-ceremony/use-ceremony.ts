@@ -123,6 +123,8 @@ export function useCeremony(tournamentId: string) {
   const [settings, setSettings] = useState<CeremonySettings>(DEFAULT_SETTINGS);
   // Squad ids that have spent their one Captain's Shield this ceremony.
   const [shieldsUsed, setShieldsUsed] = useState<Set<string>>(() => new Set());
+  // Squad that just received its final player — drives the completion celebration.
+  const [justCompletedSquadId, setJustCompletedSquadId] = useState<string | null>(null);
 
   // Pre-computed draft order — set once when ceremony starts, never mutated.
   const draftOrderRef = useRef<string[]>([]);
@@ -186,6 +188,8 @@ export function useCeremony(tournamentId: string) {
     });
   }, []);
 
+  const clearJustCompleted = useCallback(() => setJustCompletedSquadId(null), []);
+
   const updateSettings = useCallback((patch: Partial<CeremonySettings>) => {
     setSettings((prev) => ({ ...prev, ...patch }));
   }, []);
@@ -239,6 +243,13 @@ export function useCeremony(tournamentId: string) {
       setHistory((h) => [...h, record]);
       setPickIndex((p) => p + 1);
 
+      // Team completion: does this team have any picks left in the sequence?
+      const nextIndex = pickIndex + 1;
+      const teamHasMorePicks = draftOrderRef.current.slice(nextIndex).some((id) => id === targetId);
+      if (!teamHasMorePicks && targetSquad.name) {
+        setJustCompletedSquadId(targetId);
+      }
+
       const remaining = allUnassigned.filter(
         (u) => !assignedIds.current.has(u.registrationId),
       ).length;
@@ -260,6 +271,7 @@ export function useCeremony(tournamentId: string) {
     setHistory((h) => h.slice(0, -1));
     // Step back in the pre-computed sequence — order never changes.
     setPickIndex((p) => Math.max(0, p - 1));
+    setJustCompletedSquadId(null);
     if (phase === "complete") setPhase("main");
     squadsQuery.refetch();
   }, [history, phase, squadsQuery]);
@@ -295,6 +307,8 @@ export function useCeremony(tournamentId: string) {
     useShield,
     shieldsUsed,
     isWildcardActive,
+    justCompletedSquadId,
+    clearJustCompleted,
     start,
     beginDraft,
     assign,
