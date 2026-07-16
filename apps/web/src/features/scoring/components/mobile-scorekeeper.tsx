@@ -17,7 +17,7 @@ import {
   type ScoreFormValues,
   validateScoreForm,
 } from "@/features/matches/config";
-import { rulesFromSportConfig, type BadmintonRules } from "@/features/matches/badminton-scoring";
+import { classifyGame, rulesFromSportConfig, type BadmintonRules } from "@/features/matches/badminton-scoring";
 import * as scoringApi from "@/features/scoring/scoring-api";
 import { useScoreMatch } from "@/features/scoring/use-matches";
 import {
@@ -185,12 +185,13 @@ function MobileScorekeeperMatch({
   const submitGame = () => {
     const a = liveGame.a ?? 0;
     const b = liveGame.b ?? 0;
-    if (a === b) {
-      toast.error("Enter a winner for this game.");
+    const gameStatus = classifyGame(a, b, rules);
+    if (gameStatus.status === "tied") {
+      toast.error("Scores are tied — resolve the tie first.");
       return;
     }
-    if (Math.max(a, b) < rules.pointsPerSet) {
-      toast.error(`A side must reach at least ${rules.pointsPerSet} to finish the game.`);
+    if (gameStatus.status !== "complete") {
+      toast.error(gameStatus.message ?? "Game is not finished yet.");
       return;
     }
     const nextGames = [...completedGames, { a, b }];
