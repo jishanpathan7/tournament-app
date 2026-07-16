@@ -9,13 +9,17 @@ from app.engine.sport import SportProfile
 
 # Keys owned by Sport Profiles (not the format engine). May live in stage.config
 # alongside format keys like ``cycles``, or under tournament.settings.sportConfig.
-SPORT_CONFIG_KEYS = frozenset({"best_of", "points_to_win", "win_by", "point_cap"})
+SPORT_CONFIG_KEYS = frozenset({"best_of", "points_per_set", "win_by", "max_points"})
 
 _CAMEL_TO_SNAKE = {
     "bestOf": "best_of",
-    "pointsToWin": "points_to_win",
+    # canonical names
+    "pointsPerSet": "points_per_set",
+    "maxPoints": "max_points",
+    # backward-compat aliases (old wire names still accepted)
+    "pointsToWin": "points_per_set",
+    "pointCap": "max_points",
     "winBy": "win_by",
-    "pointCap": "point_cap",
 }
 
 
@@ -54,7 +58,7 @@ def sport_config_view(config: Mapping[str, Any]) -> dict[str, int]:
     """Wire shape for API schemas (snake_case; ApiModel emits camelCase)."""
     return {
         "best_of": int(config["best_of"]),
-        "points_to_win": int(config["points_to_win"]),
+        "points_per_set": int(config["points_per_set"]),
         "win_by": int(config["win_by"]),
-        "point_cap": int(config["point_cap"]),
+        "max_points": int(config["max_points"]),
     }

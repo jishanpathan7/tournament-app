@@ -189,8 +189,8 @@ function MobileScorekeeperMatch({
       toast.error("Enter a winner for this game.");
       return;
     }
-    if (Math.max(a, b) < rules.pointsToWin) {
-      toast.error(`A side must reach at least ${rules.pointsToWin} to finish the game.`);
+    if (Math.max(a, b) < rules.pointsPerSet) {
+      toast.error(`A side must reach at least ${rules.pointsPerSet} to finish the game.`);
       return;
     }
     const nextGames = [...completedGames, { a, b }];

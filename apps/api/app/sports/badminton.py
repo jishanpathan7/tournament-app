@@ -14,7 +14,7 @@ Result payload shape (opaque to the engine, defined + validated here):
     }
 
 Sides are index 0/1; ``derive_result`` maps them to the match's participant ids.
-Config: ``best_of`` (odd), ``points_to_win``, ``win_by``, ``point_cap``.
+Config: ``best_of`` (odd), ``points_per_set``, ``win_by``, ``max_points``.
 """
 
 from __future__ import annotations
@@ -38,7 +38,7 @@ from app.engine.types import (
     TerminalReason,
 )
 
-_DEFAULTS: dict[str, int] = {"best_of": 3, "points_to_win": 21, "win_by": 2, "point_cap": 30}
+_DEFAULTS: dict[str, int] = {"best_of": 3, "points_per_set": 21, "win_by": 2, "max_points": 30}
 _ROSTER_SIZE = {ParticipantKind.INDIVIDUAL: 1, ParticipantKind.PAIR: 2}
 _ENDED_BY = {r.value: r for r in TerminalReason}
 
@@ -119,18 +119,18 @@ class BadmintonProfile:
         best_of = config.get("best_of", _DEFAULTS["best_of"])
         if not _is_pos_int(best_of) or best_of % 2 == 0:
             issues.append(Issue("best_of", "invalid", "best_of must be a positive odd integer"))
-        points = config.get("points_to_win", _DEFAULTS["points_to_win"])
+        points = config.get("points_per_set", _DEFAULTS["points_per_set"])
         if not _is_pos_int(points):
             issues.append(
-                Issue("points_to_win", "invalid", "points_to_win must be a positive integer")
+                Issue("points_per_set", "invalid", "points_per_set must be a positive integer")
             )
         win_by = config.get("win_by", _DEFAULTS["win_by"])
         if not _is_pos_int(win_by):
             issues.append(Issue("win_by", "invalid", "win_by must be a positive integer"))
-        cap = config.get("point_cap", _DEFAULTS["point_cap"])
+        cap = config.get("max_points", _DEFAULTS["max_points"])
         if not _is_pos_int(cap) or (_is_pos_int(points) and cap < points):
             issues.append(
-                Issue("point_cap", "invalid", "point_cap must be an integer >= points_to_win")
+                Issue("max_points", "invalid", "max_points must be an integer >= points_per_set")
             )
         if issues:
             raise EngineValidationError(issues)
@@ -251,12 +251,16 @@ class BadmintonProfile:
             value = config.get(key, _DEFAULTS[key])
             return value if _is_pos_int(value) else _DEFAULTS[key]
 
-        best_of, points, win_by = positive("best_of"), positive("points_to_win"), positive("win_by")
-        cap_raw = config.get("point_cap", _DEFAULTS["point_cap"])
+        best_of, points, win_by = (
+            positive("best_of"),
+            positive("points_per_set"),
+            positive("win_by"),
+        )
+        cap_raw = config.get("max_points", _DEFAULTS["max_points"])
         cap = (
             cap_raw
             if _is_pos_int(cap_raw) and cap_raw >= points
-            else max(points, _DEFAULTS["point_cap"])
+            else max(points, _DEFAULTS["max_points"])
         )
         return best_of, points, win_by, cap
 

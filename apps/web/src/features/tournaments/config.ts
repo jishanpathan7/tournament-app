@@ -157,6 +157,26 @@ export function getMatchFormat(bestOf: number): (typeof MATCH_FORMATS)[number] |
   return MATCH_FORMATS.find((f) => f.value === bestOf);
 }
 
+// ---- scoring rule presets ----
+
+export interface ScoringRulePreset {
+  id: string;
+  label: string;
+  pointsPerSet: number;
+  winBy: number;
+  maxPoints: number;
+}
+
+export const SCORING_RULE_PRESETS: ScoringRulePreset[] = [
+  { id: "standard", label: "Standard (to 21)", pointsPerSet: 21, winBy: 2, maxPoints: 30 },
+  { id: "sibl", label: "SIBL format (to 15)", pointsPerSet: 15, winBy: 2, maxPoints: 21 },
+];
+
+export function getScoringPreset(pointsPerSet: number | undefined): ScoringRulePreset | undefined {
+  if (pointsPerSet === undefined) return undefined;
+  return SCORING_RULE_PRESETS.find((p) => p.pointsPerSet === pointsPerSet);
+}
+
 // ---- status ----
 
 export interface StatusMeta {

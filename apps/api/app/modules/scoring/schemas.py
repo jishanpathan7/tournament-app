@@ -29,9 +29,9 @@ class SportMatchConfigView(ApiModel):
     """Resolved sport rules for this match (tournament defaults + stage overrides)."""
 
     best_of: int
-    points_to_win: int
+    points_per_set: int
     win_by: int
-    point_cap: int
+    max_points: int
 
 
 class MatchView(ApiModel):

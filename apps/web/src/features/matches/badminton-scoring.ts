@@ -2,32 +2,32 @@
 
 export const BADMINTON_DEFAULTS = {
   bestOf: 3,
-  pointsToWin: 21,
+  pointsPerSet: 21,
   winBy: 2,
-  pointCap: 30,
+  maxPoints: 30,
 } as const;
 
 export type BadmintonRules = {
   bestOf: number;
-  pointsToWin: number;
+  pointsPerSet: number;
   winBy: number;
-  pointCap: number;
+  maxPoints: number;
 };
 
 /** Map API ``SportMatchConfigView`` (or partial) to client scoring rules. */
 export function rulesFromSportConfig(
   config?: {
     bestOf?: number;
-    pointsToWin?: number;
+    pointsPerSet?: number;
     winBy?: number;
-    pointCap?: number;
+    maxPoints?: number;
   } | null,
 ): BadmintonRules {
   return {
     bestOf: config?.bestOf ?? BADMINTON_DEFAULTS.bestOf,
-    pointsToWin: config?.pointsToWin ?? BADMINTON_DEFAULTS.pointsToWin,
+    pointsPerSet: config?.pointsPerSet ?? BADMINTON_DEFAULTS.pointsPerSet,
     winBy: config?.winBy ?? BADMINTON_DEFAULTS.winBy,
-    pointCap: config?.pointCap ?? BADMINTON_DEFAULTS.pointCap,
+    maxPoints: config?.maxPoints ?? BADMINTON_DEFAULTS.maxPoints,
   };
 }
 
@@ -45,7 +45,7 @@ export function classifyGame(
   b: number,
   rules: BadmintonRules = BADMINTON_DEFAULTS,
 ): GameCompletion {
-  const { pointsToWin, winBy, pointCap } = rules;
+  const { pointsPerSet, winBy, maxPoints } = rules;
 
   if (a < 0 || b < 0) {
     return { status: "invalid", message: "Scores can't be negative." };
@@ -63,24 +63,24 @@ export function classifyGame(
   const winner: GameSide = a > b ? "a" : "b";
   const margin = hi - lo;
 
-  if (hi > pointCap) {
-    return { status: "invalid", message: `Scores can't exceed ${pointCap}.` };
+  if (hi > maxPoints) {
+    return { status: "invalid", message: `Scores can't exceed ${maxPoints}.` };
   }
-  if (hi < pointsToWin) {
+  if (hi < pointsPerSet) {
     return {
       status: "in_progress",
-      message: `Someone must reach at least ${pointsToWin} to finish the game.`,
+      message: `Someone must reach at least ${pointsPerSet} to finish the game.`,
     };
   }
-  if (hi === pointsToWin) {
+  if (hi === pointsPerSet) {
     return margin >= winBy
       ? { status: "complete", winner }
       : {
           status: "in_progress",
-          message: `Win by ${winBy} — keep scoring (e.g. ${pointsToWin}-${pointsToWin - 1} isn't enough).`,
+          message: `Win by ${winBy} — keep scoring (e.g. ${pointsPerSet}-${pointsPerSet - 1} isn't enough).`,
         };
   }
-  if (hi < pointCap) {
+  if (hi < maxPoints) {
     if (margin === winBy) return { status: "complete", winner };
     if (margin < winBy) {
       return {
@@ -90,8 +90,8 @@ export function classifyGame(
     }
     return { status: "invalid", message: `Illegal margin at ${a}-${b}.` };
   }
-  // hi === pointCap
-  return lo >= pointCap - winBy
+  // hi === maxPoints
+  return lo >= maxPoints - winBy
     ? { status: "complete", winner }
     : { status: "invalid", message: `Illegal cap score ${a}-${b}.` };
 }
@@ -102,19 +102,19 @@ export function resolveTiedGame(
   winner: GameSide,
   rules: BadmintonRules = BADMINTON_DEFAULTS,
 ): { a: number; b: number } | null {
-  const { pointsToWin, winBy, pointCap } = rules;
+  const { pointsPerSet, winBy, maxPoints } = rules;
   if (tiedScore < 0) return null;
 
   let win: number;
   let lose = tiedScore;
 
-  if (tiedScore + winBy <= pointsToWin) {
-    win = pointsToWin;
+  if (tiedScore + winBy <= pointsPerSet) {
+    win = pointsPerSet;
   } else {
     win = tiedScore + winBy;
-    if (win > pointCap) {
-      win = pointCap;
-      lose = pointCap - winBy;
+    if (win > maxPoints) {
+      win = maxPoints;
+      lose = maxPoints - winBy;
     }
   }
 
@@ -148,4 +148,22 @@ export function decidingGameIndex(
     winsA === majority - 1 &&
     !matchDecided(games, rules)
   );
+}
+
+/** Returns a live-game status indicator for UI display. */
+export function gameStatusIndicator(
+  a: number,
+  b: number,
+  rules: BadmintonRules = BADMINTON_DEFAULTS,
+): "deuce" | "next_point_wins" | null {
+  if (a !== b) return null;
+  const { pointsPerSet, maxPoints, winBy } = rules;
+  if (a >= maxPoints - winBy + 1 && a < maxPoints) return "next_point_wins";
+  if (a >= pointsPerSet - winBy + 1) return "deuce";
+  return null;
+}
+
+/** Human-readable match rules summary, e.g. "Best of 3 · First to 15 · Win by 2 · Cap 21" */
+export function formatMatchRules(rules: BadmintonRules = BADMINTON_DEFAULTS): string {
+  return `Best of ${rules.bestOf} · First to ${rules.pointsPerSet} · Win by ${rules.winBy} · Cap ${rules.maxPoints}`;
 }
