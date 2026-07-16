@@ -1,13 +1,24 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 
 import { toast } from "@/components/ui/sonner";
-import type { SquadView, UnassignedRegistrationView } from "@/features/squads/types";
+import {
+  DEFAULT_SETTINGS,
+  WILDCARD_PICK_COUNT,
+  type CeremonySettings,
+  type CeremonySpeed,
+} from "@/features/squads/components/draft-ceremony/ceremony-settings";
+import type {
+  SquadMemberView,
+  SquadView,
+  UnassignedRegistrationView,
+} from "@/features/squads/types";
 import { useAssignSquadMember, useSquads } from "@/features/squads/use-squads";
 import { errorMessage } from "@/lib/problem";
 
-export type CeremonyPhase = "intro" | "main" | "complete";
+/** "intros" only appears when Fun Mode + team introductions are enabled. */
+export type CeremonyPhase = "intro" | "intros" | "main" | "complete";
 
 export interface Assignment {
   registrationId: string;
@@ -108,12 +119,31 @@ export function useCeremony(tournamentId: string) {
   const [isAssigning, setIsAssigning] = useState(false);
   const [pickIndex, setPickIndex] = useState(0);
 
+  // Fun Mode settings — client-side in V1. Off by default (competitive-safe).
+  const [settings, setSettings] = useState<CeremonySettings>(DEFAULT_SETTINGS);
+  // Squad ids that have spent their one Captain's Shield this ceremony.
+  const [shieldsUsed, setShieldsUsed] = useState<Set<string>>(() => new Set());
+
   // Pre-computed draft order — set once when ceremony starts, never mutated.
   const draftOrderRef = useRef<string[]>([]);
+  // Total picks the ceremony will make — fixed once started (drives wildcard).
+  const totalPicksRef = useRef<number>(0);
 
   const board = squadsQuery.data;
   const allUnassigned = board?.unassigned ?? [];
-  const squads = board?.squads ?? [];
+  const squads = useMemo(() => board?.squads ?? [], [board]);
+
+  // Resolve each squad's captain member (for intros + shield attribution).
+  const captainBySquad = useMemo(() => {
+    const map = new Map<string, SquadMemberView | null>();
+    for (const squad of squads) {
+      const captain = squad.captainRegistrationId
+        ? (squad.members.find((m) => m.registrationId === squad.captainRegistrationId) ?? null)
+        : null;
+      map.set(squad.id, captain);
+    }
+    return map;
+  }, [squads]);
 
   const skillGroups = uniqueSkillGroups(allUnassigned);
   const resolvedSkill = activeSkill === undefined ? (skillGroups[0] ?? null) : activeSkill;
@@ -132,13 +162,51 @@ export function useCeremony(tournamentId: string) {
   const currentSquadId = draftOrderRef.current[pickIndex] ?? null;
   const currentSquad: SquadView | undefined = squads.find((s) => s.id === currentSquadId);
 
+  // Wildcard Finish: the final N picks are bundled into one simultaneous reveal.
+  const totalPicks = totalPicksRef.current;
+  const isWildcardActive =
+    settings.funMode &&
+    settings.wildcardFinish &&
+    totalPicks > WILDCARD_PICK_COUNT &&
+    pickIndex >= totalPicks - WILDCARD_PICK_COUNT;
+
+  // Captain's Shield availability for the team currently on the clock.
+  const canUseShield =
+    settings.funMode &&
+    settings.captainShield &&
+    !!currentSquadId &&
+    !shieldsUsed.has(currentSquadId);
+
+  const useShield = useCallback((squadId: string) => {
+    setShieldsUsed((prev) => {
+      if (prev.has(squadId)) return prev;
+      const next = new Set(prev);
+      next.add(squadId);
+      return next;
+    });
+  }, []);
+
+  const updateSettings = useCallback((patch: Partial<CeremonySettings>) => {
+    setSettings((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  const setSpeed = useCallback((speed: CeremonySpeed) => {
+    setSettings((prev) => ({ ...prev, speed }));
+  }, []);
+
   function start() {
     // Compute the full draft order once, seeded with current squad state.
     const totalPoolWeight = allUnassigned.reduce((sum, u) => sum + u.skillWeight, 0);
     draftOrderRef.current = computeDraftOrder(squads, allUnassigned.length, totalPoolWeight);
+    totalPicksRef.current = draftOrderRef.current.length;
     setPickIndex(0);
-    setPhase("main");
+    setShieldsUsed(new Set());
+    // Fun Mode with intros enabled runs the team walk-in first.
+    setPhase(settings.funMode && settings.teamIntroductions ? "intros" : "main");
   }
+
+  /** Advance from the team-introductions walk-in into the main draft. */
+  const beginDraft = useCallback(() => setPhase("main"), []);
 
   async function assign(
     player: UnassignedRegistrationView,
@@ -218,7 +286,17 @@ export function useCeremony(tournamentId: string) {
     currentSquad,
     pickIndex,
     upcomingSquads,
+    // Fun Mode
+    settings,
+    updateSettings,
+    setSpeed,
+    captainBySquad,
+    canUseShield,
+    useShield,
+    shieldsUsed,
+    isWildcardActive,
     start,
+    beginDraft,
     assign,
     undo,
     changeSkill,

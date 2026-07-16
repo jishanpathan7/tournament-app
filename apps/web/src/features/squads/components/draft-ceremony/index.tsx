@@ -1,7 +1,15 @@
 "use client";
 
 import gsap from "gsap";
-import { ArrowLeft, ChevronRight, RotateCcw, Trophy } from "lucide-react";
+import {
+  ArrowLeft,
+  ChevronRight,
+  RotateCcw,
+  Settings2,
+  Shield,
+  Sparkles,
+  Trophy,
+} from "lucide-react";
 import Link from "next/link";
 import ReactConfetti from "react-confetti";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -11,8 +19,22 @@ import {
   CeremonyWheel,
   type WheelHandle,
 } from "@/features/squads/components/draft-ceremony/ceremony-wheel";
+import {
+  SPEED_MULTIPLIER,
+  type CeremonySettings,
+  type CeremonySpeed,
+} from "@/features/squads/components/draft-ceremony/ceremony-settings";
 import { skillLabel, useCeremony } from "@/features/squads/components/draft-ceremony/use-ceremony";
-import type { SquadView, UnassignedRegistrationView } from "@/features/squads/types";
+import type {
+  SquadMemberView,
+  SquadView,
+  UnassignedRegistrationView,
+} from "@/features/squads/types";
+
+/** Scale an animation duration (seconds) by the ceremony playback speed. */
+function scaled(seconds: number, speed: CeremonySpeed) {
+  return seconds * SPEED_MULTIPLIER[speed];
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -715,6 +737,9 @@ function MainScreen({
   isAssigning,
   history,
   currentSquad,
+  settings,
+  canUseShield,
+  onUseShield,
   onAssign,
   onUndo,
   onChangeSkill,
@@ -728,6 +753,9 @@ function MainScreen({
   isAssigning: boolean;
   history: { registrationId: string; displayName: string; squadId: string }[];
   currentSquad: SquadView | undefined;
+  settings: CeremonySettings;
+  canUseShield: boolean;
+  onUseShield: (squadId: string) => void;
   onAssign: (
     player: UnassignedRegistrationView,
     squadId?: string,
@@ -746,6 +774,9 @@ function MainScreen({
   const [revealInfo, setRevealInfo] = useState<RevealInfo | null>(null);
   const [burstKey, setBurstKey] = useState(0);
   const [flashSquadId, setFlashSquadId] = useState<string | null>(null);
+  const [countdownActive, setCountdownActive] = useState(false);
+  const [shieldFlash, setShieldFlash] = useState(false);
+  const shieldArmedRef = useRef(false);
   const [ghostFly, setGhostFly] = useState<{
     name: string;
     color: string;
@@ -754,16 +785,38 @@ function MainScreen({
   } | null>(null);
 
   const currentSquadIdx = squads.findIndex((s) => s.id === currentSquad?.id);
-  const canSpin = spinPhase === "idle" && pool.length > 0 && !isAssigning;
+  const canSpin = spinPhase === "idle" && pool.length > 0 && !isAssigning && !countdownActive;
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
+  const shieldEnabled = settings.funMode && settings.captainShield;
 
-  async function handleSpin() {
-    if (!canSpin || !wheelRef.current || !currentSquad) return;
-    const idx = Math.floor(Math.random() * pool.length);
+  /** Entry point for the Spin button — gate behind the 3·2·1 countdown. */
+  function handleSpin() {
+    if (!canSpin || !currentSquad) return;
+    if (settings.funMode && settings.onTheClock) {
+      setCountdownActive(true); // countdown's onDone triggers runSpin
+    } else {
+      void runSpin();
+    }
+  }
+
+  /** The player is only committed here — after any Shield re-spin resolves. */
+  async function runSpin() {
+    if (!wheelRef.current || !currentSquad) return;
+    shieldArmedRef.current = false;
+    let idx = Math.floor(Math.random() * pool.length);
     setSpinPhase("spinning");
     setHighlightIndex(null);
 
     await wheelRef.current.spin(idx);
+
+    // Captain's Shield: if armed during the spin, discard this result and
+    // re-spin once. The original player stays in the pool — nothing committed.
+    if (shieldArmedRef.current && shieldEnabled && canUseShield) {
+      shieldArmedRef.current = false;
+      onUseShield(currentSquad.id);
+      idx = Math.floor(Math.random() * pool.length);
+      await wheelRef.current.spin(idx);
+    }
 
     const player = pool[idx];
     if (!player) {
@@ -792,6 +845,7 @@ function MainScreen({
       wheelRect,
     });
     setSpinPhase("revealing");
+    setShieldFlash(false);
 
     // Flash team column
     setFlashSquadId(result.squadId);
@@ -879,6 +933,27 @@ function MainScreen({
 
               <div className="relative z-10 flex flex-col items-center gap-2">
                 <SpinButton phase={spinPhase} disabled={!canSpin} onClick={handleSpin} />
+
+                {/* Captain's Shield — offered while the wheel is spinning */}
+                {shieldEnabled && spinPhase === "spinning" && canUseShield && !shieldFlash && (
+                  <button
+                    onClick={() => {
+                      shieldArmedRef.current = true;
+                      setShieldFlash(true);
+                    }}
+                    className="flex items-center gap-1.5 rounded-full border border-[#fbbf24]/50 bg-[#fbbf24]/15 px-4 py-1.5 text-xs font-black text-[#fbbf24] transition-transform hover:scale-105"
+                  >
+                    <Shield className="h-3.5 w-3.5" />
+                    Use Shield — re-spin
+                  </button>
+                )}
+                {shieldFlash && spinPhase === "spinning" && (
+                  <span className="flex items-center gap-1.5 text-xs font-black text-[#fbbf24]">
+                    <Shield className="h-3.5 w-3.5" />
+                    Shield played! Re-spinning…
+                  </span>
+                )}
+
                 {history.length > 0 && spinPhase === "idle" && (
                   <button
                     onClick={onUndo}
@@ -911,6 +986,15 @@ function MainScreen({
       </div>
 
       {/* Overlays */}
+      {countdownActive && (
+        <CountdownOverlay
+          speed={settings.speed}
+          onDone={() => {
+            setCountdownActive(false);
+            void runSpin();
+          }}
+        />
+      )}
       {revealInfo && <RevealOverlay info={revealInfo} onDone={handleRevealDone} />}
       {ghostFly && (
         <GhostFly
@@ -925,12 +1009,288 @@ function MainScreen({
   );
 }
 
+// ── Fun Mode settings panel ───────────────────────────────────────────────────
+
+const SPEED_LABELS: Record<CeremonySpeed, string> = {
+  relaxed: "Relaxed",
+  normal: "Normal",
+  fast: "Fast",
+};
+
+function SettingToggle({
+  label,
+  hint,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-white/5 disabled:opacity-40"
+    >
+      <span
+        className="relative h-5 w-9 shrink-0 rounded-full transition-colors"
+        style={{ background: checked ? "#4f6bf6" : "rgba(255,255,255,0.15)" }}
+      >
+        <span
+          className="absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all"
+          style={{ left: checked ? "1.125rem" : "0.125rem" }}
+        />
+      </span>
+      <span className="flex flex-col">
+        <span className="text-sm font-semibold text-white">{label}</span>
+        {hint && <span className="text-xs text-white/40">{hint}</span>}
+      </span>
+    </button>
+  );
+}
+
+function SettingsPanel({
+  settings,
+  onUpdate,
+  onClose,
+}: {
+  settings: CeremonySettings;
+  onUpdate: (patch: Partial<CeremonySettings>) => void;
+  onClose: () => void;
+}) {
+  const fun = settings.funMode;
+  return (
+    <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-white/10 bg-[#28324a] p-3 shadow-2xl">
+      <div className="mb-2 flex items-center gap-2 px-2 pt-1">
+        <Sparkles className="h-4 w-4 text-[#fbbf24]" />
+        <span className="text-sm font-bold text-white">Fun Draft Mode</span>
+        <button
+          onClick={onClose}
+          className="ml-auto text-xs text-white/40 transition-colors hover:text-white"
+        >
+          Done
+        </button>
+      </div>
+
+      <SettingToggle
+        label="Fun Mode"
+        hint="Off = standard Balanced Draft"
+        checked={fun}
+        onChange={(v) => onUpdate({ funMode: v })}
+      />
+
+      <div className="bg-white/8 my-2 h-px" />
+
+      <SettingToggle
+        label="Team introductions"
+        hint="Captain walk-in before the draft"
+        checked={settings.teamIntroductions}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ teamIntroductions: v })}
+      />
+      <SettingToggle
+        label="On the clock"
+        hint="3·2·1 countdown before each spin"
+        checked={settings.onTheClock}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ onTheClock: v })}
+      />
+      <SettingToggle
+        label="Tiered reveals"
+        hint="Different animation per skill tier"
+        checked={settings.tieredReveals}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ tieredReveals: v })}
+      />
+      <SettingToggle
+        label="Captain's Shield"
+        hint="One re-spin token per captain"
+        checked={settings.captainShield}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ captainShield: v })}
+      />
+      <SettingToggle
+        label="Wildcard finish"
+        hint="Final 3 picks revealed together"
+        checked={settings.wildcardFinish}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ wildcardFinish: v })}
+      />
+
+      <div className="bg-white/8 my-2 h-px" />
+
+      <div className="px-2 py-1">
+        <p className="mb-2 text-xs font-semibold text-white/50">Animation speed</p>
+        <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+          {(Object.keys(SPEED_LABELS) as CeremonySpeed[]).map((s) => (
+            <button
+              key={s}
+              onClick={() => onUpdate({ speed: s })}
+              className="flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+              style={{
+                background: settings.speed === s ? "rgba(255,255,255,0.15)" : "transparent",
+                color: settings.speed === s ? "white" : "rgba(255,255,255,0.4)",
+              }}
+            >
+              {SPEED_LABELS[s]}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Team introductions (Fun Mode walk-in) ─────────────────────────────────────
+
+function IntrosScreen({
+  squads,
+  captainBySquad,
+  speed,
+  onDone,
+}: {
+  squads: SquadView[];
+  captainBySquad: Map<string, SquadMemberView | null>;
+  speed: CeremonySpeed;
+  onDone: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || prefersReducedMotion()) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".intro-team",
+        { y: 48, opacity: 0, scale: 0.9 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: scaled(dur.md, speed),
+          ease: "back.out(1.4)",
+          stagger: scaled(stagger.lg, speed),
+        },
+      );
+    }, containerRef);
+    return () => ctx.revert();
+  }, [speed]);
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-10 text-center">
+      <div>
+        <p className="font-mono text-sm font-bold uppercase tracking-[0.3em] text-[#fbbf24]">
+          Introducing
+        </p>
+        <h1 className="mt-3 font-serif text-6xl font-black tracking-tight text-white">The Teams</h1>
+      </div>
+
+      <div
+        ref={containerRef}
+        className="grid w-full max-w-4xl grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4"
+      >
+        {squads.map((squad, i) => {
+          const color = squadAccent(i);
+          const captain = captainBySquad.get(squad.id);
+          return (
+            <div
+              key={squad.id}
+              className="intro-team flex flex-col items-center gap-3 rounded-3xl p-6"
+              style={{
+                background: `linear-gradient(160deg, ${color}22 0%, rgba(255,255,255,0.03) 100%)`,
+                border: `1.5px solid ${color}44`,
+              }}
+            >
+              <span
+                className="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-black text-white"
+                style={{ backgroundColor: color }}
+              >
+                {squad.name.charAt(0).toUpperCase()}
+              </span>
+              <span className="text-lg font-black text-white">{squad.name}</span>
+              <span className="text-sm text-white/50">
+                {captain ? (
+                  <>
+                    <span className="text-white/30">Captain</span> {captain.displayName}
+                  </>
+                ) : (
+                  "Awaiting captain"
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <button
+        onClick={onDone}
+        className="flex h-14 items-center gap-3 rounded-full px-10 text-lg font-black text-white shadow-2xl transition-transform hover:scale-[1.03] active:scale-[0.98]"
+        style={{
+          background: "linear-gradient(135deg, #4f6bf6 0%, #9db0fb 100%)",
+          boxShadow: "0 12px 40px rgba(79,107,246,0.45)",
+        }}
+      >
+        Start the Draft
+        <ChevronRight className="h-5 w-5" />
+      </button>
+    </div>
+  );
+}
+
+// ── Countdown overlay (3·2·1 before spin) ─────────────────────────────────────
+
+function CountdownOverlay({ speed, onDone }: { speed: CeremonySpeed; onDone: () => void }) {
+  const [n, setN] = useState(3);
+  const numRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      onDone();
+      return;
+    }
+    const step = Math.max(300, scaled(650, speed)); // ms per number
+    const t1 = setTimeout(() => setN(2), step);
+    const t2 = setTimeout(() => setN(1), step * 2);
+    const t3 = setTimeout(() => onDone(), step * 3);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [speed, onDone]);
+
+  useEffect(() => {
+    if (!numRef.current || prefersReducedMotion()) return;
+    gsap.fromTo(
+      numRef.current,
+      { scale: 0.4, opacity: 0 },
+      { scale: 1, opacity: 1, duration: scaled(0.28, speed), ease: "back.out(2)" },
+    );
+  }, [n, speed]);
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[58] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div
+        ref={numRef}
+        className="font-serif text-[14rem] font-black leading-none text-white drop-shadow-2xl"
+      >
+        {n}
+      </div>
+    </div>
+  );
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
   const ceremony = useCeremony(tournamentId);
   const shellRef = useRef<HTMLDivElement>(null);
   const prevPhase = useRef<string>("intro");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Phase transition: cross-fade between screens
   useEffect(() => {
@@ -989,6 +1349,12 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
         </Link>
         <span className="text-white/15">/</span>
         <span className="font-mono text-sm font-semibold text-white/60">Draft Ceremony</span>
+        {ceremony.settings.funMode && (
+          <span className="flex items-center gap-1 rounded-full bg-[#fbbf24]/15 px-2 py-0.5 text-xs font-bold text-[#fbbf24]">
+            <Sparkles className="h-3 w-3" />
+            Fun Mode
+          </span>
+        )}
         {ceremony.phase === "main" && (
           <>
             <span className="text-white/15">·</span>
@@ -997,6 +1363,24 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
             </span>
           </>
         )}
+
+        {/* Settings (organizer only — hidden mid-ceremony overlays) */}
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="flex h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-bold text-white/50 transition-colors hover:text-white"
+          >
+            <Settings2 className="h-4 w-4" />
+            Setup
+          </button>
+          {settingsOpen && (
+            <SettingsPanel
+              settings={ceremony.settings}
+              onUpdate={ceremony.updateSettings}
+              onClose={() => setSettingsOpen(false)}
+            />
+          )}
+        </div>
       </nav>
 
       {ceremony.phase === "intro" && (
@@ -1004,6 +1388,15 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           squads={ceremony.squads}
           totalUnassigned={ceremony.totalRemaining}
           onStart={ceremony.start}
+        />
+      )}
+
+      {ceremony.phase === "intros" && (
+        <IntrosScreen
+          squads={ceremony.squads}
+          captainBySquad={ceremony.captainBySquad}
+          speed={ceremony.settings.speed}
+          onDone={ceremony.beginDraft}
         />
       )}
 
@@ -1018,6 +1411,9 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           isAssigning={ceremony.isAssigning}
           history={ceremony.history}
           currentSquad={ceremony.currentSquad}
+          settings={ceremony.settings}
+          canUseShield={ceremony.canUseShield}
+          onUseShield={ceremony.useShield}
           onAssign={ceremony.assign}
           onUndo={ceremony.undo}
           onChangeSkill={ceremony.changeSkill}
