@@ -489,7 +489,7 @@ export function ImportWizard({
             )}
           </div>
 
-          <div className="border-border overflow-hidden rounded-2xl border">
+          <div className="border-border text-foreground overflow-hidden rounded-2xl border">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -515,11 +515,11 @@ export function ImportWizard({
                       <TableCell>
                         <Badge tone={meta.tone}>{meta.label}</Badge>
                       </TableCell>
-                      <TableCell>{row.values?.name ?? "—"}</TableCell>
+                      <TableCell className="text-foreground">{row.values?.name ?? "—"}</TableCell>
                       <TableCell className="text-muted-foreground text-sm">
                         {row.values?.email ?? "—"}
                       </TableCell>
-                      <TableCell className="text-sm capitalize">
+                      <TableCell className="text-foreground text-sm capitalize">
                         {row.values?.skillLevel ?? "—"}
                       </TableCell>
                       <TableCell className="text-muted-foreground max-w-xs text-xs">

@@ -18,9 +18,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
 from app.api.deps import get_public_session
+from app.cache import get_json
+from app.cache import keys as cache_keys
+from app.cache import set_json
 from app.core.config import get_settings
-from app.core.factory import get_broadcaster, get_connection_manager, get_transport
+from app.core.factory import get_broadcaster, get_cache, get_connection_manager, get_transport
 from app.core.limiter import limiter
+from app.core.ports import Cache
 from app.db.models import Tournament
 from app.modules.public import service
 from app.modules.public.schemas import (
@@ -100,25 +104,41 @@ async def search_tournaments(
 
 @router.get("/tournaments/{slug}", response_model=PublicTournamentView)
 async def get_tournament(
-    slug: str, session: AsyncSession = Depends(get_public_session)
+    slug: str,
+    session: AsyncSession = Depends(get_public_session),
+    cache: Cache = Depends(get_cache),
 ) -> PublicTournamentView:
     tournament = await service.resolve_tournament(session, slug)
+    key = cache_keys.public_tournament_keys(tournament.id)["overview"]
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return PublicTournamentView(**hit)
     sport_key = await service.get_sport_key(session, tournament)
-    return _tournament_view(tournament, sport_key)
+    view = _tournament_view(tournament, sport_key)
+    await set_json(cache, key, view.model_dump(mode="json"), ttl=300)
+    return view
 
 
 @router.get("/tournaments/{slug}/divisions", response_model=list[PublicDivisionView])
 async def list_divisions(
-    slug: str, session: AsyncSession = Depends(get_public_session)
+    slug: str,
+    session: AsyncSession = Depends(get_public_session),
+    cache: Cache = Depends(get_cache),
 ) -> list[PublicDivisionView]:
     tournament = await service.resolve_tournament(session, slug)
+    key = cache_keys.public_tournament_keys(tournament.id)["divisions"]
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return [PublicDivisionView(**row) for row in hit]
     rows = await service.list_divisions_with_counts(session, tournament)
-    return [
+    views = [
         PublicDivisionView(
             id=did, name=name, participant_type=ptype, capacity=capacity, approved_count=count
         )
         for did, name, ptype, capacity, count in rows
     ]
+    await set_json(cache, key, [v.model_dump(mode="json") for v in views], ttl=300)
+    return views
 
 
 @router.post(
@@ -153,23 +173,37 @@ async def submit_registration(
 
 @router.get("/tournaments/{slug}/stages", response_model=list[PublicStageView])
 async def list_stages(
-    slug: str, session: AsyncSession = Depends(get_public_session)
+    slug: str,
+    session: AsyncSession = Depends(get_public_session),
+    cache: Cache = Depends(get_cache),
 ) -> list[PublicStageView]:
     tournament = await service.resolve_tournament(session, slug)
+    key = cache_keys.public_tournament_keys(tournament.id)["stages"]
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return [PublicStageView(**row) for row in hit]
     rows = await service.list_stages_with_drawn(session, tournament)
-    return [
+    views = [
         PublicStageView(id=s.id, division_id=s.division_id, type=s.type, seq=s.seq, drawn=drawn)
         for s, drawn in rows
     ]
+    await set_json(cache, key, [v.model_dump(mode="json") for v in views], ttl=300)
+    return views
 
 
 @router.get("/tournaments/{slug}/participants", response_model=list[PublicParticipantView])
 async def list_participants(
-    slug: str, session: AsyncSession = Depends(get_public_session)
+    slug: str,
+    session: AsyncSession = Depends(get_public_session),
+    cache: Cache = Depends(get_cache),
 ) -> list[PublicParticipantView]:
     tournament = await service.resolve_tournament(session, slug)
+    key = cache_keys.public_tournament_keys(tournament.id)["participants"]
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return [PublicParticipantView(**row) for row in hit]
     rows = await service.list_participants(session, tournament)
-    return [
+    views = [
         PublicParticipantView(
             id=p.id,
             division_id=p.division_id,
@@ -179,6 +213,8 @@ async def list_participants(
         )
         for p in rows
     ]
+    await set_json(cache, key, [v.model_dump(mode="json") for v in views], ttl=300)
+    return views
 
 
 @router.get(
@@ -204,10 +240,18 @@ async def get_player_stats(
 
 @router.get("/tournaments/{slug}/courts", response_model=ScheduleQueueView)
 async def get_courts(
-    slug: str, session: AsyncSession = Depends(get_public_session)
+    slug: str,
+    session: AsyncSession = Depends(get_public_session),
+    cache: Cache = Depends(get_cache),
 ) -> ScheduleQueueView:
     tournament = await service.resolve_tournament(session, slug)
-    return await scheduling_service.build_queue(session, tournament.organization_id, tournament.id)
+    key = cache_keys.public_tournament_keys(tournament.id)["schedule"]
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return ScheduleQueueView(**hit)
+    view = await scheduling_service.build_queue(session, tournament.organization_id, tournament.id)
+    await set_json(cache, key, view.model_dump(mode="json"), ttl=60)
+    return view
 
 
 @router.get("/tournaments/{slug}/matches", response_model=list[MatchView])
@@ -244,11 +288,20 @@ async def list_match_events(
 
 @router.get("/tournaments/{slug}/stages/{stage_id}/standings", response_model=StandingsView)
 async def get_standings(
-    slug: str, stage_id: uuid.UUID, session: AsyncSession = Depends(get_public_session)
+    slug: str,
+    stage_id: uuid.UUID,
+    session: AsyncSession = Depends(get_public_session),
+    cache: Cache = Depends(get_cache),
 ) -> StandingsView:
     tournament = await service.resolve_tournament(session, slug)
+    key = cache_keys.public_standings_key(tournament.id, stage_id)
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return StandingsView(**hit)
     rows = await service.get_standings(session, tournament, stage_id)
-    return scoring_service.build_standings_view(stage_id, rows)
+    view = scoring_service.build_standings_view(stage_id, rows)
+    await set_json(cache, key, view.model_dump(mode="json"), ttl=30)
+    return view
 
 
 @router.get("/tournaments/{slug}/stream")

@@ -22,11 +22,14 @@ from app.api.deps import (
     require_permission,
 )
 from app.api.errors import NotFoundError, PermissionDeniedError
+from app.cache import get_json
+from app.cache import keys as cache_keys
+from app.cache import set_json
 from app.core import authz, security
 from app.core.config import Settings, get_settings
 from app.core.db import get_session
-from app.core.factory import get_email_channel
-from app.core.ports import EmailChannel
+from app.core.factory import get_cache, get_email_channel
+from app.core.ports import Cache, EmailChannel
 from app.db.enums import OrgInviteStatus, OrgRole
 from app.db.models import OrgInvite
 from app.modules.auth import repository as auth_repo
@@ -161,11 +164,18 @@ async def accept_invite(
 async def get_active_org(
     principal: Principal = Depends(require_permission(authz.ORG_READ)),
     session: AsyncSession = Depends(get_request_session),
+    cache: Cache = Depends(get_cache),
 ) -> OrgResponse:
+    key = cache_keys.org_settings_key(principal.organization_id)
+    hit = await get_json(cache, key)
+    if hit is not None:
+        return OrgResponse(**hit)
     org = await repo.get_org(session, principal.organization_id)
     if org is None:
         raise NotFoundError("Organization not found")
-    return OrgResponse.model_validate(org)
+    view = OrgResponse.model_validate(org)
+    await set_json(cache, key, view.model_dump(mode="json"), ttl=3600)
+    return view
 
 
 @router.patch("/active", dependencies=[Depends(authed_csrf)])
@@ -173,6 +183,7 @@ async def update_active_org(
     body: UpdateOrgRequest,
     principal: Principal = Depends(require_permission(authz.ORG_UPDATE)),
     session: AsyncSession = Depends(get_request_session),
+    cache: Cache = Depends(get_cache),
 ) -> OrgResponse:
     org = await service.update_org(
         session,
@@ -184,6 +195,7 @@ async def update_active_org(
         emails_enabled=body.emails_enabled,
         in_app_notifications_enabled=body.in_app_notifications_enabled,
     )
+    await get_cache().delete(cache_keys.org_settings_key(principal.organization_id))
     return OrgResponse.model_validate(org)
 
 

@@ -51,22 +51,22 @@ export const STEP_META: Record<
     hrefSuffix: "/players",
   },
   3: {
-    label: "Assign to teams",
-    description: "Split players into balanced teams before pairing.",
+    label: "Check-in",
+    description: "Mark who's present before assigning teams.",
     phase: "before",
-    hrefSuffix: "/teams",
+    hrefSuffix: "/players",
   },
   4: {
-    label: "Generate pairs",
-    description: "Create balanced doubles pairs within each team.",
+    label: "Assign to teams",
+    description: "Split available players into balanced teams before pairing.",
     phase: "before",
     hrefSuffix: "/teams",
   },
   5: {
-    label: "Check-in",
-    description: "Mark who's here before you build brackets.",
+    label: "Generate pairs",
+    description: "Create balanced doubles pairs within each team.",
     phase: "before",
-    hrefSuffix: "/players",
+    hrefSuffix: "/teams",
   },
   6: {
     label: "Build brackets",
@@ -111,9 +111,9 @@ export function deriveTournamentStep(
 
   // registration | seeding — walk through sub-steps in order
   if (!signals.hasApproved) return 2;
-  if (!signals.squadsReady) return 3;
-  if (!signals.pairingPublished) return 4;
-  if (!signals.checkInReady) return 5;
+  if (!signals.checkInReady) return 3;
+  if (!signals.squadsReady) return 4;
+  if (!signals.pairingPublished) return 5;
   if (!signals.drawComplete) return 6;
   if (!signals.courtsReady) return 7;
   return 7;

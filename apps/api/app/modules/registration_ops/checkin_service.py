@@ -11,9 +11,10 @@ from collections.abc import Sequence
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import NotFoundError, ValidationError
+from app.cache import keys as cache_keys
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_broadcaster
+from app.core.factory import get_broadcaster, get_cache
 from app.db.enums import AttendanceStatus, ParticipantKind, ParticipantStatus
 from app.db.models import Participant
 from app.modules.registration_ops import events
@@ -143,3 +144,13 @@ async def _emit(
         session, aggregate="attendance", event_type=events.ATTENDANCE_UPDATED, payload=payload
     )
     await get_broadcaster().publish(org_channel(org_id), events.RT_ATTENDANCE_UPDATED, payload)
+    # Readiness cache: resolve tournament_id via division_id (Participant has no direct FK).
+    div_ids = list({p.division_id for p in participants})
+    tournament_ids: set[uuid.UUID] = set()
+    for did in div_ids:
+        div = await repo.get_division(session, org_id, did)
+        if div is not None:
+            tournament_ids.add(div.tournament_id)
+    cache = get_cache()
+    for tid in tournament_ids:
+        await cache.delete(cache_keys.readiness_key(org_id, tid))
