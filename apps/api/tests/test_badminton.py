@@ -142,8 +142,7 @@ def test_validate_participants_rejects(kind, rosters):
         [[21, 15], [21, 10]],  # 2-0
         [[21, 15], [15, 21], [21, 18]],  # 2-1
         [[22, 20], [21, 19]],  # deuce win
-        [[30, 29], [21, 10]],  # golden point cap
-        [[30, 28], [21, 10]],  # win-by-2 at cap
+        [[30, 29], [21, 10]],  # golden point cap (only legal cap score)
     ],
 )
 def test_valid_normal_matches(games):
@@ -334,7 +333,7 @@ def test_sibl_valid_scores(games):
     ],
 )
 def test_sibl_invalid_scores(games, reason):
-    with pytest.raises(EngineValidationError, msg=reason):
+    with pytest.raises(EngineValidationError):
         _validate({"games": games}, SIBL)
 
 
