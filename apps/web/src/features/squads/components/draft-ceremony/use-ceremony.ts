@@ -15,6 +15,7 @@ export interface Assignment {
   squadId: string;
   squadName: string;
   skillLevel: string | null;
+  skillWeight: number;
   pickNumber: number;
 }
 
@@ -32,6 +33,37 @@ export function skillLabel(s: string | null): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
+/**
+ * Pick the squad that should receive the next drafted player.
+ *
+ * Priority:
+ *   1. Fewest total players (size balance — never exceed ±1 across teams)
+ *   2. Lowest total skill weight (skill balance tiebreak)
+ *   3. Lowest sort order (stable tiebreak when weights are equal)
+ *
+ * `squadState` maps squad id → { playerCount, skillWeight } reflecting the
+ * current state including players already drafted this session.
+ */
+export function pickTargetSquad(
+  squads: SquadView[],
+  squadState: Map<string, { playerCount: number; skillWeight: number }>,
+): SquadView | undefined {
+  if (squads.length === 0) return undefined;
+  return squads.reduce((best, squad) => {
+    const b = squadState.get(best.id) ?? {
+      playerCount: best.memberCount,
+      skillWeight: best.totalSkillWeight,
+    };
+    const s = squadState.get(squad.id) ?? {
+      playerCount: squad.memberCount,
+      skillWeight: squad.totalSkillWeight,
+    };
+    if (s.playerCount !== b.playerCount) return s.playerCount < b.playerCount ? squad : best;
+    if (s.skillWeight !== b.skillWeight) return s.skillWeight < b.skillWeight ? squad : best;
+    return squad.sortOrder < best.sortOrder ? squad : best;
+  });
+}
+
 export function useCeremony(tournamentId: string) {
   const squadsQuery = useSquads(tournamentId);
   const assignMutation = useAssignSquadMember(tournamentId);
@@ -41,12 +73,25 @@ export function useCeremony(tournamentId: string) {
   const [history, setHistory] = useState<Assignment[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
 
-  // Round-robin pick index: cycles through squads in order
-  const [pickIndex, setPickIndex] = useState(0);
+  // Running skill-weight and player-count state per squad, built from history.
+  // Initialised lazily from squads data so captains' weights are included.
+  const squadStateRef = useRef<Map<string, { playerCount: number; skillWeight: number }>>(
+    new Map(),
+  );
 
   const board = squadsQuery.data;
   const allUnassigned = board?.unassigned ?? [];
   const squads = board?.squads ?? [];
+
+  // Initialise squadState from server data whenever squads load/reload,
+  // but only when there is no in-flight history (avoids clobbering mid-session).
+  if (squads.length > 0 && squadStateRef.current.size === 0) {
+    const init = new Map<string, { playerCount: number; skillWeight: number }>();
+    for (const sq of squads) {
+      init.set(sq.id, { playerCount: sq.memberCount, skillWeight: sq.totalSkillWeight });
+    }
+    squadStateRef.current = init;
+  }
 
   const skillGroups = uniqueSkillGroups(allUnassigned);
   const resolvedSkill = activeSkill === undefined ? (skillGroups[0] ?? null) : activeSkill;
@@ -61,17 +106,16 @@ export function useCeremony(tournamentId: string) {
     (u) => !assignedIds.current.has(u.registrationId),
   ).length;
 
-  // Which squad is picking right now
-  const currentSquad: SquadView | undefined =
-    squads.length > 0 ? squads[pickIndex % squads.length] : undefined;
+  // Current target squad is always computed from live state — no pickIndex needed.
+  const currentSquad: SquadView | undefined = pickTargetSquad(squads, squadStateRef.current);
 
   function start() {
     setPhase("main");
   }
 
   /**
-   * Auto-assign `player` to `squadId` (defaults to currentSquad) and advance
-   * the round-robin pick index.
+   * Assign `player` to `squadId` (defaults to currentSquad via fairness algorithm)
+   * and update the running skill-weight state.
    */
   async function assign(
     player: UnassignedRegistrationView,
@@ -92,7 +136,18 @@ export function useCeremony(tournamentId: string) {
           toast.error(errorMessage(e, "Couldn't assign player"));
           throw e;
         });
+
       assignedIds.current = new Set([...assignedIds.current, player.registrationId]);
+
+      // Update running state so the next pickTargetSquad call sees this assignment.
+      const prev = squadStateRef.current.get(targetId) ?? {
+        playerCount: targetSquad.memberCount,
+        skillWeight: targetSquad.totalSkillWeight,
+      };
+      squadStateRef.current = new Map(squadStateRef.current).set(targetId, {
+        playerCount: prev.playerCount + 1,
+        skillWeight: prev.skillWeight + player.skillWeight,
+      });
 
       const record: Assignment = {
         registrationId: player.registrationId,
@@ -100,10 +155,10 @@ export function useCeremony(tournamentId: string) {
         squadId: targetId,
         squadName: targetSquad.name,
         skillLevel: player.skillLevel,
+        skillWeight: player.skillWeight,
         pickNumber: history.length + 1,
       };
       setHistory((h) => [...h, record]);
-      setPickIndex((p) => p + 1);
 
       const remaining = allUnassigned.filter(
         (u) => !assignedIds.current.has(u.registrationId),
@@ -119,11 +174,21 @@ export function useCeremony(tournamentId: string) {
   const undo = useCallback(() => {
     const last = history[history.length - 1];
     if (!last) return;
+
     assignedIds.current = new Set(
       [...assignedIds.current].filter((id) => id !== last.registrationId),
     );
+
+    // Roll back the skill-weight state for this squad.
+    const prev = squadStateRef.current.get(last.squadId);
+    if (prev) {
+      squadStateRef.current = new Map(squadStateRef.current).set(last.squadId, {
+        playerCount: Math.max(0, prev.playerCount - 1),
+        skillWeight: Math.max(0, prev.skillWeight - last.skillWeight),
+      });
+    }
+
     setHistory((h) => h.slice(0, -1));
-    setPickIndex((p) => Math.max(0, p - 1));
     if (phase === "complete") setPhase("main");
     squadsQuery.refetch();
   }, [history, phase, squadsQuery]);
@@ -142,12 +207,11 @@ export function useCeremony(tournamentId: string) {
     history,
     isAssigning,
     currentSquad,
-    pickIndex,
-    isLoading: squadsQuery.isLoading,
-    isError: squadsQuery.isError,
     start,
     assign,
     undo,
     changeSkill,
+    isLoading: squadsQuery.isLoading,
+    isError: squadsQuery.isError,
   };
 }
