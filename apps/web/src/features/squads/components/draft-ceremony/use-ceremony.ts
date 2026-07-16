@@ -34,34 +34,68 @@ export function skillLabel(s: string | null): string {
 }
 
 /**
- * Pick the squad that should receive the next drafted player.
+ * Pre-compute the full draft pick sequence before the ceremony begins.
  *
- * Priority:
- *   1. Fewest total players (size balance — never exceed ±1 across teams)
- *   2. Lowest total skill weight (skill balance tiebreak)
- *   3. Lowest sort order (stable tiebreak when weights are equal)
+ * Algorithm:
+ *   Seed each team's skill weight with its captain(s) weight, then greedily
+ *   assign each of the N pick slots to the team that, at that moment, has:
+ *     1. Fewest draft picks assigned so far  (size balance — guarantees ±1)
+ *     2. Lowest cumulative skill weight       (skill balance tiebreak)
+ *     3. Lowest sort order                   (stable tiebreak)
  *
- * `squadState` maps squad id → { playerCount, skillWeight } reflecting the
- * current state including players already drafted this session.
+ *   After each simulated pick we add `expectedGain = totalPoolWeight / N`
+ *   (the average skill per player in the pool) to the winning team's weight.
+ *   This lets the sequence anticipate future assignments even though actual
+ *   player skill is decided randomly by the wheel.
+ *
+ * Returns an ordered array of squad IDs — one entry per pick slot.
+ * The ceremony plays through this array in order; it never changes mid-run.
  */
-export function pickTargetSquad(
+export function computeDraftOrder(
   squads: SquadView[],
-  squadState: Map<string, { playerCount: number; skillWeight: number }>,
-): SquadView | undefined {
-  if (squads.length === 0) return undefined;
-  return squads.reduce((best, squad) => {
-    const b = squadState.get(best.id) ?? {
-      playerCount: best.memberCount,
-      skillWeight: best.totalSkillWeight,
-    };
-    const s = squadState.get(squad.id) ?? {
-      playerCount: squad.memberCount,
-      skillWeight: squad.totalSkillWeight,
-    };
-    if (s.playerCount !== b.playerCount) return s.playerCount < b.playerCount ? squad : best;
-    if (s.skillWeight !== b.skillWeight) return s.skillWeight < b.skillWeight ? squad : best;
-    return squad.sortOrder < best.sortOrder ? squad : best;
-  });
+  totalPlayers: number,
+  totalPoolWeight: number,
+): string[] {
+  if (squads.length === 0 || totalPlayers === 0) return [];
+
+  const expectedGain = totalPoolWeight / totalPlayers;
+
+  // Mutable state for the simulation — keyed by squad id.
+  const draftPicks = new Map<string, number>(squads.map((s) => [s.id, 0]));
+  const skillWeight = new Map<string, number>(squads.map((s) => [s.id, s.totalSkillWeight]));
+
+  const order: string[] = [];
+
+  for (let i = 0; i < totalPlayers; i++) {
+    // Pick the team that needs the next slot most.
+    let best: SquadView | null = null;
+    for (const squad of squads) {
+      if (!best) {
+        best = squad;
+        continue;
+      }
+      const picks = draftPicks.get(squad.id)!;
+      const bestPicks = draftPicks.get(best.id)!;
+      if (picks !== bestPicks) {
+        if (picks < bestPicks) best = squad;
+        continue;
+      }
+      const weight = skillWeight.get(squad.id)!;
+      const bestWeight = skillWeight.get(best.id)!;
+      if (weight !== bestWeight) {
+        if (weight < bestWeight) best = squad;
+        continue;
+      }
+      if (squad.sortOrder < best.sortOrder) best = squad;
+    }
+
+    const winner = best!;
+    order.push(winner.id);
+    draftPicks.set(winner.id, draftPicks.get(winner.id)! + 1);
+    skillWeight.set(winner.id, skillWeight.get(winner.id)! + expectedGain);
+  }
+
+  return order;
 }
 
 export function useCeremony(tournamentId: string) {
@@ -72,26 +106,14 @@ export function useCeremony(tournamentId: string) {
   const [activeSkill, setActiveSkill] = useState<string | null | undefined>(undefined);
   const [history, setHistory] = useState<Assignment[]>([]);
   const [isAssigning, setIsAssigning] = useState(false);
+  const [pickIndex, setPickIndex] = useState(0);
 
-  // Running skill-weight and player-count state per squad, built from history.
-  // Initialised lazily from squads data so captains' weights are included.
-  const squadStateRef = useRef<Map<string, { playerCount: number; skillWeight: number }>>(
-    new Map(),
-  );
+  // Pre-computed draft order — set once when ceremony starts, never mutated.
+  const draftOrderRef = useRef<string[]>([]);
 
   const board = squadsQuery.data;
   const allUnassigned = board?.unassigned ?? [];
   const squads = board?.squads ?? [];
-
-  // Initialise squadState from server data whenever squads load/reload,
-  // but only when there is no in-flight history (avoids clobbering mid-session).
-  if (squads.length > 0 && squadStateRef.current.size === 0) {
-    const init = new Map<string, { playerCount: number; skillWeight: number }>();
-    for (const sq of squads) {
-      init.set(sq.id, { playerCount: sq.memberCount, skillWeight: sq.totalSkillWeight });
-    }
-    squadStateRef.current = init;
-  }
 
   const skillGroups = uniqueSkillGroups(allUnassigned);
   const resolvedSkill = activeSkill === undefined ? (skillGroups[0] ?? null) : activeSkill;
@@ -106,48 +128,36 @@ export function useCeremony(tournamentId: string) {
     (u) => !assignedIds.current.has(u.registrationId),
   ).length;
 
-  // Current target squad is always computed from live state — no pickIndex needed.
-  const currentSquad: SquadView | undefined = pickTargetSquad(squads, squadStateRef.current);
+  // Resolve the current squad from the pre-computed sequence.
+  const currentSquadId = draftOrderRef.current[pickIndex] ?? null;
+  const currentSquad: SquadView | undefined = squads.find((s) => s.id === currentSquadId);
 
   function start() {
+    // Compute the full draft order once, seeded with current squad state.
+    const totalPoolWeight = allUnassigned.reduce((sum, u) => sum + u.skillWeight, 0);
+    draftOrderRef.current = computeDraftOrder(squads, allUnassigned.length, totalPoolWeight);
+    setPickIndex(0);
     setPhase("main");
   }
 
-  /**
-   * Assign `player` to `squadId` (defaults to currentSquad via fairness algorithm)
-   * and update the running skill-weight state.
-   */
   async function assign(
     player: UnassignedRegistrationView,
     squadId?: string,
   ): Promise<Assignment | null> {
-    const targetId = squadId ?? currentSquad?.id;
+    const targetId = squadId ?? currentSquadId;
     const targetSquad = squads.find((s) => s.id === targetId);
     if (!targetId || !targetSquad) return null;
 
     setIsAssigning(true);
     try {
       await assignMutation
-        .mutateAsync({
-          squadId: targetId,
-          registrationId: player.registrationId,
-        })
+        .mutateAsync({ squadId: targetId, registrationId: player.registrationId })
         .catch((e) => {
           toast.error(errorMessage(e, "Couldn't assign player"));
           throw e;
         });
 
       assignedIds.current = new Set([...assignedIds.current, player.registrationId]);
-
-      // Update running state so the next pickTargetSquad call sees this assignment.
-      const prev = squadStateRef.current.get(targetId) ?? {
-        playerCount: targetSquad.memberCount,
-        skillWeight: targetSquad.totalSkillWeight,
-      };
-      squadStateRef.current = new Map(squadStateRef.current).set(targetId, {
-        playerCount: prev.playerCount + 1,
-        skillWeight: prev.skillWeight + player.skillWeight,
-      });
 
       const record: Assignment = {
         registrationId: player.registrationId,
@@ -159,6 +169,7 @@ export function useCeremony(tournamentId: string) {
         pickNumber: history.length + 1,
       };
       setHistory((h) => [...h, record]);
+      setPickIndex((p) => p + 1);
 
       const remaining = allUnassigned.filter(
         (u) => !assignedIds.current.has(u.registrationId),
@@ -178,17 +189,9 @@ export function useCeremony(tournamentId: string) {
     assignedIds.current = new Set(
       [...assignedIds.current].filter((id) => id !== last.registrationId),
     );
-
-    // Roll back the skill-weight state for this squad.
-    const prev = squadStateRef.current.get(last.squadId);
-    if (prev) {
-      squadStateRef.current = new Map(squadStateRef.current).set(last.squadId, {
-        playerCount: Math.max(0, prev.playerCount - 1),
-        skillWeight: Math.max(0, prev.skillWeight - last.skillWeight),
-      });
-    }
-
     setHistory((h) => h.slice(0, -1));
+    // Step back in the pre-computed sequence — order never changes.
+    setPickIndex((p) => Math.max(0, p - 1));
     if (phase === "complete") setPhase("main");
     squadsQuery.refetch();
   }, [history, phase, squadsQuery]);
@@ -196,6 +199,12 @@ export function useCeremony(tournamentId: string) {
   function changeSkill(skill: string | null) {
     setActiveSkill(skill);
   }
+
+  // Upcoming picks visible to the UI (next 3 after current).
+  const upcomingSquadIds = draftOrderRef.current.slice(pickIndex + 1, pickIndex + 4);
+  const upcomingSquads = upcomingSquadIds
+    .map((id) => squads.find((s) => s.id === id))
+    .filter((s): s is SquadView => s !== undefined);
 
   return {
     phase,
@@ -207,6 +216,8 @@ export function useCeremony(tournamentId: string) {
     history,
     isAssigning,
     currentSquad,
+    pickIndex,
+    upcomingSquads,
     start,
     assign,
     undo,
