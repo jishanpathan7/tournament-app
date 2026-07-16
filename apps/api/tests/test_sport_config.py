@@ -41,3 +41,30 @@ def test_normalize_camel_case():
 
 def test_format_keys_ignored_in_normalize():
     assert normalize_sport_config({"cycles": 2, "best_of": 1}) == {"best_of": 1}
+
+
+def test_normalize_new_canonical_camel_case():
+    """New canonical names pointsPerSet/maxPoints normalize correctly."""
+    assert normalize_sport_config({"pointsPerSet": 15, "maxPoints": 21}) == {
+        "points_per_set": 15,
+        "max_points": 21,
+    }
+
+
+def test_normalize_old_aliases_still_work():
+    """Old aliases pointsToWin/pointCap still map to the canonical snake_case keys."""
+    result = normalize_sport_config({"pointsToWin": 15, "pointCap": 21})
+    assert result == {"points_per_set": 15, "max_points": 21}
+
+
+def test_merge_sibl_stage_config():
+    """Stage config with SIBL rules (camelCase) merges correctly over defaults."""
+    cfg = merge_sport_config(
+        PROFILE,
+        stage_config={"pointsPerSet": 15, "maxPoints": 21},
+    )
+    assert cfg["points_per_set"] == 15
+    assert cfg["max_points"] == 21
+    assert cfg["win_by"] == 2
+    assert cfg["best_of"] == 3
+    PROFILE.validate_config(cfg)

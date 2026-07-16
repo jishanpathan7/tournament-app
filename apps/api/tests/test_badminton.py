@@ -299,3 +299,69 @@ def test_derive_requires_two_sides():
 def test_derive_is_deterministic():
     payload = {"games": [[21, 15], [15, 21], [21, 18]]}
     assert _derive(payload) == _derive(payload)
+
+
+# ---- SIBL rules: pointsPerSet=15, winBy=2, maxPoints=21 ----
+
+SIBL = {"points_per_set": 15, "win_by": 2, "max_points": 21}
+
+
+@pytest.mark.parametrize(
+    "games",
+    [
+        [[15, 0], [15, 8]],  # 2-0: clean wins
+        [[15, 13], [15, 9]],  # 2-0: narrow win (15-13 is 2-point margin at pointsPerSet)
+        [[16, 14], [15, 8]],  # 2-0: deuce win
+        [[17, 15], [15, 8]],  # 2-0: deuce win
+        [[18, 16], [15, 8]],  # 2-0: deuce win
+        [[19, 17], [15, 8]],  # 2-0: deuce win
+        [[20, 18], [15, 8]],  # 2-0: deuce win
+        [[21, 20], [15, 8]],  # 2-0: cap win (golden point)
+        [[15, 8], [12, 15], [21, 20]],  # 2-1: cap win in decider
+    ],
+)
+def test_sibl_valid_scores(games):
+    _validate({"games": games}, SIBL)
+
+
+@pytest.mark.parametrize(
+    "games,reason",
+    [
+        ([[15, 14], [15, 8]], "15-14: need win by 2"),
+        ([[21, 19], [15, 8]], "21-19: illegal cap score (only 21-20 allowed)"),
+        ([[22, 20], [15, 8]], "22-20: exceeds cap"),
+        ([[14, 15], [15, 8]], "14-15: mirror of 15-14"),
+    ],
+)
+def test_sibl_invalid_scores(games, reason):
+    with pytest.raises(EngineValidationError, msg=reason):
+        _validate({"games": games}, SIBL)
+
+
+def test_sibl_2_0_match():
+    report = _derive({"games": [[16, 14], [15, 8]]}, SIBL)
+    assert report.outcome.winner_id == "p0"
+    assert report.statistics["p0"]["games_won"] == 2
+    assert report.statistics["p0"]["games_lost"] == 0
+
+
+def test_sibl_2_1_match():
+    report = _derive({"games": [[16, 14], [12, 15], [21, 20]]}, SIBL)
+    assert report.outcome.winner_id == "p0"
+    assert report.statistics["p0"]["games_won"] == 2
+    assert report.statistics["p0"]["games_lost"] == 1
+    assert report.statistics["p1"]["games_won"] == 1
+
+
+def test_sibl_no_fourth_set():
+    with pytest.raises(EngineValidationError):
+        _validate({"games": [[16, 14], [15, 8], [15, 8], [15, 8]]}, SIBL)
+
+
+def test_sibl_cap_golden_point_21_20_valid():
+    _validate({"games": [[21, 20], [15, 8]]}, SIBL)
+
+
+def test_sibl_cap_21_19_invalid():
+    with pytest.raises(EngineValidationError):
+        _validate({"games": [[21, 19], [15, 8]]}, SIBL)

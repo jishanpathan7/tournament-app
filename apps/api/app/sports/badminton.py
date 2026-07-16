@@ -82,8 +82,8 @@ def _game_state(a: int, b: int, points: int, win_by: int, cap: int) -> _GameStat
         if margin == win_by:
             return winner
         return _GameState.IN_PROGRESS if margin < win_by else _GameState.INVALID
-    # hi == cap (golden point / capped): valid only as cap-1 or cap-2 behind
-    return winner if lo >= cap - win_by else _GameState.INVALID
+    # hi == cap (golden point): the only legal losing score is cap-1 (one behind)
+    return winner if lo >= cap - 1 else _GameState.INVALID
 
 
 class BadmintonProfile:

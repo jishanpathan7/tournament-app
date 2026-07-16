@@ -90,8 +90,8 @@ export function classifyGame(
     }
     return { status: "invalid", message: `Illegal margin at ${a}-${b}.` };
   }
-  // hi === maxPoints
-  return lo >= maxPoints - winBy
+  // hi === maxPoints (golden point): only legal losing score is maxPoints - 1
+  return lo >= maxPoints - 1
     ? { status: "complete", winner }
     : { status: "invalid", message: `Illegal cap score ${a}-${b}.` };
 }
@@ -112,9 +112,10 @@ export function resolveTiedGame(
     win = pointsPerSet;
   } else {
     win = tiedScore + winBy;
-    if (win > maxPoints) {
+    if (win >= maxPoints) {
+      // At or beyond the cap, golden-point rule: winner needs exactly one more than loser
       win = maxPoints;
-      lose = maxPoints - winBy;
+      lose = maxPoints - 1;
     }
   }
 

@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
   classifyGame,
   decidingGameIndex,
+  formatMatchRules,
+  gameStatusIndicator,
   gamesWonBySide,
   matchDecided,
   resolveTiedGame,
@@ -23,7 +25,7 @@ describe("classifyGame", () => {
 
   it("accepts deuce finishes", () => {
     expect(classifyGame(22, 20).status).toBe("complete");
-    expect(classifyGame(30, 28).status).toBe("complete");
+    expect(classifyGame(30, 29).status).toBe("complete"); // golden point at cap: only 30-29 legal
   });
 
   it("flags equal scores as tied", () => {
@@ -40,7 +42,7 @@ describe("resolveTiedGame", () => {
 
   it("applies win-by-2 at deuce", () => {
     expect(resolveTiedGame(20, "a")).toEqual({ a: 22, b: 20 });
-    expect(resolveTiedGame(29, "b")).toEqual({ a: 28, b: 30 });
+    expect(resolveTiedGame(29, "b")).toEqual({ a: 29, b: 30 });
   });
 });
 
@@ -79,5 +81,128 @@ describe("resolve produces valid games", () => {
         expect(classifyGame(resolved.a, resolved.b).status).toBe("complete");
       }
     }
+  });
+});
+
+// ---- SIBL rules: pointsPerSet=15, winBy=2, maxPoints=21 ----
+
+const SIBL = rulesFromSportConfig({ bestOf: 3, pointsPerSet: 15, winBy: 2, maxPoints: 21 });
+
+describe("classifyGame — SIBL rules", () => {
+  it.each([
+    [15, 0],
+    [15, 8],
+    [15, 13],
+    [16, 14],
+    [17, 15],
+    [18, 16],
+    [19, 17],
+    [20, 18],
+    [21, 20],
+  ])("%i-%i is complete", (a, b) => {
+    expect(classifyGame(a, b, SIBL).status).toBe("complete");
+    expect(classifyGame(b, a, SIBL).status).toBe("complete"); // mirror
+  });
+
+  it.each([
+    [21, 19, "illegal cap score — only 21-20 allowed"],
+    [22, 20, "exceeds cap"],
+  ])("%i-%i is invalid (%s)", (a, b) => {
+    expect(classifyGame(a, b, SIBL).status).toBe("invalid");
+    expect(classifyGame(b, a, SIBL).status).toBe("invalid");
+  });
+
+  it("14-14 is tied (in_progress)", () => {
+    expect(classifyGame(14, 14, SIBL)).toEqual({ status: "tied", score: 14 });
+  });
+
+  it("20-20 is tied (in_progress)", () => {
+    expect(classifyGame(20, 20, SIBL)).toEqual({ status: "tied", score: 20 });
+  });
+
+  it("15-14 is in_progress (reached target but not win-by-2 margin yet)", () => {
+    const result = classifyGame(15, 14, SIBL);
+    expect(result.status).toBe("in_progress");
+  });
+});
+
+describe("resolveTiedGame — SIBL rules", () => {
+  it("resolves 14-14 to 16-14 (deuce)", () => {
+    expect(resolveTiedGame(14, "a", SIBL)).toEqual({ a: 16, b: 14 });
+    expect(resolveTiedGame(14, "b", SIBL)).toEqual({ a: 14, b: 16 });
+  });
+
+  it("resolves 20-20 to 21-20 (golden point, never 21-19)", () => {
+    const result = resolveTiedGame(20, "a", SIBL)!;
+    expect(result).toEqual({ a: 21, b: 20 });
+    expect(classifyGame(result.a, result.b, SIBL).status).toBe("complete");
+  });
+
+  it("all SIBL tied resolutions produce valid scores", () => {
+    for (const tied of [14, 15, 16, 17, 18, 19, 20]) {
+      for (const winner of ["a", "b"] as const) {
+        const resolved = resolveTiedGame(tied, winner, SIBL)!;
+        expect(classifyGame(resolved.a, resolved.b, SIBL).status).toBe("complete");
+      }
+    }
+  });
+});
+
+describe("gameStatusIndicator — SIBL rules", () => {
+  it("returns null below deuce threshold", () => {
+    expect(gameStatusIndicator(13, 13, SIBL)).toBeNull();
+  });
+
+  it("returns 'deuce' at 14-14 through 19-19", () => {
+    for (const s of [14, 15, 16, 17, 18, 19]) {
+      expect(gameStatusIndicator(s, s, SIBL)).toBe("deuce");
+    }
+  });
+
+  it("returns 'next_point_wins' at 20-20", () => {
+    expect(gameStatusIndicator(20, 20, SIBL)).toBe("next_point_wins");
+  });
+
+  it("returns null when scores are not tied", () => {
+    expect(gameStatusIndicator(15, 14, SIBL)).toBeNull();
+    expect(gameStatusIndicator(20, 19, SIBL)).toBeNull();
+  });
+});
+
+describe("formatMatchRules", () => {
+  it("produces the correct SIBL format string", () => {
+    expect(formatMatchRules(SIBL)).toBe("Best of 3 · First to 15 · Win by 2 · Cap 21");
+  });
+
+  it("produces the correct default format string", () => {
+    expect(formatMatchRules()).toBe("Best of 3 · First to 21 · Win by 2 · Cap 30");
+  });
+});
+
+describe("SIBL match flow", () => {
+  it("2-0 match is decided", () => {
+    const games = [
+      { a: 16, b: 14 },
+      { a: 15, b: 8 },
+    ];
+    expect(matchDecided(games, SIBL)).toBe(true);
+  });
+
+  it("2-1 match is decided", () => {
+    const games = [
+      { a: 16, b: 14 },
+      { a: 12, b: 15 },
+      { a: 21, b: 20 },
+    ];
+    expect(matchDecided(games, SIBL)).toBe(true);
+  });
+
+  it("1-1 is NOT decided — third set needed", () => {
+    const games = [
+      { a: 16, b: 14 },
+      { a: 12, b: 15 },
+    ];
+    expect(matchDecided(games, SIBL)).toBe(false);
+    expect(decidingGameIndex(2, games, SIBL)).toBe(true);
   });
 });

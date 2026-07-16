@@ -7490,12 +7490,12 @@
       "SportMatchConfigView": {
         "properties": {
           "bestOf": { "type": "integer", "title": "Bestof" },
-          "pointsToWin": { "type": "integer", "title": "Pointstowin" },
+          "pointsPerSet": { "type": "integer", "title": "Pointsperset" },
           "winBy": { "type": "integer", "title": "Winby" },
-          "pointCap": { "type": "integer", "title": "Pointcap" }
+          "maxPoints": { "type": "integer", "title": "Maxpoints" }
         },
         "type": "object",
-        "required": ["bestOf", "pointsToWin", "winBy", "pointCap"],
+        "required": ["bestOf", "pointsPerSet", "winBy", "maxPoints"],
         "title": "SportMatchConfigView",
         "description": "Resolved sport rules for this match (tournament defaults + stage overrides)."
       },

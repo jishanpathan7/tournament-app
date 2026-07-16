@@ -25,9 +25,9 @@ export interface ScorekeeperMatchCard {
 
 export interface SportMatchConfig {
   bestOf: number;
-  pointsToWin: number;
+  pointsPerSet: number;
   winBy: number;
-  pointCap: number;
+  maxPoints: number;
 }
 
 export interface ScorekeeperSession {
