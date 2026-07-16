@@ -21,7 +21,12 @@ import { AdvanceToKnockoutDialog } from "@/features/draws/components/advance-to-
 import { ClearDrawDialog } from "@/features/draws/components/clear-draw-dialog";
 import { evaluateDrawReadiness } from "@/features/draws/config";
 import { GenerateDrawDialog } from "@/features/draws/components/generate-draw-dialog";
-import { getFormat, MATCH_FORMATS } from "@/features/tournaments/config";
+import {
+  getFormat,
+  getScoringPreset,
+  MATCH_FORMATS,
+  SCORING_RULE_PRESETS,
+} from "@/features/tournaments/config";
 import { useUpdateStageConfig } from "@/features/tournaments/use-tournaments";
 import { errorMessage } from "@/lib/problem";
 
@@ -50,7 +55,10 @@ export function DrawSetupPanel({
   const updateConfig = useUpdateStageConfig(stage.id, divisionId);
 
   const format = getFormat(stage.type);
-  const stageBestOf = (stage.config as Record<string, unknown>).bestOf as number | undefined;
+  const stageConfig = stage.config as Record<string, unknown>;
+  const stageBestOf = stageConfig.bestOf as number | undefined;
+  const stagePointsPerSet = stageConfig.pointsPerSet as number | undefined;
+  const activeScoringPreset = getScoringPreset(stagePointsPerSet);
   const readiness = evaluateDrawReadiness({
     approvedCount,
     format: stage.type,
@@ -87,36 +95,75 @@ export function DrawSetupPanel({
               approved participant{approvedCount === 1 ? "" : "s"}
             </span>
           </div>
-          {canManage && !stage.locked ? (
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground text-xs">Match format</span>
-              <Select
-                value={String(stageBestOf ?? "")}
-                onValueChange={(v) => {
-                  updateConfig.mutate(
-                    { bestOf: Number(v) },
-                    {
-                      onSuccess: () => toast.success("Match format updated"),
-                      onError: (e) => toast.error(errorMessage(e, "Couldn't update format")),
-                    },
-                  );
-                }}
-              >
-                <SelectTrigger className="h-7 w-32 text-xs">
-                  <SelectValue placeholder="Default (Bo3)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {MATCH_FORMATS.map((f) => (
-                    <SelectItem key={f.value} value={String(f.value)} className="text-xs">
-                      {f.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : stageBestOf ? (
-            <Badge tone="muted">Best of {stageBestOf}</Badge>
-          ) : null}
+          <div className="flex flex-wrap items-center gap-3">
+            {canManage && !stage.locked ? (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-xs">Match format</span>
+                <Select
+                  value={String(stageBestOf ?? "")}
+                  onValueChange={(v) => {
+                    updateConfig.mutate(
+                      { bestOf: Number(v) },
+                      {
+                        onSuccess: () => toast.success("Match format updated"),
+                        onError: (e) => toast.error(errorMessage(e, "Couldn't update format")),
+                      },
+                    );
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-32 text-xs">
+                    <SelectValue placeholder="Default (Bo3)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MATCH_FORMATS.map((f) => (
+                      <SelectItem key={f.value} value={String(f.value)} className="text-xs">
+                        {f.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : stageBestOf ? (
+              <Badge tone="muted">Best of {stageBestOf}</Badge>
+            ) : null}
+            {canManage && !stage.locked ? (
+              <div className="flex items-center gap-2">
+                <span className="text-muted-foreground text-xs">Scoring rules</span>
+                <Select
+                  value={activeScoringPreset?.id ?? ""}
+                  onValueChange={(v) => {
+                    const preset = SCORING_RULE_PRESETS.find((p) => p.id === v);
+                    if (!preset) return;
+                    updateConfig.mutate(
+                      {
+                        pointsPerSet: preset.pointsPerSet,
+                        winBy: preset.winBy,
+                        maxPoints: preset.maxPoints,
+                      },
+                      {
+                        onSuccess: () => toast.success("Scoring rules updated"),
+                        onError: (e) =>
+                          toast.error(errorMessage(e, "Couldn't update scoring rules")),
+                      },
+                    );
+                  }}
+                >
+                  <SelectTrigger className="h-7 w-44 text-xs">
+                    <SelectValue placeholder="Default (to 21)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {SCORING_RULE_PRESETS.map((p) => (
+                      <SelectItem key={p.id} value={p.id} className="text-xs">
+                        {p.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : activeScoringPreset ? (
+              <Badge tone="muted">To {activeScoringPreset.pointsPerSet}</Badge>
+            ) : null}
+          </div>
         </div>
 
         <ul className="flex flex-col gap-1.5 text-sm">

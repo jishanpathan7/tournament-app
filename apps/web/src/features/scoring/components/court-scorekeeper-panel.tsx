@@ -17,6 +17,8 @@ import { Spinner } from "@/components/ui/spinner";
 import {
   BADMINTON_DEFAULTS,
   classifyGame,
+  formatMatchRules,
+  gameStatusIndicator,
   gamesWonBySide,
   matchDecided,
   resolveTiedGame,
@@ -77,7 +79,7 @@ export function CourtScorekeeperPanel({
     setLiveGame((g) => {
       const prevA = g.a ?? 0;
       const prevB = g.b ?? 0;
-      const next = Math.max(0, Math.min(rules.pointCap, (g[side] ?? 0) + delta));
+      const next = Math.max(0, Math.min(rules.maxPoints, (g[side] ?? 0) + delta));
       if (!scoringStartedRef.current && onScoringStart && prevA === 0 && prevB === 0 && next > 0) {
         scoringStartedRef.current = true;
         onScoringStart();
@@ -184,6 +186,24 @@ export function CourtScorekeeperPanel({
         })}
       </div>
 
+      {/* Deuce / Next-point-wins indicator */}
+      {(() => {
+        const indicator = gameStatusIndicator(a, b, rules);
+        if (!indicator) return null;
+        return (
+          <div
+            className={cn(
+              "border-ink -mt-[2px] border-x-2 px-3 py-1.5 text-center font-mono text-[11px] font-bold uppercase tracking-[0.14em]",
+              indicator === "next_point_wins"
+                ? "bg-candy-tint text-candy-dark"
+                : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
+            )}
+          >
+            {indicator === "next_point_wins" ? "⚡ Next point wins" : "Deuce"}
+          </div>
+        );
+      })()}
+
       {/* Split scoreboard */}
       <div className="border-ink grid min-h-0 flex-1 grid-cols-2 border-2">
         <ScoreSide
@@ -192,7 +212,7 @@ export function CourtScorekeeperPanel({
           score={a}
           onMinus={() => bump("a", -1)}
           onPlus={() => bump("a", 1)}
-          pointCap={rules.pointCap}
+          maxPoints={rules.maxPoints}
           accent
         />
         <ScoreSide
@@ -201,7 +221,7 @@ export function CourtScorekeeperPanel({
           score={b}
           onMinus={() => bump("b", -1)}
           onPlus={() => bump("b", 1)}
-          pointCap={rules.pointCap}
+          maxPoints={rules.maxPoints}
         />
       </div>
 
@@ -336,7 +356,7 @@ function ScoreSide({
   score,
   onMinus,
   onPlus,
-  pointCap,
+  maxPoints,
   accent,
 }: {
   role: "SERVER" | "RECEIVER";
@@ -344,7 +364,7 @@ function ScoreSide({
   score: number;
   onMinus: () => void;
   onPlus: () => void;
-  pointCap: number;
+  maxPoints: number;
   accent?: boolean;
 }) {
   return (
@@ -380,7 +400,7 @@ function ScoreSide({
         <ScoreButton
           label={`Plus ${label}`}
           onClick={onPlus}
-          disabled={score >= pointCap}
+          disabled={score >= maxPoints}
           variant="plus"
         />
       </div>
@@ -446,7 +466,7 @@ export function buildScorekeeperMeta(
   rules: BadmintonRules = DEFAULT_RULES,
 ) {
   const court = courtName?.trim() ? courtName.trim().toUpperCase() : null;
-  const format = `BEST OF ${rules.bestOf} TO ${rules.pointsToWin}`;
+  const format = formatMatchRules(rules).toUpperCase();
   return [court, format].filter(Boolean).join(" · ");
 }
 

@@ -4387,12 +4387,12 @@ export interface components {
     SportMatchConfigView: {
       /** Bestof */
       bestOf: number;
-      /** Pointstowin */
-      pointsToWin: number;
+      /** Pointsperset */
+      pointsPerSet: number;
       /** Winby */
       winBy: number;
-      /** Pointcap */
-      pointCap: number;
+      /** Maxpoints */
+      maxPoints: number;
     };
     /** SquadMemberView */
     SquadMemberView: {

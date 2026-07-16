@@ -94,7 +94,7 @@ def test_skill_weight_maps_tiers_and_defaults_to_intermediate():
 
 def test_validate_config_accepts_defaults_and_overrides():
     PROFILE.validate_config({})
-    PROFILE.validate_config({"best_of": 5, "points_to_win": 15, "win_by": 2, "point_cap": 21})
+    PROFILE.validate_config({"best_of": 5, "points_per_set": 15, "win_by": 2, "max_points": 21})
 
 
 @pytest.mark.parametrize(
@@ -102,9 +102,9 @@ def test_validate_config_accepts_defaults_and_overrides():
     [
         {"best_of": 2},  # even
         {"best_of": 0},  # non-positive
-        {"points_to_win": "x"},  # non-int
+        {"points_per_set": "x"},  # non-int
         {"win_by": 0},
-        {"point_cap": 15, "points_to_win": 21},  # cap < points
+        {"max_points": 15, "points_per_set": 21},  # cap < points
     ],
 )
 def test_validate_config_rejects_invalid(config):
@@ -142,8 +142,7 @@ def test_validate_participants_rejects(kind, rosters):
         [[21, 15], [21, 10]],  # 2-0
         [[21, 15], [15, 21], [21, 18]],  # 2-1
         [[22, 20], [21, 19]],  # deuce win
-        [[30, 29], [21, 10]],  # golden point cap
-        [[30, 28], [21, 10]],  # win-by-2 at cap
+        [[30, 29], [21, 10]],  # golden point cap (only legal cap score)
     ],
 )
 def test_valid_normal_matches(games):
@@ -299,3 +298,69 @@ def test_derive_requires_two_sides():
 def test_derive_is_deterministic():
     payload = {"games": [[21, 15], [15, 21], [21, 18]]}
     assert _derive(payload) == _derive(payload)
+
+
+# ---- SIBL rules: pointsPerSet=15, winBy=2, maxPoints=21 ----
+
+SIBL = {"points_per_set": 15, "win_by": 2, "max_points": 21}
+
+
+@pytest.mark.parametrize(
+    "games",
+    [
+        [[15, 0], [15, 8]],  # 2-0: clean wins
+        [[15, 13], [15, 9]],  # 2-0: narrow win (15-13 is 2-point margin at pointsPerSet)
+        [[16, 14], [15, 8]],  # 2-0: deuce win
+        [[17, 15], [15, 8]],  # 2-0: deuce win
+        [[18, 16], [15, 8]],  # 2-0: deuce win
+        [[19, 17], [15, 8]],  # 2-0: deuce win
+        [[20, 18], [15, 8]],  # 2-0: deuce win
+        [[21, 20], [15, 8]],  # 2-0: cap win (golden point)
+        [[15, 8], [12, 15], [21, 20]],  # 2-1: cap win in decider
+    ],
+)
+def test_sibl_valid_scores(games):
+    _validate({"games": games}, SIBL)
+
+
+@pytest.mark.parametrize(
+    "games,reason",
+    [
+        ([[15, 14], [15, 8]], "15-14: need win by 2"),
+        ([[21, 19], [15, 8]], "21-19: illegal cap score (only 21-20 allowed)"),
+        ([[22, 20], [15, 8]], "22-20: exceeds cap"),
+        ([[14, 15], [15, 8]], "14-15: mirror of 15-14"),
+    ],
+)
+def test_sibl_invalid_scores(games, reason):
+    with pytest.raises(EngineValidationError):
+        _validate({"games": games}, SIBL)
+
+
+def test_sibl_2_0_match():
+    report = _derive({"games": [[16, 14], [15, 8]]}, SIBL)
+    assert report.outcome.winner_id == "p0"
+    assert report.statistics["p0"]["games_won"] == 2
+    assert report.statistics["p0"]["games_lost"] == 0
+
+
+def test_sibl_2_1_match():
+    report = _derive({"games": [[16, 14], [12, 15], [21, 20]]}, SIBL)
+    assert report.outcome.winner_id == "p0"
+    assert report.statistics["p0"]["games_won"] == 2
+    assert report.statistics["p0"]["games_lost"] == 1
+    assert report.statistics["p1"]["games_won"] == 1
+
+
+def test_sibl_no_fourth_set():
+    with pytest.raises(EngineValidationError):
+        _validate({"games": [[16, 14], [15, 8], [15, 8], [15, 8]]}, SIBL)
+
+
+def test_sibl_cap_golden_point_21_20_valid():
+    _validate({"games": [[21, 20], [15, 8]]}, SIBL)
+
+
+def test_sibl_cap_21_19_invalid():
+    with pytest.raises(EngineValidationError):
+        _validate({"games": [[21, 19], [15, 8]]}, SIBL)
