@@ -94,7 +94,7 @@ def test_skill_weight_maps_tiers_and_defaults_to_intermediate():
 
 def test_validate_config_accepts_defaults_and_overrides():
     PROFILE.validate_config({})
-    PROFILE.validate_config({"best_of": 5, "points_to_win": 15, "win_by": 2, "point_cap": 21})
+    PROFILE.validate_config({"best_of": 5, "points_per_set": 15, "win_by": 2, "max_points": 21})
 
 
 @pytest.mark.parametrize(
@@ -102,9 +102,9 @@ def test_validate_config_accepts_defaults_and_overrides():
     [
         {"best_of": 2},  # even
         {"best_of": 0},  # non-positive
-        {"points_to_win": "x"},  # non-int
+        {"points_per_set": "x"},  # non-int
         {"win_by": 0},
-        {"point_cap": 15, "points_to_win": 21},  # cap < points
+        {"max_points": 15, "points_per_set": 21},  # cap < points
     ],
 )
 def test_validate_config_rejects_invalid(config):

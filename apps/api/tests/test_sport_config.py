@@ -11,7 +11,7 @@ PROFILE = BadmintonProfile()
 def test_merge_defaults_when_empty():
     cfg = merge_sport_config(PROFILE)
     assert cfg["best_of"] == 3
-    assert cfg["points_to_win"] == 21
+    assert cfg["points_per_set"] == 21
 
 
 def test_tournament_sport_config_nested():
@@ -35,7 +35,7 @@ def test_stage_overrides_tournament():
 def test_normalize_camel_case():
     assert normalize_sport_config({"bestOf": 1, "pointsToWin": 15}) == {
         "best_of": 1,
-        "points_to_win": 15,
+        "points_per_set": 15,
     }
 
 
