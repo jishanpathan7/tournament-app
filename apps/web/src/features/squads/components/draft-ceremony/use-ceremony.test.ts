@@ -83,8 +83,8 @@ describe("pickTargetSquad", () => {
     for (const w of weights) {
       const target = pickTargetSquad(squads, state);
       expect(target).toBeDefined();
-      const id = target!.id;
-      picks[id]++;
+      const id = target!.id as keyof typeof picks;
+      picks[id] = (picks[id] ?? 0) + 1;
       const prev = state.get(id)!;
       state.set(id, { playerCount: prev.playerCount + 1, skillWeight: prev.skillWeight + w });
     }
