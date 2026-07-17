@@ -188,8 +188,15 @@ async def test_divisions_and_participants_visible_before_draw_published(app, cli
     participants = await client.get(f"{PUBLIC}/tournaments/{slug}/participants")
     assert participants.status_code == 200
     assert len(participants.json()) == 3
-    # Never PII: only id/divisionId/kind/displayName/seed on the wire.
-    assert set(participants.json()[0].keys()) == {"id", "divisionId", "kind", "displayName", "seed"}
+    # Never PII: only id/divisionId/kind/displayName/seed/teamName on the wire.
+    assert set(participants.json()[0].keys()) == {
+        "id",
+        "divisionId",
+        "kind",
+        "displayName",
+        "seed",
+        "teamName",
+    }
 
     stages = await client.get(f"{PUBLIC}/tournaments/{slug}/stages")
     assert stages.status_code == 200
@@ -245,6 +252,8 @@ async def test_matches_and_standings_visible_once_draw_published(app, client):
                 "scoreFor",
                 "scoreAgainst",
                 "rank",
+                "displayName",
+                "teamName",
             }
 
 
