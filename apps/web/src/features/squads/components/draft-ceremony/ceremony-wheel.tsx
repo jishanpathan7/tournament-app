@@ -3,7 +3,10 @@
 import gsap from "gsap";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
-import type { UnassignedRegistrationView } from "@/features/squads/types";
+import {
+  POWER_META,
+  type WheelSlot,
+} from "@/features/squads/components/draft-ceremony/power-slots";
 
 const WHEEL_COLORS = [
   "#4f6bf6", // --candy
@@ -93,13 +96,22 @@ export interface WheelHandle {
 }
 
 interface Props {
-  players: UnassignedRegistrationView[];
+  slots: WheelSlot[];
   highlightIndex: number | null;
   reducedMotion?: boolean;
 }
 
+/** Label for a slot — player name or the power's short label. */
+function slotLabel(slot: WheelSlot, n: number): string {
+  if (slot.type === "power") {
+    const meta = POWER_META[slot.power];
+    return `${meta.emoji} ${meta.label}`;
+  }
+  return label(slot.player.displayName, n);
+}
+
 export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWheel(
-  { players, highlightIndex, reducedMotion },
+  { slots: players, highlightIndex, reducedMotion },
   ref,
 ) {
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -297,21 +309,23 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
               {n === 0 ? (
                 <circle cx={CX} cy={CY} r={R} fill="#28324a" />
               ) : (
-                players.map((player, i) => {
+                players.map((slot, i) => {
                   const start = i * segAngle;
                   const end = start + segAngle;
                   const mid = start + segAngle / 2;
-                  const color = segColor(i);
+                  const isPower = slot.type === "power";
+                  const color = isPower ? POWER_META[slot.power].color : segColor(i);
                   const isHL = highlightIndex === i;
 
                   return (
-                    <g key={player.registrationId}>
+                    <g key={slot.id}>
                       <path
                         d={segmentPath(start, end)}
                         fill={color}
-                        stroke="#1e293b"
-                        strokeWidth={2.5}
+                        stroke={isPower ? "#fffdf5" : "#1e293b"}
+                        strokeWidth={isPower ? 3.5 : 2.5}
                         opacity={isHL ? 1 : highlightIndex !== null ? 0.55 : 0.9}
+                        filter={isPower ? "url(#wheel-glow)" : undefined}
                         style={{ transition: "opacity 0.3s ease" }}
                       />
                       {(() => {
@@ -326,8 +340,8 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                               y={CY}
                               textAnchor={anchor}
                               dominantBaseline="central"
-                              fontSize={fs}
-                              fontWeight="700"
+                              fontSize={isPower ? fs + 1 : fs}
+                              fontWeight={isPower ? "900" : "700"}
                               fill="white"
                               filter="url(#txt-shadow)"
                               style={{
@@ -336,7 +350,7 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                                 letterSpacing: "0.01em",
                               }}
                             >
-                              {label(player.displayName, n)}
+                              {slotLabel(slot, n)}
                             </text>
                           </g>
                         );

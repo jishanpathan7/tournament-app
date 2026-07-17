@@ -9,12 +9,24 @@ import {
   type CeremonySettings,
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
+import type { PowerKind } from "@/features/squads/components/draft-ceremony/power-slots";
 import type {
   SquadMemberView,
   SquadView,
   UnassignedRegistrationView,
 } from "@/features/squads/types";
-import { useAssignSquadMember, useSquads } from "@/features/squads/use-squads";
+
+/** Result of playing a Jo Tera Hai Wo Mera (swap) card. */
+export type SwapOutcome =
+  | { status: "swapped"; aName: string; bName: string; fromSquad: string; toSquad: string }
+  | { status: "blocked"; toSquad: string }
+  | { status: "no_players"; toSquad: string }
+  | { status: "error" };
+import {
+  useAssignSquadMember,
+  useRemoveSquadMember,
+  useSquads,
+} from "@/features/squads/use-squads";
 import { errorMessage } from "@/lib/problem";
 
 /** "intros" only appears when Fun Mode + team introductions are enabled. */
@@ -112,6 +124,7 @@ export function computeDraftOrder(
 export function useCeremony(tournamentId: string) {
   const squadsQuery = useSquads(tournamentId);
   const assignMutation = useAssignSquadMember(tournamentId);
+  const removeMutation = useRemoveSquadMember(tournamentId);
 
   const [phase, setPhase] = useState<CeremonyPhase>("intro");
   const [activeSkill, setActiveSkill] = useState<string | null | undefined>(undefined);
@@ -121,8 +134,9 @@ export function useCeremony(tournamentId: string) {
 
   // Fun Mode settings — client-side in V1. Off by default (competitive-safe).
   const [settings, setSettings] = useState<CeremonySettings>(DEFAULT_SETTINGS);
-  // Squad ids that have spent their one Captain's Shield this ceremony.
-  const [shieldsUsed, setShieldsUsed] = useState<Set<string>>(() => new Set());
+  // Power cards each team is holding — awarded when the wheel lands on a power
+  // slot, played later. Keyed by squad id.
+  const [teamCards, setTeamCards] = useState<Record<string, PowerKind[]>>({});
   // Squad that just received its final player — drives the completion celebration.
   const [justCompletedSquadId, setJustCompletedSquadId] = useState<string | null>(null);
 
@@ -172,21 +186,78 @@ export function useCeremony(tournamentId: string) {
     totalPicks > WILDCARD_PICK_COUNT &&
     pickIndex >= totalPicks - WILDCARD_PICK_COUNT;
 
-  // Captain's Shield availability for the team currently on the clock.
-  const canUseShield =
-    settings.funMode &&
-    settings.captainShield &&
-    !!currentSquadId &&
-    !shieldsUsed.has(currentSquadId);
+  // Power slots appear while Fun Mode + power slots are on (count per skill wheel
+  // is set by the organizer in settings.powerSlotsBySkill).
+  const powersEnabled = settings.funMode && settings.powerSlots;
 
-  const useShield = useCallback((squadId: string) => {
-    setShieldsUsed((prev) => {
-      if (prev.has(squadId)) return prev;
-      const next = new Set(prev);
-      next.add(squadId);
-      return next;
+  /** Hand a power card to a team (on wheel landing). */
+  const awardCard = useCallback((squadId: string, kind: PowerKind) => {
+    setTeamCards((prev) => ({ ...prev, [squadId]: [...(prev[squadId] ?? []), kind] }));
+  }, []);
+
+  /** Remove one card of `kind` from a team's hand. */
+  const consumeCard = useCallback((squadId: string, kind: PowerKind) => {
+    setTeamCards((prev) => {
+      const hand = prev[squadId] ?? [];
+      const i = hand.indexOf(kind);
+      if (i === -1) return prev;
+      return { ...prev, [squadId]: [...hand.slice(0, i), ...hand.slice(i + 1)] };
     });
   }, []);
+
+  /**
+   * Play Jo Tera Hai Wo Mera — swap the closest-skill non-captain players between
+   * `fromId` and `toId`. Closest-skill keeps balance barely changed; the 1-for-1
+   * trade keeps sizes identical. BLOCKED if the target team holds Dabur Immunity —
+   * both cards are then consumed (the shield stops the raid). The swap card is
+   * consumed on any completed attempt.
+   */
+  const swapBetween = useCallback(
+    async (fromId: string, toId: string): Promise<SwapOutcome> => {
+      const from = squads.find((s) => s.id === fromId);
+      const to = squads.find((s) => s.id === toId);
+      if (!from || !to) return { status: "error" };
+
+      // Dabur Immunity on the target blocks the swap — both cards cancel out.
+      if ((teamCards[toId] ?? []).includes("protection")) {
+        consumeCard(fromId, "swap");
+        consumeCard(toId, "protection");
+        return { status: "blocked", toSquad: to.name };
+      }
+
+      const eligible = (sq: SquadView) =>
+        sq.members.filter((m) => m.registrationId !== sq.captainRegistrationId);
+      const fromPlayers = eligible(from);
+      const toPlayers = eligible(to);
+      if (fromPlayers.length === 0 || toPlayers.length === 0) {
+        return { status: "no_players", toSquad: to.name };
+      }
+
+      let best: { a: SquadMemberView; b: SquadMemberView; diff: number } | null = null;
+      for (const a of fromPlayers) {
+        for (const b of toPlayers) {
+          const diff = Math.abs(a.skillWeight - b.skillWeight);
+          if (!best || diff < best.diff) best = { a, b, diff };
+        }
+      }
+      if (!best) return { status: "no_players", toSquad: to.name };
+
+      await removeMutation.mutateAsync({ squadId: from.id, registrationId: best.a.registrationId });
+      await removeMutation.mutateAsync({ squadId: to.id, registrationId: best.b.registrationId });
+      await assignMutation.mutateAsync({ squadId: to.id, registrationId: best.a.registrationId });
+      await assignMutation.mutateAsync({ squadId: from.id, registrationId: best.b.registrationId });
+      consumeCard(fromId, "swap");
+
+      return {
+        status: "swapped",
+        aName: best.a.displayName,
+        bName: best.b.displayName,
+        fromSquad: from.name,
+        toSquad: to.name,
+      };
+    },
+    [squads, teamCards, consumeCard, removeMutation, assignMutation],
+  );
 
   const clearJustCompleted = useCallback(() => setJustCompletedSquadId(null), []);
 
@@ -204,7 +275,7 @@ export function useCeremony(tournamentId: string) {
     draftOrderRef.current = computeDraftOrder(squads, allUnassigned.length, totalPoolWeight);
     totalPicksRef.current = draftOrderRef.current.length;
     setPickIndex(0);
-    setShieldsUsed(new Set());
+    setTeamCards({});
     // Fun Mode with intros enabled runs the team walk-in first.
     setPhase(settings.funMode && settings.teamIntroductions ? "intros" : "main");
   }
@@ -303,9 +374,11 @@ export function useCeremony(tournamentId: string) {
     updateSettings,
     setSpeed,
     captainBySquad,
-    canUseShield,
-    useShield,
-    shieldsUsed,
+    powersEnabled,
+    teamCards,
+    awardCard,
+    consumeCard,
+    swapBetween,
     isWildcardActive,
     justCompletedSquadId,
     clearJustCompleted,

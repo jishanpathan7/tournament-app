@@ -6,10 +6,12 @@
  * across sessions) is a backend follow-up — see the design doc's "Follow-up" list.
  *
  * When Fun Mode is OFF the ceremony runs exactly as the competitive Balanced
- * Draft: no intros, no shield, no countdown, no wildcard finish, no meme drops.
- * Every fun element is gated behind `funMode` so competitive tournaments are
- * never affected.
+ * Draft: no intros, no power slots, no countdown, no wildcard finish. Every fun
+ * element is gated behind `funMode` so competitive tournaments are never
+ * affected.
  */
+
+import type { SkillKey } from "@/features/squads/components/draft-ceremony/power-slots";
 
 export type CeremonySpeed = "relaxed" | "normal" | "fast";
 
@@ -22,9 +24,11 @@ export interface CeremonySettings {
   onTheClock: boolean;
   /** Tier-matched reveal animation + sound (advanced/intermediate/beginner). */
   tieredReveals: boolean;
-  /** One re-spin token per captain. Transparent, single-use. */
-  captainShield: boolean;
-  /** Bundle the final three picks into a simultaneous reveal. */
+  /** Master gate for surprise Power Slots woven into the wheel. */
+  powerSlots: boolean;
+  /** Exactly how many power slots appear on each skill-level wheel (organizer set). */
+  powerSlotsBySkill: Record<SkillKey, number>;
+  /** Bundle the final three picks into a rapid-fire crescendo. */
   wildcardFinish: boolean;
   /** Playback speed — scales all animation durations. Organizer can change live. */
   speed: CeremonySpeed;
@@ -35,7 +39,8 @@ export const DEFAULT_SETTINGS: CeremonySettings = {
   teamIntroductions: true,
   onTheClock: true,
   tieredReveals: true,
-  captainShield: true,
+  powerSlots: true,
+  powerSlotsBySkill: { advanced: 2, intermediate: 2, beginner: 1, unknown: 1 },
   wildcardFinish: true,
   speed: "normal",
 };

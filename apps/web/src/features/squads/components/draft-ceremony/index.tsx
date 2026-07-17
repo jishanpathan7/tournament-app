@@ -1,15 +1,7 @@
 "use client";
 
 import gsap from "gsap";
-import {
-  ArrowLeft,
-  ChevronRight,
-  RotateCcw,
-  Settings2,
-  Shield,
-  Sparkles,
-  Trophy,
-} from "lucide-react";
+import { ArrowLeft, ChevronRight, RotateCcw, Settings2, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import ReactConfetti from "react-confetti";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -24,6 +16,18 @@ import {
   type CeremonySettings,
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
+import {
+  buildWheelSlots,
+  isPlayerSlot,
+  POWER_META,
+  randomMeme,
+  skillKeyOf,
+  SKILL_KEYS,
+  type Meme,
+  type PowerKind,
+  type WheelSlot,
+} from "@/features/squads/components/draft-ceremony/power-slots";
+import type { SwapOutcome } from "@/features/squads/components/draft-ceremony/use-ceremony";
 import { skillLabel, useCeremony } from "@/features/squads/components/draft-ceremony/use-ceremony";
 import type {
   SquadMemberView,
@@ -34,6 +38,19 @@ import type {
 /** Scale an animation duration (seconds) by the ceremony playback speed. */
 function scaled(seconds: number, speed: CeremonySpeed) {
   return seconds * SPEED_MULTIPLIER[speed];
+}
+
+function wait(ms: number) {
+  return new Promise<void>((r) => setTimeout(r, ms));
+}
+
+/** A power moment to announce (card drawn, or a played meme). */
+interface PowerEvent {
+  kind: PowerKind;
+  /** Line under the title, e.g. "Team A drew 🔄 Jo Tera Hai Wo Mera". */
+  detail: string;
+  /** Present when a Meme Drop card is played. */
+  meme?: Meme;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -494,10 +511,12 @@ function SkillTabs({
 function SpinButton({
   phase,
   disabled,
+  lastPlayer,
   onClick,
 }: {
   phase: "idle" | "spinning" | "revealing";
   disabled: boolean;
+  lastPlayer?: boolean;
   onClick: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -523,7 +542,15 @@ function SpinButton({
   }, [phase, disabled]);
 
   const label =
-    phase === "spinning" ? "Spinning…" : phase === "revealing" ? "Assigned!" : "🎯  Spin";
+    phase === "spinning"
+      ? lastPlayer
+        ? "Assigning…"
+        : "Spinning…"
+      : phase === "revealing"
+        ? "Assigned!"
+        : lastPlayer
+          ? "✓  Assign last player"
+          : "🎯  Spin";
 
   return (
     <button
@@ -771,6 +798,86 @@ function CompletionScreen({
   );
 }
 
+// ── Team power-card inventory ─────────────────────────────────────────────────
+
+function TeamCardsPanel({
+  squads,
+  teamCards,
+  swapFromId,
+  onCardClick,
+  onTargetTeam,
+}: {
+  squads: SquadView[];
+  teamCards: Record<string, PowerKind[]>;
+  swapFromId: string | null;
+  onCardClick: (squadId: string, kind: PowerKind) => void;
+  onTargetTeam: (squadId: string) => void;
+}) {
+  const anyCards = squads.some((s) => (teamCards[s.id] ?? []).length > 0);
+  if (!anyCards && !swapFromId) return null;
+
+  return (
+    <div className="mb-4 flex flex-col gap-1.5">
+      <p className="text-2xs mb-1 font-mono font-bold uppercase tracking-widest text-[#fbbf24]/70">
+        Power Cards
+      </p>
+      {squads.map((s, i) => {
+        const hand = teamCards[s.id] ?? [];
+        const color = squadAccent(i);
+        const targetable = !!swapFromId && swapFromId !== s.id;
+        return (
+          <div
+            key={s.id}
+            onClick={() => targetable && onTargetTeam(s.id)}
+            className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors"
+            style={{
+              background: targetable ? "rgba(219,39,119,0.18)" : "rgba(255,255,255,0.03)",
+              border: targetable ? "1px solid #db2777" : "1px solid transparent",
+              cursor: targetable ? "pointer" : "default",
+            }}
+          >
+            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+            <span className="truncate text-xs font-semibold text-white/70">{s.name}</span>
+            <div className="ml-auto flex items-center gap-1">
+              {hand.length === 0 ? (
+                <span className="text-2xs text-white/20">no cards</span>
+              ) : (
+                hand.map((k, idx) => {
+                  const playable = k === "meme" || k === "swap";
+                  const armed = swapFromId === s.id && k === "swap";
+                  return (
+                    <button
+                      key={`${k}-${idx}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (playable) onCardClick(s.id, k);
+                      }}
+                      title={`${POWER_META[k].label}${playable ? " — click to play" : " (passive)"}`}
+                      className="flex h-6 w-6 items-center justify-center rounded-md text-sm transition-transform hover:scale-110"
+                      style={{
+                        background: `${POWER_META[k].color}22`,
+                        border: armed
+                          ? `1.5px solid ${POWER_META[k].color}`
+                          : "1px solid transparent",
+                        cursor: playable ? "pointer" : "default",
+                      }}
+                    >
+                      {POWER_META[k].emoji}
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        );
+      })}
+      {swapFromId && (
+        <p className="text-2xs mt-1 font-semibold text-[#f472b6]">← Pick a team to raid</p>
+      )}
+    </div>
+  );
+}
+
 // ── Main ceremony screen ──────────────────────────────────────────────────────
 
 type SpinPhase = "idle" | "spinning" | "revealing";
@@ -786,8 +893,11 @@ function MainScreen({
   history,
   currentSquad,
   settings,
-  canUseShield,
-  onUseShield,
+  powersEnabled,
+  teamCards,
+  onAwardCard,
+  onConsumeCard,
+  onSwapBetween,
   justCompletedSquadId,
   onClearCompleted,
   isWildcardActive,
@@ -805,8 +915,11 @@ function MainScreen({
   history: { registrationId: string; displayName: string; squadId: string }[];
   currentSquad: SquadView | undefined;
   settings: CeremonySettings;
-  canUseShield: boolean;
-  onUseShield: (squadId: string) => void;
+  powersEnabled: boolean;
+  teamCards: Record<string, PowerKind[]>;
+  onAwardCard: (squadId: string, kind: PowerKind) => void;
+  onConsumeCard: (squadId: string, kind: PowerKind) => void;
+  onSwapBetween: (fromId: string, toId: string) => Promise<SwapOutcome>;
   justCompletedSquadId: string | null;
   onClearCompleted: () => void;
   isWildcardActive: boolean;
@@ -829,8 +942,10 @@ function MainScreen({
   const [burstKey, setBurstKey] = useState(0);
   const [flashSquadId, setFlashSquadId] = useState<string | null>(null);
   const [countdownActive, setCountdownActive] = useState(false);
-  const [shieldFlash, setShieldFlash] = useState(false);
-  const shieldArmedRef = useRef(false);
+  // Active power being resolved on the wheel (drives the PowerOverlay).
+  const [powerEvent, setPowerEvent] = useState<PowerEvent | null>(null);
+  // Team currently playing a Swap card — armed to pick a target team.
+  const [swapFromId, setSwapFromId] = useState<string | null>(null);
   const [ghostFly, setGhostFly] = useState<{
     name: string;
     color: string;
@@ -839,9 +954,30 @@ function MainScreen({
   } | null>(null);
 
   const currentSquadIdx = squads.findIndex((s) => s.id === currentSquad?.id);
-  const canSpin = spinPhase === "idle" && pool.length > 0 && !isAssigning && !countdownActive;
+  const canSpin =
+    spinPhase === "idle" && pool.length > 0 && !isAssigning && !countdownActive && !powerEvent;
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
-  const shieldEnabled = settings.funMode && settings.captainShield;
+
+  // Organizer sets exactly how many power slots each skill-level wheel gets.
+  const powerCount = powersEnabled
+    ? (settings.powerSlotsBySkill[skillKeyOf(resolvedSkill)] ?? 0)
+    : 0;
+
+  // The wheel slots are built ONCE per skill group and then held FIXED: power slots
+  // stay put across spins, and only the picked player (and a landed power) are
+  // removed. This is what makes powers land reliably and stop reshuffling every
+  // spin. We rebuild only when the skill group changes or when data first arrives.
+  const [wheelSlots, setWheelSlots] = useState<WheelSlot[]>([]);
+  const builtForSkillRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const needsRebuild = builtForSkillRef.current !== resolvedSkill || wheelSlots.length === 0;
+    if (!needsRebuild || pool.length === 0) return;
+    setWheelSlots(buildWheelSlots(pool, powerCount));
+    builtForSkillRef.current = resolvedSkill;
+    // Guarded by the ref + length check so `pool` identity churn does NOT rebuild
+    // (which would reshuffle the powers). Player removal is done in runSpin.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedSkill, pool, powerCount]);
 
   // Organizer shortcut: Space bar spins (so the ceremony can be driven hands-free
   // from across the room). Ignored while typing in an input.
@@ -863,38 +999,76 @@ function MainScreen({
   /** Entry point for the Spin button — gate behind the 3·2·1 countdown. */
   function handleSpin() {
     if (!canSpin || !currentSquad) return;
+    // Last player left → no spin/countdown; runSpin auto-assigns them.
+    const lastPlayer = pool.length <= 1;
     // Wildcard Finish: the last picks fire rapidly, no countdown, for a crescendo.
-    if (settings.funMode && settings.onTheClock && !isWildcardActive) {
+    if (settings.funMode && settings.onTheClock && !isWildcardActive && !lastPlayer) {
       setCountdownActive(true); // countdown's onDone triggers runSpin
     } else {
       void runSpin();
     }
   }
 
-  /** The player is only committed here — after any Shield re-spin resolves. */
+  /**
+   * One turn. The wheel may land on a rare power slot first — if so, the power
+   * resolves (a few seconds) and the wheel auto-re-spins to a real player. The
+   * team still receives exactly one player, so balance is never affected. The
+   * player is only committed at the end.
+   */
   async function runSpin() {
     if (!wheelRef.current || !currentSquad) return;
-    shieldArmedRef.current = false;
-    let idx = Math.floor(Math.random() * pool.length);
-    setSpinPhase("spinning");
-    setHighlightIndex(null);
-
-    await wheelRef.current.spin(idx);
-
-    // Captain's Shield: if armed during the spin, discard this result and
-    // re-spin once. The original player stays in the pool — nothing committed.
-    if (shieldArmedRef.current && shieldEnabled && canUseShield) {
-      shieldArmedRef.current = false;
-      onUseShield(currentSquad.id);
-      idx = Math.floor(Math.random() * pool.length);
-      await wheelRef.current.spin(idx);
-    }
-
-    const player = pool[idx];
-    if (!player) {
+    const slots = wheelSlots;
+    const playerIdxs = slots.reduce<number[]>((acc, s, i) => {
+      if (isPlayerSlot(s)) acc.push(i);
+      return acc;
+    }, []);
+    if (playerIdxs.length === 0) {
       setSpinPhase("idle");
       return;
     }
+
+    setSpinPhase("spinning");
+    setHighlightIndex(null);
+
+    let target: number;
+    let landedPowerId: string | null = null;
+
+    if (playerIdxs.length === 1) {
+      // Last player left on the wheel — no point spinning; we already know they go
+      // to the team on the clock. Assign directly (skip the wheel + any powers).
+      target = playerIdxs[0]!;
+    } else {
+      // First spin: land anywhere (players + powers).
+      target = Math.floor(Math.random() * slots.length);
+      await wheelRef.current.spin(target);
+
+      const landed = slots[target];
+      if (landed && landed.type === "power") {
+        // Landing AWARDS the card to the team on the clock — it does not fire now.
+        landedPowerId = landed.id;
+        setHighlightIndex(target);
+        onAwardCard(currentSquad.id, landed.power);
+        const meta = POWER_META[landed.power];
+        setPowerEvent({
+          kind: landed.power,
+          detail: `${currentSquad.name} drew ${meta.emoji} ${meta.label}`,
+        });
+        await wait(scaled(1.7, settings.speed) * 1000);
+        setPowerEvent(null);
+
+        // Auto re-spin to a real player — the team's pick is unaffected.
+        setHighlightIndex(null);
+        target = playerIdxs[Math.floor(Math.random() * playerIdxs.length)]!;
+        await wheelRef.current.spin(target);
+      }
+    }
+
+    const playerSlot = slots[target];
+    if (!playerSlot || playerSlot.type !== "player") {
+      setSpinPhase("idle");
+      return;
+    }
+    const player = playerSlot.player;
 
     const result = await onAssign(player);
     if (!result) {
@@ -902,9 +1076,19 @@ function MainScreen({
       return;
     }
 
+    // Keep the wheel FIXED: drop only the picked player and the power that was just
+    // collected. Everything else stays exactly where it is.
+    setWheelSlots((prev) =>
+      prev.filter((s) => {
+        if (s.type === "player" && s.id === player.registrationId) return false;
+        if (landedPowerId && s.type === "power" && s.id === landedPowerId) return false;
+        return true;
+      }),
+    );
+
     setBurstKey((k) => k + 1);
     playFanfare();
-    setHighlightIndex(idx);
+    setHighlightIndex(target);
 
     // Capture wheel center rect for reveal/fly
     const wheelRect = wheelWrapRef.current?.getBoundingClientRect() ?? null;
@@ -918,7 +1102,6 @@ function MainScreen({
       wheelRect,
     });
     setSpinPhase("revealing");
-    setShieldFlash(false);
 
     // Flash team column
     setFlashSquadId(result.squadId);
@@ -946,6 +1129,44 @@ function MainScreen({
   }
 
   const handleGhostDone = useCallback(() => setGhostFly(null), []);
+
+  // Play a card from a team's hand. Meme fires now; Swap arms target-picking.
+  async function onCardClick(squadId: string, kind: PowerKind) {
+    if (kind === "meme") {
+      const squad = squads.find((s) => s.id === squadId);
+      onConsumeCard(squadId, "meme");
+      setPowerEvent({
+        kind: "meme",
+        meme: randomMeme(),
+        detail: `${squad?.name ?? "Team"} played Meme Drop`,
+      });
+      await wait(scaled(1.8, settings.speed) * 1000);
+      setPowerEvent(null);
+    } else if (kind === "swap") {
+      setSwapFromId((prev) => (prev === squadId ? null : squadId));
+    }
+  }
+
+  // Execute a swap from the armed team onto the chosen target team.
+  async function onTargetTeam(targetId: string) {
+    const from = swapFromId;
+    setSwapFromId(null);
+    if (!from || from === targetId) return;
+
+    setPowerEvent({ kind: "swap", detail: "Finding a fair swap…" });
+    const res = await onSwapBetween(from, targetId);
+    const detail =
+      res.status === "swapped"
+        ? `${res.aName}  ⇄  ${res.bName}`
+        : res.status === "blocked"
+          ? `🛡️ Blocked by ${res.toSquad}'s Dabur Immunity!`
+          : res.status === "no_players"
+            ? "No eligible players to swap"
+            : "Swap failed";
+    setPowerEvent({ kind: "swap", detail });
+    await wait(scaled(2, settings.speed) * 1000);
+    setPowerEvent(null);
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -1005,34 +1226,42 @@ function MainScreen({
               <div ref={wheelWrapRef} className="relative z-10">
                 <CeremonyWheel
                   ref={wheelRef}
-                  players={pool}
+                  slots={wheelSlots}
                   highlightIndex={highlightIndex}
                   reducedMotion={prefersReducedMotion()}
                 />
               </div>
 
               <div className="relative z-10 flex flex-col items-center gap-2">
-                <SpinButton phase={spinPhase} disabled={!canSpin} onClick={handleSpin} />
+                <SpinButton
+                  phase={spinPhase}
+                  disabled={!canSpin}
+                  lastPlayer={pool.length === 1}
+                  onClick={handleSpin}
+                />
 
-                {/* Captain's Shield — offered while the wheel is spinning */}
-                {shieldEnabled && spinPhase === "spinning" && canUseShield && !shieldFlash && (
-                  <button
-                    onClick={() => {
-                      shieldArmedRef.current = true;
-                      setShieldFlash(true);
-                    }}
-                    className="flex items-center gap-1.5 rounded-full border border-[#fbbf24]/50 bg-[#fbbf24]/15 px-4 py-1.5 text-xs font-black text-[#fbbf24] transition-transform hover:scale-105"
-                  >
-                    <Shield className="h-3.5 w-3.5" />
-                    Use Shield — re-spin
-                  </button>
-                )}
-                {shieldFlash && spinPhase === "spinning" && (
-                  <span className="flex items-center gap-1.5 text-xs font-black text-[#fbbf24]">
-                    <Shield className="h-3.5 w-3.5" />
-                    Shield played! Re-spinning…
+                {/* Power slots present on the wheel — tease the room. */}
+                {powersEnabled && powerCount > 0 && spinPhase === "idle" && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#fbbf24]">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {powerCount} power {powerCount === 1 ? "slot" : "slots"} on this wheel
                   </span>
                 )}
+
+                {/* First Ball Trial — held re-spin, usable on this team's own spin. */}
+                {currentSquad &&
+                  (teamCards[currentSquad.id] ?? []).includes("respin") &&
+                  spinPhase === "idle" && (
+                    <button
+                      onClick={() => {
+                        onConsumeCard(currentSquad.id, "respin");
+                        void runSpin();
+                      }}
+                      className="flex items-center gap-1.5 rounded-full border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-xs font-black text-[#9db0fb] transition-transform hover:scale-105"
+                    >
+                      🎯 Use First Ball Trial (re-spin)
+                    </button>
+                  )}
 
                 {canSpin && (
                   <span className="text-2xs font-mono uppercase tracking-widest text-white/25">
@@ -1059,6 +1288,15 @@ function MainScreen({
           className="border-white/8 hidden w-72 shrink-0 overflow-y-auto border-l p-4 lg:block"
           style={{ background: BG_SIDEBAR }}
         >
+          {settings.funMode && settings.powerSlots && (
+            <TeamCardsPanel
+              squads={squads}
+              teamCards={teamCards}
+              swapFromId={swapFromId}
+              onCardClick={onCardClick}
+              onTargetTeam={onTargetTeam}
+            />
+          )}
           <p className="text-2xs mb-3 font-mono font-bold uppercase tracking-widest text-white/30">
             Teams
           </p>
@@ -1081,6 +1319,7 @@ function MainScreen({
           }}
         />
       )}
+      {powerEvent && <PowerOverlay event={powerEvent} />}
       {revealInfo && (
         <RevealOverlay
           info={revealInfo}
@@ -1219,12 +1458,63 @@ function SettingsPanel({
         onChange={(v) => onUpdate({ tieredReveals: v })}
       />
       <SettingToggle
-        label="Captain's Shield"
-        hint="One re-spin token per captain"
-        checked={settings.captainShield}
+        label="Power slots"
+        hint="Rare surprise powers on the wheel"
+        checked={settings.powerSlots}
         disabled={!fun}
-        onChange={(v) => onUpdate({ captainShield: v })}
+        onChange={(v) => onUpdate({ powerSlots: v })}
       />
+
+      {/* Power slots per skill-level wheel — organizer sets exact counts. */}
+      {fun && settings.powerSlots && (
+        <div className="ml-4 border-l border-white/10 pl-2">
+          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-white/50">
+            Power slots per wheel
+          </p>
+          {SKILL_KEYS.map((sk) => (
+            <div key={sk} className="flex items-center gap-3 px-3 py-1.5">
+              <span className="text-sm font-semibold capitalize text-white">
+                {sk === "unknown" ? "No level" : sk}
+              </span>
+              <div className="ml-auto flex items-center gap-2">
+                <button
+                  onClick={() =>
+                    onUpdate({
+                      powerSlotsBySkill: {
+                        ...settings.powerSlotsBySkill,
+                        [sk]: Math.max(0, (settings.powerSlotsBySkill[sk] ?? 0) - 1),
+                      },
+                    })
+                  }
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                >
+                  −
+                </button>
+                <span className="w-4 text-center font-mono text-sm font-bold text-white">
+                  {settings.powerSlotsBySkill[sk] ?? 0}
+                </span>
+                <button
+                  onClick={() =>
+                    onUpdate({
+                      powerSlotsBySkill: {
+                        ...settings.powerSlotsBySkill,
+                        [sk]: Math.min(10, (settings.powerSlotsBySkill[sk] ?? 0) + 1),
+                      },
+                    })
+                  }
+                  className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          ))}
+          <p className="px-3 pb-1 pt-1 text-xs text-white/35">
+            Cards: 🎯 First Ball Trial · 😂 Meme Drop · 🛡️ Dabur Immunity · 🔄 Jo Tera Hai Wo Mera
+          </p>
+        </div>
+      )}
+
       <SettingToggle
         label="Wildcard finish"
         hint="Final 3 picks revealed together"
@@ -1474,6 +1764,51 @@ function TeamCompleteOverlay({
   );
 }
 
+// ── Power slot resolve overlay ────────────────────────────────────────────────
+
+function PowerOverlay({ event }: { event: PowerEvent }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const meta = POWER_META[event.kind];
+
+  useEffect(() => {
+    if (!ref.current || prefersReducedMotion()) return;
+    gsap.fromTo(
+      ref.current,
+      { scale: 0.4, opacity: 0, rotate: -6 },
+      { scale: 1, opacity: 1, rotate: 0, duration: 0.4, ease: "back.out(2)" },
+    );
+  }, [event]);
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[59] flex items-center justify-center bg-black/45 backdrop-blur-sm">
+      <div
+        ref={ref}
+        className="flex flex-col items-center gap-4 rounded-[2rem] px-16 py-12 text-center"
+        style={{
+          background: `linear-gradient(160deg, ${meta.color}33 0%, rgba(30,41,59,0.97) 100%)`,
+          border: `2px solid ${meta.color}88`,
+          boxShadow: `0 0 90px ${meta.color}55, 0 24px 70px rgba(0,0,0,0.6)`,
+        }}
+      >
+        <span className="text-8xl drop-shadow-lg">{meta.emoji}</span>
+        <p
+          className="font-mono text-sm font-black uppercase tracking-[0.28em]"
+          style={{ color: meta.color }}
+        >
+          Power Card
+        </p>
+        <p className="text-5xl font-black text-white">{meta.title}</p>
+        {event.meme && (
+          <p className="text-xl font-bold text-white/80">
+            {event.meme.emoji} {event.meme.caption}
+          </p>
+        )}
+        <p className="text-xl font-bold text-white/85">{event.detail}</p>
+      </div>
+    </div>
+  );
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
@@ -1602,8 +1937,11 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           history={ceremony.history}
           currentSquad={ceremony.currentSquad}
           settings={ceremony.settings}
-          canUseShield={ceremony.canUseShield}
-          onUseShield={ceremony.useShield}
+          powersEnabled={ceremony.powersEnabled}
+          teamCards={ceremony.teamCards}
+          onAwardCard={ceremony.awardCard}
+          onConsumeCard={ceremony.consumeCard}
+          onSwapBetween={ceremony.swapBetween}
           justCompletedSquadId={ceremony.justCompletedSquadId}
           onClearCompleted={ceremony.clearJustCompleted}
           isWildcardActive={ceremony.isWildcardActive}
