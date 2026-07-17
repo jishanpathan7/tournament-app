@@ -144,6 +144,7 @@ async def list_participants(
             Participant.organization_id == org_id,
             Participant.status == ParticipantStatus.APPROVED.value,
         )
+        .options(selectinload(Participant.team))
         .order_by(Participant.seed.nulls_last(), Participant.created_at)
     )
     return (await session.execute(stmt)).scalars().all()
@@ -161,6 +162,7 @@ async def get_participant(
             Division.tournament_id == tid,
             Participant.status == ParticipantStatus.APPROVED.value,
         )
+        .options(selectinload(Participant.team))
     )
     return (await session.execute(stmt)).scalar_one_or_none()
 

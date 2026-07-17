@@ -4,6 +4,7 @@ import type { MatchView, PublicParticipantView } from "@tournament/api-client";
 import { Trophy } from "lucide-react";
 import Link from "next/link";
 
+import { TeamBadge } from "@/components/ui/team-badge";
 import { groupMatchesByRound } from "@/features/draws/config";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +12,7 @@ interface Slot {
   key: string;
   participantId: string | null;
   label: string;
+  teamName: string | null | undefined;
   seedLabel: string | null;
   score: string | null;
   isWinner: boolean;
@@ -27,6 +29,7 @@ function buildSlots(
       key: side.participantId,
       participantId: side.participantId,
       label: participant?.displayName ?? "Unknown",
+      teamName: participant?.teamName,
       seedLabel: participant?.seed != null ? String(participant.seed) : null,
       score: side.scoreFor != null ? String(side.scoreFor) : null,
       isWinner: side.outcome === "win",
@@ -39,6 +42,7 @@ function buildSlots(
       key: `placeholder-${match.id}-${slots.length}`,
       participantId: null,
       label: isBye ? "Bye" : "TBD",
+      teamName: null,
       seedLabel: null,
       score: null,
       isWinner: false,
@@ -93,7 +97,10 @@ function SeedCard({
               {slot.seedLabel}
             </span>
           ) : null}
-          <SlotLabel slug={slug} slot={slot} />
+          <div className="flex min-w-0 flex-col">
+            <TeamBadge teamName={slot.teamName} />
+            <SlotLabel slug={slug} slot={slot} />
+          </div>
           {slot.score !== null ? (
             <span
               className={cn(

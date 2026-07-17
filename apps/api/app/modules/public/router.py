@@ -210,6 +210,7 @@ async def list_participants(
             kind=p.kind,
             display_name=p.display_name,
             seed=p.seed,
+            team_name=p.team.name if p.team else None,
         )
         for p in rows
     ]
@@ -226,7 +227,12 @@ async def get_participant(
     tournament = await service.resolve_tournament(session, slug)
     p = await service.get_participant(session, tournament, participant_id)
     return PublicParticipantView(
-        id=p.id, division_id=p.division_id, kind=p.kind, display_name=p.display_name, seed=p.seed
+        id=p.id,
+        division_id=p.division_id,
+        kind=p.kind,
+        display_name=p.display_name,
+        seed=p.seed,
+        team_name=p.team.name if p.team else None,
     )
 
 

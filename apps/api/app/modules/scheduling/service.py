@@ -617,6 +617,14 @@ async def auto_schedule_next(
     return next_match
 
 
+def _participants_by_id(match: Match | None) -> "dict[uuid.UUID, Any]":
+    if match is None:
+        return {}
+    return {
+        mp.participant_id: mp.participant for mp in match.participants if mp.participant is not None
+    }
+
+
 async def build_queue(
     session: AsyncSession, org_id: uuid.UUID, tournament_id: uuid.UUID
 ) -> ScheduleQueueView:
@@ -657,8 +665,20 @@ async def build_queue(
         courts_view.append(
             CourtQueueView(
                 court=courts_service.build_court_view(a.court),
-                current_match=scoring_service.build_match_view(current) if current else None,
-                next_match=scoring_service.build_match_view(next_match) if next_match else None,
+                current_match=(
+                    scoring_service.build_match_view(
+                        current, participants_by_id=_participants_by_id(current)
+                    )
+                    if current
+                    else None
+                ),
+                next_match=(
+                    scoring_service.build_match_view(
+                        next_match, participants_by_id=_participants_by_id(next_match)
+                    )
+                    if next_match
+                    else None
+                ),
                 is_delayed=is_delayed,
             )
         )
@@ -666,6 +686,12 @@ async def build_queue(
     unscheduled.sort(key=lambda m: (m.round.seq if m.round else 0, m.created_at))
     return ScheduleQueueView(
         courts=courts_view,
-        unscheduled=[scoring_service.build_match_view(m) for m in unscheduled],
-        pending=[scoring_service.build_match_view(m) for m in pending],
+        unscheduled=[
+            scoring_service.build_match_view(m, participants_by_id=_participants_by_id(m))
+            for m in unscheduled
+        ],
+        pending=[
+            scoring_service.build_match_view(m, participants_by_id=_participants_by_id(m))
+            for m in pending
+        ],
     )

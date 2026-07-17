@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -102,9 +103,25 @@ function CourtCard({
               : ""}
           </p>
           <div className="flex flex-col gap-1 text-sm font-medium leading-snug">
-            <span>{formatMatchSides(match, participantsById).home}</span>
-            <span className="text-muted-foreground text-xs font-normal">vs</span>
-            <span>{formatMatchSides(match, participantsById).away}</span>
+            {(() => {
+              const [sA, sB] = match.sides;
+              const pA = participantsById.get(sA?.participantId ?? "");
+              const pB = participantsById.get(sB?.participantId ?? "");
+              const sides = formatMatchSides(match, participantsById);
+              return (
+                <>
+                  <div className="flex flex-col gap-0.5">
+                    <TeamBadge teamName={pA?.teamName} />
+                    <span>{sides.home}</span>
+                  </div>
+                  <span className="text-muted-foreground text-xs font-normal">vs</span>
+                  <div className="flex flex-col gap-0.5">
+                    <TeamBadge teamName={pB?.teamName} />
+                    <span>{sides.away}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
           {liveScoreDisplay(match) ? (
             <p className="font-serif text-3xl font-semibold tabular-nums tracking-tight">

@@ -80,6 +80,7 @@ def _participant_response(p: Participant) -> ParticipantResponse:
         status=p.status,
         user_id=p.user_id,
         team_id=p.team_id,
+        team_name=p.team.name if p.team else None,
         created_at=p.created_at,
     )
 

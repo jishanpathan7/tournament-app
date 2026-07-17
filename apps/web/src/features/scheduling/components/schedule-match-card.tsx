@@ -8,6 +8,7 @@ import { useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { matchStatusMeta } from "@/features/draws/config";
@@ -78,7 +79,17 @@ export function ScheduleMatchCard({
               <GripVertical className="h-4 w-4" strokeWidth={2.25} />
             </button>
           ) : null}
-          <span className="min-w-0 truncate font-medium">{label}</span>
+          <div className="flex min-w-0 flex-col gap-0.5">
+            <div className="flex flex-wrap gap-1">
+              {match.sides.map((s) => {
+                const p = participantsById.get(s.participantId);
+                return p?.teamName ? (
+                  <TeamBadge key={s.participantId} teamName={p.teamName} />
+                ) : null;
+              })}
+            </div>
+            <span className="min-w-0 truncate font-medium">{label}</span>
+          </div>
         </div>
         {canManage && onClear ? (
           <Button

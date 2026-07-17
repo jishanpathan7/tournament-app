@@ -8,6 +8,7 @@ import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -48,16 +49,24 @@ function MatchSides({
   participantsById: Map<string, PublicParticipantView>;
 }) {
   const [a, b] = match.sides;
+  const pa = participantsById.get(a?.participantId ?? "");
+  const pb = participantsById.get(b?.participantId ?? "");
   return (
-    <span className="truncate">
-      <span className={a?.outcome === "win" ? "font-bold" : ""}>
-        {participantName(a?.participantId, participantsById)}
+    <div className="flex flex-col gap-0.5">
+      <div className="flex flex-wrap gap-1">
+        {pa?.teamName ? <TeamBadge teamName={pa.teamName} /> : null}
+        {pb?.teamName && pb.teamName !== pa?.teamName ? <TeamBadge teamName={pb.teamName} /> : null}
+      </div>
+      <span className="truncate">
+        <span className={a?.outcome === "win" ? "font-bold" : ""}>
+          {participantName(a?.participantId, participantsById)}
+        </span>
+        <span className="text-muted-foreground"> vs </span>
+        <span className={b?.outcome === "win" ? "font-bold" : ""}>
+          {participantName(b?.participantId, participantsById)}
+        </span>
       </span>
-      <span className="text-muted-foreground"> vs </span>
-      <span className={b?.outcome === "win" ? "font-bold" : ""}>
-        {participantName(b?.participantId, participantsById)}
-      </span>
-    </span>
+    </div>
   );
 }
 

@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { LoadingPanel } from "@/components/common/loading";
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { matchStatusMeta } from "@/features/draws/config";
 import { matchParticipantLabel } from "@/features/scheduling/config";
 import { useScheduleQueue } from "@/features/scheduling/use-schedule";
@@ -77,6 +78,14 @@ export function QueuePanel({ tournamentId, compact }: { tournamentId: string; co
               </div>
               {c.currentMatch ? (
                 <div className="flex flex-col gap-1">
+                  <div className="flex flex-wrap gap-1">
+                    {c.currentMatch.sides.map((s) => (
+                      <TeamBadge
+                        key={s.participantId}
+                        teamName={participantsById.get(s.participantId)?.teamName}
+                      />
+                    ))}
+                  </div>
                   <span className="text-sm font-medium">
                     {matchParticipantLabel(c.currentMatch, participantsById)}
                   </span>

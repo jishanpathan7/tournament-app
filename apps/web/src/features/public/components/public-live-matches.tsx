@@ -9,6 +9,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { matchStatusMeta } from "@/features/draws/config";
 import { participantName } from "@/features/public/config";
 import { usePublicMatches, usePublicParticipants } from "@/features/public/use-public-tournament";
@@ -30,6 +31,11 @@ function LiveFixtureCard({
       className="border-ink bg-card shadow-sticker-xs hover:shadow-sticker-md ease-bouncy flex items-center gap-3 rounded-2xl border-2 px-4 py-3 text-sm transition-[transform,box-shadow] hover:-translate-y-0.5"
     >
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <div className="flex flex-wrap gap-1">
+          {participantsById.get(a?.participantId ?? "")?.teamName ? (
+            <TeamBadge teamName={participantsById.get(a?.participantId ?? "")?.teamName} />
+          ) : null}
+        </div>
         <span className="truncate">
           <span className={a?.outcome === "win" ? "font-bold" : ""}>
             {participantName(a?.participantId, participantsById)}

@@ -175,6 +175,7 @@ export interface ChampionRow {
   stageId: string;
   participantId: string;
   displayName: string;
+  teamName: string | null | undefined;
 }
 
 export interface TournamentStats {
@@ -306,6 +307,7 @@ export function deriveChampions(
       participantId: winner.participantId,
       displayName:
         participantsById.get(winner.participantId)?.displayName ?? winner.participantId.slice(0, 8),
+      teamName: participantsById.get(winner.participantId)?.teamName,
     });
   }
 

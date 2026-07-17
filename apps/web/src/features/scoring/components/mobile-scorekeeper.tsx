@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import { Spinner } from "@/components/ui/spinner";
@@ -17,7 +18,11 @@ import {
   type ScoreFormValues,
   validateScoreForm,
 } from "@/features/matches/config";
-import { classifyGame, rulesFromSportConfig, type BadmintonRules } from "@/features/matches/badminton-scoring";
+import {
+  classifyGame,
+  rulesFromSportConfig,
+  type BadmintonRules,
+} from "@/features/matches/badminton-scoring";
 import * as scoringApi from "@/features/scoring/scoring-api";
 import { useScoreMatch } from "@/features/scoring/use-matches";
 import {
@@ -112,6 +117,14 @@ export function MobileScorekeeper({ tournamentId }: { tournamentId: string }) {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
+                    <div className="flex flex-wrap gap-1">
+                      <TeamBadge
+                        teamName={participantsById.get(m.sides[0]?.participantId ?? "")?.teamName}
+                      />
+                      <TeamBadge
+                        teamName={participantsById.get(m.sides[1]?.participantId ?? "")?.teamName}
+                      />
+                    </div>
                     <p className="font-semibold">
                       {sideLabel(m, 0, participantsById)} vs {sideLabel(m, 1, participantsById)}
                     </p>
@@ -171,6 +184,8 @@ function MobileScorekeeperMatch({
 
   const labelA = sideLabel(match, 0, participantsById);
   const labelB = sideLabel(match, 1, participantsById);
+  const teamA = participantsById.get(match.sides[0]?.participantId ?? "")?.teamName ?? null;
+  const teamB = participantsById.get(match.sides[1]?.participantId ?? "")?.teamName ?? null;
   const winsA = gamesWon(completedGames, "a");
   const winsB = gamesWon(completedGames, "b");
   const matchDecided = winsA >= gamesRequired || winsB >= gamesRequired;
@@ -307,6 +322,7 @@ function MobileScorekeeperMatch({
       <div className="border-ink grid flex-1 grid-cols-2 border-y-2">
         <ScoreSide
           label={labelA}
+          teamName={teamA}
           score={liveGame.a ?? 0}
           onMinus={() => bump("a", -1)}
           onPlus={() => bump("a", 1)}
@@ -314,6 +330,7 @@ function MobileScorekeeperMatch({
         />
         <ScoreSide
           label={labelB}
+          teamName={teamB}
           score={liveGame.b ?? 0}
           onMinus={() => bump("b", -1)}
           onPlus={() => bump("b", 1)}
@@ -401,12 +418,14 @@ function MobileScorekeeperMatch({
 
 function ScoreSide({
   label,
+  teamName,
   score,
   onMinus,
   onPlus,
   accent,
 }: {
   label: string;
+  teamName?: string | null;
   score: number;
   onMinus: () => void;
   onPlus: () => void;
@@ -414,8 +433,8 @@ function ScoreSide({
 }) {
   return (
     <div className="border-ink flex flex-col items-center gap-4 border-r-2 p-4 last:border-r-0">
-      <div className="text-center">
-        <p className="label text-muted-foreground">Player</p>
+      <div className="flex flex-col items-center gap-1 text-center">
+        <TeamBadge teamName={teamName} />
         <h2 className="font-serif text-lg font-semibold">{label}</h2>
       </div>
       <div

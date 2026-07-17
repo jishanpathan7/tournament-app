@@ -6,6 +6,7 @@ import { Download, Trophy } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { toast } from "@/components/ui/sonner";
 import { getFormat } from "@/features/tournaments/config";
 import { topStandingsRows } from "@/features/tournaments/dashboard/config";
@@ -85,12 +86,15 @@ export function StandingsSnapshot({
                     {rows.map((row) => (
                       <li
                         key={row.participantId}
-                        className="flex justify-between text-sm tabular-nums"
+                        className="flex justify-between gap-2 text-sm tabular-nums"
                       >
-                        <span>
-                          #{row.rank}{" "}
-                          {participantsById.get(row.participantId)?.displayName ??
-                            row.participantId.slice(0, 8)}
+                        <span className="flex flex-col gap-0.5">
+                          <TeamBadge teamName={participantsById.get(row.participantId)?.teamName} />
+                          <span>
+                            #{row.rank}{" "}
+                            {participantsById.get(row.participantId)?.displayName ??
+                              row.participantId.slice(0, 8)}
+                          </span>
                         </span>
                         <span className="text-muted-foreground">{row.points} pts</span>
                       </li>

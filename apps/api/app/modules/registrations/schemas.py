@@ -52,6 +52,7 @@ class ParticipantResponse(ApiModel):
     status: str
     user_id: uuid.UUID | None
     team_id: uuid.UUID | None
+    team_name: str | None = None
     created_at: datetime.datetime
 
 

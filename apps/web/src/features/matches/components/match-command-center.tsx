@@ -10,6 +10,7 @@ import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import {
   Dialog,
   DialogContent,
@@ -67,11 +68,19 @@ function MatchHeader({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="font-serif text-xl font-semibold tracking-tight">
-          {match.sides
-            .map((s) => participantName(s.participantId, participantsById))
-            .join(" vs ") || "TBD"}
-        </h2>
+        <div className="flex flex-col gap-0.5">
+          <div className="flex flex-wrap gap-1">
+            {match.sides.map((s) => {
+              const p = participantsById.get(s.participantId);
+              return p?.teamName ? <TeamBadge key={s.participantId} teamName={p.teamName} /> : null;
+            })}
+          </div>
+          <h2 className="font-serif text-xl font-semibold tracking-tight">
+            {match.sides
+              .map((s) => participantName(s.participantId, participantsById))
+              .join(" vs ") || "TBD"}
+          </h2>
+        </div>
         <Badge tone={status.tone}>{status.label}</Badge>
       </div>
       <p className="text-muted-foreground text-sm">

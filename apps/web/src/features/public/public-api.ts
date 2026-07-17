@@ -99,7 +99,12 @@ export interface PublicCourtMatchView {
   status: string;
   courtId: string | null;
   scheduledAt: string | null;
-  sides: { participantId: string; outcome: string | null }[];
+  sides: {
+    participantId: string;
+    outcome: string | null;
+    displayName?: string | null;
+    teamName?: string | null;
+  }[];
 }
 
 export interface PublicCourtQueueView {

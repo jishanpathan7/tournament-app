@@ -15,6 +15,7 @@ export class ScorekeeperApiError extends Error {
 export interface ScorekeeperMatchCard {
   matchId: string;
   sideLabels: string[];
+  sideTeamNames: (string | null)[];
   matchStatus: string;
   roundLabel: string | null;
   courtId: string | null;

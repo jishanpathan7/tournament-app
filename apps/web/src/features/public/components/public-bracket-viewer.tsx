@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Button } from "@/components/ui/button";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { env } from "@/lib/env";
 import {
@@ -134,7 +135,8 @@ export function PublicBracketViewer({ slug }: { slug: string }) {
     if (finalMatch.status !== "completed" && finalMatch.status !== "walkover") return null;
     const winnerSide = finalMatch.sides.find((s) => s.outcome === "win");
     if (!winnerSide) return null;
-    return participantsById.get(winnerSide.participantId)?.displayName ?? null;
+    const wp = participantsById.get(winnerSide.participantId);
+    return wp ? { name: wp.displayName, teamName: wp.teamName } : null;
   }, [activeStage, stageMatches, participantsById]);
 
   if (loading) {
@@ -164,12 +166,15 @@ export function PublicBracketViewer({ slug }: { slug: string }) {
         <div className="border-candy bg-candy-tint flex items-center justify-between gap-3 rounded-2xl border-2 px-4 py-3">
           <div className="flex items-center gap-2">
             <Trophy className="text-candy-dark h-5 w-5 shrink-0" strokeWidth={2.25} />
-            <p className="text-sm font-semibold">
-              <span className="text-candy-dark">{champion}</span>
-              <span className="text-muted-foreground ml-1.5 font-normal">
-                wins {activeDivisionName}
-              </span>
-            </p>
+            <div className="flex flex-col gap-0.5">
+              <TeamBadge teamName={champion.teamName} />
+              <p className="text-sm font-semibold">
+                <span className="text-candy-dark">{champion.name}</span>
+                <span className="text-muted-foreground ml-1.5 font-normal">
+                  wins {activeDivisionName}
+                </span>
+              </p>
+            </div>
           </div>
           <Button tone="paper" size="sm" onClick={() => setShareOpen(true)}>
             <Share2 className="h-4 w-4" />
@@ -181,7 +186,7 @@ export function PublicBracketViewer({ slug }: { slug: string }) {
         <WinnerShareDialog
           open={shareOpen}
           onOpenChange={setShareOpen}
-          championName={champion}
+          championName={champion.name}
           divisionName={activeDivisionName}
           tournamentName={tournament.name}
           slug={slug}

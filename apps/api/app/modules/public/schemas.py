@@ -68,6 +68,7 @@ class PublicParticipantView(ApiModel):
     kind: str
     display_name: str
     seed: int | None
+    team_name: str | None = None
 
 
 class PublicTournamentSearchResult(ApiModel):

@@ -68,6 +68,7 @@ async def list_participants(
     stmt = (
         select(Participant)
         .where(Participant.division_id == division_id, Participant.organization_id == org_id)
+        .options(selectinload(Participant.team))
         .order_by(Participant.created_at)
     )
     return (await session.execute(stmt)).scalars().all()
@@ -80,6 +81,7 @@ async def list_participants_for_tournament(
         select(Participant)
         .join(Division, Participant.division_id == Division.id)
         .where(Division.tournament_id == tournament_id, Participant.organization_id == org_id)
+        .options(selectinload(Participant.team))
         .order_by(Participant.created_at)
     )
     return (await session.execute(stmt)).scalars().all()

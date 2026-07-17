@@ -7,6 +7,7 @@ import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { usePublicCourts } from "@/features/public/use-public-tournament";
 import type { PublicCourtMatchView } from "@/features/public/public-api";
 import { cn } from "@/lib/utils";
@@ -19,17 +20,25 @@ const STATUS_TONE: Record<string, "mint" | "candy" | "yellow" | "muted"> = {
 
 function MatchChip({ match, label }: { match: PublicCourtMatchView | null; label: string }) {
   if (!match) return null;
-  const names = match.sides.map((s) => s.participantId).join(" vs ");
+  const sideLabel = (s: (typeof match.sides)[number]) => s.displayName ?? s.participantId;
+  const names = match.sides.map(sideLabel).join(" vs ");
   return (
     <div className="flex flex-col gap-0.5">
       <span className="text-muted-foreground font-mono text-xs uppercase tracking-widest">
         {label}
       </span>
-      <div className="flex items-center gap-2">
-        <Badge tone={STATUS_TONE[match.status] ?? "muted"} className="capitalize">
+      <div className="flex items-start gap-2">
+        <Badge tone={STATUS_TONE[match.status] ?? "muted"} className="mt-0.5 shrink-0 capitalize">
           {match.status}
         </Badge>
-        <span className="text-sm font-semibold">{names || "TBD vs TBD"}</span>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex flex-wrap gap-1">
+            {match.sides.map((s) =>
+              s.teamName ? <TeamBadge key={s.participantId} teamName={s.teamName} /> : null,
+            )}
+          </div>
+          <span className="text-sm font-semibold">{names || "TBD vs TBD"}</span>
+        </div>
       </div>
     </div>
   );
@@ -104,9 +113,17 @@ export function PublicCourtsView({ slug }: { slug: string }) {
                 key={m.id}
                 className="border-ink/10 flex items-center justify-between rounded-xl border px-4 py-2.5 text-sm"
               >
-                <span className="font-semibold">
-                  {m.sides.map((s) => s.participantId).join(" vs ") || "TBD vs TBD"}
-                </span>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <div className="flex flex-wrap gap-1">
+                    {m.sides.map((s) =>
+                      s.teamName ? <TeamBadge key={s.participantId} teamName={s.teamName} /> : null,
+                    )}
+                  </div>
+                  <span className="font-semibold">
+                    {m.sides.map((s) => s.displayName ?? s.participantId).join(" vs ") ||
+                      "TBD vs TBD"}
+                  </span>
+                </div>
                 <Badge tone="yellow">Queued</Badge>
               </div>
             ))}

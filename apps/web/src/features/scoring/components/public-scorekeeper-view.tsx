@@ -34,6 +34,8 @@ function PublicScorekeeperScoring({
   const rules = rulesFromSportConfig(data.sportConfig);
   const labelA = match.sideLabels[0] ?? "Side 1";
   const labelB = match.sideLabels[1] ?? "Side 2";
+  const teamA = match.sideTeamNames?.[0] ?? null;
+  const teamB = match.sideTeamNames?.[1] ?? null;
   const headerTitle = buildScorekeeperTitle(
     match.groupName,
     match.roundLabel,
@@ -104,6 +106,8 @@ function PublicScorekeeperScoring({
       <CourtScorekeeperPanel
         labelA={labelA}
         labelB={labelB}
+        teamA={teamA}
+        teamB={teamB}
         rules={rules}
         submitting={submitting}
         fetchingEtag={false}
