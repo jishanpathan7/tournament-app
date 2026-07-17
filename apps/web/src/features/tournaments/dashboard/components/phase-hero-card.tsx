@@ -242,6 +242,11 @@ function Step4Hero({
 }) {
   const { data: divisions = [] } = useDivisions(tournamentId);
 
+  // Only doubles/team divisions can be paired. Singles ("individual") divisions
+  // have team_size 1 and the API rejects pairing them (422 pairing_unsupported),
+  // so never offer a pairing link for them.
+  const pairableDivisions = divisions.filter((d) => d.participantType !== "individual");
+
   const pairedByDivisionId = new Map(
     (readiness?.divisions ?? []).map((d) => [d.divisionId, d.unpairedEntrants === 0]),
   );
@@ -262,8 +267,19 @@ function Step4Hero({
                 Generate Doubles Pairs
               </Link>
             </Button>
+          ) : pairableDivisions.length === 0 ? (
+            // Doubles divisions register individuals (participantType "individual")
+            // and are paired *within teams*, not via the standalone per-division
+            // route (which the API rejects for individual divisions). Send the
+            // organizer to the teams flow instead of a link that 422s.
+            <Button asChild tone="candy" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/teams`}>
+                <GitMerge className="h-4 w-4" strokeWidth={2.25} />
+                Set up teams to pair doubles
+              </Link>
+            </Button>
           ) : (
-            divisions.map((d) => {
+            pairableDivisions.map((d) => {
               const done = pairedByDivisionId.get(d.id) ?? false;
               return (
                 <Button key={d.id} asChild tone={done ? "paper" : "candy"} size="sm">
