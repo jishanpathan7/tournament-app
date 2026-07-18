@@ -3,6 +3,7 @@
 import type { MatchView, ParticipantResponse, StandingsView } from "@tournament/api-client";
 
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { groupMatchesByGroup, matchStatusMeta } from "@/features/draws/config";
 
 function participantName(
@@ -24,9 +25,10 @@ function FixtureRow({
   const status = matchStatusMeta(match.status);
   return (
     <div className="border-border flex items-center gap-3 border-t px-4 py-3 text-sm first:border-t-0">
-      <span className={`min-w-0 flex-1 truncate ${a?.outcome === "win" ? "font-bold" : ""}`}>
-        {participantName(a?.participantId, participantsById)}
-      </span>
+      <div className={`flex min-w-0 flex-1 flex-col ${a?.outcome === "win" ? "font-bold" : ""}`}>
+        <TeamBadge teamName={participantsById.get(a?.participantId ?? "")?.teamName} />
+        <span className="truncate">{participantName(a?.participantId, participantsById)}</span>
+      </div>
       {match.status === "pending" || match.status === "scheduled" ? (
         <span className="text-muted-foreground text-xs">vs</span>
       ) : (
@@ -34,11 +36,12 @@ function FixtureRow({
           {a?.scoreFor ?? "—"} · {b?.scoreFor ?? "—"}
         </span>
       )}
-      <span
-        className={`min-w-0 flex-1 truncate text-right ${b?.outcome === "win" ? "font-bold" : ""}`}
+      <div
+        className={`flex min-w-0 flex-1 flex-col items-end ${b?.outcome === "win" ? "font-bold" : ""}`}
       >
-        {participantName(b?.participantId, participantsById)}
-      </span>
+        <TeamBadge teamName={participantsById.get(b?.participantId ?? "")?.teamName} />
+        <span className="truncate">{participantName(b?.participantId, participantsById)}</span>
+      </div>
       <Badge tone={status.tone} className="shrink-0">
         {status.label}
       </Badge>
@@ -95,9 +98,12 @@ export function RoundRobinBoard({
                     <span className="text-muted-foreground font-mono text-xs">
                       {row.rank ?? "—"}
                     </span>
-                    <span className="truncate">
-                      {participantsById.get(row.participantId)?.displayName ?? "Unknown"}
-                    </span>
+                    <div className="flex min-w-0 flex-col">
+                      <TeamBadge teamName={participantsById.get(row.participantId)?.teamName} />
+                      <span className="truncate">
+                        {participantsById.get(row.participantId)?.displayName ?? "Unknown"}
+                      </span>
+                    </div>
                     <span className="text-muted-foreground font-mono text-xs">
                       {row.won}-{row.drawn}-{row.lost}
                     </span>

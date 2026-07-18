@@ -3439,6 +3439,10 @@ export interface components {
       scoreAgainst: number | null;
       /** Rank */
       rank: number | null;
+      /** Displayname */
+      displayName?: string | null;
+      /** Teamname */
+      teamName?: string | null;
     };
     /** MatchView */
     MatchView: {
@@ -3696,6 +3700,8 @@ export interface components {
       userId: string | null;
       /** Teamid */
       teamId: string | null;
+      /** Teamname */
+      teamName?: string | null;
       /**
        * Createdat
        * Format: date-time
@@ -4007,6 +4013,8 @@ export interface components {
       displayName: string;
       /** Seed */
       seed: number | null;
+      /** Teamname */
+      teamName?: string | null;
     };
     /** PublicRegistrationSubmittedView */
     PublicRegistrationSubmittedView: {
@@ -4316,6 +4324,11 @@ export interface components {
       matchId: string;
       /** Sidelabels */
       sideLabels: string[];
+      /**
+       * Sideteamnames
+       * @default []
+       */
+      sideTeamNames: (string | null)[];
       /** Matchstatus */
       matchStatus: string;
       /** Roundlabel */

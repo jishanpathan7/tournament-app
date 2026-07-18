@@ -29,6 +29,7 @@ class ScorekeeperLinkView(ApiModel):
 class ScorekeeperMatchCardView(ApiModel):
     match_id: uuid.UUID
     side_labels: list[str]
+    side_team_names: list[str | None] = []
     match_status: str
     round_label: str | None
     court_id: uuid.UUID | None

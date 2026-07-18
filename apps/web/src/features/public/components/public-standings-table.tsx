@@ -7,6 +7,7 @@ import { useMemo } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { participantName } from "@/features/public/config";
 import { usePublicParticipants, usePublicStandings } from "@/features/public/use-public-tournament";
@@ -85,12 +86,15 @@ export function PublicStandingsTable({ slug, stageId }: { slug: string; stageId:
                 {row.rank ?? "—"}
               </td>
               <td className="px-4 py-2.5">
-                <Link
-                  href={`/t/${slug}/participants/${row.participantId}`}
-                  className="font-semibold hover:underline"
-                >
-                  {participantName(row.participantId, participantsById)}
-                </Link>
+                <div className="flex flex-col gap-0.5">
+                  <TeamBadge teamName={participantsById.get(row.participantId)?.teamName} />
+                  <Link
+                    href={`/t/${slug}/participants/${row.participantId}`}
+                    className="font-semibold hover:underline"
+                  >
+                    {participantName(row.participantId, participantsById)}
+                  </Link>
+                </div>
               </td>
               <td className="px-4 py-2.5 text-right font-mono tabular-nums">{row.won}</td>
               <td className="px-4 py-2.5 text-right font-mono tabular-nums">{row.drawn}</td>

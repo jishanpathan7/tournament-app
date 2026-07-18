@@ -5,6 +5,7 @@ import type { KeyboardEvent } from "react";
 import { useEffect, useRef } from "react";
 
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import {
   Table,
   TableBody,
@@ -125,7 +126,18 @@ export function MatchQueueTable({
               <TableCell className="text-muted-foreground">{match.groupName ?? "—"}</TableCell>
               <TableCell className="text-muted-foreground">{courtLabel(match.courtId)}</TableCell>
               <TableCell className="font-semibold">
-                {participantNames(match, participantsById)}
+                <div className="flex flex-col gap-0.5">
+                  {match.sides.map((s) => {
+                    const p = participantsById.get(s.participantId);
+                    return (
+                      <div key={s.participantId} className="flex items-center gap-1.5">
+                        <TeamBadge teamName={p?.teamName} />
+                        <span className="truncate">{p?.displayName ?? "Unknown"}</span>
+                      </div>
+                    );
+                  })}
+                  {match.sides.length === 0 && <span className="text-muted-foreground">TBD</span>}
+                </div>
               </TableCell>
               <TableCell className="font-mono text-sm">
                 {formatScore(match) ?? <span className="text-muted-foreground">—</span>}

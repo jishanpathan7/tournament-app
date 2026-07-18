@@ -4,6 +4,7 @@ import { Check, Flag, Minus, Plus, RotateCcw } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { TeamBadge } from "@/components/ui/team-badge";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,8 @@ function emptyLiveGame(): GameScore {
 export function CourtScorekeeperPanel({
   labelA,
   labelB,
+  teamA,
+  teamB,
   rules = DEFAULT_RULES,
   submitting,
   fetchingEtag,
@@ -52,6 +55,8 @@ export function CourtScorekeeperPanel({
 }: {
   labelA: string;
   labelB: string;
+  teamA?: string | null;
+  teamB?: string | null;
   rules?: BadmintonRules;
   submitting: boolean;
   fetchingEtag: boolean;
@@ -209,6 +214,7 @@ export function CourtScorekeeperPanel({
         <ScoreSide
           role="SERVER"
           label={labelA}
+          teamName={teamA}
           score={a}
           onMinus={() => bump("a", -1)}
           onPlus={() => bump("a", 1)}
@@ -218,6 +224,7 @@ export function CourtScorekeeperPanel({
         <ScoreSide
           role="RECEIVER"
           label={labelB}
+          teamName={teamB}
           score={b}
           onMinus={() => bump("b", -1)}
           onPlus={() => bump("b", 1)}
@@ -353,6 +360,7 @@ export function CourtScorekeeperPanel({
 function ScoreSide({
   role,
   label,
+  teamName,
   score,
   onMinus,
   onPlus,
@@ -361,6 +369,7 @@ function ScoreSide({
 }: {
   role: "SERVER" | "RECEIVER";
   label: string;
+  teamName?: string | null;
   score: number;
   onMinus: () => void;
   onPlus: () => void;
@@ -369,13 +378,14 @@ function ScoreSide({
 }) {
   return (
     <div className="border-ink flex flex-col items-center justify-center gap-6 border-r-2 px-3 py-8 last:border-r-0">
-      <div className="text-center">
+      <div className="flex flex-col items-center gap-1 text-center">
         <p className="label text-muted-foreground mb-2 flex items-center justify-center gap-1.5 text-[10px] tracking-[0.16em]">
           {role === "SERVER" ? (
             <span className="bg-mint ring-ink inline-block h-2 w-2 animate-pulse rounded-full ring-2" />
           ) : null}
           {role}
         </p>
+        <TeamBadge teamName={teamName} />
         <h2 className="font-serif text-[1.35rem] font-semibold leading-tight">{label}</h2>
       </div>
 

@@ -13,7 +13,7 @@ from app.core import audit
 from app.core.config import get_settings
 from app.core.security import hash_token
 from app.db.enums import ShareLinkScope
-from app.db.models import Court, Match, Participant, ShareLink, Tournament
+from app.db.models import Court, Match, ShareLink, Tournament
 from app.db.session import set_org_context
 from app.modules.scoring import repository as scoring_repo
 from app.modules.scoring import service as scoring_service
@@ -169,12 +169,22 @@ async def revoke_match_scorekeeper_link(
     )
 
 
-async def _side_labels(session: AsyncSession, match: Match) -> list[str]:
+async def _side_labels_and_teams(
+    session: AsyncSession, match: Match
+) -> tuple[list[str], list[str | None]]:
     labels: list[str] = []
+    team_names: list[str | None] = []
     for mp in scoring_service._ordered_sides(match):
-        participant = await session.get(Participant, mp.participant_id)
+        from sqlalchemy import select as _sel
+        from sqlalchemy.orm import selectinload as _sil
+
+        from app.db.models import Participant as _P
+
+        stmt = _sel(_P).where(_P.id == mp.participant_id).options(_sil(_P.team))
+        participant = (await session.execute(stmt)).scalar_one_or_none()
         labels.append(participant.display_name if participant else "Unknown")
-    return labels
+        team_names.append(participant.team.name if participant and participant.team else None)
+    return labels, team_names
 
 
 async def _match_card(session: AsyncSession, match: Match) -> ScorekeeperMatchCardView:
@@ -182,9 +192,11 @@ async def _match_card(session: AsyncSession, match: Match) -> ScorekeeperMatchCa
     if match.court_id is not None:
         court = await session.get(Court, match.court_id)
         court_name = court.name if court else None
+    labels, team_names = await _side_labels_and_teams(session, match)
     return ScorekeeperMatchCardView(
         match_id=match.id,
-        side_labels=await _side_labels(session, match),
+        side_labels=labels,
+        side_team_names=team_names,
         match_status=match.status,
         round_label=match.round.label if match.round else None,
         court_id=match.court_id,

@@ -8,6 +8,7 @@ import { useMemo } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
 import { Skeleton } from "@/components/ui/skeleton";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { usePublicDivisions, usePublicParticipants } from "@/features/public/use-public-tournament";
 
 /** Every approved participant, grouped by division, each linking to their profile. */
@@ -60,7 +61,10 @@ export function PublicParticipantsList({ slug }: { slug: string }) {
                       {p.seed}
                     </span>
                   ) : null}
-                  <span className="truncate">{p.displayName}</span>
+                  <div className="flex min-w-0 flex-col">
+                    <TeamBadge teamName={p.teamName} />
+                    <span className="truncate">{p.displayName}</span>
+                  </div>
                 </Link>
               ))}
             </div>

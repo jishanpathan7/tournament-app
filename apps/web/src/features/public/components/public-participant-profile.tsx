@@ -6,6 +6,7 @@ import { useMemo } from "react";
 
 import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { matchStatusMeta } from "@/features/draws/config";
@@ -128,6 +129,7 @@ export function PublicParticipantProfile({
           <User className="h-6 w-6" strokeWidth={2.25} />
         </div>
         <div className="flex flex-col gap-1">
+          <TeamBadge teamName={participant.data.teamName} className="self-start" />
           <h1 className="font-serif text-3xl font-semibold tracking-tight">
             {participant.data.displayName}
           </h1>

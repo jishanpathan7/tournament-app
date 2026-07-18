@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.enums import ContestKind, MatchStatus
-from app.db.models import Court, Match, Participant, Registration, TournamentCourt
+from app.db.models import Court, Match, MatchParticipant, Participant, Registration, TournamentCourt
 
 
 async def list_scheduled_matches(
@@ -116,7 +116,11 @@ async def list_tournament_matches_with_participants(
             Match.contest_kind != ContestKind.TIE.value,
         )
         .options(
-            selectinload(Match.participants), selectinload(Match.round), selectinload(Match.group)
+            selectinload(Match.participants)
+            .selectinload(MatchParticipant.participant)
+            .selectinload(Participant.team),
+            selectinload(Match.round),
+            selectinload(Match.group),
         )
         .order_by(Match.scheduled_at.nulls_last(), Match.created_at, Match.id)
     )

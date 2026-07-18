@@ -6,6 +6,7 @@ import { useMemo } from "react";
 
 import { ErrorState } from "@/components/common/error-state";
 import { Badge } from "@/components/ui/badge";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { matchStatusMeta } from "@/features/draws/config";
@@ -87,12 +88,15 @@ export function PublicLiveMatchView({ slug, matchId }: { slug: string; matchId: 
           ) : (
             match.data.sides.map((side) => (
               <div key={side.participantId} className="flex items-center justify-between gap-3">
-                <Link
-                  href={`/t/${slug}/participants/${side.participantId}`}
-                  className={`hover:underline ${side.outcome === "win" ? "font-bold" : ""}`}
-                >
-                  {participantName(side.participantId, participantsById)}
-                </Link>
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <TeamBadge teamName={participantsById.get(side.participantId)?.teamName} />
+                  <Link
+                    href={`/t/${slug}/participants/${side.participantId}`}
+                    className={`hover:underline ${side.outcome === "win" ? "font-bold" : ""}`}
+                  >
+                    {participantName(side.participantId, participantsById)}
+                  </Link>
+                </div>
                 <span
                   className={`font-mono text-lg font-bold tabular-nums ${
                     side.outcome === "win" ? "text-mint-dark" : "text-muted-foreground"

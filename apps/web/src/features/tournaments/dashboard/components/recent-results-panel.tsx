@@ -5,6 +5,7 @@ import { Crown, Swords } from "lucide-react";
 import Link from "next/link";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { cn } from "@/lib/utils";
 
 const TERMINAL = new Set(["completed", "walkover", "no_show"]);
@@ -28,9 +29,10 @@ function ResultRow({
 }) {
   const winnerSide = match.sides.find((s) => s.outcome === "win");
   const loserSide = match.sides.find((s) => s.outcome === "loss");
-  const winnerName =
-    participantsById.get(winnerSide?.participantId ?? "")?.displayName ?? "Unknown";
-  const loserName = participantsById.get(loserSide?.participantId ?? "")?.displayName ?? "Unknown";
+  const winner = participantsById.get(winnerSide?.participantId ?? "");
+  const loser = participantsById.get(loserSide?.participantId ?? "");
+  const winnerName = winner?.displayName ?? "Unknown";
+  const loserName = loser?.displayName ?? "Unknown";
 
   const isWalkover = match.status === "walkover" || match.status === "no_show";
   const scoreStr = isWalkover
@@ -48,6 +50,7 @@ function ResultRow({
         <Crown className="h-3.5 w-3.5" strokeWidth={2.5} />
       </div>
       <div className="min-w-0 flex-1">
+        <TeamBadge teamName={winner?.teamName} />
         <p className="truncate text-sm font-semibold leading-snug">{winnerName}</p>
         <p className="text-muted-foreground truncate text-xs">def. {loserName}</p>
         {scoreStr ? (

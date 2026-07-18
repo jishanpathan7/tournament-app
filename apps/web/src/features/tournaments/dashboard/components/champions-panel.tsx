@@ -4,6 +4,7 @@ import type { ChampionRow } from "@/features/tournaments/dashboard/config";
 import { Crown } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { EmptyState } from "@/components/common/empty-state";
 
 export function ChampionsPanel({ champions }: { champions: ChampionRow[] }) {
@@ -33,6 +34,7 @@ export function ChampionsPanel({ champions }: { champions: ChampionRow[] }) {
                 <span className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.18em]">
                   {c.divisionName}
                 </span>
+                <TeamBadge teamName={c.teamName} />
                 <span className="font-serif text-xl font-semibold">{c.displayName}</span>
               </li>
             ))}

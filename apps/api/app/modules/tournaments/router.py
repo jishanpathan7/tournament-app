@@ -600,22 +600,42 @@ async def export_matches(
     matches = await scoring_repo.list_tournament_matches(
         session, principal.organization_id, tournament_id
     )
-    header = ["match_id", "status", "round", "side_a", "side_b", "winner", "score", "scheduled_at"]
+    all_participants = await registrations_repo.list_participants_for_tournament(
+        session, principal.organization_id, tournament_id
+    )
+    p_by_id = {p.id: p for p in all_participants}
+    header = [
+        "match_id",
+        "status",
+        "round",
+        "side_a",
+        "side_a_team",
+        "side_b",
+        "side_b_team",
+        "winner",
+        "score",
+        "scheduled_at",
+    ]
     rows: list[list[str]] = [header]
     for m in matches:
         sides = list(m.participants)
-        side_a = sides[0].participant_id if len(sides) > 0 else ""
-        side_b = sides[1].participant_id if len(sides) > 1 else ""
-        winner_id = next((str(mp.participant_id) for mp in sides if mp.outcome == "win"), "")
+        mp_a = sides[0] if len(sides) > 0 else None
+        mp_b = sides[1] if len(sides) > 1 else None
+        p_a = p_by_id.get(mp_a.participant_id) if mp_a else None
+        p_b = p_by_id.get(mp_b.participant_id) if mp_b else None
+        winner_mp = next((mp for mp in sides if mp.outcome == "win"), None)
+        winner_p = p_by_id.get(winner_mp.participant_id) if winner_mp else None
         score = str(m.result_payload) if m.result_payload else ""
         rows.append(
             [
                 str(m.id),
                 m.status,
                 (m.round.label or "") if m.round else "",
-                str(side_a),
-                str(side_b),
-                winner_id,
+                p_a.display_name if p_a else (str(mp_a.participant_id) if mp_a else ""),
+                (p_a.team.name if p_a and p_a.team else "") if p_a else "",
+                p_b.display_name if p_b else (str(mp_b.participant_id) if mp_b else ""),
+                (p_b.team.name if p_b and p_b.team else "") if p_b else "",
+                winner_p.display_name if winner_p else "",
                 score,
                 m.scheduled_at.isoformat() if m.scheduled_at else "",
             ]
@@ -630,8 +650,22 @@ async def export_standings(
     session: AsyncSession = Depends(get_request_session),
 ) -> StreamingResponse:
     await service._require_tournament(session, principal.organization_id, tournament_id)
+    all_participants = await registrations_repo.list_participants_for_tournament(
+        session, principal.organization_id, tournament_id
+    )
+    p_by_id = {p.id: p for p in all_participants}
     divisions = await repo.list_divisions(session, principal.organization_id, tournament_id)
-    header = ["stage_id", "participant_id", "rank", "played", "won", "drawn", "lost", "points"]
+    header = [
+        "stage_id",
+        "display_name",
+        "team_name",
+        "rank",
+        "played",
+        "won",
+        "drawn",
+        "lost",
+        "points",
+    ]
     rows: list[list[str]] = [header]
     for division in divisions:
         stages = await repo.list_stages(session, principal.organization_id, division.id)
@@ -640,10 +674,12 @@ async def export_standings(
                 session, principal.organization_id, stage.id
             )
             for s in standings:
+                p = p_by_id.get(s.participant_id)
                 rows.append(
                     [
                         str(stage.id),
-                        str(s.participant_id),
+                        p.display_name if p else str(s.participant_id),
+                        (p.team.name if p.team else "") if p else "",
                         str(s.rank) if s.rank is not None else "",
                         str(s.played),
                         str(s.won),

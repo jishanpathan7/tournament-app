@@ -23,6 +23,8 @@ class MatchSideView(ApiModel):
     score_for: int | None
     score_against: int | None
     rank: int | None
+    display_name: str | None = None
+    team_name: str | None = None
 
 
 class SportMatchConfigView(ApiModel):

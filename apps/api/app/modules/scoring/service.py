@@ -97,7 +97,10 @@ def _ordered_sides(match: Match) -> list[MatchParticipant]:
 
 
 def build_match_view(
-    match: Match, *, sport_config: SportMatchConfigView | None = None
+    match: Match,
+    *,
+    sport_config: SportMatchConfigView | None = None,
+    participants_by_id: "dict[uuid.UUID, Any] | None" = None,
 ) -> MatchView:
     """The one place a `Match` ORM row becomes a `MatchView` — shared by the
     authenticated scoring router and the public microsite so the shape (and the
@@ -108,6 +111,7 @@ def build_match_view(
     for mp in sides:
         other = next((o for o in sides if o.participant_id != mp.participant_id), None)
         against = score_by_id.get(other.participant_id) if other else None
+        p = participants_by_id.get(mp.participant_id) if participants_by_id else None
         views.append(
             MatchSideView(
                 participant_id=mp.participant_id,
@@ -115,6 +119,8 @@ def build_match_view(
                 score_for=int(mp.score) if mp.score is not None else None,
                 score_against=int(against) if against is not None else None,
                 rank=mp.rank,
+                display_name=p.display_name if p else None,
+                team_name=p.team.name if p and p.team else None,
             )
         )
     return MatchView(

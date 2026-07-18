@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { toast } from "@/components/ui/sonner";
 import * as scoringApi from "@/features/scoring/scoring-api";
 import { useScoreMatch } from "@/features/scoring/use-matches";
@@ -194,9 +195,16 @@ export function ScoreEntryForm({
               >
                 <div className={cn(isHero && "flex flex-col items-center gap-1")}>
                   {isHero ? (
-                    <span className="text-muted-foreground max-w-full truncate text-xs font-medium">
-                      {sideLabel(0)}
-                    </span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <TeamBadge
+                        teamName={
+                          participantsById.get(match.sides[0]?.participantId ?? "")?.teamName
+                        }
+                      />
+                      <span className="text-muted-foreground max-w-full truncate text-xs font-medium">
+                        {sideLabel(0)}
+                      </span>
+                    </div>
                   ) : null}
                   <Input
                     type="number"
@@ -214,9 +222,16 @@ export function ScoreEntryForm({
                 </span>
                 <div className={cn(isHero && "flex flex-col items-center gap-1")}>
                   {isHero ? (
-                    <span className="text-muted-foreground max-w-full truncate text-xs font-medium">
-                      {sideLabel(1)}
-                    </span>
+                    <div className="flex flex-col items-center gap-0.5">
+                      <TeamBadge
+                        teamName={
+                          participantsById.get(match.sides[1]?.participantId ?? "")?.teamName
+                        }
+                      />
+                      <span className="text-muted-foreground max-w-full truncate text-xs font-medium">
+                        {sideLabel(1)}
+                      </span>
+                    </div>
                   ) : null}
                   <Input
                     type="number"

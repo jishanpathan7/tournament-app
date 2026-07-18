@@ -11,6 +11,7 @@ import type { KeyboardEvent } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { TeamBadge } from "@/components/ui/team-badge";
 import { matchStatusMeta } from "@/features/draws/config";
 import {
   courtLabelFromMap,
@@ -88,7 +89,17 @@ export function MatchCard({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="truncate font-semibold">{participantNames(match, participantsById)}</p>
+            <div className="flex min-w-0 flex-col">
+              <div className="flex flex-wrap gap-1">
+                {match.sides.map((s) => {
+                  const p = participantsById.get(s.participantId);
+                  return p?.teamName ? (
+                    <TeamBadge key={s.participantId} teamName={p.teamName} />
+                  ) : null;
+                })}
+              </div>
+              <p className="truncate font-semibold">{participantNames(match, participantsById)}</p>
+            </div>
             <Badge tone={status.tone}>{status.label}</Badge>
           </div>
           <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs">
