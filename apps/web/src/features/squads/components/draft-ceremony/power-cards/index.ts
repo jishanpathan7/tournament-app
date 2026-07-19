@@ -15,7 +15,7 @@ import "./cards/dabur-immunity";
 import "./cards/jo-tera-hai-wo-mera";
 
 import { allCards } from "./registry";
-import type { PowerCard, PowerCardId } from "./types";
+import type { PowerCardId } from "./types";
 
 export {
   registerPowerCard,
@@ -36,11 +36,6 @@ export type {
   MutationPort,
   Meme,
 } from "./types";
-
-/** Registry-derived metadata map (drop-in for the old hand-kept POWER_META). */
-export const POWER_META: Record<PowerCardId, PowerCard> = Object.fromEntries(
-  allCards().map((c) => [c.id, c]),
-);
 
 /** Registry-derived list of wheel-eligible card ids (drop-in for ALL_POWER_KINDS). */
 export const ALL_POWER_KINDS: PowerCardId[] = allCards()

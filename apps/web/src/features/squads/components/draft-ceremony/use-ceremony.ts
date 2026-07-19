@@ -9,19 +9,26 @@ import {
   type CeremonySettings,
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
-import type { PowerKind } from "@/features/squads/components/draft-ceremony/power-slots";
+import {
+  awardCardEvent,
+  canPlay as engineCanPlay,
+  playCard as enginePlay,
+  previewCard as enginePreview,
+  reduceTeamCards,
+  type TeamCards,
+} from "@/features/squads/components/draft-ceremony/power-cards/engine";
+import type {
+  CardContext,
+  CardPreview,
+  MutationPort,
+  PowerCardId,
+  PowerEvent,
+} from "@/features/squads/components/draft-ceremony/power-cards/types";
 import type {
   SquadMemberView,
   SquadView,
   UnassignedRegistrationView,
 } from "@/features/squads/types";
-
-/** Result of playing a Jo Tera Hai Wo Mera (swap) card. */
-export type SwapOutcome =
-  | { status: "swapped"; aName: string; bName: string; fromSquad: string; toSquad: string }
-  | { status: "blocked"; toSquad: string }
-  | { status: "no_players"; toSquad: string }
-  | { status: "error" };
 import {
   useAssignSquadMember,
   useRemoveSquadMember,
@@ -135,8 +142,8 @@ export function useCeremony(tournamentId: string) {
   // Fun Mode settings — client-side in V1. Off by default (competitive-safe).
   const [settings, setSettings] = useState<CeremonySettings>(DEFAULT_SETTINGS);
   // Power cards each team is holding — awarded when the wheel lands on a power
-  // slot, played later. Keyed by squad id.
-  const [teamCards, setTeamCards] = useState<Record<string, PowerKind[]>>({});
+  // slot, played later. Keyed by squad id. Mutated only via engine reducers.
+  const [teamCards, setTeamCards] = useState<TeamCards>({});
   // Squad that just received its final player — drives the completion celebration.
   const [justCompletedSquadId, setJustCompletedSquadId] = useState<string | null>(null);
 
@@ -190,73 +197,74 @@ export function useCeremony(tournamentId: string) {
   // is set by the organizer in settings.powerSlotsBySkill).
   const powersEnabled = settings.funMode && settings.powerSlots;
 
-  /** Hand a power card to a team (on wheel landing). */
-  const awardCard = useCallback((squadId: string, kind: PowerKind) => {
-    setTeamCards((prev) => ({ ...prev, [squadId]: [...(prev[squadId] ?? []), kind] }));
-  }, []);
+  // ── Power-card engine adapter ─────────────────────────────────────────────
+  // The hook owns the inventory STATE + wires the engine's MutationPort to the
+  // real React Query mutations. All card rules live in the engine/cards; this
+  // layer only holds state and forwards. Roster mutations flow through `port`.
+  const port: MutationPort = useMemo(
+    () => ({
+      assign: async (squadId, registrationId) => {
+        await assignMutation.mutateAsync({ squadId, registrationId });
+      },
+      remove: async (squadId, registrationId) => {
+        await removeMutation.mutateAsync({ squadId, registrationId });
+      },
+    }),
+    [assignMutation, removeMutation],
+  );
 
-  /** Remove one card of `kind` from a team's hand. */
-  const consumeCard = useCallback((squadId: string, kind: PowerKind) => {
-    setTeamCards((prev) => {
-      const hand = prev[squadId] ?? [];
-      const i = hand.indexOf(kind);
-      if (i === -1) return prev;
-      return { ...prev, [squadId]: [...hand.slice(0, i), ...hand.slice(i + 1)] };
-    });
-  }, []);
+  const buildContext = useCallback(
+    (cardId: PowerCardId, squadId: string, targetSquadId?: string): CardContext => ({
+      cardId,
+      squadId,
+      targetSquadId,
+      squads,
+      teamCards,
+      port,
+    }),
+    [squads, teamCards, port],
+  );
+
+  /** Hand a power card to a team (on wheel landing). Returns the emitted events. */
+  const awardCard = useCallback(
+    (squadId: string, cardId: PowerCardId): PowerEvent[] => {
+      const squad = squads.find((s) => s.id === squadId);
+      const events: PowerEvent[] = [awardCardEvent(squadId, squad?.name ?? "", cardId)];
+      setTeamCards((prev) => reduceTeamCards(prev, events));
+      return events;
+    },
+    [squads],
+  );
+
+  /** Whether a card can be played right now (delegates to the engine/card). */
+  const canPlayCard = useCallback(
+    (cardId: PowerCardId, squadId: string, targetSquadId?: string): boolean =>
+      engineCanPlay(cardId, buildContext(cardId, squadId, targetSquadId)),
+    [buildContext],
+  );
+
+  /** Preview a play without mutating (drives the confirm dialog). */
+  const previewCard = useCallback(
+    (cardId: PowerCardId, squadId: string, targetSquadId?: string): CardPreview | null =>
+      enginePreview(cardId, buildContext(cardId, squadId, targetSquadId)),
+    [buildContext],
+  );
 
   /**
-   * Play Jo Tera Hai Wo Mera — swap the closest-skill non-captain players between
-   * `fromId` and `toId`. Closest-skill keeps balance barely changed; the 1-for-1
-   * trade keeps sizes identical. BLOCKED if the target team holds Dabur Immunity —
-   * both cards are then consumed (the shield stops the raid). The swap card is
-   * consumed on any completed attempt.
+   * Play a card through the engine: execute → fold events onto inventory → return
+   * events for the presentation layer to animate. Refetches the board when a swap
+   * moved players so the roster stays in sync.
    */
-  const swapBetween = useCallback(
-    async (fromId: string, toId: string): Promise<SwapOutcome> => {
-      const from = squads.find((s) => s.id === fromId);
-      const to = squads.find((s) => s.id === toId);
-      if (!from || !to) return { status: "error" };
-
-      // Dabur Immunity on the target blocks the swap — both cards cancel out.
-      if ((teamCards[toId] ?? []).includes("protection")) {
-        consumeCard(fromId, "swap");
-        consumeCard(toId, "protection");
-        return { status: "blocked", toSquad: to.name };
+  const playCard = useCallback(
+    async (cardId: PowerCardId, squadId: string, targetSquadId?: string): Promise<PowerEvent[]> => {
+      const { events } = await enginePlay(cardId, buildContext(cardId, squadId, targetSquadId));
+      setTeamCards((prev) => reduceTeamCards(prev, events));
+      if (events.some((e) => e.type === "SwapCompleted")) {
+        void squadsQuery.refetch();
       }
-
-      const eligible = (sq: SquadView) =>
-        sq.members.filter((m) => m.registrationId !== sq.captainRegistrationId);
-      const fromPlayers = eligible(from);
-      const toPlayers = eligible(to);
-      if (fromPlayers.length === 0 || toPlayers.length === 0) {
-        return { status: "no_players", toSquad: to.name };
-      }
-
-      let best: { a: SquadMemberView; b: SquadMemberView; diff: number } | null = null;
-      for (const a of fromPlayers) {
-        for (const b of toPlayers) {
-          const diff = Math.abs(a.skillWeight - b.skillWeight);
-          if (!best || diff < best.diff) best = { a, b, diff };
-        }
-      }
-      if (!best) return { status: "no_players", toSquad: to.name };
-
-      await removeMutation.mutateAsync({ squadId: from.id, registrationId: best.a.registrationId });
-      await removeMutation.mutateAsync({ squadId: to.id, registrationId: best.b.registrationId });
-      await assignMutation.mutateAsync({ squadId: to.id, registrationId: best.a.registrationId });
-      await assignMutation.mutateAsync({ squadId: from.id, registrationId: best.b.registrationId });
-      consumeCard(fromId, "swap");
-
-      return {
-        status: "swapped",
-        aName: best.a.displayName,
-        bName: best.b.displayName,
-        fromSquad: from.name,
-        toSquad: to.name,
-      };
+      return events;
     },
-    [squads, teamCards, consumeCard, removeMutation, assignMutation],
+    [buildContext, squadsQuery],
   );
 
   const clearJustCompleted = useCallback(() => setJustCompletedSquadId(null), []);
@@ -377,8 +385,9 @@ export function useCeremony(tournamentId: string) {
     powersEnabled,
     teamCards,
     awardCard,
-    consumeCard,
-    swapBetween,
+    canPlayCard,
+    previewCard,
+    playCard,
     isWildcardActive,
     justCompletedSquadId,
     clearJustCompleted,

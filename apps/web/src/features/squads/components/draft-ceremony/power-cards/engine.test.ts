@@ -106,9 +106,9 @@ describe("First Ball Trial (self)", () => {
 
 describe("Dabur Immunity (passive)", () => {
   it("is never directly playable", () => {
-    expect(canPlay("protection", ctx({ cardId: "protection", teamCards: { A: ["protection"] } }))).toBe(
-      false,
-    );
+    expect(
+      canPlay("protection", ctx({ cardId: "protection", teamCards: { A: ["protection"] } })),
+    ).toBe(false);
   });
 });
 

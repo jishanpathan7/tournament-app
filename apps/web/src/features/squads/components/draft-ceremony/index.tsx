@@ -17,17 +17,16 @@ import {
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
 import { getCard } from "@/features/squads/components/draft-ceremony/power-cards";
+import type { PowerEvent as EnginePowerEvent } from "@/features/squads/components/draft-ceremony/power-cards/types";
 import {
   buildWheelSlots,
   isPlayerSlot,
-  randomMeme,
   skillKeyOf,
   SKILL_KEYS,
   type Meme,
   type PowerKind,
   type WheelSlot,
 } from "@/features/squads/components/draft-ceremony/power-slots";
-import type { SwapOutcome } from "@/features/squads/components/draft-ceremony/use-ceremony";
 import { skillLabel, useCeremony } from "@/features/squads/components/draft-ceremony/use-ceremony";
 import type {
   SquadMemberView,
@@ -843,8 +842,12 @@ function TeamCardsPanel({
                 <span className="text-2xs text-white/20">no cards</span>
               ) : (
                 hand.map((k, idx) => {
-                  const playable = k === "meme" || k === "swap";
-                  const armed = swapFromId === s.id && k === "swap";
+                  const mode = getCard(k).mode;
+                  // Instant (Meme) + targeted (Swap) play from the inventory; self
+                  // (First Ball Trial) plays from its own on-turn button; passive
+                  // (Immunity) is not clickable.
+                  const playable = mode === "instant" || mode === "targeted";
+                  const armed = swapFromId === s.id && mode === "targeted";
                   return (
                     <button
                       key={`${k}-${idx}`}
@@ -856,9 +859,7 @@ function TeamCardsPanel({
                       className="flex h-6 w-6 items-center justify-center rounded-md text-sm transition-transform hover:scale-110"
                       style={{
                         background: `${getCard(k).color}22`,
-                        border: armed
-                          ? `1.5px solid ${getCard(k).color}`
-                          : "1px solid transparent",
+                        border: armed ? `1.5px solid ${getCard(k).color}` : "1px solid transparent",
                         cursor: playable ? "pointer" : "default",
                       }}
                     >
@@ -896,8 +897,7 @@ function MainScreen({
   powersEnabled,
   teamCards,
   onAwardCard,
-  onConsumeCard,
-  onSwapBetween,
+  onPlayCard,
   justCompletedSquadId,
   onClearCompleted,
   isWildcardActive,
@@ -917,9 +917,12 @@ function MainScreen({
   settings: CeremonySettings;
   powersEnabled: boolean;
   teamCards: Record<string, PowerKind[]>;
-  onAwardCard: (squadId: string, kind: PowerKind) => void;
-  onConsumeCard: (squadId: string, kind: PowerKind) => void;
-  onSwapBetween: (fromId: string, toId: string) => Promise<SwapOutcome>;
+  onAwardCard: (squadId: string, cardId: PowerKind) => EnginePowerEvent[];
+  onPlayCard: (
+    cardId: PowerKind,
+    squadId: string,
+    targetSquadId?: string,
+  ) => Promise<EnginePowerEvent[]>;
   justCompletedSquadId: string | null;
   onClearCompleted: () => void;
   isWildcardActive: boolean;
@@ -1130,42 +1133,60 @@ function MainScreen({
 
   const handleGhostDone = useCallback(() => setGhostFly(null), []);
 
-  // Play a card from a team's hand. Meme fires now; Swap arms target-picking.
-  async function onCardClick(squadId: string, kind: PowerKind) {
-    if (kind === "meme") {
-      const squad = squads.find((s) => s.id === squadId);
-      onConsumeCard(squadId, "meme");
-      setPowerEvent({
-        kind: "meme",
-        meme: randomMeme(),
-        detail: `${squad?.name ?? "Team"} played Meme Drop`,
-      });
-      await wait(scaled(1.8, settings.speed) * 1000);
-      setPowerEvent(null);
-    } else if (kind === "swap") {
-      setSwapFromId((prev) => (prev === squadId ? null : squadId));
+  /**
+   * Map engine domain events to the on-screen power overlay, hold, then clear.
+   * The presentation reacts to events; it never re-derives card rules.
+   */
+  async function showPowerEvents(events: EnginePowerEvent[]) {
+    const played = events.find((e) => e.type === "CardPlayed");
+    const swapDone = events.find((e) => e.type === "SwapCompleted");
+    const blocked = events.find((e) => e.type === "SwapBlocked");
+
+    let display: PowerEvent | null = null;
+    if (played) {
+      display = { kind: played.cardId, detail: played.detail, meme: played.meme };
+    } else if (swapDone) {
+      display = { kind: swapDone.cardId, detail: `${swapDone.aName}  ⇄  ${swapDone.bName}` };
+    } else if (blocked) {
+      display = {
+        kind: blocked.cardId,
+        detail:
+          blocked.reason === "immunity"
+            ? `🛡️ Blocked by ${blocked.toSquad}'s Dabur Immunity!`
+            : "No eligible players to swap",
+      };
     }
+    if (!display) return;
+
+    setPowerEvent(display);
+    await wait(scaled(1.9, settings.speed) * 1000);
+    setPowerEvent(null);
   }
 
-  // Execute a swap from the armed team onto the chosen target team.
+  // Play a card from a team's hand — dispatched by the card's mode (no card ids
+  // hardcoded here). Instant plays immediately; targeted arms target-picking.
+  async function onCardClick(squadId: string, kind: PowerKind) {
+    const mode = getCard(kind).mode;
+    if (mode === "targeted") {
+      setSwapFromId((prev) => (prev === squadId ? null : squadId));
+      return;
+    }
+    if (mode === "instant") {
+      const events = await onPlayCard(kind, squadId);
+      await showPowerEvents(events);
+    }
+    // self plays from its own on-turn button; passive is not clickable.
+  }
+
+  // Execute the armed swap onto the chosen target team, via the engine.
   async function onTargetTeam(targetId: string) {
     const from = swapFromId;
     setSwapFromId(null);
     if (!from || from === targetId) return;
 
     setPowerEvent({ kind: "swap", detail: "Finding a fair swap…" });
-    const res = await onSwapBetween(from, targetId);
-    const detail =
-      res.status === "swapped"
-        ? `${res.aName}  ⇄  ${res.bName}`
-        : res.status === "blocked"
-          ? `🛡️ Blocked by ${res.toSquad}'s Dabur Immunity!`
-          : res.status === "no_players"
-            ? "No eligible players to swap"
-            : "Swap failed";
-    setPowerEvent({ kind: "swap", detail });
-    await wait(scaled(2, settings.speed) * 1000);
-    setPowerEvent(null);
+    const events = await onPlayCard("swap", from, targetId);
+    await showPowerEvents(events);
   }
 
   return (
@@ -1248,20 +1269,27 @@ function MainScreen({
                   </span>
                 )}
 
-                {/* First Ball Trial — held re-spin, usable on this team's own spin. */}
+                {/* Self-mode cards (e.g. First Ball Trial) play on this team's own
+                    spin — rendered generically from any held card whose mode is
+                    "self", then the wheel re-spins. No card id is hardcoded. */}
                 {currentSquad &&
-                  (teamCards[currentSquad.id] ?? []).includes("respin") &&
-                  spinPhase === "idle" && (
-                    <button
-                      onClick={() => {
-                        onConsumeCard(currentSquad.id, "respin");
-                        void runSpin();
-                      }}
-                      className="flex items-center gap-1.5 rounded-full border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-xs font-black text-[#9db0fb] transition-transform hover:scale-105"
-                    >
-                      🎯 Use First Ball Trial (re-spin)
-                    </button>
-                  )}
+                  spinPhase === "idle" &&
+                  (teamCards[currentSquad.id] ?? [])
+                    .filter((id) => getCard(id).mode === "self")
+                    .map((id) => {
+                      const card = getCard(id);
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => {
+                            void onPlayCard(id, currentSquad.id).then(() => runSpin());
+                          }}
+                          className="flex items-center gap-1.5 rounded-full border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-xs font-black text-[#9db0fb] transition-transform hover:scale-105"
+                        >
+                          {card.emoji} Use {card.label} (re-spin)
+                        </button>
+                      );
+                    })}
 
                 {canSpin && (
                   <span className="text-2xs font-mono uppercase tracking-widest text-white/25">
@@ -1940,8 +1968,7 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           powersEnabled={ceremony.powersEnabled}
           teamCards={ceremony.teamCards}
           onAwardCard={ceremony.awardCard}
-          onConsumeCard={ceremony.consumeCard}
-          onSwapBetween={ceremony.swapBetween}
+          onPlayCard={ceremony.playCard}
           justCompletedSquadId={ceremony.justCompletedSquadId}
           onClearCompleted={ceremony.clearJustCompleted}
           isWildcardActive={ceremony.isWildcardActive}

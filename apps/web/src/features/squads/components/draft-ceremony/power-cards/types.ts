@@ -119,5 +119,5 @@ export type PowerEvent =
       fromSquad: string;
       toSquad: string;
     }
-  | { type: "SwapBlocked"; cardId: PowerCardId; toSquad: string }
+  | { type: "SwapBlocked"; cardId: PowerCardId; toSquad: string; reason: "immunity" | "no-players" }
   | { type: "ImmunityTriggered"; squadId: string; toSquad: string };

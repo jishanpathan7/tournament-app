@@ -88,7 +88,7 @@ export const joTeraHaiWoMera: PowerCard = {
           { type: "CardConsumed", squadId: from.id, cardId: "swap" },
           { type: "CardConsumed", squadId: to.id, cardId: "protection" },
           { type: "ImmunityTriggered", squadId: to.id, toSquad: to.name },
-          { type: "SwapBlocked", cardId: "swap", toSquad: to.name },
+          { type: "SwapBlocked", cardId: "swap", toSquad: to.name, reason: "immunity" },
         ],
       };
     }
@@ -97,7 +97,7 @@ export const joTeraHaiWoMera: PowerCard = {
     if (!pair) {
       // No eligible players — the swap card is NOT consumed (re-playable).
       return {
-        events: [{ type: "SwapBlocked", cardId: "swap", toSquad: to.name }],
+        events: [{ type: "SwapBlocked", cardId: "swap", toSquad: to.name, reason: "no-players" }],
       };
     }
 

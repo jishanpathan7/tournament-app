@@ -16,12 +16,12 @@
  */
 
 import type { UnassignedRegistrationView } from "@/features/squads/types";
-import { ALL_POWER_KINDS, POWER_META, type PowerCardId } from "./power-cards";
+import { ALL_POWER_KINDS, type PowerCardId } from "./power-cards";
 
-// Card metadata + the wheel-eligible id list are now DERIVED from the registry
-// (see ./power-cards). Re-exported here so existing importers keep working during
-// the migration; they will point at ./power-cards directly once callers move over.
-export { ALL_POWER_KINDS, POWER_META };
+// The wheel-eligible id list is DERIVED from the registry (see ./power-cards).
+// Re-exported here for buildWheelSlots' callers; card metadata is read directly
+// from the registry via getCard.
+export { ALL_POWER_KINDS };
 
 /** A registered power-card id. Kept as a named alias for existing call sites. */
 export type PowerKind = PowerCardId;
