@@ -3,10 +3,8 @@
 import gsap from "gsap";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
-import {
-  POWER_META,
-  type WheelSlot,
-} from "@/features/squads/components/draft-ceremony/power-slots";
+import { getCard } from "@/features/squads/components/draft-ceremony/power-cards";
+import type { WheelSlot } from "@/features/squads/components/draft-ceremony/power-slots";
 
 const WHEEL_COLORS = [
   "#4f6bf6", // --candy
@@ -104,7 +102,7 @@ interface Props {
 /** Label for a slot — player name or the power's short label. */
 function slotLabel(slot: WheelSlot, n: number): string {
   if (slot.type === "power") {
-    const meta = POWER_META[slot.power];
+    const meta = getCard(slot.power);
     return `${meta.emoji} ${meta.label}`;
   }
   return label(slot.player.displayName, n);
@@ -314,7 +312,7 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                   const end = start + segAngle;
                   const mid = start + segAngle / 2;
                   const isPower = slot.type === "power";
-                  const color = isPower ? POWER_META[slot.power].color : segColor(i);
+                  const color = isPower ? getCard(slot.power).color : segColor(i);
                   const isHL = highlightIndex === i;
 
                   return (

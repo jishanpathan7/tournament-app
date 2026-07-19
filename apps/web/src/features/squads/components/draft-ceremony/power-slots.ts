@@ -16,8 +16,15 @@
  */
 
 import type { UnassignedRegistrationView } from "@/features/squads/types";
+import { ALL_POWER_KINDS, POWER_META, type PowerCardId } from "./power-cards";
 
-export type PowerKind = "respin" | "meme" | "protection" | "swap";
+// Card metadata + the wheel-eligible id list are now DERIVED from the registry
+// (see ./power-cards). Re-exported here so existing importers keep working during
+// the migration; they will point at ./power-cards directly once callers move over.
+export { ALL_POWER_KINDS, POWER_META };
+
+/** A registered power-card id. Kept as a named alias for existing call sites. */
+export type PowerKind = PowerCardId;
 
 /** Skill-group key for per-wheel power-slot counts (null level → "unknown"). */
 export type SkillKey = "advanced" | "intermediate" | "beginner" | "unknown";
@@ -30,56 +37,6 @@ export function skillKeyOf(skillLevel: string | null): SkillKey {
   }
   return "unknown";
 }
-
-export interface PowerMeta {
-  kind: PowerKind;
-  /** Short label shown on the wheel slot. */
-  label: string;
-  /** Title shown in the resolve overlay. */
-  title: string;
-  /** One-line explanation for the settings panel. */
-  hint: string;
-  emoji: string;
-  /** Slot fill color on the wheel. */
-  color: string;
-}
-
-export const POWER_META: Record<PowerKind, PowerMeta> = {
-  respin: {
-    kind: "respin",
-    label: "First Ball Trial",
-    title: "First Ball Trial",
-    hint: "A held re-spin the team can use on its own next spin",
-    emoji: "🎯",
-    color: "#4f6bf6",
-  },
-  meme: {
-    kind: "meme",
-    label: "Meme Drop",
-    title: "Meme Drop",
-    hint: "Play any time for a cosmetic meme moment",
-    emoji: "😂",
-    color: "#9db0fb",
-  },
-  protection: {
-    kind: "protection",
-    label: "Dabur Immunity",
-    title: "Dabur Immunity",
-    hint: "Passive shield — blocks an incoming swap",
-    emoji: "🛡️",
-    color: "#10b981",
-  },
-  swap: {
-    kind: "swap",
-    label: "Jo Tera Hai Wo Mera",
-    title: "Jo Tera Hai Wo Mera!",
-    hint: "Swap players with a team — blocked by their Dabur Immunity",
-    emoji: "🔄",
-    color: "#db2777",
-  },
-};
-
-export const ALL_POWER_KINDS: PowerKind[] = ["respin", "meme", "protection", "swap"];
 
 /** Default meme pack (custom organizer uploads are a backend follow-up). */
 export interface Meme {

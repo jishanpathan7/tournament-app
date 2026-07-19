@@ -16,10 +16,10 @@ import {
   type CeremonySettings,
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
+import { getCard } from "@/features/squads/components/draft-ceremony/power-cards";
 import {
   buildWheelSlots,
   isPlayerSlot,
-  POWER_META,
   randomMeme,
   skillKeyOf,
   SKILL_KEYS,
@@ -852,17 +852,17 @@ function TeamCardsPanel({
                         e.stopPropagation();
                         if (playable) onCardClick(s.id, k);
                       }}
-                      title={`${POWER_META[k].label}${playable ? " — click to play" : " (passive)"}`}
+                      title={`${getCard(k).label}${playable ? " — click to play" : " (passive)"}`}
                       className="flex h-6 w-6 items-center justify-center rounded-md text-sm transition-transform hover:scale-110"
                       style={{
-                        background: `${POWER_META[k].color}22`,
+                        background: `${getCard(k).color}22`,
                         border: armed
-                          ? `1.5px solid ${POWER_META[k].color}`
+                          ? `1.5px solid ${getCard(k).color}`
                           : "1px solid transparent",
                         cursor: playable ? "pointer" : "default",
                       }}
                     >
-                      {POWER_META[k].emoji}
+                      {getCard(k).emoji}
                     </button>
                   );
                 })
@@ -1048,7 +1048,7 @@ function MainScreen({
         landedPowerId = landed.id;
         setHighlightIndex(target);
         onAwardCard(currentSquad.id, landed.power);
-        const meta = POWER_META[landed.power];
+        const meta = getCard(landed.power);
         setPowerEvent({
           kind: landed.power,
           detail: `${currentSquad.name} drew ${meta.emoji} ${meta.label}`,
@@ -1768,7 +1768,7 @@ function TeamCompleteOverlay({
 
 function PowerOverlay({ event }: { event: PowerEvent }) {
   const ref = useRef<HTMLDivElement>(null);
-  const meta = POWER_META[event.kind];
+  const meta = getCard(event.kind);
 
   useEffect(() => {
     if (!ref.current || prefersReducedMotion()) return;
