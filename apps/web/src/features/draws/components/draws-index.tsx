@@ -1,7 +1,6 @@
 "use client";
 
-import type { StageResponse } from "@tournament/api-client";
-import { CheckCircle2, ChevronRight, Circle, GitMerge, Layers } from "lucide-react";
+import { GitMerge, Layers } from "lucide-react";
 import Link from "next/link";
 
 import { EmptyState } from "@/components/common/empty-state";
@@ -9,109 +8,83 @@ import { ErrorState } from "@/components/common/error-state";
 import { LoadingPanel } from "@/components/common/loading";
 import { PageHeader } from "@/components/common/page-header";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { FranchiseTiesPage } from "@/features/franchise-ties/components/franchise-ties-board";
+import { useMemo } from "react";
+
 import { useSquads } from "@/features/squads/use-squads";
-import { useDivisions, useStages } from "@/features/tournaments/use-tournaments";
-
-function StageRow({
-  tournamentId,
-  divisionId,
-  stage,
-}: {
-  tournamentId: string;
-  divisionId: string;
-  stage: StageResponse;
-}) {
-  const href = `/console/tournaments/${tournamentId}/divisions/${divisionId}/stages/${stage.id}/draw`;
-  const typeLabel =
-    stage.type === "single_elimination"
-      ? "Knockout"
-      : stage.type === "round_robin"
-        ? "Round Robin"
-        : stage.type;
-
-  return (
-    <Link
-      href={href}
-      className="border-border hover:bg-muted/50 flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors"
-    >
-      {stage.drawn ? (
-        <CheckCircle2 className="text-mint-dark h-4 w-4 shrink-0" strokeWidth={2.25} />
-      ) : (
-        <Circle className="text-muted-foreground h-4 w-4 shrink-0" strokeWidth={2.25} />
-      )}
-      <div className="flex flex-1 items-center gap-2 overflow-hidden">
-        <span className="truncate text-sm font-semibold">{typeLabel}</span>
-        <Badge tone={stage.type === "single_elimination" ? "candy" : "mint"} className="text-2xs">
-          {typeLabel}
-        </Badge>
-        {stage.drawn ? (
-          <Badge tone="mint" className="text-2xs">
-            Drawn
-          </Badge>
-        ) : (
-          <Badge tone="muted" className="text-2xs">
-            Not drawn
-          </Badge>
-        )}
-      </div>
-      <ChevronRight className="text-muted-foreground h-4 w-4 shrink-0" strokeWidth={2.25} />
-    </Link>
-  );
-}
+import { useParticipants } from "@/features/registrations/use-registrations";
+import { DrawSetupPanel } from "@/features/draws/components/draw-setup-panel";
+import { useCan } from "@/hooks/use-permissions";
+import { ACTIONS } from "@/lib/permissions";
+import { useDivisions, useStages, useTournament } from "@/features/tournaments/use-tournaments";
 
 function DivisionDrawCard({
   tournamentId,
   divisionId,
   divisionName,
+  tournamentSlug,
 }: {
   tournamentId: string;
   divisionId: string;
   divisionName: string;
+  tournamentSlug?: string;
 }) {
   const { data: stages, isLoading } = useStages(divisionId);
+  const participants = useParticipants(divisionId);
+  const can = useCan();
+  const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
+  const approvedCount = useMemo(
+    () => (participants.data ?? []).filter((p) => p.status === "approved").length,
+    [participants.data],
+  );
 
+  // No outer Card: DrawSetupPanel is a Card itself, so wrapping would nest them.
   return (
-    <Card>
-      <CardContent className="pt-4">
-        <p className="text-muted-foreground text-2xs mb-3 font-mono font-semibold uppercase tracking-[0.18em]">
-          {divisionName}
-        </p>
-        {isLoading ? (
-          <p className="text-muted-foreground text-sm">Loading stages…</p>
-        ) : !stages || stages.length === 0 ? (
-          <EmptyState
-            icon={Layers}
-            title="No stages"
-            description="Add stages to this division in Setup to generate a draw."
-            action={
-              <Button asChild tone="paper" size="sm">
-                <Link href={`/console/tournaments/${tournamentId}/setup`}>Go to Setup →</Link>
-              </Button>
-            }
-            className="py-6"
-          />
-        ) : (
-          <div className="flex flex-col gap-2">
-            {stages.map((stage) => (
-              <StageRow
-                key={stage.id}
-                tournamentId={tournamentId}
-                divisionId={divisionId}
-                stage={stage}
-              />
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+    <section className="flex flex-col gap-2">
+      <p className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
+        {divisionName}
+      </p>
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Loading stages…</p>
+      ) : !stages || stages.length === 0 ? (
+        <Card>
+          <CardContent className="pt-4">
+            <EmptyState
+              icon={Layers}
+              title="No stages"
+              description="Add stages to this division in Setup to generate a draw."
+              action={
+                <Button asChild tone="paper" size="sm">
+                  <Link href={`/console/tournaments/${tournamentId}/setup`}>Go to Setup →</Link>
+                </Button>
+              }
+              className="py-6"
+            />
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="flex flex-col gap-3">
+          {stages.map((stage) => (
+            <DrawSetupPanel
+              key={stage.id}
+              stage={stage}
+              divisionId={divisionId}
+              tournamentId={tournamentId}
+              approvedCount={approvedCount}
+              canManage={canManage}
+              tournamentSlug={tournamentSlug}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
 export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
   const { data: divisions, isLoading, isError, refetch } = useDivisions(tournamentId);
+  const tournament = useTournament(tournamentId);
   const squads = useSquads(tournamentId);
   const isTeamFormat = (squads.data?.summary.squadCount ?? 0) > 0;
 
@@ -135,6 +108,7 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
                 tournamentId={tournamentId}
                 divisionId={division.id}
                 divisionName={division.name}
+                tournamentSlug={tournament.data?.slug}
               />
             ))}
           </section>
@@ -169,6 +143,7 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
               tournamentId={tournamentId}
               divisionId={division.id}
               divisionName={division.name}
+              tournamentSlug={tournament.data?.slug}
             />
           ))}
         </div>
