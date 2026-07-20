@@ -25,12 +25,14 @@ function DivisionDrawCard({
   divisionName,
   participantType,
   tournamentSlug,
+  isFranchise = false,
 }: {
   tournamentId: string;
   divisionId: string;
   divisionName: string;
   participantType?: string;
   tournamentSlug?: string;
+  isFranchise?: boolean;
 }) {
   const { data: stages, isLoading } = useStages(divisionId);
   const participants = useParticipants(divisionId);
@@ -82,6 +84,7 @@ function DivisionDrawCard({
               approvedCount={approvedCount}
               canManage={canManage}
               tournamentSlug={tournamentSlug}
+              isFranchise={isFranchise}
             />
           ))}
         </div>
@@ -108,7 +111,7 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
         {divisions && divisions.length > 0 && (
           <section className="flex flex-col gap-4">
             <p className="text-muted-foreground text-2xs font-mono font-semibold uppercase tracking-[0.18em]">
-              Division stages
+              Match settings
             </p>
             {divisions.map((division) => (
               <DivisionDrawCard
@@ -118,6 +121,7 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
                 divisionName={division.name}
                 participantType={division.participantType}
                 tournamentSlug={tournament.data?.slug}
+                isFranchise
               />
             ))}
           </section>

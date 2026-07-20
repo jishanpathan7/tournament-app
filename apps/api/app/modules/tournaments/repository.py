@@ -213,7 +213,11 @@ async def approved_participants(
     if kind is not None:
         stmt = stmt.where(Participant.kind == kind)
     return (
-        (await session.execute(stmt.order_by(Participant.seed.nulls_last(), Participant.created_at)))
+        (
+            await session.execute(
+                stmt.order_by(Participant.seed.nulls_last(), Participant.created_at)
+            )
+        )
         .scalars()
         .all()
     )

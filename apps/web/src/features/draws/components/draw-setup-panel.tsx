@@ -41,6 +41,7 @@ export function DrawSetupPanel({
   approvedCount,
   canManage,
   tournamentSlug,
+  isFranchise = false,
 }: {
   stage: StageResponse;
   divisionId: string;
@@ -48,6 +49,8 @@ export function DrawSetupPanel({
   approvedCount: number;
   canManage: boolean;
   tournamentSlug?: string;
+  /** Teams compete here — fixtures come from the team draw, not this panel. */
+  isFranchise?: boolean;
 }) {
   const [generateOpen, setGenerateOpen] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
@@ -166,29 +169,38 @@ export function DrawSetupPanel({
           </div>
         </div>
 
-        <ul className="flex flex-col gap-1.5 text-sm">
-          {readiness.reasons.map((reason) => (
-            <li key={reason} className="text-pink-dark flex items-start gap-2">
-              <XCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
-              {reason}
-            </li>
-          ))}
-          {readiness.ready ? (
-            <li className="text-mint-dark flex items-start gap-2">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
-              Ready to generate
-            </li>
-          ) : null}
-          {readiness.warnings.map((warning) => (
-            <li key={warning} className="text-muted-foreground flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
-              {warning}
-            </li>
-          ))}
-        </ul>
+        {isFranchise ? (
+          <p className="text-muted-foreground text-sm">
+            Teams compete in this division, so fixtures are created by the team draw above. These
+            settings apply to every match played inside a fixture.
+          </p>
+        ) : null}
+
+        {isFranchise ? null : (
+          <ul className="flex flex-col gap-1.5 text-sm">
+            {readiness.reasons.map((reason) => (
+              <li key={reason} className="text-pink-dark flex items-start gap-2">
+                <XCircle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
+                {reason}
+              </li>
+            ))}
+            {readiness.ready ? (
+              <li className="text-mint-dark flex items-start gap-2">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
+                Ready to generate
+              </li>
+            ) : null}
+            {readiness.warnings.map((warning) => (
+              <li key={warning} className="text-muted-foreground flex items-start gap-2">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" strokeWidth={2.25} />
+                {warning}
+              </li>
+            ))}
+          </ul>
+        )}
 
         <div className="flex flex-wrap items-center gap-2">
-          {canManage ? (
+          {canManage && !isFranchise ? (
             <>
               {!stage.drawn ? (
                 <Button
