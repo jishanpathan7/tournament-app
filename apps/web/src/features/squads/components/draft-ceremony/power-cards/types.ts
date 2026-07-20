@@ -14,7 +14,7 @@ export type PlayMode =
   | "passive"
   /** Played on the owner's own turn (First Ball Trial re-spin). */
   | "self"
-  /** Played any time, no target needed (Meme Drop). */
+  /** Played any time, no target needed. */
   | "instant"
   /** Played onto another team (Jo Tera Hai Wo Mera swap). */
   | "targeted";
@@ -81,12 +81,6 @@ export interface CardContext {
   port: MutationPort;
 }
 
-/** A cosmetic meme (plain data). Meme content lives in the Meme Drop card module. */
-export interface Meme {
-  emoji: string;
-  caption: string;
-}
-
 /** Result of a `preview()` — plain data the dialog renders. */
 export interface CardPreview {
   /** Whether the play is currently possible (else `reason` explains why not). */
@@ -131,7 +125,7 @@ export type PowerEvent =
   | { type: "CardAwarded"; squadId: string; squadName: string; cardId: PowerCardId }
   | { type: "CardConsumed"; squadId: string; cardId: PowerCardId }
   | { type: "CardPreviewRequested"; cardId: PowerCardId; preview: CardPreview }
-  | { type: "CardPlayed"; squadId: string; cardId: PowerCardId; detail: string; meme?: Meme }
+  | { type: "CardPlayed"; squadId: string; cardId: PowerCardId; detail: string }
   | {
       type: "SwapCompleted";
       cardId: PowerCardId;

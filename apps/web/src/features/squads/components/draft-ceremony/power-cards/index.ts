@@ -10,7 +10,6 @@
 // Side-effect imports: each card calls registerPowerCard on load.
 // Order here fixes ALL_POWER_KINDS order (kept identical to the legacy array).
 import "./cards/first-ball-trial";
-import "./cards/meme-drop";
 import "./cards/dabur-immunity";
 import "./cards/jo-tera-hai-wo-mera";
 
@@ -34,7 +33,6 @@ export type {
   CardPreview,
   CardResult,
   MutationPort,
-  Meme,
 } from "./types";
 
 /** Registry-derived list of wheel-eligible card ids (drop-in for ALL_POWER_KINDS). */

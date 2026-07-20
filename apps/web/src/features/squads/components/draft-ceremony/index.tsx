@@ -4,7 +4,7 @@ import gsap from "gsap";
 import { ArrowLeft, ChevronRight, RotateCcw, Settings2, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import ReactConfetti from "react-confetti";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { dur, ease, stagger } from "@/lib/motion";
 import {
@@ -26,7 +26,6 @@ import {
   isPlayerSlot,
   skillKeyOf,
   SKILL_KEYS,
-  type Meme,
   type PowerKind,
   type WheelSlot,
 } from "@/features/squads/components/draft-ceremony/power-slots";
@@ -46,15 +45,13 @@ function scaled(seconds: number, speed: CeremonySpeed) {
   return seconds * SPEED_MULTIPLIER[speed];
 }
 
-/** A power moment to announce (card drawn, or a played meme). */
+/** A power moment to announce. */
 interface PowerEvent {
   kind: PowerKind;
   /** Line under the title, e.g. "Team A drew 🔄 Jo Tera Hai Wo Mera". */
   detail: string;
   /** Optional reassurance line, e.g. "Bonus card — no pick lost". */
   note?: string;
-  /** Present when a Meme Drop card is played. */
-  meme?: Meme;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -1214,6 +1211,7 @@ function MainScreen({
   activity,
   undoableEntry,
   onUndoLastPlay,
+  onUnassignLast,
   onAwardCard,
   onPlayCard,
   onPreviewCard,
@@ -1240,6 +1238,7 @@ function MainScreen({
   activity: ActivityEntry[];
   undoableEntry: ActivityEntry | null;
   onUndoLastPlay: () => Promise<EnginePowerEvent[]>;
+  onUnassignLast: () => Promise<{ registrationId: string; squadId: string } | null>;
   onAwardCard: (squadId: string, cardId: PowerKind) => EnginePowerEvent[];
   onPlayCard: (
     cardId: PowerKind,
@@ -1274,6 +1273,14 @@ function MainScreen({
   // Teams that have already had their 3·2·1 moment (countdown is once per team).
   const countedDownTeamsRef = useRef<Set<string>>(new Set());
   const [isUndoing, setIsUndoing] = useState(false);
+  // The pick just made, kept so a self-mode card can re-roll it. Cleared as soon
+  // as the next spin starts — you can only re-roll the pick you just saw.
+  const [lastPick, setLastPick] = useState<{
+    squadId: string;
+    player: UnassignedRegistrationView;
+    slotIndex: number;
+  } | null>(null);
+  const [isRerolling, setIsRerolling] = useState(false);
   // Resolver for the current power-overlay hold, so it can be cut short.
   const dismissHoldRef = useRef<(() => void) | null>(null);
 
@@ -1326,6 +1333,15 @@ function MainScreen({
     !pendingPlay;
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
 
+  // Cards the organizer left switched on — only these can appear on the wheel.
+  const enabledCardIds = useMemo(
+    () =>
+      allCards()
+        .filter((c) => c.wheelEligible && !settings.disabledCardIds.includes(c.id))
+        .map((c) => c.id),
+    [settings.disabledCardIds],
+  );
+
   // Organizer sets exactly how many power slots each skill-level wheel gets.
   const powerCount = powersEnabled
     ? (settings.powerSlotsBySkill[skillKeyOf(resolvedSkill)] ?? 0)
@@ -1340,12 +1356,12 @@ function MainScreen({
   useEffect(() => {
     const needsRebuild = builtForSkillRef.current !== resolvedSkill || wheelSlots.length === 0;
     if (!needsRebuild || pool.length === 0) return;
-    setWheelSlots(buildWheelSlots(pool, powerCount));
+    setWheelSlots(buildWheelSlots(pool, powerCount, enabledCardIds));
     builtForSkillRef.current = resolvedSkill;
     // Guarded by the ref + length check so `pool` identity churn does NOT rebuild
     // (which would reshuffle the powers). Player removal is done in runSpin.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedSkill, pool, powerCount]);
+  }, [resolvedSkill, pool, powerCount, enabledCardIds]);
 
   // How many power slots are actually still on the wheel right now — the teaser
   // reads this, not the fixed setting, so it stops counting consumed slots.
@@ -1412,6 +1428,8 @@ function MainScreen({
 
     setSpinPhase("spinning");
     setHighlightIndex(null);
+    // A new spin retires the previous result — only the latest is re-rollable.
+    setLastPick(null);
 
     let target: number;
     let landedPowerId: string | null = null;
@@ -1466,6 +1484,9 @@ function MainScreen({
 
     // Keep the wheel FIXED: drop only the picked player and the power that was just
     // collected. Everything else stays exactly where it is.
+    const pickedSlotIndex = slots.findIndex(
+      (s) => s.type === "player" && s.id === player.registrationId,
+    );
     setWheelSlots((prev) =>
       prev.filter((s) => {
         if (s.type === "player" && s.id === player.registrationId) return false;
@@ -1473,6 +1494,9 @@ function MainScreen({
         return true;
       }),
     );
+
+    // Remember the pick so a self-mode card (First Ball Trial) can re-roll it.
+    setLastPick({ squadId: result.squadId, player, slotIndex: pickedSlotIndex });
 
     setBurstKey((k) => k + 1);
     playFanfare();
@@ -1529,7 +1553,7 @@ function MainScreen({
 
     let display: PowerEvent | null = null;
     if (played) {
-      display = { kind: played.cardId, detail: played.detail, meme: played.meme };
+      display = { kind: played.cardId, detail: played.detail };
     } else if (swapDone) {
       display = { kind: swapDone.cardId, detail: `${swapDone.aName}  ⇄  ${swapDone.bName}` };
     } else if (blocked) {
@@ -1591,6 +1615,41 @@ function MainScreen({
       targetSquadId: targetId,
       preview,
     });
+  }
+
+  /**
+   * Play a self-mode card (First Ball Trial) to re-roll the pick just revealed.
+   *
+   * The card is only meaningful AFTER a result is on the table — there is nothing
+   * to re-roll before the wheel stops. So this takes the player back off the team,
+   * returns them to the wheel, spends the card, and spins that team again.
+   */
+  async function handleReroll(cardId: PowerKind) {
+    if (isRerolling || !lastPick) return;
+    setIsRerolling(true);
+    try {
+      const reverted = await onUnassignLast();
+      if (!reverted) return; // server refused — card is not spent
+
+      // Put the player back on the wheel where they were.
+      const returning = lastPick;
+      setWheelSlots((prev) => {
+        const slot: WheelSlot = {
+          type: "player",
+          id: returning.player.registrationId,
+          player: returning.player,
+        };
+        const next = [...prev];
+        next.splice(Math.min(Math.max(returning.slotIndex, 0), next.length), 0, slot);
+        return next;
+      });
+
+      await onPlayCard(cardId, returning.squadId);
+      setLastPick(null);
+      await runSpin();
+    } finally {
+      setIsRerolling(false);
+    }
   }
 
   /** Reverse the most recent reversible play and announce it to the room. */
@@ -1715,29 +1774,32 @@ function MainScreen({
                   </span>
                 )}
 
-                {/* Self-mode cards (e.g. First Ball Trial) play on this team's own
-                    spin — rendered generically from any held card whose mode is
-                    "self", then the wheel re-spins. No card id is hardcoded. */}
-                {currentSquad &&
+                {/* Self-mode cards (e.g. First Ball Trial) re-roll the pick that
+                    was just revealed — offered only while that result is the
+                    latest one, since there is nothing to re-roll before then.
+                    Rendered from any held card whose mode is "self". */}
+                {lastPick &&
                   spinPhase === "idle" &&
-                  (teamCards[currentSquad.id] ?? [])
+                  (teamCards[lastPick.squadId] ?? [])
                     .filter((id) => getCard(id).mode === "self")
+                    .slice(0, 1)
                     .map((id) => {
                       const card = getCard(id);
                       return (
                         <button
                           key={id}
-                          onClick={() => {
-                            void onPlayCard(id, currentSquad.id).then(() => runSpin());
-                          }}
+                          onClick={() => void handleReroll(id)}
+                          disabled={isRerolling}
                           title={card.hint}
-                          className="flex flex-col items-center gap-0.5 rounded-2xl border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-[#9db0fb] transition-transform hover:scale-105"
+                          className="flex flex-col items-center gap-0.5 rounded-2xl border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-[#9db0fb] transition-transform hover:scale-105 disabled:opacity-50"
                         >
                           <span className="text-xs font-black">
-                            {card.emoji} Use {card.label}
+                            {isRerolling
+                              ? "Re-rolling…"
+                              : `${card.emoji} Re-roll with ${card.label}`}
                           </span>
                           <span className="text-2xs font-semibold text-[#9db0fb]/70">
-                            Re-rolls this pick — spins again for a different player
+                            Puts {lastPick.player.displayName} back and spins again
                           </span>
                         </button>
                       );
@@ -2010,19 +2072,54 @@ function SettingsPanel({
               </div>
             </div>
           ))}
-          {/* Listed from the registry so a newly registered card shows up here
-              automatically — never hand-maintain this list. */}
-          <div className="flex flex-col gap-1 px-3 pb-1 pt-2">
+          {/* Per-card on/off, listed from the registry so a newly registered card
+              appears here automatically and is enabled by default. */}
+          <p className="px-3 pb-1 pt-3 text-xs font-semibold text-white/50">Cards in play</p>
+          <div className="flex flex-col gap-1 px-1 pb-1">
             {allCards()
               .filter((c) => c.wheelEligible)
-              .map((c) => (
-                <p key={c.id} className="text-xs text-white/35">
-                  <span className="font-semibold text-white/55">
-                    {c.emoji} {c.label}
-                  </span>{" "}
-                  — {c.hint}
-                </p>
-              ))}
+              .map((c) => {
+                const on = !settings.disabledCardIds.includes(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() =>
+                      onUpdate({
+                        disabledCardIds: on
+                          ? [...settings.disabledCardIds, c.id]
+                          : settings.disabledCardIds.filter((id) => id !== c.id),
+                      })
+                    }
+                    className="flex w-full items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/5"
+                  >
+                    <span
+                      className="relative mt-0.5 h-4 w-7 shrink-0 rounded-full transition-colors"
+                      style={{ background: on ? c.color : "rgba(255,255,255,0.15)" }}
+                    >
+                      <span
+                        className="absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all"
+                        style={{ left: on ? "0.9rem" : "0.125rem" }}
+                      />
+                    </span>
+                    <span className="flex flex-col">
+                      <span
+                        className="text-xs font-bold"
+                        style={{ color: on ? "white" : "rgba(255,255,255,0.4)" }}
+                      >
+                        {c.emoji} {c.label}
+                      </span>
+                      <span className="text-2xs leading-snug text-white/35">{c.hint}</span>
+                    </span>
+                  </button>
+                );
+              })}
+            {settings.disabledCardIds.length >=
+              allCards().filter((c) => c.wheelEligible).length && (
+              <p className="text-2xs px-2 py-1 font-semibold text-[#fbbf24]">
+                All cards are off — the wheel will have no power slots.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -2330,11 +2427,6 @@ function PowerOverlay({ event, onDismiss }: { event: PowerEvent; onDismiss: () =
           Power Card
         </p>
         <p className="text-5xl font-black text-white">{meta.title}</p>
-        {event.meme && (
-          <p className="text-xl font-bold text-white/80">
-            {event.meme.emoji} {event.meme.caption}
-          </p>
-        )}
         <p className="text-xl font-bold text-white/85">{event.detail}</p>
         {event.note && <p className="text-base font-bold text-[#34d399]">{event.note}</p>}
         <p className="text-2xs font-mono uppercase tracking-widest text-white/30">
@@ -2479,6 +2571,7 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           activity={ceremony.activity}
           undoableEntry={ceremony.undoableEntry}
           onUndoLastPlay={ceremony.undoLastPlay}
+          onUnassignLast={ceremony.unassignLast}
           onAwardCard={ceremony.awardCard}
           onPlayCard={ceremony.playCard}
           onPreviewCard={ceremony.previewCard}

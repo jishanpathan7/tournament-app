@@ -19,7 +19,7 @@ function session(over: Partial<CeremonySession> = {}): CeremonySession {
     totalPicks: 2,
     pickIndex: 1,
     history: [],
-    teamCards: { A: ["meme"] },
+    teamCards: { A: ["respin"] },
     spentCards: {},
     activity: [],
     assignedIds: ["r1"],
@@ -39,7 +39,7 @@ describe("ceremony session persistence", () => {
     saveSession(TID, session());
     const loaded = loadSession(TID);
     expect(loaded?.pickIndex).toBe(1);
-    expect(loaded?.teamCards).toEqual({ A: ["meme"] });
+    expect(loaded?.teamCards).toEqual({ A: ["respin"] });
     expect(loaded?.assignedIds).toEqual(["r1"]);
     expect(loaded?.draftOrder).toEqual(["A", "B"]);
   });
@@ -78,7 +78,17 @@ describe("ceremony session persistence", () => {
     const loaded = loadSession(TID);
     expect(loaded).not.toBeNull();
     expect(loaded?.spentCards).toEqual({});
-    expect(loaded?.teamCards).toEqual({ A: ["meme"] });
+    expect(loaded?.teamCards).toEqual({ A: ["respin"] });
+  });
+
+  it("drops cards that no longer exist in the registry", () => {
+    // A card retired between sessions must not crash the restore — the rest of
+    // the ceremony is far more valuable than one stale card id.
+    saveSession(TID, session({ teamCards: { A: ["respin", "retired-card"] } }));
+
+    const loaded = loadSession(TID);
+    expect(loaded).not.toBeNull();
+    expect(loaded?.teamCards).toEqual({ A: ["respin"] });
   });
 
   it("clears on demand", () => {

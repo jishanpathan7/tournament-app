@@ -37,7 +37,12 @@ import type {
   SquadView,
   UnassignedRegistrationView,
 } from "@/features/squads/types";
-import { useAssignSquadMember, useSquads, useSwapSquadMembers } from "@/features/squads/use-squads";
+import {
+  useAssignSquadMember,
+  useRemoveSquadMember,
+  useSquads,
+  useSwapSquadMembers,
+} from "@/features/squads/use-squads";
 import { errorMessage } from "@/lib/problem";
 
 /** One power moment in the ceremony's activity timeline. */
@@ -144,6 +149,7 @@ export function computeDraftOrder(
 export function useCeremony(tournamentId: string) {
   const squadsQuery = useSquads(tournamentId);
   const assignMutation = useAssignSquadMember(tournamentId);
+  const removeMutation = useRemoveSquadMember(tournamentId);
   const swapMutation = useSwapSquadMembers(tournamentId);
 
   const [phase, setPhase] = useState<CeremonyPhase>("intro");
@@ -268,6 +274,26 @@ export function useCeremony(tournamentId: string) {
   const totalRemaining = allUnassigned.filter(
     (u) => !assignedIds.current.has(u.registrationId),
   ).length;
+
+  // Roll on to the next skill tier once the current one is drafted out.
+  //
+  // The tier used to be sticky: after picking a tab it never moved, and the tab
+  // strip hides itself once a single group is left — so finishing Advanced and
+  // Intermediate stranded the organizer on an empty wheel with the remaining
+  // Beginners unreachable. The ceremony should flow tier to tier by itself.
+  useEffect(() => {
+    if (phase !== "main") return;
+    if (pool.length > 0 || totalRemaining === 0) return;
+
+    const nextGroup = skillGroups.find((group) =>
+      allUnassigned.some(
+        (u) => !assignedIds.current.has(u.registrationId) && u.skillLevel === group,
+      ),
+    );
+    if (nextGroup !== undefined && nextGroup !== resolvedSkill) setActiveSkill(nextGroup);
+    // Arrays are rebuilt each render; the counts are the meaningful triggers.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, pool.length, totalRemaining, resolvedSkill]);
 
   // Resolve the current squad from the pre-computed sequence.
   const currentSquadId = draftOrderRef.current[pickIndex] ?? null;
@@ -508,9 +534,28 @@ export function useCeremony(tournamentId: string) {
     }
   }
 
-  const undo = useCallback(() => {
+  /**
+   * Take back the most recent pick — on the SERVER as well as locally.
+   *
+   * Rolling back only local state left the player assigned in the squad, so they
+   * never returned to the pool and the pick could not actually be redone. Both
+   * "Undo last pick" and a First Ball Trial re-roll depend on this.
+   *
+   * Returns the reverted assignment so the caller can re-spin for that team.
+   */
+  const unassignLast = useCallback(async (): Promise<Assignment | null> => {
     const last = history[history.length - 1];
-    if (!last) return;
+    if (!last) return null;
+
+    try {
+      await removeMutation.mutateAsync({
+        squadId: last.squadId,
+        registrationId: last.registrationId,
+      });
+    } catch (e) {
+      toast.error(errorMessage(e, "Couldn't take back that pick"));
+      return null;
+    }
 
     assignedIds.current = new Set(
       [...assignedIds.current].filter((id) => id !== last.registrationId),
@@ -520,8 +565,13 @@ export function useCeremony(tournamentId: string) {
     setPickIndex((p) => Math.max(0, p - 1));
     setJustCompletedSquadId(null);
     if (phase === "complete") setPhase("main");
-    squadsQuery.refetch();
-  }, [history, phase, squadsQuery]);
+    await squadsQuery.refetch();
+    return last;
+  }, [history, phase, squadsQuery, removeMutation]);
+
+  const undo = useCallback(() => {
+    void unassignLast();
+  }, [unassignLast]);
 
   function changeSkill(skill: string | null) {
     setActiveSkill(skill);
@@ -556,6 +606,7 @@ export function useCeremony(tournamentId: string) {
     activity,
     undoableEntry,
     undoLastPlay,
+    unassignLast,
     awardCard,
     canPlayCard,
     previewCard,

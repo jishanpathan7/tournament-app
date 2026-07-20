@@ -9,7 +9,6 @@
  * V1 ships exactly four powers. Landing on one hands the card to the team on the
  * clock; teams hold their cards and play them later:
  *   🎯 First Ball Trial  — a held re-spin the team can use on its own next spin
- *   😂 Meme Drop         — play any time for a cosmetic meme moment
  *   🛡️ Dabur Immunity    — passive shield; blocks an incoming swap (consumed)
  *   🔄 Jo Tera Hai Wo Mera — swap two players with a target team; blocked if the
  *                           target holds Dabur Immunity
@@ -38,27 +37,6 @@ export function skillKeyOf(skillLevel: string | null): SkillKey {
   return "unknown";
 }
 
-/** Default meme pack (custom organizer uploads are a backend follow-up). */
-export interface Meme {
-  emoji: string;
-  caption: string;
-}
-
-export const DEFAULT_MEMES: Meme[] = [
-  { emoji: "🐐", caption: "GOAT pick incoming" },
-  { emoji: "🔥", caption: "This one's on fire" },
-  { emoji: "😱", caption: "No wayyy" },
-  { emoji: "🍿", caption: "Grab the popcorn" },
-  { emoji: "💀", caption: "It's over for the other teams" },
-  { emoji: "🤝", caption: "Respect the draft" },
-  { emoji: "🚀", caption: "To the moon" },
-  { emoji: "🎪", caption: "Welcome to the circus" },
-];
-
-export function randomMeme(): Meme {
-  return DEFAULT_MEMES[Math.floor(Math.random() * DEFAULT_MEMES.length)]!;
-}
-
 export type WheelSlot =
   | { type: "player"; id: string; player: UnassignedRegistrationView }
   | { type: "power"; id: string; power: PowerKind };
@@ -72,13 +50,14 @@ export function isPlayerSlot(
 /**
  * Build the wheel's slot list: all available players plus exactly `powerCount`
  * power slots (organizer-controlled, per skill level), spread out so no two
- * powers sit adjacent. Each power's kind is chosen at random from the four.
- * Returns players-only when the count is 0 or the pool is too small to hide a
- * power in.
+ * powers sit adjacent. Each power's kind is drawn at random from `allowedCards`
+ * — the cards the organizer left switched on. Returns players-only when the
+ * count is 0, no card is enabled, or the pool is too small to hide a power in.
  */
 export function buildWheelSlots(
   pool: UnassignedRegistrationView[],
   powerCount: number,
+  allowedCards: PowerCardId[] = ALL_POWER_KINDS,
 ): WheelSlot[] {
   const players: WheelSlot[] = pool.map((p) => ({
     type: "player",
@@ -86,7 +65,7 @@ export function buildWheelSlots(
     player: p,
   }));
 
-  if (powerCount <= 0 || players.length < 2) return players;
+  if (powerCount <= 0 || players.length < 2 || allowedCards.length === 0) return players;
 
   // Never insert more powers than players (keeps the wheel mostly players).
   const count = Math.min(powerCount, players.length);
@@ -94,7 +73,7 @@ export function buildWheelSlots(
 
   const gap = Math.floor(slots.length / (count + 1)) || 1;
   for (let k = count; k >= 1; k--) {
-    const kind = ALL_POWER_KINDS[Math.floor(Math.random() * ALL_POWER_KINDS.length)]!;
+    const kind = allowedCards[Math.floor(Math.random() * allowedCards.length)]!;
     const insertAt = Math.min(slots.length, Math.max(1, gap * k + (k - 1)));
     slots.splice(insertAt, 0, {
       type: "power",

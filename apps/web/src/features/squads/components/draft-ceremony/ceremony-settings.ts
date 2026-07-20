@@ -11,6 +11,7 @@
  * affected.
  */
 
+import type { PowerCardId } from "@/features/squads/components/draft-ceremony/power-cards/types";
 import type { SkillKey } from "@/features/squads/components/draft-ceremony/power-slots";
 
 export type CeremonySpeed = "relaxed" | "normal" | "fast";
@@ -28,6 +29,12 @@ export interface CeremonySettings {
   powerSlots: boolean;
   /** Exactly how many power slots appear on each skill-level wheel (organizer set). */
   powerSlotsBySkill: Record<SkillKey, number>;
+  /**
+   * Cards the organizer has switched OFF. Stored as a deny-list rather than an
+   * allow-list so a newly registered card is enabled by default and needs no
+   * migration of saved settings.
+   */
+  disabledCardIds: PowerCardId[];
   /** Bundle the final three picks into a rapid-fire crescendo. */
   wildcardFinish: boolean;
   /** Playback speed — scales all animation durations. Organizer can change live. */
@@ -41,6 +48,7 @@ export const DEFAULT_SETTINGS: CeremonySettings = {
   tieredReveals: true,
   powerSlots: true,
   powerSlotsBySkill: { advanced: 2, intermediate: 2, beginner: 1, unknown: 1 },
+  disabledCardIds: [],
   wildcardFinish: true,
   speed: "normal",
 };

@@ -2,8 +2,8 @@
  * Engine layer — orchestrates card execution. Game rules only, ZERO UI/React.
  *
  * The engine is generic: it reaches every card through the registry (`getCard`)
- * and never imports a concrete card module, so it does not know that Meme Drop /
- * Swap / Immunity / First Ball Trial exist — only that a card implements the
+ * and never imports a concrete card module, so it does not know which concrete
+ * cards exist — only that a card implements the
  * standard interface. Its outputs are a `CardResult` (events) plus pure reducers
  * over the `teamCards` inventory; it never writes React state. Fully unit-testable
  * without React (see engine.test.ts).

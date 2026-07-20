@@ -55,7 +55,7 @@ function board(): SquadView[] {
 function ctx(over: Partial<CardContext>): CardContext {
   const { port } = fakePort();
   return {
-    cardId: "meme",
+    cardId: "respin",
     squadId: "A",
     squads: board(),
     teamCards: {},
@@ -68,55 +68,15 @@ describe("reduceTeamCards", () => {
   it("awards and consumes without mutating the input", () => {
     const start = {};
     const awarded = reduceTeamCards(start, [
-      { type: "CardAwarded", squadId: "A", squadName: "Team A", cardId: "meme" },
+      { type: "CardAwarded", squadId: "A", squadName: "Team A", cardId: "respin" },
     ]);
-    expect(awarded).toEqual({ A: ["meme"] });
+    expect(awarded).toEqual({ A: ["respin"] });
     expect(start).toEqual({}); // immutable
 
     const consumed = reduceTeamCards(awarded, [
-      { type: "CardConsumed", squadId: "A", cardId: "meme" },
+      { type: "CardConsumed", squadId: "A", cardId: "respin" },
     ]);
     expect(consumed).toEqual({ A: [] });
-  });
-});
-
-describe("Meme Drop (instant)", () => {
-  it("is always playable and emits consume + played-with-meme", async () => {
-    const c = ctx({ cardId: "meme", teamCards: { A: ["meme"] } });
-    expect(canPlay("meme", c)).toBe(true);
-    const { events } = await playCard("meme", c);
-    expect(events.find((e) => e.type === "CardConsumed")).toMatchObject({ squadId: "A" });
-    const played = events.find((e) => e.type === "CardPlayed");
-    expect(played).toBeTruthy();
-    expect(played && "meme" in played && played.meme).toBeTruthy();
-  });
-});
-
-describe("Meme Drop shuffle bag", () => {
-  it("never repeats a meme back-to-back across many plays", async () => {
-    const seen: string[] = [];
-    for (let i = 0; i < 40; i++) {
-      const c = ctx({ cardId: "meme", teamCards: { A: ["meme"] } });
-      const { events } = await playCard("meme", c);
-      const played = events.find((e) => e.type === "CardPlayed");
-      const meme = played && "meme" in played ? played.meme : undefined;
-      expect(meme).toBeTruthy();
-      seen.push(meme!.caption);
-    }
-    const repeats = seen.filter((caption, i) => i > 0 && caption === seen[i - 1]);
-    expect(repeats).toEqual([]);
-  });
-
-  it("uses the whole pack — no meme starves", async () => {
-    const seen = new Set<string>();
-    for (let i = 0; i < 24; i++) {
-      const c = ctx({ cardId: "meme", teamCards: { A: ["meme"] } });
-      const { events } = await playCard("meme", c);
-      const played = events.find((e) => e.type === "CardPlayed");
-      seen.add((played as { meme: { caption: string } }).meme.caption);
-    }
-    // Three bags' worth of draws must cover every meme, wherever the bag started.
-    expect(seen.size).toBe(8);
   });
 });
 
@@ -196,7 +156,6 @@ describe("Jo Tera Hai Wo Mera (targeted)", () => {
   it("reports swap as undoable and passive Immunity as not", () => {
     expect(isUndoable("swap")).toBe(true);
     expect(isUndoable("protection")).toBe(false);
-    expect(isUndoable("meme")).toBe(false);
   });
 
   it("is blocked by the target's Dabur Immunity — both cards consumed, no port calls", async () => {

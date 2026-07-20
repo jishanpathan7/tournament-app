@@ -23,7 +23,7 @@ function segColor(i: number) {
 
 const CX = 300;
 const CY = 300;
-const R = 276;
+export const R = 276;
 const HUB = 48;
 
 function polarToXY(angleDeg: number, r: number) {
@@ -47,19 +47,37 @@ function segmentPath(start: number, end: number): string {
   ].join(" ");
 }
 
-function label(name: string, n: number): string {
-  const maxChars = n > 24 ? 10 : n > 16 ? 13 : n > 10 ? 16 : 20;
-  const first = name.split(" ")[0]!;
-  if (n > 22 && first.length <= maxChars) return first;
-  return name.length > maxChars ? name.slice(0, maxChars - 1) + "…" : name;
+/**
+ * Where a label starts, measured from the centre.
+ *
+ * A segment's usable height is its arc length, which grows with radius — near
+ * the hub a 58-slot wheel gives each label only ~6 units of height, which is why
+ * the font used to be shrunk to 9. Pushing crowded labels outward buys height
+ * instead of taking it out of the type, so names stay legible from the room.
+ */
+export function textStartRadius(n: number): number {
+  if (n > 40) return 150;
+  if (n > 28) return 120;
+  if (n > 18) return 90;
+  return HUB + 12;
 }
 
-function fontSize(n: number): number {
-  if (n > 24) return 9;
-  if (n > 18) return 11;
-  if (n > 12) return 13;
-  if (n > 8) return 15;
-  return 17;
+export function fontSize(n: number): number {
+  if (n > 40) return 12;
+  if (n > 28) return 13;
+  if (n > 18) return 14;
+  if (n > 12) return 15;
+  if (n > 8) return 16;
+  return 18;
+}
+
+function label(name: string, n: number): string {
+  const first = name.split(" ")[0]!;
+  // Crowded wheels drop to first names — a truncated surname reads as noise.
+  const text = n > 16 ? first : name;
+  const room = R - textStartRadius(n);
+  const maxChars = Math.max(8, Math.floor(room / (fontSize(n) * 0.58)));
+  return text.length > maxChars ? text.slice(0, maxChars - 1) + "…" : text;
 }
 
 // ── Audio ─────────────────────────────────────────────────────────────────────
@@ -245,7 +263,8 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
   const n = players.length;
   const segAngle = n > 0 ? 360 / n : 360;
   const fs = fontSize(n);
-  const textX = CX + HUB + 12;
+  const startR = textStartRadius(n);
+  const textX = CX + startR;
 
   return (
     <div className="relative flex select-none items-center justify-center">
@@ -277,11 +296,18 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
       {/* Rotating wheel */}
       <div ref={wrapRef} style={{ willChange: "transform, opacity" }}>
         <div ref={spinnerRef} style={{ willChange: "transform" }}>
+          {/* Sized to the display rather than a fixed 600px. The viewBox means
+              every label scales with it, so a projector gets materially bigger
+              names instead of the same small ones on a bigger screen. */}
           <svg
-            width={CX * 2}
-            height={CY * 2}
             viewBox={`0 0 ${CX * 2} ${CY * 2}`}
-            style={{ display: "block" }}
+            style={{
+              display: "block",
+              // Must also clear the banner, spin button and card rail, so this is
+              // sized to fit a laptop while still growing on a projector.
+              width: "min(60vh, 86vw, 800px)",
+              height: "min(60vh, 86vw, 800px)",
+            }}
           >
             <defs>
               <filter id="wheel-drop" x="-8%" y="-8%" width="116%" height="116%">
@@ -329,7 +355,7 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
                       {(() => {
                         const isFlipped = mid > 90 && mid < 270;
                         const rot = isFlipped ? mid - 90 + 180 : mid - 90;
-                        const tx = isFlipped ? CX - HUB - 12 : textX;
+                        const tx = isFlipped ? CX - startR : textX;
                         const anchor = isFlipped ? "end" : "start";
                         return (
                           <g transform={`rotate(${rot}, ${CX}, ${CY})`}>
