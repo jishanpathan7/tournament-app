@@ -35,11 +35,7 @@ import type {
   SquadView,
   UnassignedRegistrationView,
 } from "@/features/squads/types";
-import {
-  useAssignSquadMember,
-  useSquads,
-  useSwapSquadMembers,
-} from "@/features/squads/use-squads";
+import { useAssignSquadMember, useSquads, useSwapSquadMembers } from "@/features/squads/use-squads";
 import { errorMessage } from "@/lib/problem";
 
 /** "intros" only appears when Fun Mode + team introductions are enabled. */

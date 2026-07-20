@@ -963,18 +963,14 @@ function CardConfirmDialog({
           <div className="flex w-full flex-col gap-2 rounded-2xl bg-black/25 px-5 py-4">
             <div className="flex items-center justify-between gap-3 text-left">
               <span className="text-sm text-white/50">{preview.swap.fromSquad}</span>
-              <span className="text-lg font-black text-white">
-                {preview.swap.a.displayName}
-              </span>
+              <span className="text-lg font-black text-white">{preview.swap.a.displayName}</span>
             </div>
             <div className="text-center text-2xl font-black" style={{ color: card.color }}>
               ⇄
             </div>
             <div className="flex items-center justify-between gap-3 text-left">
               <span className="text-sm text-white/50">{preview.swap.toSquad}</span>
-              <span className="text-lg font-black text-white">
-                {preview.swap.b.displayName}
-              </span>
+              <span className="text-lg font-black text-white">{preview.swap.b.displayName}</span>
             </div>
           </div>
         ) : (
@@ -1055,11 +1051,7 @@ function MainScreen({
     squadId: string,
     targetSquadId?: string,
   ) => Promise<EnginePowerEvent[]>;
-  onPreviewCard: (
-    cardId: PowerKind,
-    squadId: string,
-    targetSquadId?: string,
-  ) => CardPreview | null;
+  onPreviewCard: (cardId: PowerKind, squadId: string, targetSquadId?: string) => CardPreview | null;
   justCompletedSquadId: string | null;
   onClearCompleted: () => void;
   isWildcardActive: boolean;
