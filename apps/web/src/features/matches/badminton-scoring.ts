@@ -90,8 +90,12 @@ export function classifyGame(
     }
     return { status: "invalid", message: `Illegal margin at ${a}-${b}.` };
   }
-  // hi === maxPoints (golden point): only legal losing score is maxPoints - 1
-  return lo >= maxPoints - 1
+  // hi === maxPoints. Two legal ways to get here:
+  //   maxPoints-1     — the golden point, from deuce at (maxPoints-1)-all
+  //   maxPoints-winBy — a normal win by 2, e.g. 20-19 → 21-19
+  // Anything further behind is unreachable: the game would already have ended
+  // on a 2-point lead.
+  return lo >= maxPoints - winBy
     ? { status: "complete", winner }
     : { status: "invalid", message: `Illegal cap score ${a}-${b}.` };
 }

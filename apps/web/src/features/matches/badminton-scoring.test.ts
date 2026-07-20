@@ -25,7 +25,9 @@ describe("classifyGame", () => {
 
   it("accepts deuce finishes", () => {
     expect(classifyGame(22, 20).status).toBe("complete");
-    expect(classifyGame(30, 29).status).toBe("complete"); // golden point at cap: only 30-29 legal
+    expect(classifyGame(30, 29).status).toBe("complete"); // golden point at cap, from 29-all
+    expect(classifyGame(30, 28).status).toBe("complete"); // win by 2 from 29-28
+    expect(classifyGame(30, 27).status).toBe("invalid"); // unreachable
   });
 
   it("flags equal scores as tied", () => {
@@ -98,14 +100,15 @@ describe("classifyGame — SIBL rules", () => {
     [18, 16],
     [19, 17],
     [20, 18],
-    [21, 20],
+    [21, 20], // golden point at the cap, from 20-all
+    [21, 19], // cap reached by winning by 2 from 20-19
   ])("%i-%i is complete", (a, b) => {
     expect(classifyGame(a, b, SIBL).status).toBe("complete");
     expect(classifyGame(b, a, SIBL).status).toBe("complete"); // mirror
   });
 
   it.each([
-    [21, 19, "illegal cap score — only 21-20 allowed"],
+    [21, 18, "unreachable — the game ends on a 2-point lead first"],
     [22, 20, "exceeds cap"],
   ])("%i-%i is invalid (%s)", (a, b) => {
     expect(classifyGame(a, b, SIBL).status).toBe("invalid");
