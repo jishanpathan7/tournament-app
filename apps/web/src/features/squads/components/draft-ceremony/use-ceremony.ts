@@ -18,9 +18,11 @@ import {
 import {
   awardCardEvent,
   canPlay as engineCanPlay,
+  isUndoable,
   playCard as enginePlay,
   previewCard as enginePreview,
   reduceTeamCards,
+  undoCard as engineUndo,
   type TeamCards,
 } from "@/features/squads/components/draft-ceremony/power-cards/engine";
 import type {
@@ -37,6 +39,15 @@ import type {
 } from "@/features/squads/types";
 import { useAssignSquadMember, useSquads, useSwapSquadMembers } from "@/features/squads/use-squads";
 import { errorMessage } from "@/lib/problem";
+
+/** One power moment in the ceremony's activity timeline. */
+export interface ActivityEntry {
+  id: string;
+  /** The domain event, kept whole so an undo can reverse exactly what happened. */
+  event: PowerEvent;
+  /** Set once this entry has been reversed, so it cannot be undone twice. */
+  undone?: boolean;
+}
 
 /** "intros" only appears when Fun Mode + team introductions are enabled. */
 export type CeremonyPhase = "intro" | "intros" | "main" | "complete";
@@ -149,6 +160,9 @@ export function useCeremony(tournamentId: string) {
   // Cards already played, per team. Purely a record for the UI — a spent card is
   // shown greyed out rather than vanishing, so the room can see what was used.
   const [spentCards, setSpentCards] = useState<TeamCards>({});
+  // Append-only record of every power moment, newest last. Drives the activity
+  // timeline and is what makes a swap auditable (and reversible) in the room.
+  const [activity, setActivity] = useState<ActivityEntry[]>([]);
   // Squad that just received its final player — drives the completion celebration.
   const [justCompletedSquadId, setJustCompletedSquadId] = useState<string | null>(null);
 
@@ -198,6 +212,7 @@ export function useCeremony(tournamentId: string) {
     setHistory(saved.history);
     setTeamCards(saved.teamCards);
     setSpentCards(saved.spentCards);
+    setActivity(saved.activity);
     setSettings(saved.settings);
     setActiveSkill(saved.activeSkillSet ? saved.activeSkill : undefined);
     setPhase(saved.phase);
@@ -217,12 +232,23 @@ export function useCeremony(tournamentId: string) {
       history,
       teamCards,
       spentCards,
+      activity,
       assignedIds: [...assignedIds.current],
       activeSkill: activeSkill ?? null,
       activeSkillSet: activeSkill !== undefined,
       settings,
     });
-  }, [tournamentId, phase, pickIndex, history, teamCards, spentCards, activeSkill, settings]);
+  }, [
+    tournamentId,
+    phase,
+    pickIndex,
+    history,
+    teamCards,
+    spentCards,
+    activity,
+    activeSkill,
+    settings,
+  ]);
 
   // Last-resort guard: warn before an accidental reload/close mid-draft.
   useEffect(() => {
@@ -289,15 +315,29 @@ export function useCeremony(tournamentId: string) {
     [squads, teamCards, port],
   );
 
+  /** Record the events worth showing in the timeline (state moves are noise). */
+  const logEvents = useCallback((events: PowerEvent[]) => {
+    const shown = events.filter((e) => e.type !== "CardConsumed" && e.type !== "ImmunityTriggered");
+    if (shown.length === 0) return;
+    setActivity((prev) => [
+      ...prev,
+      ...shown.map((event, i) => ({
+        id: `${Date.now()}-${prev.length + i}-${Math.random().toString(36).slice(2, 7)}`,
+        event,
+      })),
+    ]);
+  }, []);
+
   /** Hand a power card to a team (on wheel landing). Returns the emitted events. */
   const awardCard = useCallback(
     (squadId: string, cardId: PowerCardId): PowerEvent[] => {
       const squad = squads.find((s) => s.id === squadId);
       const events: PowerEvent[] = [awardCardEvent(squadId, squad?.name ?? "", cardId)];
       setTeamCards((prev) => reduceTeamCards(prev, events));
+      logEvents(events);
       return events;
     },
-    [squads],
+    [squads, logEvents],
   );
 
   /** Whether a card can be played right now (delegates to the engine/card). */
@@ -335,10 +375,59 @@ export function useCeremony(tournamentId: string) {
       if (events.some((e) => e.type === "SwapCompleted")) {
         void squadsQuery.refetch();
       }
+      logEvents(events);
       return events;
     },
-    [buildContext, squadsQuery],
+    [buildContext, squadsQuery, logEvents],
   );
+
+  /** The most recent play that is still reversible, if any. */
+  const undoableEntry = useMemo(() => {
+    for (let i = activity.length - 1; i >= 0; i--) {
+      const entry = activity[i]!;
+      if (entry.undone) continue;
+      const cardId = "cardId" in entry.event ? entry.event.cardId : null;
+      // Only a completed effect is reversible — an award is not a "play".
+      if (!cardId || entry.event.type !== "SwapCompleted") continue;
+      return isUndoable(cardId) ? entry : null;
+    }
+    return null;
+  }, [activity]);
+
+  /**
+   * Reverse the most recent reversible play. The card decides what "reverse"
+   * means; this only routes and applies the resulting events. Exists so a
+   * disputed swap can be walked back live instead of standing as final.
+   */
+  const undoLastPlay = useCallback(async (): Promise<PowerEvent[]> => {
+    const entry = undoableEntry;
+    if (!entry || !("cardId" in entry.event)) return [];
+    const cardId = entry.event.cardId;
+    const squadId = entry.event.type === "SwapCompleted" ? entry.event.a.squadId : "";
+
+    const { events } = await engineUndo(cardId, {
+      ...buildContext(cardId, squadId),
+      event: entry.event,
+    });
+    if (events.length === 0) return [];
+
+    setTeamCards((prev) => reduceTeamCards(prev, events));
+    // Returning the card also un-spends it, or the rail would show it twice.
+    setSpentCards((prev) => {
+      let next = prev;
+      for (const e of events) {
+        if (e.type !== "CardAwarded") continue;
+        const hand = next[e.squadId] ?? [];
+        const i = hand.indexOf(e.cardId);
+        if (i === -1) continue;
+        next = { ...next, [e.squadId]: [...hand.slice(0, i), ...hand.slice(i + 1)] };
+      }
+      return next;
+    });
+    setActivity((prev) => prev.map((a) => (a.id === entry.id ? { ...a, undone: true } : a)));
+    void squadsQuery.refetch();
+    return events;
+  }, [undoableEntry, buildContext, squadsQuery]);
 
   const clearJustCompleted = useCallback(() => setJustCompletedSquadId(null), []);
 
@@ -362,6 +451,7 @@ export function useCeremony(tournamentId: string) {
     setPickIndex(0);
     setTeamCards({});
     setSpentCards({});
+    setActivity([]);
     // Fun Mode with intros enabled runs the team walk-in first.
     setPhase(settings.funMode && settings.teamIntroductions ? "intros" : "main");
   }
@@ -463,6 +553,9 @@ export function useCeremony(tournamentId: string) {
     powersEnabled,
     teamCards,
     spentCards,
+    activity,
+    undoableEntry,
+    undoLastPlay,
     awardCard,
     canPlayCard,
     previewCard,

@@ -114,10 +114,45 @@ export const joTeraHaiWoMera: PowerCard = {
         {
           type: "SwapCompleted",
           cardId: "swap",
+          a: { squadId: from.id, registrationId: pair.a.registrationId },
+          b: { squadId: to.id, registrationId: pair.b.registrationId },
           aName: pair.a.displayName,
           bName: pair.b.displayName,
           fromSquad: from.name,
           toSquad: to.name,
+        },
+      ],
+    };
+  },
+
+  /**
+   * Reverse a completed swap: trade the same two players back through the same
+   * atomic endpoint, and hand the swap card back to the team that spent it —
+   * an undone play should cost nothing. Captains disputing a swap is the
+   * scenario this exists for.
+   */
+  undo: async (ctx) => {
+    const e = ctx.event;
+    if (e.type !== "SwapCompleted") return { events: [] };
+
+    // The players now sit on the opposite squads, so swap them back.
+    await ctx.port.swap(
+      { squadId: e.b.squadId, registrationId: e.a.registrationId },
+      { squadId: e.a.squadId, registrationId: e.b.registrationId },
+    );
+
+    return {
+      events: [
+        { type: "CardAwarded", squadId: e.a.squadId, squadName: e.fromSquad, cardId: "swap" },
+        {
+          type: "SwapCompleted",
+          cardId: "swap",
+          a: { squadId: e.b.squadId, registrationId: e.a.registrationId },
+          b: { squadId: e.a.squadId, registrationId: e.b.registrationId },
+          aName: e.aName,
+          bName: e.bName,
+          fromSquad: e.toSquad,
+          toSquad: e.fromSquad,
         },
       ],
     };

@@ -21,6 +21,7 @@ function session(over: Partial<CeremonySession> = {}): CeremonySession {
     history: [],
     teamCards: { A: ["meme"] },
     spentCards: {},
+    activity: [],
     assignedIds: ["r1"],
     activeSkill: null,
     activeSkillSet: false,

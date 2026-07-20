@@ -7,7 +7,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import "./index"; // self-registers the four cards
-import { canPlay, playCard, previewCard, reduceTeamCards } from "./engine";
+import { canPlay, isUndoable, playCard, previewCard, reduceTeamCards, undoCard } from "./engine";
 import type { CardContext, MutationPort, SwapSide } from "./types";
 import type { SquadMemberView, SquadView } from "@/features/squads/types";
 
@@ -138,6 +138,37 @@ describe("Jo Tera Hai Wo Mera (targeted)", () => {
       bName: "Rahul",
     });
     expect(events.find((e) => e.type === "CardConsumed")).toMatchObject({ cardId: "swap" });
+  });
+
+  it("undoes a completed swap: players trade back and the card is returned", async () => {
+    const { port, calls } = fakePort();
+    const ctxBase = {
+      cardId: "swap",
+      squadId: "A",
+      targetSquadId: "B",
+      squads: board(),
+      teamCards: { A: ["swap"] },
+      port,
+    } satisfies CardContext;
+
+    const { events } = await playCard("swap", ctxBase);
+    const done = events.find((e) => e.type === "SwapCompleted")!;
+
+    const undone = await undoCard("swap", { ...ctxBase, event: done });
+
+    // Second atomic call, with the sides reversed.
+    expect(calls).toEqual(["swap:A:a1<->B:b1", "swap:B:a1<->A:b1"]);
+    // An undone play must cost the team nothing.
+    expect(undone.events.find((e) => e.type === "CardAwarded")).toMatchObject({
+      squadId: "A",
+      cardId: "swap",
+    });
+  });
+
+  it("reports swap as undoable and passive Immunity as not", () => {
+    expect(isUndoable("swap")).toBe(true);
+    expect(isUndoable("protection")).toBe(false);
+    expect(isUndoable("meme")).toBe(false);
   });
 
   it("is blocked by the target's Dabur Immunity — both cards consumed, no port calls", async () => {

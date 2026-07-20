@@ -30,7 +30,11 @@ import {
   type PowerKind,
   type WheelSlot,
 } from "@/features/squads/components/draft-ceremony/power-slots";
-import { skillLabel, useCeremony } from "@/features/squads/components/draft-ceremony/use-ceremony";
+import {
+  skillLabel,
+  useCeremony,
+  type ActivityEntry,
+} from "@/features/squads/components/draft-ceremony/use-ceremony";
 import type {
   SquadMemberView,
   SquadView,
@@ -833,6 +837,95 @@ function CompletionScreen({
   );
 }
 
+// ── Activity timeline ─────────────────────────────────────────────────────────
+
+/** One line of timeline copy, derived from the event + card metadata. */
+function describeEvent(event: EnginePowerEvent): { emoji: string; text: string } | null {
+  switch (event.type) {
+    case "CardAwarded":
+      return {
+        emoji: getCard(event.cardId).emoji,
+        text: `${event.squadName} drew ${getCard(event.cardId).label}`,
+      };
+    case "CardPlayed":
+      return { emoji: getCard(event.cardId).emoji, text: event.detail };
+    case "SwapCompleted":
+      return {
+        emoji: getCard(event.cardId).emoji,
+        text: `${event.aName} ⇄ ${event.bName} · ${event.fromSquad} ↔ ${event.toSquad}`,
+      };
+    case "SwapBlocked":
+      return {
+        emoji: "🛡️",
+        text:
+          event.reason === "immunity"
+            ? `Raid on ${event.toSquad} blocked`
+            : `No eligible players on ${event.toSquad}`,
+      };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Running log of every power moment. Makes the draft auditable in the room —
+ * and is where a disputed swap gets reversed, since only the most recent
+ * reversible play can be undone (arbitrary history would be ambiguous).
+ */
+function ActivityTimeline({
+  activity,
+  undoableId,
+  onUndo,
+  isUndoing,
+}: {
+  activity: ActivityEntry[];
+  undoableId: string | null;
+  onUndo: () => void;
+  isUndoing: boolean;
+}) {
+  if (activity.length === 0) return null;
+  const newestFirst = [...activity].reverse();
+
+  return (
+    <div className="mb-4">
+      <p className="text-2xs mb-2 font-mono font-bold uppercase tracking-widest text-white/30">
+        Activity
+      </p>
+      <div className="flex max-h-52 flex-col gap-1 overflow-y-auto">
+        {newestFirst.map((entry) => {
+          const described = describeEvent(entry.event);
+          if (!described) return null;
+          const canUndo = entry.id === undoableId;
+          return (
+            <div
+              key={entry.id}
+              className="flex items-start gap-2 rounded-lg bg-white/[0.03] px-2 py-1.5"
+              style={{ opacity: entry.undone ? 0.4 : 1 }}
+            >
+              <span className="text-sm leading-tight">{described.emoji}</span>
+              <span
+                className="flex-1 text-xs leading-snug text-white/70"
+                style={{ textDecoration: entry.undone ? "line-through" : undefined }}
+              >
+                {described.text}
+              </span>
+              {canUndo && (
+                <button
+                  onClick={onUndo}
+                  disabled={isUndoing}
+                  className="text-2xs shrink-0 rounded-md border border-white/20 px-1.5 py-0.5 font-bold text-white/60 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
+                >
+                  {isUndoing ? "…" : "Undo"}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ── Team power-card inventory (TV rail) ──────────────────────────────────────
 
 /**
@@ -845,21 +938,21 @@ function TeamCardsRail({
   squads,
   teamCards,
   spentCards,
-  swapFromId,
+  armed,
   onCardClick,
   onTargetTeam,
 }: {
   squads: SquadView[];
   teamCards: Record<string, PowerKind[]>;
   spentCards: Record<string, PowerKind[]>;
-  swapFromId: string | null;
+  armed: { squadId: string; cardId: PowerKind } | null;
   onCardClick: (squadId: string, kind: PowerKind) => void;
   onTargetTeam: (squadId: string) => void;
 }) {
   const anyActivity = squads.some(
     (s) => (teamCards[s.id] ?? []).length > 0 || (spentCards[s.id] ?? []).length > 0,
   );
-  if (!anyActivity && !swapFromId) return null;
+  if (!anyActivity && !armed) return null;
 
   return (
     <div className="border-white/8 shrink-0 border-t" style={{ background: BG_SIDEBAR }}>
@@ -868,7 +961,7 @@ function TeamCardsRail({
         <p className="text-2xs font-mono font-bold uppercase tracking-widest text-[#fbbf24]/80">
           Power Cards
         </p>
-        {swapFromId && (
+        {armed && (
           <span className="animate-pulse text-xs font-black text-[#f472b6]">
             Choose a team to raid →
           </span>
@@ -879,10 +972,10 @@ function TeamCardsRail({
         {squads.map((s, i) => {
           const hand = teamCards[s.id] ?? [];
           const spent = spentCards[s.id] ?? [];
-          if (hand.length === 0 && spent.length === 0 && !swapFromId) return null;
+          if (hand.length === 0 && spent.length === 0 && !armed) return null;
 
           const color = squadAccent(i);
-          const targetable = !!swapFromId && swapFromId !== s.id;
+          const targetable = !!armed && armed.squadId !== s.id;
           return (
             <div
               key={s.id}
@@ -912,7 +1005,7 @@ function TeamCardsRail({
                   // Instant + targeted play from the rail; self plays from its own
                   // on-turn button; passive is shown but not clickable.
                   const playable = card.mode === "instant" || card.mode === "targeted";
-                  const armed = swapFromId === s.id && card.mode === "targeted";
+                  const isArmed = armed?.squadId === s.id && armed?.cardId === k;
                   return (
                     <button
                       key={`${k}-${idx}`}
@@ -924,7 +1017,7 @@ function TeamCardsRail({
                       className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 transition-transform hover:scale-105"
                       style={{
                         background: `${card.color}2e`,
-                        border: armed ? `2px solid ${card.color}` : `1.5px solid ${card.color}77`,
+                        border: isArmed ? `2px solid ${card.color}` : `1.5px solid ${card.color}77`,
                         cursor: playable ? "pointer" : "default",
                       }}
                     >
@@ -1095,6 +1188,9 @@ function MainScreen({
   powersEnabled,
   teamCards,
   spentCards,
+  activity,
+  undoableEntry,
+  onUndoLastPlay,
   onAwardCard,
   onPlayCard,
   onPreviewCard,
@@ -1118,6 +1214,9 @@ function MainScreen({
   powersEnabled: boolean;
   teamCards: Record<string, PowerKind[]>;
   spentCards: Record<string, PowerKind[]>;
+  activity: ActivityEntry[];
+  undoableEntry: ActivityEntry | null;
+  onUndoLastPlay: () => Promise<EnginePowerEvent[]>;
   onAwardCard: (squadId: string, cardId: PowerKind) => EnginePowerEvent[];
   onPlayCard: (
     cardId: PowerKind,
@@ -1151,10 +1250,12 @@ function MainScreen({
   const [respinNote, setRespinNote] = useState<string | null>(null);
   // Teams that have already had their 3·2·1 moment (countdown is once per team).
   const countedDownTeamsRef = useRef<Set<string>>(new Set());
+  const [isUndoing, setIsUndoing] = useState(false);
   // Active power being resolved on the wheel (drives the PowerOverlay).
   const [powerEvent, setPowerEvent] = useState<PowerEvent | null>(null);
-  // Team currently playing a Swap card — armed to pick a target team.
-  const [swapFromId, setSwapFromId] = useState<string | null>(null);
+  // A targeted card that has been picked up and is awaiting a target team.
+  // Tracks WHICH card is armed, not just the team, so any targeted card works.
+  const [armed, setArmed] = useState<{ squadId: string; cardId: PowerKind } | null>(null);
   // A previewed-but-unconfirmed play. Nothing is mutated while this is set.
   const [pendingPlay, setPendingPlay] = useState<{
     cardId: PowerKind;
@@ -1415,7 +1516,9 @@ function MainScreen({
   async function onCardClick(squadId: string, kind: PowerKind) {
     const mode = getCard(kind).mode;
     if (mode === "targeted") {
-      setSwapFromId((prev) => (prev === squadId ? null : squadId));
+      setArmed((prev) =>
+        prev && prev.squadId === squadId && prev.cardId === kind ? null : { squadId, cardId: kind },
+      );
       return;
     }
     if (mode === "instant") {
@@ -1430,13 +1533,39 @@ function MainScreen({
    * the organizer confirms in the dialog, so a stray click is always recoverable.
    */
   function onTargetTeam(targetId: string) {
-    const from = swapFromId;
-    setSwapFromId(null);
-    if (!from || from === targetId) return;
+    const play = armed;
+    setArmed(null);
+    if (!play || play.squadId === targetId) return;
 
-    const preview = onPreviewCard("swap", from, targetId);
+    const preview = onPreviewCard(play.cardId, play.squadId, targetId);
     if (!preview) return;
-    setPendingPlay({ cardId: "swap", squadId: from, targetSquadId: targetId, preview });
+    setPendingPlay({
+      cardId: play.cardId,
+      squadId: play.squadId,
+      targetSquadId: targetId,
+      preview,
+    });
+  }
+
+  /** Reverse the most recent reversible play and announce it to the room. */
+  async function handleUndo() {
+    if (isUndoing) return;
+    setIsUndoing(true);
+    try {
+      const events = await onUndoLastPlay();
+      const reverted = events.find((e) => e.type === "SwapCompleted");
+      if (reverted) {
+        setPowerEvent({
+          kind: reverted.cardId,
+          detail: `Reversed — ${reverted.aName} ⇄ ${reverted.bName}`,
+          note: "Swap undone. The card has been returned.",
+        });
+        await wait(scaled(1.9, settings.speed) * 1000);
+        setPowerEvent(null);
+      }
+    } finally {
+      setIsUndoing(false);
+    }
   }
 
   /** Organizer confirmed the previewed play — now execute it. */
@@ -1593,6 +1722,14 @@ function MainScreen({
           className="border-white/8 hidden w-72 shrink-0 overflow-y-auto border-l p-4 lg:block"
           style={{ background: BG_SIDEBAR }}
         >
+          {settings.funMode && settings.powerSlots && (
+            <ActivityTimeline
+              activity={activity}
+              undoableId={undoableEntry?.id ?? null}
+              onUndo={() => void handleUndo()}
+              isUndoing={isUndoing}
+            />
+          )}
           <p className="text-2xs mb-3 font-mono font-bold uppercase tracking-widest text-white/30">
             Teams
           </p>
@@ -1613,7 +1750,7 @@ function MainScreen({
           squads={squads}
           teamCards={teamCards}
           spentCards={spentCards}
-          swapFromId={swapFromId}
+          armed={armed}
           onCardClick={onCardClick}
           onTargetTeam={onTargetTeam}
         />
@@ -2273,6 +2410,9 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           powersEnabled={ceremony.powersEnabled}
           teamCards={ceremony.teamCards}
           spentCards={ceremony.spentCards}
+          activity={ceremony.activity}
+          undoableEntry={ceremony.undoableEntry}
+          onUndoLastPlay={ceremony.undoLastPlay}
           onAwardCard={ceremony.awardCard}
           onPlayCard={ceremony.playCard}
           onPreviewCard={ceremony.previewCard}

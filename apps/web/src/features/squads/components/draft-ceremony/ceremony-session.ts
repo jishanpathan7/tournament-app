@@ -13,6 +13,7 @@
 import type { CeremonySettings } from "@/features/squads/components/draft-ceremony/ceremony-settings";
 import type { TeamCards } from "@/features/squads/components/draft-ceremony/power-cards/engine";
 import type {
+  ActivityEntry,
   Assignment,
   CeremonyPhase,
 } from "@/features/squads/components/draft-ceremony/use-ceremony";
@@ -33,6 +34,8 @@ export interface CeremonySession {
   teamCards: TeamCards;
   /** Cards each team has already played, kept so the rail can show them spent. */
   spentCards: TeamCards;
+  /** Power-moment timeline, so the audit trail survives a refresh too. */
+  activity: ActivityEntry[];
   /** Registration ids already assigned this session. */
   assignedIds: string[];
   /** `activeSkill` is `string | null | undefined`; the flag distinguishes unset. */
@@ -61,7 +64,12 @@ export function loadSession(tournamentId: string): CeremonySession | null {
     if (!Array.isArray(parsed.draftOrder) || parsed.draftOrder.length === 0) return null;
     // Tolerate a blob written before a field existed rather than dropping the
     // whole session — losing a ceremony mid-event is the worse failure.
-    return { ...parsed, teamCards: parsed.teamCards ?? {}, spentCards: parsed.spentCards ?? {} };
+    return {
+      ...parsed,
+      teamCards: parsed.teamCards ?? {},
+      spentCards: parsed.spentCards ?? {},
+      activity: parsed.activity ?? [],
+    };
   } catch {
     return null;
   }

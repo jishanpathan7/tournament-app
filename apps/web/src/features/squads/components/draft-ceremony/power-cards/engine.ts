@@ -10,7 +10,14 @@
  */
 
 import { getCard } from "./registry";
-import type { CardContext, CardPreview, CardResult, PowerCardId, PowerEvent } from "./types";
+import type {
+  CardContext,
+  CardPreview,
+  CardResult,
+  PowerCardId,
+  PowerEvent,
+  UndoContext,
+} from "./types";
 
 /** A team's held-card inventory, keyed by squad id. */
 export type TeamCards = Record<string, PowerCardId[]>;
@@ -72,4 +79,16 @@ export async function playCard(cardId: PowerCardId, ctx: CardContext): Promise<C
   const card = getCard(cardId);
   if (!card.canPlay(ctx)) return { events: [] };
   return await card.execute(ctx);
+}
+
+/** Whether this card opted into being reversible. */
+export function isUndoable(cardId: PowerCardId): boolean {
+  return typeof getCard(cardId).undo === "function";
+}
+
+/** Reverse a completed play. No-op for cards that did not implement `undo`. */
+export async function undoCard(cardId: PowerCardId, ctx: UndoContext): Promise<CardResult> {
+  const card = getCard(cardId);
+  if (!card.undo) return { events: [] };
+  return await card.undo(ctx);
 }

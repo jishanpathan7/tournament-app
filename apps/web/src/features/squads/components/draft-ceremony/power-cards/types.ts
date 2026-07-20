@@ -48,6 +48,17 @@ export interface PowerCard {
   preview?(ctx: CardContext): CardPreview;
   /** Perform the card's effect. Returns the outcome + the events to emit. */
   execute(ctx: CardContext): Promise<CardResult> | CardResult;
+  /**
+   * Optional: reverse a completed play. Opt-in — a card that cannot be undone
+   * simply omits this, and the UI offers no undo for it. Keeps the engine and
+   * the timeline closed for modification when new cards arrive.
+   */
+  undo?(ctx: UndoContext): Promise<CardResult> | CardResult;
+}
+
+/** Context for reversing a play — the original event carries what to undo. */
+export interface UndoContext extends CardContext {
+  event: PowerEvent;
 }
 
 /**
@@ -124,6 +135,9 @@ export type PowerEvent =
   | {
       type: "SwapCompleted";
       cardId: PowerCardId;
+      /** Ids are carried so the swap can be reversed without re-deriving it. */
+      a: SwapSide;
+      b: SwapSide;
       aName: string;
       bName: string;
       fromSquad: string;
