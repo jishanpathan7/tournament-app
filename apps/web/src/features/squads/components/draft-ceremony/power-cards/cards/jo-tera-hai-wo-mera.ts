@@ -87,7 +87,7 @@ export const joTeraHaiWoMera: PowerCard = {
         events: [
           { type: "CardConsumed", squadId: from.id, cardId: "swap" },
           { type: "CardConsumed", squadId: to.id, cardId: "protection" },
-          { type: "ImmunityTriggered", squadId: to.id, toSquad: to.name },
+          { type: "ImmunityTriggered", squadId: to.id, toSquad: to.name, cardId: "protection" },
           { type: "SwapBlocked", cardId: "swap", toSquad: to.name, reason: "immunity" },
         ],
       };

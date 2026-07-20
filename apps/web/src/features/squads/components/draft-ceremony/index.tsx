@@ -16,7 +16,7 @@ import {
   type CeremonySettings,
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
-import { getCard } from "@/features/squads/components/draft-ceremony/power-cards";
+import { allCards, getCard } from "@/features/squads/components/draft-ceremony/power-cards";
 import type {
   CardPreview,
   PowerEvent as EnginePowerEvent,
@@ -51,6 +51,8 @@ interface PowerEvent {
   kind: PowerKind;
   /** Line under the title, e.g. "Team A drew 🔄 Jo Tera Hai Wo Mera". */
   detail: string;
+  /** Optional reassurance line, e.g. "Bonus card — no pick lost". */
+  note?: string;
   /** Present when a Meme Drop card is played. */
   meme?: Meme;
 }
@@ -1074,6 +1076,10 @@ function MainScreen({
   const [burstKey, setBurstKey] = useState(0);
   const [flashSquadId, setFlashSquadId] = useState<string | null>(null);
   const [countdownActive, setCountdownActive] = useState(false);
+  // Shown during the bonus re-spin so the room knows the pick still stands.
+  const [respinNote, setRespinNote] = useState<string | null>(null);
+  // Teams that have already had their 3·2·1 moment (countdown is once per team).
+  const countedDownTeamsRef = useRef<Set<string>>(new Set());
   // Active power being resolved on the wheel (drives the PowerOverlay).
   const [powerEvent, setPowerEvent] = useState<PowerEvent | null>(null);
   // Team currently playing a Swap card — armed to pick a target team.
@@ -1123,6 +1129,10 @@ function MainScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resolvedSkill, pool, powerCount]);
 
+  // How many power slots are actually still on the wheel right now — the teaser
+  // reads this, not the fixed setting, so it stops counting consumed slots.
+  const remainingPowerSlots = wheelSlots.filter((s) => s.type === "power").length;
+
   // Organizer shortcut: Space bar spins (so the ceremony can be driven hands-free
   // from across the room). Ignored while typing in an input.
   useEffect(() => {
@@ -1145,8 +1155,19 @@ function MainScreen({
     if (!canSpin || !currentSquad) return;
     // Last player left → no spin/countdown; runSpin auto-assigns them.
     const lastPlayer = pool.length <= 1;
+    // Countdown only on a team's FIRST pick. Running it before all ~40 picks adds
+    // over a minute of dead air and the bit goes stale; once per team keeps the
+    // "on the clock" beat without stalling the ceremony.
+    const firstPickForTeam = !countedDownTeamsRef.current.has(currentSquad.id);
     // Wildcard Finish: the last picks fire rapidly, no countdown, for a crescendo.
-    if (settings.funMode && settings.onTheClock && !isWildcardActive && !lastPlayer) {
+    if (
+      settings.funMode &&
+      settings.onTheClock &&
+      !isWildcardActive &&
+      !lastPlayer &&
+      firstPickForTeam
+    ) {
+      countedDownTeamsRef.current.add(currentSquad.id);
       setCountdownActive(true); // countdown's onDone triggers runSpin
     } else {
       void runSpin();
@@ -1196,14 +1217,19 @@ function MainScreen({
         setPowerEvent({
           kind: landed.power,
           detail: `${currentSquad.name} drew ${meta.emoji} ${meta.label}`,
+          // Say it out loud: landing on a power is a BONUS, not a wasted turn.
+          // Without this the room reads the re-spin as the team losing a pick.
+          note: "Bonus card — no pick lost. Spinning again for a player…",
         });
         await wait(scaled(1.7, settings.speed) * 1000);
         setPowerEvent(null);
 
         // Auto re-spin to a real player — the team's pick is unaffected.
         setHighlightIndex(null);
+        setRespinNote(`${currentSquad.name} still picks — bonus card awarded`);
         target = playerIdxs[Math.floor(Math.random() * playerIdxs.length)]!;
         await wheelRef.current.spin(target);
+        setRespinNote(null);
       }
     }
 
@@ -1289,12 +1315,21 @@ function MainScreen({
     } else if (swapDone) {
       display = { kind: swapDone.cardId, detail: `${swapDone.aName}  ⇄  ${swapDone.bName}` };
     } else if (blocked) {
+      // Name the blocking card from its own metadata, never a hardcoded string.
+      const immunity = events.find((e) => e.type === "ImmunityTriggered");
+      const blocker = immunity ? getCard(immunity.cardId) : null;
       display = {
         kind: blocked.cardId,
         detail:
-          blocked.reason === "immunity"
-            ? `🛡️ Blocked by ${blocked.toSquad}'s Dabur Immunity!`
+          blocked.reason === "immunity" && blocker
+            ? `${blocker.emoji} Blocked by ${blocked.toSquad}'s ${blocker.label}!`
             : "No eligible players to swap",
+        // Immunity cancels the raid at a cost to BOTH sides — say so, or the
+        // shielded team looks like it got the block for free.
+        note:
+          blocked.reason === "immunity"
+            ? "Both cards are spent — the shield is used up too"
+            : "No card was spent — you can play it again",
       };
     }
     if (!display) return;
@@ -1388,6 +1423,14 @@ function MainScreen({
             <SquadBanner squad={currentSquad} squadIndex={currentSquadIdx} />
           )}
 
+          {/* Bonus re-spin in flight — keeps the room oriented mid-spin. */}
+          {respinNote && (
+            <div className="flex items-center gap-2 rounded-full border border-[#34d399]/50 bg-[#34d399]/15 px-5 py-1.5 text-sm font-black text-[#34d399]">
+              <Sparkles className="h-4 w-4" />
+              {respinNote}
+            </div>
+          )}
+
           <WinnerBurst burstKey={burstKey} />
 
           {poolEmpty ? (
@@ -1416,11 +1459,13 @@ function MainScreen({
                   onClick={handleSpin}
                 />
 
-                {/* Power slots present on the wheel — tease the room. */}
-                {powersEnabled && powerCount > 0 && spinPhase === "idle" && (
+                {/* Power slots present on the wheel — tease the room. Counted from
+                    the LIVE wheel so it stops claiming slots that were consumed. */}
+                {powersEnabled && remainingPowerSlots > 0 && spinPhase === "idle" && (
                   <span className="flex items-center gap-1.5 text-xs font-bold text-[#fbbf24]">
                     <Sparkles className="h-3.5 w-3.5" />
-                    {powerCount} power {powerCount === 1 ? "slot" : "slots"} on this wheel
+                    {remainingPowerSlots} power {remainingPowerSlots === 1 ? "slot" : "slots"} left
+                    on this wheel
                   </span>
                 )}
 
@@ -1439,9 +1484,15 @@ function MainScreen({
                           onClick={() => {
                             void onPlayCard(id, currentSquad.id).then(() => runSpin());
                           }}
-                          className="flex items-center gap-1.5 rounded-full border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-xs font-black text-[#9db0fb] transition-transform hover:scale-105"
+                          title={card.hint}
+                          className="flex flex-col items-center gap-0.5 rounded-2xl border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-[#9db0fb] transition-transform hover:scale-105"
                         >
-                          {card.emoji} Use {card.label} (re-spin)
+                          <span className="text-xs font-black">
+                            {card.emoji} Use {card.label}
+                          </span>
+                          <span className="text-2xs font-semibold text-[#9db0fb]/70">
+                            Re-rolls this pick — spins again for a different player
+                          </span>
                         </button>
                       );
                     })}
@@ -1636,7 +1687,7 @@ function SettingsPanel({
       />
       <SettingToggle
         label="On the clock"
-        hint="3·2·1 countdown before each spin"
+        hint="3·2·1 countdown on each team's first pick"
         checked={settings.onTheClock}
         disabled={!fun}
         onChange={(v) => onUpdate({ onTheClock: v })}
@@ -1700,9 +1751,20 @@ function SettingsPanel({
               </div>
             </div>
           ))}
-          <p className="px-3 pb-1 pt-1 text-xs text-white/35">
-            Cards: 🎯 First Ball Trial · 😂 Meme Drop · 🛡️ Dabur Immunity · 🔄 Jo Tera Hai Wo Mera
-          </p>
+          {/* Listed from the registry so a newly registered card shows up here
+              automatically — never hand-maintain this list. */}
+          <div className="flex flex-col gap-1 px-3 pb-1 pt-2">
+            {allCards()
+              .filter((c) => c.wheelEligible)
+              .map((c) => (
+                <p key={c.id} className="text-xs text-white/35">
+                  <span className="font-semibold text-white/55">
+                    {c.emoji} {c.label}
+                  </span>{" "}
+                  — {c.hint}
+                </p>
+              ))}
+          </div>
         </div>
       )}
 
@@ -1998,6 +2060,7 @@ function PowerOverlay({ event }: { event: PowerEvent }) {
           </p>
         )}
         <p className="text-xl font-bold text-white/85">{event.detail}</p>
+        {event.note && <p className="text-base font-bold text-[#34d399]">{event.note}</p>}
       </div>
     </div>
   );

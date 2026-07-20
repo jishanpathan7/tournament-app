@@ -12,7 +12,7 @@ export const firstBallTrial: PowerCard = {
   id: "respin",
   label: "First Ball Trial",
   title: "First Ball Trial",
-  hint: "A held re-spin the team can use on its own next spin",
+  hint: "Re-rolls this pick — spin again for a different player, on your own turn",
   emoji: "🎯",
   color: "#4f6bf6",
   mode: "self",

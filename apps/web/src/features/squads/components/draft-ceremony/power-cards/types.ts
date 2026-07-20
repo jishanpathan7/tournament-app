@@ -130,4 +130,5 @@ export type PowerEvent =
       toSquad: string;
     }
   | { type: "SwapBlocked"; cardId: PowerCardId; toSquad: string; reason: "immunity" | "no-players" }
-  | { type: "ImmunityTriggered"; squadId: string; toSquad: string };
+  /** `cardId` is the BLOCKING card, so the UI can name it without hardcoding it. */
+  | { type: "ImmunityTriggered"; squadId: string; toSquad: string; cardId: PowerCardId };
