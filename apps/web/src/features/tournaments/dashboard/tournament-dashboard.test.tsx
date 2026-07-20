@@ -23,10 +23,23 @@ import { useTournamentDashboard } from "@/features/tournaments/dashboard/use-tou
 
 const mockUseDashboard = vi.mocked(useTournamentDashboard);
 
-function baseMock(phase: "before" | "during" | "after") {
+type SignalOverrides = Partial<{
+  hasApproved: boolean;
+  squadsReady: boolean;
+  pairingPublished: boolean;
+  checkInReady: boolean;
+  drawComplete: boolean;
+  courtsReady: boolean;
+  franchiseMode: boolean;
+}>;
+
+function baseMock(
+  phase: "before" | "during" | "after",
+  overrides: { step?: number; stepSignals?: SignalOverrides } = {},
+) {
   return {
     phase,
-    step: phase === "after" ? 9 : phase === "during" ? 8 : 2,
+    step: overrides.step ?? (phase === "after" ? 9 : phase === "during" ? 8 : 2),
     stepSignals: {
       hasApproved: true,
       squadsReady: false,
@@ -35,6 +48,7 @@ function baseMock(phase: "before" | "during" | "after") {
       drawComplete: false,
       courtsReady: false,
       franchiseMode: false,
+      ...overrides.stepSignals,
     },
     stats: [{ label: "Test", value: "1" }],
     alerts: [],
@@ -79,6 +93,28 @@ describe("TournamentDashboard", () => {
     expect(screen.getByText("Your checklist")).toBeInTheDocument();
     // RegistrationsSummaryPanel promoted to main flow at step 2
     expect(screen.getByText("Participants")).toBeInTheDocument();
+  });
+
+  // Regression: the hero components were mapped to the wrong step numbers, so
+  // the "Check-in" step offered team/draft actions and never linked to
+  // attendance. Each step must offer the action its own label promises.
+  it("offers check-in — not team actions — at step 3", () => {
+    mockUseDashboard.mockReturnValue(baseMock("before", { step: 3 }));
+    renderWithProviders(<TournamentDashboard tournamentId="t1" />);
+
+    expect(screen.getByText("Open check-in")).toBeInTheDocument();
+    expect(screen.queryByText("Run draft ceremony")).not.toBeInTheDocument();
+  });
+
+  it("offers team actions at step 4, once check-in is done", () => {
+    mockUseDashboard.mockReturnValue(
+      // Franchise mode is what surfaces the draft ceremony entry point.
+      baseMock("before", { step: 4, stepSignals: { checkInReady: true, franchiseMode: true } }),
+    );
+    renderWithProviders(<TournamentDashboard tournamentId="t1" />);
+
+    expect(screen.getByText("Run draft ceremony")).toBeInTheDocument();
+    expect(screen.queryByText("Open check-in")).not.toBeInTheDocument();
   });
 
   it("renders during-phase match progress", () => {

@@ -192,11 +192,11 @@ function Step2Hero({ tournamentId }: { tournamentId: string }) {
   );
 }
 
-// ─── Step 3: Create Teams ─────────────────────────────────────────────────────
+// ─── Assign to teams (step 4) ────────────────────────────────────────────────
 
-function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
+function TeamsHero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
   return (
-    <HeroShell step={3} title={STEP_META[3].label}>
+    <HeroShell step={4} title={STEP_META[4].label}>
       <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
           {signals.franchiseMode
@@ -229,9 +229,9 @@ function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: S
   );
 }
 
-// ─── Step 4: Pair Each Team ───────────────────────────────────────────────────
+// ─── Generate pairs (step 5) ─────────────────────────────────────────────────
 
-function Step4Hero({
+function PairingHero({
   tournamentId,
   signals,
   readiness,
@@ -252,7 +252,7 @@ function Step4Hero({
   );
 
   return (
-    <HeroShell step={4} title={STEP_META[4].label}>
+    <HeroShell step={5} title={STEP_META[5].label}>
       <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
           {signals.franchiseMode
@@ -301,17 +301,17 @@ function Step4Hero({
   );
 }
 
-// ─── Step 5: Check-in & Readiness ────────────────────────────────────────────
+// ─── Check-in & readiness (step 3) ───────────────────────────────────────────
 
-function Step5Hero({ tournamentId }: { tournamentId: string }) {
-  const { data: step5Divisions = [] } = useDivisions(tournamentId);
-  const firstDivisionId = step5Divisions[0]?.id;
+function CheckInHero({ tournamentId }: { tournamentId: string }) {
+  const { data: divisions = [] } = useDivisions(tournamentId);
+  const firstDivisionId = divisions[0]?.id;
   const checkInHref = firstDivisionId
     ? `/console/tournaments/${tournamentId}/divisions/${firstDivisionId}/attendance`
     : `/console/tournaments/${tournamentId}/players`;
 
   return (
-    <HeroShell step={5} title={STEP_META[5].label}>
+    <HeroShell step={3} title={STEP_META[3].label}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-sm">
           Mark attendance and confirm everyone is ready before generating the draw.
@@ -553,12 +553,15 @@ export function PhaseHeroCard({
       return <Step1Hero tournamentId={tournamentId} />;
     case 2:
       return <Step2Hero tournamentId={tournamentId} />;
+    // Order must track STEP_META / deriveTournamentStep: 3 check-in, 4 teams,
+    // 5 pairs. These were previously mapped to the wrong heroes, so the
+    // "Check-in" step offered team/draft actions instead of check-in.
     case 3:
-      return <Step3Hero tournamentId={tournamentId} signals={signals} />;
+      return <CheckInHero tournamentId={tournamentId} />;
     case 4:
-      return <Step4Hero tournamentId={tournamentId} signals={signals} readiness={readiness} />;
+      return <TeamsHero tournamentId={tournamentId} signals={signals} />;
     case 5:
-      return <Step5Hero tournamentId={tournamentId} />;
+      return <PairingHero tournamentId={tournamentId} signals={signals} readiness={readiness} />;
     case 6:
       return <Step6Hero tournamentId={tournamentId} signals={signals} />;
     case 7:
