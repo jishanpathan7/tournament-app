@@ -6,8 +6,9 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import "./index"; // self-registers the four cards
+import "./index"; // self-registers every card
 import { canPlay, isUndoable, playCard, previewCard, reduceTeamCards, undoCard } from "./engine";
+import { getCard } from "./registry";
 import type { CardContext, MutationPort, SwapSide } from "./types";
 import type { SquadMemberView, SquadView } from "@/features/squads/types";
 
@@ -86,6 +87,22 @@ describe("First Ball Trial (self)", () => {
     expect(
       canPlay("respin", ctx({ cardId: "respin", squadId: "A", teamCards: { A: ["respin"] } })),
     ).toBe(true);
+  });
+});
+
+describe("Meri Marzi (self, needs a choice)", () => {
+  it("is playable only when the team holds it, and declares its picker", () => {
+    expect(canPlay("choose", ctx({ cardId: "choose", squadId: "A", teamCards: {} }))).toBe(false);
+    expect(
+      canPlay("choose", ctx({ cardId: "choose", squadId: "A", teamCards: { A: ["choose"] } })),
+    ).toBe(true);
+    expect(getCard("choose").selection).toMatchObject({ from: "pool" });
+  });
+
+  it("spends the card and announces, leaving the pick to the ceremony", async () => {
+    const c = ctx({ cardId: "choose", squadId: "A", teamCards: { A: ["choose"] } });
+    const { events } = await playCard("choose", c);
+    expect(events.map((e) => e.type)).toEqual(["CardConsumed", "CardPlayed"]);
   });
 });
 

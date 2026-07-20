@@ -10,7 +10,10 @@
  * because a persistence problem must never break the running ceremony.
  */
 
-import type { CeremonySettings } from "@/features/squads/components/draft-ceremony/ceremony-settings";
+import {
+  DEFAULT_SETTINGS,
+  type CeremonySettings,
+} from "@/features/squads/components/draft-ceremony/ceremony-settings";
 import { findCard } from "@/features/squads/components/draft-ceremony/power-cards";
 import type { TeamCards } from "@/features/squads/components/draft-ceremony/power-cards/engine";
 import type {
@@ -82,6 +85,10 @@ export function loadSession(tournamentId: string): CeremonySession | null {
       activity: (parsed.activity ?? []).filter(
         (a) => !("cardId" in a.event) || findCard(a.event.cardId) !== undefined,
       ),
+      // Layer over the defaults so a blob written before a setting existed still
+      // restores — otherwise the missing field lands as undefined and the
+      // ceremony crashes on first read.
+      settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
     };
   } catch {
     return null;

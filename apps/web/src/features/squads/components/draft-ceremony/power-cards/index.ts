@@ -10,6 +10,7 @@
 // Side-effect imports: each card calls registerPowerCard on load.
 // Order here fixes ALL_POWER_KINDS order (kept identical to the legacy array).
 import "./cards/first-ball-trial";
+import "./cards/meri-marzi";
 import "./cards/dabur-immunity";
 import "./cards/jo-tera-hai-wo-mera";
 

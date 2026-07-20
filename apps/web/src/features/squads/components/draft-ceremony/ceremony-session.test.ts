@@ -91,6 +91,19 @@ describe("ceremony session persistence", () => {
     expect(loaded?.teamCards).toEqual({ A: ["respin"] });
   });
 
+  it("fills in settings added since the session was saved", () => {
+    // Regression: a session saved before `disabledCardIds` existed restored it as
+    // undefined and the ceremony crashed reading it on first render.
+    // Clone first — `session()` hands back the shared DEFAULT_SETTINGS object,
+    // and deleting from it would strip the field from the defaults themselves.
+    const stale = session({ settings: { ...DEFAULT_SETTINGS } });
+    delete (stale.settings as Partial<typeof stale.settings>).disabledCardIds;
+    window.localStorage.setItem(`playlane:ceremony:${TID}`, JSON.stringify(stale));
+
+    const loaded = loadSession(TID);
+    expect(loaded?.settings.disabledCardIds).toEqual([]);
+  });
+
   it("clears on demand", () => {
     saveSession(TID, session());
     clearSession(TID);

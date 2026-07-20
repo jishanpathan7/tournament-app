@@ -41,6 +41,12 @@ export interface PowerCard {
   mode: PlayMode;
   /** Whether this card can appear as a wheel slot. */
   wheelEligible: boolean;
+  /**
+   * Optional: this card needs a player chosen before it resolves. The ceremony
+   * renders the picker from this descriptor, so a new card needing a choice
+   * costs no new UI.
+   */
+  selection?: { from: "pool"; prompt: string };
 
   /** Availability/validation for the current context. */
   canPlay(ctx: CardContext): boolean;

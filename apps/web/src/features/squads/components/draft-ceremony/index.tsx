@@ -1075,6 +1075,92 @@ function TeamCardsRail({
   );
 }
 
+// ── Player picker (for cards that need a choice) ──────────────────────────────
+
+/**
+ * Generic chooser for any card declaring a `selection`. Renders the card's own
+ * prompt and the pool it asks for, so a future card needing a choice reuses this
+ * untouched. Cancel costs nothing — the card is only spent once a pick is made.
+ */
+function PlayerPickerOverlay({
+  cardId,
+  squadName,
+  players,
+  onPick,
+  onCancel,
+}: {
+  cardId: PowerKind;
+  squadName: string;
+  players: UnassignedRegistrationView[];
+  onPick: (player: UnassignedRegistrationView) => void;
+  onCancel: () => void;
+}) {
+  const card = getCard(cardId);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-[64] flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="flex max-h-[80vh] w-[min(92vw,44rem)] flex-col gap-4 rounded-[2rem] px-8 py-7"
+        style={{
+          background: `linear-gradient(160deg, ${card.color}26 0%, rgba(30,41,59,0.98) 100%)`,
+          border: `2px solid ${card.color}88`,
+          boxShadow: `0 0 80px ${card.color}44, 0 24px 70px rgba(0,0,0,0.6)`,
+        }}
+      >
+        <div className="text-center">
+          <p
+            className="font-mono text-xs font-black uppercase tracking-[0.28em]"
+            style={{ color: card.color }}
+          >
+            {card.emoji} {card.title}
+          </p>
+          <p className="mt-1 text-2xl font-black text-white">
+            {card.selection?.prompt ?? "Choose a player"}
+          </p>
+          <p className="mt-1 text-sm text-white/50">{squadName} is picking</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+          {players.map((p) => (
+            <button
+              key={p.registrationId}
+              onClick={() => onPick(p)}
+              className="flex flex-col items-start gap-0.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left transition-colors hover:border-white/30 hover:bg-white/10"
+            >
+              <span className="truncate text-sm font-bold text-white">{p.displayName}</span>
+              {p.skillLevel && (
+                <span className="text-2xs font-semibold text-white/40">
+                  {skillLabel(p.skillLevel)}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={onCancel}
+          className="mx-auto h-10 rounded-full border border-white/25 px-7 text-sm font-bold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          Cancel — keep the card
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Card confirm dialog ───────────────────────────────────────────────────────
 
 /**
@@ -1281,6 +1367,8 @@ function MainScreen({
     slotIndex: number;
   } | null>(null);
   const [isRerolling, setIsRerolling] = useState(false);
+  // A card that needs a player chosen before it resolves (e.g. Meri Marzi).
+  const [choosing, setChoosing] = useState<PowerKind | null>(null);
   // Resolver for the current power-overlay hold, so it can be cut short.
   const dismissHoldRef = useRef<(() => void) | null>(null);
 
@@ -1476,11 +1564,23 @@ function MainScreen({
     }
     const player = playerSlot.player;
 
+    const committed = await commitPick(player, landedPowerId, target);
+    if (!committed) setSpinPhase("idle");
+  }
+
+  /**
+   * Commit one pick: assign, clear the slot, celebrate, reveal. Shared by the
+   * wheel and by cards that let a team choose their player instead of spinning,
+   * so both routes produce the identical on-screen moment.
+   */
+  async function commitPick(
+    player: UnassignedRegistrationView,
+    landedPowerId: string | null,
+    highlight: number | null,
+  ): Promise<boolean> {
+    const slots = wheelSlots;
     const result = await onAssign(player);
-    if (!result) {
-      setSpinPhase("idle");
-      return;
-    }
+    if (!result) return false;
 
     // Keep the wheel FIXED: drop only the picked player and the power that was just
     // collected. Everything else stays exactly where it is.
@@ -1500,7 +1600,7 @@ function MainScreen({
 
     setBurstKey((k) => k + 1);
     playFanfare();
-    setHighlightIndex(target);
+    setHighlightIndex(highlight);
 
     // Capture wheel center rect for reveal/fly
     const wheelRect = wheelWrapRef.current?.getBoundingClientRect() ?? null;
@@ -1518,6 +1618,7 @@ function MainScreen({
     // Flash team column
     setFlashSquadId(result.squadId);
     setTimeout(() => setFlashSquadId(null), 2000);
+    return true;
   }
 
   function handleRevealDone(cardRect: DOMRect | null) {
@@ -1652,6 +1753,21 @@ function MainScreen({
     }
   }
 
+  /**
+   * Resolve a card that needed a player chosen. The card is spent, then the pick
+   * is committed through the same path a spin uses, so the room sees the usual
+   * reveal rather than a player silently appearing.
+   */
+  async function handleChoosePlayer(cardId: PowerKind, player: UnassignedRegistrationView) {
+    if (!currentSquad) return;
+    setChoosing(null);
+    setSpinPhase("spinning");
+    const events = await onPlayCard(cardId, currentSquad.id);
+    await showPowerEvents(events);
+    const ok = await commitPick(player, null, null);
+    if (!ok) setSpinPhase("idle");
+  }
+
   /** Reverse the most recent reversible play and announce it to the room. */
   async function handleUndo() {
     if (isUndoing) return;
@@ -1774,6 +1890,37 @@ function MainScreen({
                   </span>
                 )}
 
+                {/* Self cards that need a choice (e.g. Meri Marzi) are played on
+                    your own turn INSTEAD of spinning. Rendered from the card's
+                    `selection` descriptor, so a new such card needs no code here. */}
+                {currentSquad &&
+                  spinPhase === "idle" &&
+                  canSpin &&
+                  (teamCards[currentSquad.id] ?? [])
+                    .filter((id) => getCard(id).mode === "self" && getCard(id).selection)
+                    .slice(0, 1)
+                    .map((id) => {
+                      const card = getCard(id);
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => setChoosing(id)}
+                          title={card.hint}
+                          className="flex flex-col items-center gap-0.5 rounded-2xl border px-4 py-1.5 transition-transform hover:scale-105"
+                          style={{
+                            borderColor: `${card.color}88`,
+                            background: `${card.color}26`,
+                            color: card.color,
+                          }}
+                        >
+                          <span className="text-xs font-black">
+                            {card.emoji} Use {card.label}
+                          </span>
+                          <span className="text-2xs font-semibold opacity-70">{card.hint}</span>
+                        </button>
+                      );
+                    })}
+
                 {/* Self-mode cards (e.g. First Ball Trial) re-roll the pick that
                     was just revealed — offered only while that result is the
                     latest one, since there is nothing to re-roll before then.
@@ -1880,6 +2027,15 @@ function MainScreen({
           preview={pendingPlay.preview}
           onConfirm={() => void onConfirmPlay()}
           onCancel={() => setPendingPlay(null)}
+        />
+      )}
+      {choosing && currentSquad && (
+        <PlayerPickerOverlay
+          cardId={choosing}
+          squadName={currentSquad.name}
+          players={wheelSlots.filter(isPlayerSlot).map((s) => s.player)}
+          onPick={(player) => void handleChoosePlayer(choosing, player)}
+          onCancel={() => setChoosing(null)}
         />
       )}
       {powerEvent && <PowerOverlay event={powerEvent} onDismiss={dismissOverlay} />}
