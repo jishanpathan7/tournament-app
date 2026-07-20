@@ -63,6 +63,26 @@ Each top-level folder has its own `README.md`. Backend modules are vertical slic
 - **Frontend env:** single `NEXT_PUBLIC_API_URL`; client appends `/api/v1`. `@/` alias → `src/`.
 - **Commits:** Conventional Commits. Branch off the default branch; don't commit/push unless asked.
 
+## Domain vocabulary (frozen — do not reuse these words loosely)
+
+**Teams are the competitors. Players and pairs exist only to represent a team.** Only teams appear in
+a draw; only teams have standings. Player and pair numbers are *stats*, never a league table.
+
+| Concept | In the UI | In the domain | Meaning |
+|---|---|---|---|
+| Competitor | **Team** | `Team` | The franchise. The only thing with a W/L record |
+| Its players | **Roster** | roster | Players belonging to a team |
+| Two players | **Pair** | `Pair` | Two players from **one** team. Never crosses teams |
+| Team vs Team | **Fixture** | `Tie` | One meeting in the draw |
+| One doubles match | **Match** | `Leg` | Sits inside a fixture |
+
+⚠️ Historically `Team` meant a *pair* and `Squad` meant the *team*. That collision caused a real
+production bug (pair tags rendering the pair's own name). Never say "squad", never say "team" for two
+people, and never surface "tie"/"leg" in the UI.
+
+Odd rosters: pairs per team = ⌈roster ÷ 2⌉ — one **doubled player** plays twice so nobody sits out.
+All teams field the same pair count. See `docs/ORGANIZER-JOURNEY.md`.
+
 ## Canonical docs (read before large changes)
 
 | Doc | Purpose |
@@ -71,6 +91,7 @@ Each top-level folder has its own `README.md`. Backend modules are vertical slic
 | `Technical-Architecture.md` | Folder structure, API, schema, auth/z, realtime, sharing, uploads, notifications, QR, hosting |
 | `docs/STACK.md` | Pinned stack + what we kept/dropped from the blueprint and why |
 | `docs/DESIGN-SYSTEM.md` | UI/UX design system ("Candy Sticker" theme) + themed mockups in `docs/mockups/` |
+| `docs/ORGANIZER-JOURNEY.md` | **Canonical organizer journey.** Product philosophy, per-phase intent, confusion points. Read before designing any organizer-facing flow |
 | `ENGINEERING_GUIDELINES.md` | **Engineering standards for all new code (read before building).** Reuse-first rule, architecture, conventions, testing, security, git/PR, dev workflow |
 | `docs/DEPLOYMENT.md` | Free-tier deploy steps, env vars, upgrade triggers |
 | `docs/INTERFACES.md` | Swappable infra contracts (the free→paid seam) |
