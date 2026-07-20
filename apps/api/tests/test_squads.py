@@ -217,3 +217,61 @@ async def test_swap_requires_auth(app, client):
 
     resp = await _swap(client, tid, sq_a, a1, sq_b, b1)
     assert resp.status_code in (401, 403), resp.text
+
+
+# ============================================================
+# Draw entrants — only the level that competes
+# ============================================================
+
+
+async def test_draw_uses_only_the_competing_entrants(app, client):
+    """A squad division draws squads, not the players and pairs inside them.
+
+    Regression: a division holds the same people at three levels at once — as
+    individuals, as the pairs they were put into, and as the squads those pairs
+    belong to. The draw took every level, so 58 players became 92 entrants and a
+    6-fixture round robin generated 4,186 matches.
+    """
+    await _new_org(client)
+    resp = await client.post(
+        TOUR,
+        json={"name": "SIBL", "slug": _slug(), "sportKey": "badminton"},
+        headers=_csrf(client),
+    )
+    tid = resp.json()["id"]
+    div = await client.post(
+        f"{TOUR}/{tid}/divisions",
+        json={"name": "Franchise", "participantType": "squad"},
+        headers=_csrf(client),
+    )
+    assert div.status_code == 201, div.text
+    did = div.json()["id"]
+    await client.post(
+        f"{TOUR}/{tid}/status", json={"status": "registration"}, headers=_csrf(client)
+    )
+
+    # Four squads, two players each — the same eight people at three levels.
+    squads = [await _squad(client, tid, f"Team {n}") for n in range(4)]
+    for squad_id in squads:
+        for _ in range(2):
+            await _assign(client, squad_id, await _approved_registration(client, did))
+
+    stage = await client.post(
+        f"/api/v1/divisions/{did}/stages",
+        json={"type": "round_robin", "seq": 1},
+        headers=_csrf(client),
+    )
+    assert stage.status_code == 201, stage.text
+
+    # The generic draw must refuse: a franchise division is drawn as team ties.
+    drawn = await client.post(
+        f"/api/v1/stages/{stage.json()['id']}/draw",
+        json={"overrideReadiness": True},
+        headers=_csrf(client),
+    )
+    assert drawn.status_code == 422, drawn.text
+    assert drawn.json()["code"] == "use_franchise_draw"
+
+    # And nothing was created — no half-built draw left behind.
+    matches = await client.get(f"/api/v1/stages/{stage.json()['id']}/matches")
+    assert matches.json() == []

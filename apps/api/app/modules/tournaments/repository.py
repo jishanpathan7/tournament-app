@@ -191,19 +191,32 @@ async def delete_stage_draw(session: AsyncSession, org_id: uuid.UUID, sid: uuid.
 
 
 async def approved_participants(
-    session: AsyncSession, org_id: uuid.UUID, did: uuid.UUID
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    did: uuid.UUID,
+    *,
+    kind: str | None = None,
 ) -> Sequence[Participant]:
-    """Approved participants for a division, in seed order (seeded first, then by age)."""
-    stmt = (
-        select(Participant)
-        .where(
-            Participant.division_id == did,
-            Participant.organization_id == org_id,
-            Participant.status == ParticipantStatus.APPROVED.value,
-        )
-        .order_by(Participant.seed.nulls_last(), Participant.created_at)
+    """Approved participants for a division, in seed order (seeded first, then by age).
+
+    ``kind`` restricts the result to the entrants that actually compete. A division
+    holds the same people at several levels at once — as individuals, as the pairs
+    they were put into, and as the squads those pairs belong to. Without the filter
+    every level is returned and they are all drawn against each other, so 58 players
+    become 92 "entrants" and a 6-fixture draw becomes 4,186 matches.
+    """
+    stmt = select(Participant).where(
+        Participant.division_id == did,
+        Participant.organization_id == org_id,
+        Participant.status == ParticipantStatus.APPROVED.value,
     )
-    return (await session.execute(stmt)).scalars().all()
+    if kind is not None:
+        stmt = stmt.where(Participant.kind == kind)
+    return (
+        (await session.execute(stmt.order_by(Participant.seed.nulls_last(), Participant.created_at)))
+        .scalars()
+        .all()
+    )
 
 
 async def get_sport_profile_by_key(

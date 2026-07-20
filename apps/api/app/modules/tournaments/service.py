@@ -539,7 +539,22 @@ async def generate_draw(
     division = await _require_division(session, org_id, stage.division_id)
     tournament = await _require_tournament(session, org_id, division.tournament_id)
 
-    participants = list(await repo.approved_participants(session, org_id, division.id))
+    # A franchise division is drawn as team-vs-team ties, each holding several
+    # doubles matches — a different structure this generic draw cannot build. It
+    # used to run anyway and pull every entrant level at once (players, their pairs
+    # and their squads), drawing them all against each other.
+    if division.participant_type == ParticipantKind.SQUAD.value:
+        raise ValidationError(
+            "this is a team division — use the team draw to generate fixtures",
+            code="use_franchise_draw",
+        )
+
+    # Only the entrants the division actually fields — see approved_participants.
+    participants = list(
+        await repo.approved_participants(
+            session, org_id, division.id, kind=division.participant_type
+        )
+    )
     if len(participants) < 2:
         raise ValidationError(
             "at least 2 approved participants are required to draw", code="too_few_participants"
@@ -619,7 +634,11 @@ async def advance_to_knockout(
             code="too_few_ranked",
         )
 
-    participants = list(await repo.approved_participants(session, org_id, division.id))
+    participants = list(
+        await repo.approved_participants(
+            session, org_id, division.id, kind=division.participant_type
+        )
+    )
     ko_participants = [p for p in participants if str(p.id) in top_ids]
     if len(ko_participants) < 2:
         raise ValidationError(

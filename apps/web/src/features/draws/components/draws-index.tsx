@@ -23,20 +23,28 @@ function DivisionDrawCard({
   tournamentId,
   divisionId,
   divisionName,
+  participantType,
   tournamentSlug,
 }: {
   tournamentId: string;
   divisionId: string;
   divisionName: string;
+  participantType?: string;
   tournamentSlug?: string;
 }) {
   const { data: stages, isLoading } = useStages(divisionId);
   const participants = useParticipants(divisionId);
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
+  // Count only the entrants this division actually fields. The same people exist as
+  // individuals, as pairs, and as squads at once, so counting every approved row shows
+  // an inflated figure — 92 for a 58-player, 4-team tournament.
   const approvedCount = useMemo(
-    () => (participants.data ?? []).filter((p) => p.status === "approved").length,
-    [participants.data],
+    () =>
+      (participants.data ?? []).filter(
+        (p) => p.status === "approved" && (!participantType || p.kind === participantType),
+      ).length,
+    [participants.data, participantType],
   );
 
   // No outer Card: DrawSetupPanel is a Card itself, so wrapping would nest them.
@@ -108,6 +116,7 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
                 tournamentId={tournamentId}
                 divisionId={division.id}
                 divisionName={division.name}
+                participantType={division.participantType}
                 tournamentSlug={tournament.data?.slug}
               />
             ))}
@@ -143,6 +152,7 @@ export function DrawsIndex({ tournamentId }: { tournamentId: string }) {
               tournamentId={tournamentId}
               divisionId={division.id}
               divisionName={division.name}
+              participantType={division.participantType}
               tournamentSlug={tournament.data?.slug}
             />
           ))}
