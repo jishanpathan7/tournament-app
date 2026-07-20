@@ -3,6 +3,7 @@ import type {
   AutoDistributeRequest,
   AutoDistributeResponse,
   CreateSquadRequest,
+  SwapMembersRequest,
   TournamentSquadsView,
   UpdateSquadRequest,
 } from "@/features/squads/types";
@@ -23,6 +24,18 @@ export async function autoDistributeSquads(
 ): Promise<AutoDistributeResponse> {
   const { data } = await api.post<AutoDistributeResponse>(
     `/tournaments/${tournamentId}/squads/auto-distribute`,
+    body,
+  );
+  return data;
+}
+
+/** Atomic 1-for-1 member trade between two squads. Returns the refreshed board. */
+export async function swapSquadMembers(
+  tournamentId: string,
+  body: SwapMembersRequest,
+): Promise<TournamentSquadsView> {
+  const { data } = await api.post<TournamentSquadsView>(
+    `/tournaments/${tournamentId}/squads/swap-members`,
     body,
   );
   return data;

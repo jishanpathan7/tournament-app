@@ -92,14 +92,24 @@ export interface CardResult {
   events: PowerEvent[];
 }
 
+/** One side of an atomic swap. */
+export interface SwapSide {
+  squadId: string;
+  registrationId: string;
+}
+
 /**
  * Roster mutation port — the only way a card touches the server. The real
- * implementation wraps the squad assign/remove mutations; tests pass a fake.
- * A future atomic-swap endpoint (P0-2) adds a `swap` method here.
+ * implementation wraps the squad mutations; tests pass a fake. Kept to exactly
+ * what the shipped cards need; add methods when a card actually requires one.
  */
 export interface MutationPort {
-  assign(squadId: string, registrationId: string): Promise<void>;
-  remove(squadId: string, registrationId: string): Promise<void>;
+  /**
+   * Atomically trade one member between two squads — both move or neither does.
+   * Backed by a single transactional endpoint, so a mid-flight failure can never
+   * leave a player unassigned.
+   */
+  swap(a: SwapSide, b: SwapSide): Promise<void>;
 }
 
 // ── Domain events (engine → presentation) ──────────────────────────────────────

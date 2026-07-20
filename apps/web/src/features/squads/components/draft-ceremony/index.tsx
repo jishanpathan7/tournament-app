@@ -17,7 +17,10 @@ import {
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
 import { getCard } from "@/features/squads/components/draft-ceremony/power-cards";
-import type { PowerEvent as EnginePowerEvent } from "@/features/squads/components/draft-ceremony/power-cards/types";
+import type {
+  CardPreview,
+  PowerEvent as EnginePowerEvent,
+} from "@/features/squads/components/draft-ceremony/power-cards/types";
 import {
   buildWheelSlots,
   isPlayerSlot,
@@ -879,6 +882,125 @@ function TeamCardsPanel({
   );
 }
 
+// ── Card confirm dialog ───────────────────────────────────────────────────────
+
+/**
+ * Generic pre-execution confirm. Rendered purely from card metadata + the card's
+ * own `preview()` result, so any card exposing a preview gets this for free —
+ * there is no card-specific logic here. Nothing is mutated until Confirm.
+ */
+function CardConfirmDialog({
+  cardId,
+  preview,
+  onConfirm,
+  onCancel,
+}: {
+  cardId: PowerKind;
+  preview: CardPreview;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const card = getCard(cardId);
+  const ref = useRef<HTMLDivElement>(null);
+  // "no-players" is unactionable — everything else can be confirmed.
+  const canConfirm = preview.ok || preview.reason === "immunity";
+
+  useEffect(() => {
+    if (!ref.current || prefersReducedMotion()) return;
+    gsap.fromTo(
+      ref.current,
+      { scale: 0.85, opacity: 0, y: 16 },
+      { scale: 1, opacity: 1, y: 0, duration: 0.28, ease: "back.out(1.7)" },
+    );
+  }, []);
+
+  // Escape always cancels — a safe out at any moment.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-[64] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Confirm ${card.title}`}
+        className="flex w-[min(90vw,34rem)] flex-col items-center gap-5 rounded-[2rem] px-10 py-9 text-center"
+        style={{
+          background: `linear-gradient(160deg, ${card.color}2b 0%, rgba(30,41,59,0.98) 100%)`,
+          border: `2px solid ${card.color}88`,
+          boxShadow: `0 0 80px ${card.color}44, 0 24px 70px rgba(0,0,0,0.6)`,
+        }}
+      >
+        <span className="text-6xl drop-shadow-lg">{card.emoji}</span>
+        <p
+          className="font-mono text-xs font-black uppercase tracking-[0.28em]"
+          style={{ color: card.color }}
+        >
+          Confirm Power Card
+        </p>
+        <p className="text-3xl font-black text-white">{card.title}</p>
+
+        {/* The swap itself — both sides named explicitly so nothing is disputed. */}
+        {preview.swap ? (
+          <div className="flex w-full flex-col gap-2 rounded-2xl bg-black/25 px-5 py-4">
+            <div className="flex items-center justify-between gap-3 text-left">
+              <span className="text-sm text-white/50">{preview.swap.fromSquad}</span>
+              <span className="text-lg font-black text-white">
+                {preview.swap.a.displayName}
+              </span>
+            </div>
+            <div className="text-center text-2xl font-black" style={{ color: card.color }}>
+              ⇄
+            </div>
+            <div className="flex items-center justify-between gap-3 text-left">
+              <span className="text-sm text-white/50">{preview.swap.toSquad}</span>
+              <span className="text-lg font-black text-white">
+                {preview.swap.b.displayName}
+              </span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xl font-bold text-white/85">{preview.summary}</p>
+        )}
+
+        {preview.reason === "immunity" && (
+          <p className="text-sm font-bold text-[#fbbf24]">
+            This will be blocked — both cards are spent.
+          </p>
+        )}
+
+        <div className="mt-1 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="h-11 rounded-full border border-white/25 px-7 text-sm font-bold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            Cancel
+          </button>
+          {canConfirm && (
+            <button
+              onClick={onConfirm}
+              autoFocus
+              className="h-11 rounded-full px-8 text-sm font-black text-white shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              style={{ backgroundColor: card.color }}
+            >
+              Play {card.label}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ceremony screen ──────────────────────────────────────────────────────
 
 type SpinPhase = "idle" | "spinning" | "revealing";
@@ -898,6 +1020,7 @@ function MainScreen({
   teamCards,
   onAwardCard,
   onPlayCard,
+  onPreviewCard,
   justCompletedSquadId,
   onClearCompleted,
   isWildcardActive,
@@ -923,6 +1046,11 @@ function MainScreen({
     squadId: string,
     targetSquadId?: string,
   ) => Promise<EnginePowerEvent[]>;
+  onPreviewCard: (
+    cardId: PowerKind,
+    squadId: string,
+    targetSquadId?: string,
+  ) => CardPreview | null;
   justCompletedSquadId: string | null;
   onClearCompleted: () => void;
   isWildcardActive: boolean;
@@ -949,6 +1077,13 @@ function MainScreen({
   const [powerEvent, setPowerEvent] = useState<PowerEvent | null>(null);
   // Team currently playing a Swap card — armed to pick a target team.
   const [swapFromId, setSwapFromId] = useState<string | null>(null);
+  // A previewed-but-unconfirmed play. Nothing is mutated while this is set.
+  const [pendingPlay, setPendingPlay] = useState<{
+    cardId: PowerKind;
+    squadId: string;
+    targetSquadId: string;
+    preview: CardPreview;
+  } | null>(null);
   const [ghostFly, setGhostFly] = useState<{
     name: string;
     color: string;
@@ -958,7 +1093,12 @@ function MainScreen({
 
   const currentSquadIdx = squads.findIndex((s) => s.id === currentSquad?.id);
   const canSpin =
-    spinPhase === "idle" && pool.length > 0 && !isAssigning && !countdownActive && !powerEvent;
+    spinPhase === "idle" &&
+    pool.length > 0 &&
+    !isAssigning &&
+    !countdownActive &&
+    !powerEvent &&
+    !pendingPlay;
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
 
   // Organizer sets exactly how many power slots each skill-level wheel gets.
@@ -1178,14 +1318,28 @@ function MainScreen({
     // self plays from its own on-turn button; passive is not clickable.
   }
 
-  // Execute the armed swap onto the chosen target team, via the engine.
-  async function onTargetTeam(targetId: string) {
+  /**
+   * Target chosen for a targeted card — PREVIEW only. Nothing is mutated until
+   * the organizer confirms in the dialog, so a stray click is always recoverable.
+   */
+  function onTargetTeam(targetId: string) {
     const from = swapFromId;
     setSwapFromId(null);
     if (!from || from === targetId) return;
 
-    setPowerEvent({ kind: "swap", detail: "Finding a fair swap…" });
-    const events = await onPlayCard("swap", from, targetId);
+    const preview = onPreviewCard("swap", from, targetId);
+    if (!preview) return;
+    setPendingPlay({ cardId: "swap", squadId: from, targetSquadId: targetId, preview });
+  }
+
+  /** Organizer confirmed the previewed play — now execute it. */
+  async function onConfirmPlay() {
+    const pending = pendingPlay;
+    setPendingPlay(null);
+    if (!pending) return;
+
+    setPowerEvent({ kind: pending.cardId, detail: "Making the trade…" });
+    const events = await onPlayCard(pending.cardId, pending.squadId, pending.targetSquadId);
     await showPowerEvents(events);
   }
 
@@ -1345,6 +1499,14 @@ function MainScreen({
             setCountdownActive(false);
             void runSpin();
           }}
+        />
+      )}
+      {pendingPlay && (
+        <CardConfirmDialog
+          cardId={pendingPlay.cardId}
+          preview={pendingPlay.preview}
+          onConfirm={() => void onConfirmPlay()}
+          onCancel={() => setPendingPlay(null)}
         />
       )}
       {powerEvent && <PowerOverlay event={powerEvent} />}
@@ -1969,6 +2131,7 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           teamCards={ceremony.teamCards}
           onAwardCard={ceremony.awardCard}
           onPlayCard={ceremony.playCard}
+          onPreviewCard={ceremony.previewCard}
           justCompletedSquadId={ceremony.justCompletedSquadId}
           onClearCompleted={ceremony.clearJustCompleted}
           isWildcardActive={ceremony.isWildcardActive}

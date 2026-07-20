@@ -227,6 +227,80 @@ async def remove_member(
     )
 
 
+async def swap_members(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    squad_a_id: uuid.UUID,
+    registration_a_id: uuid.UUID,
+    squad_b_id: uuid.UUID,
+    registration_b_id: uuid.UUID,
+) -> TournamentSquadsView:
+    """Atomically trade one member between two squads.
+
+    Both members move within a single transaction, so a failure part-way can never
+    leave a player unassigned (the four-call client-side sequence it replaces could).
+    Captains are not swappable — the roster keeps its designated captain.
+    """
+    if squad_a_id == squad_b_id:
+        raise ValidationError("Cannot swap within the same team")
+    if registration_a_id == registration_b_id:
+        raise ValidationError("Cannot swap a player with themselves")
+
+    squad_a = await repo.get_squad(session, org_id, squad_a_id)
+    squad_b = await repo.get_squad(session, org_id, squad_b_id)
+    if squad_a is None or squad_b is None:
+        raise NotFoundError("Team not found")
+    if squad_a.tournament_id != tournament_id or squad_b.tournament_id != tournament_id:
+        raise ValidationError("Teams do not belong to this tournament")
+
+    member_a = await repo.get_member_by_registration(session, org_id, registration_a_id)
+    member_b = await repo.get_member_by_registration(session, org_id, registration_b_id)
+    if member_a is None or member_a.squad_id != squad_a_id:
+        raise NotFoundError("Member not on this team")
+    if member_b is None or member_b.squad_id != squad_b_id:
+        raise NotFoundError("Member not on this team")
+
+    if squad_a.captain_registration_id == registration_a_id:
+        raise ValidationError("Cannot swap a team captain")
+    if squad_b.captain_registration_id == registration_b_id:
+        raise ValidationError("Cannot swap a team captain")
+
+    # Single-transaction move: reassign both rows, no delete/insert window.
+    member_a.squad_id = squad_b_id
+    member_b.squad_id = squad_a_id
+    await session.flush()
+
+    audit.record(
+        session,
+        organization_id=org_id,
+        actor_id=actor_id,
+        action="squad.swap",
+        entity="squad",
+        entity_id=squad_a_id,
+        after={
+            "squad_a_id": str(squad_a_id),
+            "registration_a_id": str(registration_a_id),
+            "squad_b_id": str(squad_b_id),
+            "registration_b_id": str(registration_b_id),
+        },
+    )
+    await _emit(
+        session,
+        events.SQUAD_MEMBERS_SWAPPED,
+        {
+            "squad_a_id": str(squad_a_id),
+            "registration_a_id": str(registration_a_id),
+            "squad_b_id": str(squad_b_id),
+            "registration_b_id": str(registration_b_id),
+        },
+    )
+
+    return await _build_board(session, org_id, tournament_id)
+
+
 async def auto_distribute(
     session: AsyncSession,
     *,

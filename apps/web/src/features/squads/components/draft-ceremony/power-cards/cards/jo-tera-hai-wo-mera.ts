@@ -101,11 +101,12 @@ export const joTeraHaiWoMera: PowerCard = {
       };
     }
 
-    // 1-for-1 move via the injected port (atomic swap endpoint lands in P0-2).
-    await ctx.port.remove(from.id, pair.a.registrationId);
-    await ctx.port.remove(to.id, pair.b.registrationId);
-    await ctx.port.assign(to.id, pair.a.registrationId);
-    await ctx.port.assign(from.id, pair.b.registrationId);
+    // Single atomic trade — both players move or neither does. Replaces the old
+    // four-call remove/remove/assign/assign sequence that could half-fail.
+    await ctx.port.swap(
+      { squadId: from.id, registrationId: pair.a.registrationId },
+      { squadId: to.id, registrationId: pair.b.registrationId },
+    );
 
     return {
       events: [

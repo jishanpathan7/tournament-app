@@ -9,11 +9,13 @@ import {
   deleteSquad,
   getSquads,
   removeSquadMember,
+  swapSquadMembers,
   updateSquad,
 } from "@/features/squads/squads-api";
 import type {
   AutoDistributeRequest,
   CreateSquadRequest,
+  SwapMembersRequest,
   TournamentSquadsView,
   UpdateSquadRequest,
 } from "@/features/squads/types";
@@ -67,6 +69,18 @@ export function useRemoveSquadMember(tournamentId: string) {
     mutationFn: ({ squadId, registrationId }: { squadId: string; registrationId: string }) =>
       removeSquadMember(squadId, registrationId),
     onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+  });
+}
+
+/** Atomic 1-for-1 member trade — seeds the cache with the board the API returns. */
+export function useSwapSquadMembers(tournamentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SwapMembersRequest) => swapSquadMembers(tournamentId, body),
+    onSuccess: (board) => {
+      qc.setQueryData(key(tournamentId), board);
+      void qc.invalidateQueries({ queryKey: key(tournamentId) });
+    },
   });
 }
 

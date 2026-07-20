@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import "./index"; // self-registers the four cards
 import { canPlay, playCard, previewCard, reduceTeamCards } from "./engine";
-import type { CardContext, MutationPort } from "./types";
+import type { CardContext, MutationPort, SwapSide } from "./types";
 import type { SquadMemberView, SquadView } from "@/features/squads/types";
 
 function member(id: string, name: string, weight: number): SquadMemberView {
@@ -37,11 +37,8 @@ function squad(id: string, name: string, members: SquadMemberView[]): SquadView 
 function fakePort() {
   const calls: string[] = [];
   const port: MutationPort = {
-    assign: vi.fn(async (squadId: string, rid: string) => {
-      calls.push(`assign:${squadId}:${rid}`);
-    }),
-    remove: vi.fn(async (squadId: string, rid: string) => {
-      calls.push(`remove:${squadId}:${rid}`);
+    swap: vi.fn(async (a: SwapSide, b: SwapSide) => {
+      calls.push(`swap:${a.squadId}:${a.registrationId}<->${b.squadId}:${b.registrationId}`);
     }),
   };
   return { port, calls };
@@ -123,7 +120,7 @@ describe("Jo Tera Hai Wo Mera (targeted)", () => {
     expect(preview?.summary).toContain("Rahul");
   });
 
-  it("executes a 1-for-1 swap via the port (remove,remove,assign,assign) and consumes the card", async () => {
+  it("executes a 1-for-1 swap via a SINGLE atomic port call and consumes the card", async () => {
     const { port, calls } = fakePort();
     const c: CardContext = {
       cardId: "swap",
@@ -134,7 +131,8 @@ describe("Jo Tera Hai Wo Mera (targeted)", () => {
       port,
     };
     const { events } = await playCard("swap", c);
-    expect(calls).toEqual(["remove:A:a1", "remove:B:b1", "assign:B:a1", "assign:A:b1"]);
+    // Exactly one atomic call — no four-step sequence that could half-fail.
+    expect(calls).toEqual(["swap:A:a1<->B:b1"]);
     expect(events.find((e) => e.type === "SwapCompleted")).toMatchObject({
       aName: "Aman",
       bName: "Rahul",

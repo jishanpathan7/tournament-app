@@ -31,8 +31,8 @@ import type {
 } from "@/features/squads/types";
 import {
   useAssignSquadMember,
-  useRemoveSquadMember,
   useSquads,
+  useSwapSquadMembers,
 } from "@/features/squads/use-squads";
 import { errorMessage } from "@/lib/problem";
 
@@ -131,7 +131,7 @@ export function computeDraftOrder(
 export function useCeremony(tournamentId: string) {
   const squadsQuery = useSquads(tournamentId);
   const assignMutation = useAssignSquadMember(tournamentId);
-  const removeMutation = useRemoveSquadMember(tournamentId);
+  const swapMutation = useSwapSquadMembers(tournamentId);
 
   const [phase, setPhase] = useState<CeremonyPhase>("intro");
   const [activeSkill, setActiveSkill] = useState<string | null | undefined>(undefined);
@@ -203,14 +203,16 @@ export function useCeremony(tournamentId: string) {
   // layer only holds state and forwards. Roster mutations flow through `port`.
   const port: MutationPort = useMemo(
     () => ({
-      assign: async (squadId, registrationId) => {
-        await assignMutation.mutateAsync({ squadId, registrationId });
-      },
-      remove: async (squadId, registrationId) => {
-        await removeMutation.mutateAsync({ squadId, registrationId });
+      swap: async (a, b) => {
+        await swapMutation.mutateAsync({
+          squadAId: a.squadId,
+          registrationAId: a.registrationId,
+          squadBId: b.squadId,
+          registrationBId: b.registrationId,
+        });
       },
     }),
-    [assignMutation, removeMutation],
+    [swapMutation],
   );
 
   const buildContext = useCallback(
