@@ -540,6 +540,13 @@ async def publish(
     ):
         user_cache = await _batch_load_users(session, all_submitted_by)
 
+    # Which squad each entrant was drafted into, so the published pair keeps a
+    # reference to its franchise. Without it, surfaces fall back to the pair's own
+    # name and end up labelling a pair with itself.
+    squad_by_registration = await squad_membership_by_registration(
+        session, org_id, ctx.division.tournament_id
+    )
+
     paired_ids: set[str] = set()
     published = 0
     async with timed("publish.materialize_all_teams", _logger, extra={"team_count": team_count}):
@@ -552,7 +559,13 @@ async def publish(
                     code="stale_pairing",
                 )
             _materialize_team(
-                session, org_id, ctx, team, [r for r in regs if r is not None], user_cache
+                session,
+                org_id,
+                ctx,
+                team,
+                [r for r in regs if r is not None],
+                user_cache,
+                squad_by_registration,
             )
             paired_ids.update(members)
             published += 1
@@ -643,6 +656,7 @@ def _materialize_team(
     team: ProposedTeam,
     regs: list[Registration],
     user_cache: dict[uuid.UUID, Any],
+    squad_by_registration: dict[uuid.UUID, uuid.UUID] | None = None,
 ) -> None:
     """Add Team + RosterEntry + Participant rows to the session in memory.
 
@@ -659,8 +673,19 @@ def _materialize_team(
         " / ".join(member_names) if member_names else f"Team {str(team.id)[:8]}"
     )
     captain = regs[0].submitted_by if regs else None
+    # Pairing keeps pairs within a squad, so every member shares one; take the first.
+    squad_id = next(
+        (sid for reg in regs if (sid := (squad_by_registration or {}).get(reg.id)) is not None),
+        None,
+    )
     team_id = uuid.uuid4()
-    team_row = Team(id=team_id, organization_id=org_id, name=name, captain_user_id=captain)
+    team_row = Team(
+        id=team_id,
+        organization_id=org_id,
+        name=name,
+        captain_user_id=captain,
+        squad_id=squad_id,
+    )
     session.add(team_row)
     for reg in regs:
         user = user_cache.get(reg.submitted_by)

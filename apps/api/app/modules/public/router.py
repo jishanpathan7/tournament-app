@@ -210,7 +210,7 @@ async def list_participants(
             kind=p.kind,
             display_name=p.display_name,
             seed=p.seed,
-            team_name=p.team.name if p.team else None,
+            team_name=p.team.squad.name if p.team and p.team.squad else None,
         )
         for p in rows
     ]
@@ -232,7 +232,7 @@ async def get_participant(
         kind=p.kind,
         display_name=p.display_name,
         seed=p.seed,
-        team_name=p.team.name if p.team else None,
+        team_name=p.team.squad.name if p.team and p.team.squad else None,
     )
 
 

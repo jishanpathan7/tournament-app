@@ -75,7 +75,7 @@ async def list_tournament_participants(
         select(Participant)
         .join(Division, Participant.division_id == Division.id)
         .where(Division.tournament_id == tid, Participant.organization_id == org_id)
-        .options(selectinload(Participant.team))
+        .options(selectinload(Participant.team).selectinload(Team.squad))
     )
     return (await session.execute(stmt)).scalars().all()
 
