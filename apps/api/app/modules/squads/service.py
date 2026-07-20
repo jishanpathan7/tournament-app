@@ -298,6 +298,11 @@ async def swap_members(
         },
     )
 
+    # Mutating member.squad_id directly does not update the already-loaded
+    # Squad.members collections, so expire before rebuilding or the response
+    # would echo the pre-swap rosters.
+    session.expire_all()
+
     return await _build_board(session, org_id, tournament_id)
 
 

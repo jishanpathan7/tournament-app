@@ -136,6 +136,12 @@ async def test_swap_moves_both_members(app, client):
     assert _members(board, sq_a) == {b1}
     assert _members(board, sq_b) == {a1}
 
+    # Re-read from the server: the response must reflect persisted state, not a
+    # stale in-session view of the rosters.
+    fresh = (await client.get(f"{TOUR}/{tid}/squads")).json()
+    assert _members(fresh, sq_a) == {b1}
+    assert _members(fresh, sq_b) == {a1}
+
 
 async def test_swap_keeps_team_sizes_identical(app, client):
     tid, sq_a, a1, sq_b, b1 = await _two_teams(client)
