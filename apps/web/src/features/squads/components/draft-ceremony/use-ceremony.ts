@@ -146,6 +146,9 @@ export function useCeremony(tournamentId: string) {
   // Power cards each team is holding — awarded when the wheel lands on a power
   // slot, played later. Keyed by squad id. Mutated only via engine reducers.
   const [teamCards, setTeamCards] = useState<TeamCards>({});
+  // Cards already played, per team. Purely a record for the UI — a spent card is
+  // shown greyed out rather than vanishing, so the room can see what was used.
+  const [spentCards, setSpentCards] = useState<TeamCards>({});
   // Squad that just received its final player — drives the completion celebration.
   const [justCompletedSquadId, setJustCompletedSquadId] = useState<string | null>(null);
 
@@ -194,6 +197,7 @@ export function useCeremony(tournamentId: string) {
     setPickIndex(saved.pickIndex);
     setHistory(saved.history);
     setTeamCards(saved.teamCards);
+    setSpentCards(saved.spentCards);
     setSettings(saved.settings);
     setActiveSkill(saved.activeSkillSet ? saved.activeSkill : undefined);
     setPhase(saved.phase);
@@ -212,12 +216,13 @@ export function useCeremony(tournamentId: string) {
       pickIndex,
       history,
       teamCards,
+      spentCards,
       assignedIds: [...assignedIds.current],
       activeSkill: activeSkill ?? null,
       activeSkillSet: activeSkill !== undefined,
       settings,
     });
-  }, [tournamentId, phase, pickIndex, history, teamCards, activeSkill, settings]);
+  }, [tournamentId, phase, pickIndex, history, teamCards, spentCards, activeSkill, settings]);
 
   // Last-resort guard: warn before an accidental reload/close mid-draft.
   useEffect(() => {
@@ -318,6 +323,15 @@ export function useCeremony(tournamentId: string) {
     async (cardId: PowerCardId, squadId: string, targetSquadId?: string): Promise<PowerEvent[]> => {
       const { events } = await enginePlay(cardId, buildContext(cardId, squadId, targetSquadId));
       setTeamCards((prev) => reduceTeamCards(prev, events));
+      // Mirror every consumption into the spent log so the rail can show it.
+      setSpentCards((prev) => {
+        let next = prev;
+        for (const e of events) {
+          if (e.type !== "CardConsumed") continue;
+          next = { ...next, [e.squadId]: [...(next[e.squadId] ?? []), e.cardId] };
+        }
+        return next;
+      });
       if (events.some((e) => e.type === "SwapCompleted")) {
         void squadsQuery.refetch();
       }
@@ -347,6 +361,7 @@ export function useCeremony(tournamentId: string) {
     totalPicksRef.current = draftOrderRef.current.length;
     setPickIndex(0);
     setTeamCards({});
+    setSpentCards({});
     // Fun Mode with intros enabled runs the team walk-in first.
     setPhase(settings.funMode && settings.teamIntroductions ? "intros" : "main");
   }
@@ -447,6 +462,7 @@ export function useCeremony(tournamentId: string) {
     captainBySquad,
     powersEnabled,
     teamCards,
+    spentCards,
     awardCard,
     canPlayCard,
     previewCard,

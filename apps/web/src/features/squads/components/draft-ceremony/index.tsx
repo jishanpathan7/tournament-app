@@ -315,9 +315,10 @@ interface RosterProps {
   assignments: { registrationId: string; displayName: string; squadId: string }[];
   columnRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   flashSquadId: string | null;
+  teamCards: Record<string, PowerKind[]>;
 }
 
-function SquadRoster({ squads, assignments, columnRefs, flashSquadId }: RosterProps) {
+function SquadRoster({ squads, assignments, columnRefs, flashSquadId, teamCards }: RosterProps) {
   return (
     <div className="flex flex-col gap-2.5">
       {squads.map((squad, i) => {
@@ -347,6 +348,27 @@ function SquadRoster({ squads, assignments, columnRefs, flashSquadId }: RosterPr
             <div className="mb-2 flex items-center gap-2">
               <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
               <span className="text-sm font-bold text-white">{squad.name}</span>
+              {/* Passive cards (the shield) are a standing property of the team —
+                  show them ON the team so protection is visible BEFORE a raid,
+                  not discovered when a swap mysteriously fails. Driven by mode. */}
+              {(teamCards[squad.id] ?? [])
+                .filter((id) => getCard(id).mode === "passive")
+                .map((id, idx) => {
+                  const card = getCard(id);
+                  return (
+                    <span
+                      key={`${id}-${idx}`}
+                      title={`${card.label} — ${card.hint}`}
+                      className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs"
+                      style={{
+                        background: `${card.color}30`,
+                        border: `1px solid ${card.color}88`,
+                      }}
+                    >
+                      {card.emoji}
+                    </span>
+                  );
+                })}
               <span className="ml-auto font-mono text-xs text-white/40">{total}</span>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -811,57 +833,86 @@ function CompletionScreen({
   );
 }
 
-// ── Team power-card inventory ─────────────────────────────────────────────────
+// ── Team power-card inventory (TV rail) ──────────────────────────────────────
 
-function TeamCardsPanel({
+/**
+ * Always-visible power-card rail. Deliberately NOT in the collapsible sidebar:
+ * the draft is projected to a room, so ownership has to be legible at a distance
+ * and usable on a tablet. Renders entirely from registry metadata + `card.mode`,
+ * so a newly registered card appears here with no change to this component.
+ */
+function TeamCardsRail({
   squads,
   teamCards,
+  spentCards,
   swapFromId,
   onCardClick,
   onTargetTeam,
 }: {
   squads: SquadView[];
   teamCards: Record<string, PowerKind[]>;
+  spentCards: Record<string, PowerKind[]>;
   swapFromId: string | null;
   onCardClick: (squadId: string, kind: PowerKind) => void;
   onTargetTeam: (squadId: string) => void;
 }) {
-  const anyCards = squads.some((s) => (teamCards[s.id] ?? []).length > 0);
-  if (!anyCards && !swapFromId) return null;
+  const anyActivity = squads.some(
+    (s) => (teamCards[s.id] ?? []).length > 0 || (spentCards[s.id] ?? []).length > 0,
+  );
+  if (!anyActivity && !swapFromId) return null;
 
   return (
-    <div className="mb-4 flex flex-col gap-1.5">
-      <p className="text-2xs mb-1 font-mono font-bold uppercase tracking-widest text-[#fbbf24]/70">
-        Power Cards
-      </p>
-      {squads.map((s, i) => {
-        const hand = teamCards[s.id] ?? [];
-        const color = squadAccent(i);
-        const targetable = !!swapFromId && swapFromId !== s.id;
-        return (
-          <div
-            key={s.id}
-            onClick={() => targetable && onTargetTeam(s.id)}
-            className="flex items-center gap-2 rounded-lg px-2 py-1.5 transition-colors"
-            style={{
-              background: targetable ? "rgba(219,39,119,0.18)" : "rgba(255,255,255,0.03)",
-              border: targetable ? "1px solid #db2777" : "1px solid transparent",
-              cursor: targetable ? "pointer" : "default",
-            }}
-          >
-            <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
-            <span className="truncate text-xs font-semibold text-white/70">{s.name}</span>
-            <div className="ml-auto flex items-center gap-1">
-              {hand.length === 0 ? (
-                <span className="text-2xs text-white/20">no cards</span>
-              ) : (
-                hand.map((k, idx) => {
-                  const mode = getCard(k).mode;
-                  // Instant (Meme) + targeted (Swap) play from the inventory; self
-                  // (First Ball Trial) plays from its own on-turn button; passive
-                  // (Immunity) is not clickable.
-                  const playable = mode === "instant" || mode === "targeted";
-                  const armed = swapFromId === s.id && mode === "targeted";
+    <div className="border-white/8 shrink-0 border-t" style={{ background: BG_SIDEBAR }}>
+      <div className="flex items-center gap-2 px-5 pb-1 pt-2.5">
+        <Sparkles className="h-3.5 w-3.5 text-[#fbbf24]" />
+        <p className="text-2xs font-mono font-bold uppercase tracking-widest text-[#fbbf24]/80">
+          Power Cards
+        </p>
+        {swapFromId && (
+          <span className="animate-pulse text-xs font-black text-[#f472b6]">
+            Choose a team to raid →
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-2.5 overflow-x-auto px-5 pb-3 pt-1">
+        {squads.map((s, i) => {
+          const hand = teamCards[s.id] ?? [];
+          const spent = spentCards[s.id] ?? [];
+          if (hand.length === 0 && spent.length === 0 && !swapFromId) return null;
+
+          const color = squadAccent(i);
+          const targetable = !!swapFromId && swapFromId !== s.id;
+          return (
+            <div
+              key={s.id}
+              onClick={() => targetable && onTargetTeam(s.id)}
+              className="flex min-w-[9.5rem] shrink-0 flex-col gap-2 rounded-2xl px-3 py-2.5 transition-colors"
+              style={{
+                background: targetable ? "rgba(219,39,119,0.2)" : "rgba(255,255,255,0.04)",
+                border: targetable ? "2px solid #db2777" : `1px solid ${color}33`,
+                cursor: targetable ? "pointer" : "default",
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{ backgroundColor: color }}
+                />
+                <span className="truncate text-sm font-black text-white">{s.name}</span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {hand.length === 0 && spent.length === 0 && (
+                  <span className="text-xs text-white/25">no cards</span>
+                )}
+
+                {hand.map((k, idx) => {
+                  const card = getCard(k);
+                  // Instant + targeted play from the rail; self plays from its own
+                  // on-turn button; passive is shown but not clickable.
+                  const playable = card.mode === "instant" || card.mode === "targeted";
+                  const armed = swapFromId === s.id && card.mode === "targeted";
                   return (
                     <button
                       key={`${k}-${idx}`}
@@ -869,26 +920,44 @@ function TeamCardsPanel({
                         e.stopPropagation();
                         if (playable) onCardClick(s.id, k);
                       }}
-                      title={`${getCard(k).label}${playable ? " — click to play" : " (passive)"}`}
-                      className="flex h-6 w-6 items-center justify-center rounded-md text-sm transition-transform hover:scale-110"
+                      title={`${card.label} — ${card.hint}`}
+                      className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 transition-transform hover:scale-105"
                       style={{
-                        background: `${getCard(k).color}22`,
-                        border: armed ? `1.5px solid ${getCard(k).color}` : "1px solid transparent",
+                        background: `${card.color}2e`,
+                        border: armed ? `2px solid ${card.color}` : `1.5px solid ${card.color}77`,
                         cursor: playable ? "pointer" : "default",
                       }}
                     >
-                      {getCard(k).emoji}
+                      <span className="text-xl leading-none">{card.emoji}</span>
+                      <span className="text-2xs font-black leading-tight text-white">
+                        {card.label}
+                      </span>
                     </button>
                   );
-                })
-              )}
+                })}
+
+                {/* Spent cards stay visible (dimmed) so the room can see what was
+                    used — a card that silently vanishes reads as a bug. */}
+                {spent.map((k, idx) => {
+                  const card = getCard(k);
+                  return (
+                    <span
+                      key={`spent-${k}-${idx}`}
+                      title={`${card.label} — already played`}
+                      className="flex items-center gap-1 rounded-xl border border-white/10 px-2 py-1 opacity-35 grayscale"
+                    >
+                      <span className="text-base leading-none">{card.emoji}</span>
+                      <span className="text-2xs font-bold text-white/70 line-through">
+                        {card.label}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        );
-      })}
-      {swapFromId && (
-        <p className="text-2xs mt-1 font-semibold text-[#f472b6]">← Pick a team to raid</p>
-      )}
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -1025,6 +1094,7 @@ function MainScreen({
   settings,
   powersEnabled,
   teamCards,
+  spentCards,
   onAwardCard,
   onPlayCard,
   onPreviewCard,
@@ -1047,6 +1117,7 @@ function MainScreen({
   settings: CeremonySettings;
   powersEnabled: boolean;
   teamCards: Record<string, PowerKind[]>;
+  spentCards: Record<string, PowerKind[]>;
   onAwardCard: (squadId: string, cardId: PowerKind) => EnginePowerEvent[];
   onPlayCard: (
     cardId: PowerKind,
@@ -1522,15 +1593,6 @@ function MainScreen({
           className="border-white/8 hidden w-72 shrink-0 overflow-y-auto border-l p-4 lg:block"
           style={{ background: BG_SIDEBAR }}
         >
-          {settings.funMode && settings.powerSlots && (
-            <TeamCardsPanel
-              squads={squads}
-              teamCards={teamCards}
-              swapFromId={swapFromId}
-              onCardClick={onCardClick}
-              onTargetTeam={onTargetTeam}
-            />
-          )}
           <p className="text-2xs mb-3 font-mono font-bold uppercase tracking-widest text-white/30">
             Teams
           </p>
@@ -1539,9 +1601,23 @@ function MainScreen({
             assignments={history}
             columnRefs={columnRefs}
             flashSquadId={flashSquadId}
+            teamCards={teamCards}
           />
         </aside>
       </div>
+
+      {/* Power-card rail — full width, outside the collapsible sidebar so it is
+          readable on a projector and usable on a tablet. */}
+      {settings.funMode && settings.powerSlots && (
+        <TeamCardsRail
+          squads={squads}
+          teamCards={teamCards}
+          spentCards={spentCards}
+          swapFromId={swapFromId}
+          onCardClick={onCardClick}
+          onTargetTeam={onTargetTeam}
+        />
+      )}
 
       {/* Overlays */}
       {countdownActive && (
@@ -2196,6 +2272,7 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           settings={ceremony.settings}
           powersEnabled={ceremony.powersEnabled}
           teamCards={ceremony.teamCards}
+          spentCards={ceremony.spentCards}
           onAwardCard={ceremony.awardCard}
           onPlayCard={ceremony.playCard}
           onPreviewCard={ceremony.previewCard}

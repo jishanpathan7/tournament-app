@@ -20,6 +20,7 @@ function session(over: Partial<CeremonySession> = {}): CeremonySession {
     pickIndex: 1,
     history: [],
     teamCards: { A: ["meme"] },
+    spentCards: {},
     assignedIds: ["r1"],
     activeSkill: null,
     activeSkillSet: false,
@@ -64,6 +65,19 @@ describe("ceremony session persistence", () => {
   it("restores a finished ceremony so results survive a refresh", () => {
     saveSession(TID, session({ phase: "complete" }));
     expect(loadSession(TID)?.phase).toBe("complete");
+  });
+
+  it("tolerates a blob written before a card field existed", () => {
+    // Same version, missing newer keys — restoring a partial session beats
+    // dropping a live ceremony on the floor.
+    const partial = session();
+    delete (partial as Partial<CeremonySession>).spentCards;
+    window.localStorage.setItem(`playlane:ceremony:${TID}`, JSON.stringify(partial));
+
+    const loaded = loadSession(TID);
+    expect(loaded).not.toBeNull();
+    expect(loaded?.spentCards).toEqual({});
+    expect(loaded?.teamCards).toEqual({ A: ["meme"] });
   });
 
   it("clears on demand", () => {

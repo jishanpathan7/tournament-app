@@ -17,7 +17,7 @@ import type {
   CeremonyPhase,
 } from "@/features/squads/components/draft-ceremony/use-ceremony";
 
-const VERSION = 1;
+const VERSION = 2;
 
 function storageKey(tournamentId: string): string {
   return `playlane:ceremony:${tournamentId}`;
@@ -31,6 +31,8 @@ export interface CeremonySession {
   pickIndex: number;
   history: Assignment[];
   teamCards: TeamCards;
+  /** Cards each team has already played, kept so the rail can show them spent. */
+  spentCards: TeamCards;
   /** Registration ids already assigned this session. */
   assignedIds: string[];
   /** `activeSkill` is `string | null | undefined`; the flag distinguishes unset. */
@@ -57,7 +59,9 @@ export function loadSession(tournamentId: string): CeremonySession | null {
     // Only a ceremony actually in progress is worth restoring.
     if (parsed.phase !== "main" && parsed.phase !== "complete") return null;
     if (!Array.isArray(parsed.draftOrder) || parsed.draftOrder.length === 0) return null;
-    return parsed;
+    // Tolerate a blob written before a field existed rather than dropping the
+    // whole session — losing a ceremony mid-event is the worse failure.
+    return { ...parsed, teamCards: parsed.teamCards ?? {}, spentCards: parsed.spentCards ?? {} };
   } catch {
     return null;
   }
