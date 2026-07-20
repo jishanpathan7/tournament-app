@@ -46,10 +46,6 @@ function scaled(seconds: number, speed: CeremonySpeed) {
   return seconds * SPEED_MULTIPLIER[speed];
 }
 
-function wait(ms: number) {
-  return new Promise<void>((r) => setTimeout(r, ms));
-}
-
 /** A power moment to announce (card drawn, or a played meme). */
 interface PowerEvent {
   kind: PowerKind;
@@ -82,6 +78,39 @@ const CONFETTI_COLORS = ["#4f6bf6", "#34d399", "#fbbf24", "#f472b6", "#9db0fb", 
 
 function squadAccent(i: number) {
   return SQUAD_ACCENTS[i % SQUAD_ACCENTS.length]!;
+}
+
+/**
+ * Short monogram for a team. Teams were distinguished purely by accent colour,
+ * which is no help to a colourblind viewer squinting at a projector — the mark
+ * gives a second, non-colour cue.
+ */
+function teamMark(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0]![0]! + words[1]![0]!).toUpperCase();
+  return name.trim().slice(0, 2).toUpperCase();
+}
+
+/** Colour chip carrying the team monogram. */
+function TeamMark({
+  name,
+  color,
+  size = "sm",
+}: {
+  name: string;
+  color: string;
+  size?: "sm" | "md";
+}) {
+  const dim = size === "md" ? "h-5 w-5 text-[9px]" : "h-4 w-4 text-[8px]";
+  return (
+    <span
+      aria-hidden
+      className={`${dim} flex shrink-0 items-center justify-center rounded font-black leading-none text-white`}
+      style={{ backgroundColor: color }}
+    >
+      {teamMark(name)}
+    </span>
+  );
 }
 
 function playFanfare() {
@@ -350,7 +379,7 @@ function SquadRoster({ squads, assignments, columnRefs, flashSquadId, teamCards 
             }}
           >
             <div className="mb-2 flex items-center gap-2">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              <TeamMark name={squad.name} color={color} />
               <span className="text-sm font-bold text-white">{squad.name}</span>
               {/* Passive cards (the shield) are a standing property of the team —
                   show them ON the team so protection is visible BEFORE a raid,
@@ -784,10 +813,7 @@ function CompletionScreen({
                   }}
                 >
                   <div className="mb-3 flex items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
+                    <TeamMark name={squad.name} color={color} size="md" />
                     <span className="font-bold text-white">{squad.name}</span>
                     <span className="ml-auto font-mono text-sm text-white/40">{total} players</span>
                   </div>
@@ -988,10 +1014,7 @@ function TeamCardsRail({
               }}
             >
               <div className="flex items-center gap-2">
-                <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={{ backgroundColor: color }}
-                />
+                <TeamMark name={s.name} color={color} size="md" />
                 <span className="truncate text-sm font-black text-white">{s.name}</span>
               </div>
 
@@ -1251,6 +1274,29 @@ function MainScreen({
   // Teams that have already had their 3·2·1 moment (countdown is once per team).
   const countedDownTeamsRef = useRef<Set<string>>(new Set());
   const [isUndoing, setIsUndoing] = useState(false);
+  // Resolver for the current power-overlay hold, so it can be cut short.
+  const dismissHoldRef = useRef<(() => void) | null>(null);
+
+  /**
+   * Hold an overlay for `ms`, but let the organizer skip it. Power moments are
+   * fun the first time and drag by the tenth; being stuck watching a fixed
+   * animation with a room waiting is worse than ending it early.
+   */
+  function holdOverlay(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        dismissHoldRef.current = null;
+        resolve();
+      }, ms);
+      dismissHoldRef.current = () => {
+        clearTimeout(timer);
+        dismissHoldRef.current = null;
+        resolve();
+      };
+    });
+  }
+
+  const dismissOverlay = useCallback(() => dismissHoldRef.current?.(), []);
   // Active power being resolved on the wheel (drives the PowerOverlay).
   const [powerEvent, setPowerEvent] = useState<PowerEvent | null>(null);
   // A targeted card that has been picked up and is awaiting a target team.
@@ -1393,7 +1439,7 @@ function MainScreen({
           // Without this the room reads the re-spin as the team losing a pick.
           note: "Bonus card — no pick lost. Spinning again for a player…",
         });
-        await wait(scaled(1.7, settings.speed) * 1000);
+        await holdOverlay(scaled(1.7, settings.speed) * 1000);
         setPowerEvent(null);
 
         // Auto re-spin to a real player — the team's pick is unaffected.
@@ -1507,7 +1553,7 @@ function MainScreen({
     if (!display) return;
 
     setPowerEvent(display);
-    await wait(scaled(1.9, settings.speed) * 1000);
+    await holdOverlay(scaled(1.9, settings.speed) * 1000);
     setPowerEvent(null);
   }
 
@@ -1560,7 +1606,7 @@ function MainScreen({
           detail: `Reversed — ${reverted.aName} ⇄ ${reverted.bName}`,
           note: "Swap undone. The card has been returned.",
         });
-        await wait(scaled(1.9, settings.speed) * 1000);
+        await holdOverlay(scaled(1.9, settings.speed) * 1000);
         setPowerEvent(null);
       }
     } finally {
@@ -1774,7 +1820,7 @@ function MainScreen({
           onCancel={() => setPendingPlay(null)}
         />
       )}
-      {powerEvent && <PowerOverlay event={powerEvent} />}
+      {powerEvent && <PowerOverlay event={powerEvent} onDismiss={dismissOverlay} />}
       {revealInfo && (
         <RevealOverlay
           info={revealInfo}
@@ -2235,7 +2281,7 @@ function TeamCompleteOverlay({
 
 // ── Power slot resolve overlay ────────────────────────────────────────────────
 
-function PowerOverlay({ event }: { event: PowerEvent }) {
+function PowerOverlay({ event, onDismiss }: { event: PowerEvent; onDismiss: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   const meta = getCard(event.kind);
 
@@ -2248,8 +2294,25 @@ function PowerOverlay({ event }: { event: PowerEvent }) {
     );
   }, [event]);
 
+  // Skippable: click anywhere, Space, or Escape. By the tenth power moment the
+  // organizer wants the room moving again, not to sit through the animation.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" || e.code === "Space" || e.key === "Enter") {
+        e.preventDefault();
+        onDismiss();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onDismiss]);
+
   return (
-    <div className="pointer-events-none fixed inset-0 z-[59] flex items-center justify-center bg-black/45 backdrop-blur-sm">
+    <div
+      onClick={onDismiss}
+      role="presentation"
+      className="fixed inset-0 z-[59] flex cursor-pointer items-center justify-center bg-black/45 backdrop-blur-sm"
+    >
       <div
         ref={ref}
         className="flex flex-col items-center gap-4 rounded-[2rem] px-16 py-12 text-center"
@@ -2274,6 +2337,9 @@ function PowerOverlay({ event }: { event: PowerEvent }) {
         )}
         <p className="text-xl font-bold text-white/85">{event.detail}</p>
         {event.note && <p className="text-base font-bold text-[#34d399]">{event.note}</p>}
+        <p className="text-2xs font-mono uppercase tracking-widest text-white/30">
+          Click or press Space to continue
+        </p>
       </div>
     </div>
   );
