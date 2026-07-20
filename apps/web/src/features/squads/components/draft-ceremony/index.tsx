@@ -319,7 +319,13 @@ function SquadRoster({ squads, assignments, columnRefs, flashSquadId }: RosterPr
   return (
     <div className="flex flex-col gap-2.5">
       {squads.map((squad, i) => {
-        const mine = assignments.filter((a) => a.squadId === squad.id);
+        // Once the board refetches (or a session is restored) a drafted player is
+        // already in squad.members — only show session pills for ones that aren't,
+        // otherwise they render twice.
+        const onBoard = new Set(squad.members.map((m) => m.registrationId));
+        const mine = assignments.filter(
+          (a) => a.squadId === squad.id && !onBoard.has(a.registrationId),
+        );
         const total = squad.memberCount + mine.length;
         const color = squadAccent(i);
         const isComplete =
@@ -734,7 +740,10 @@ function CompletionScreen({
 
           <div className="grid w-full gap-3 sm:grid-cols-2">
             {squads.map((squad, i) => {
-              const newOnes = sessionAssignments.filter((a) => a.squadId === squad.id);
+              const onBoard = new Set(squad.members.map((m) => m.registrationId));
+              const newOnes = sessionAssignments.filter(
+                (a) => a.squadId === squad.id && !onBoard.has(a.registrationId),
+              );
               const total = squad.memberCount + newOnes.length;
               const color = squadAccent(i);
               return (
@@ -1892,7 +1901,10 @@ function TeamCompleteOverlay({
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const color = squadAccent(squadIndex);
-  const drafted = sessionMembers.filter((a) => a.squadId === squad.id);
+  const onBoard = new Set(squad.members.map((m) => m.registrationId));
+  const drafted = sessionMembers.filter(
+    (a) => a.squadId === squad.id && !onBoard.has(a.registrationId),
+  );
 
   useEffect(() => {
     const hold = Math.max(1600, scaled(2400, speed));

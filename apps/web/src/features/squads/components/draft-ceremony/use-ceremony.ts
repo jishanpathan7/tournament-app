@@ -1,8 +1,14 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { toast } from "@/components/ui/sonner";
+import {
+  clearSession,
+  loadSession,
+  saveSession,
+  SESSION_VERSION,
+} from "@/features/squads/components/draft-ceremony/ceremony-session";
 import {
   DEFAULT_SETTINGS,
   WILDCARD_PICK_COUNT,
@@ -173,6 +179,61 @@ export function useCeremony(tournamentId: string) {
 
   const assignedIds = useRef<Set<string>>(new Set());
 
+  // ── Refresh resilience ────────────────────────────────────────────────────
+  // Assignments live on the server, but the ceremony's own state (draft order,
+  // pick position, card inventory, session history) is client-only — losing it
+  // mid-event is unrecoverable. Snapshot it and restore on mount.
+  const hydratedRef = useRef(false);
+
+  useEffect(() => {
+    if (hydratedRef.current) return;
+    hydratedRef.current = true;
+
+    const saved = loadSession(tournamentId);
+    if (!saved) return;
+
+    draftOrderRef.current = saved.draftOrder;
+    totalPicksRef.current = saved.totalPicks;
+    assignedIds.current = new Set(saved.assignedIds);
+    setPickIndex(saved.pickIndex);
+    setHistory(saved.history);
+    setTeamCards(saved.teamCards);
+    setSettings(saved.settings);
+    setActiveSkill(saved.activeSkillSet ? saved.activeSkill : undefined);
+    setPhase(saved.phase);
+    toast.success("Ceremony session restored");
+  }, [tournamentId]);
+
+  // Snapshot whenever the persisted slice changes (skipped before the draft runs).
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (phase !== "main" && phase !== "complete") return;
+    saveSession(tournamentId, {
+      v: SESSION_VERSION,
+      phase,
+      draftOrder: draftOrderRef.current,
+      totalPicks: totalPicksRef.current,
+      pickIndex,
+      history,
+      teamCards,
+      assignedIds: [...assignedIds.current],
+      activeSkill: activeSkill ?? null,
+      activeSkillSet: activeSkill !== undefined,
+      settings,
+    });
+  }, [tournamentId, phase, pickIndex, history, teamCards, activeSkill, settings]);
+
+  // Last-resort guard: warn before an accidental reload/close mid-draft.
+  useEffect(() => {
+    if (phase !== "main") return;
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    window.addEventListener("beforeunload", onBeforeUnload);
+    return () => window.removeEventListener("beforeunload", onBeforeUnload);
+  }, [phase]);
+
   const pool = allUnassigned.filter(
     (u) => !assignedIds.current.has(u.registrationId) && u.skillLevel === resolvedSkill,
   );
@@ -280,6 +341,10 @@ export function useCeremony(tournamentId: string) {
   }, []);
 
   function start() {
+    // A fresh ceremony supersedes any restored one.
+    clearSession(tournamentId);
+    assignedIds.current = new Set();
+    setHistory([]);
     // Compute the full draft order once, seeded with current squad state.
     const totalPoolWeight = allUnassigned.reduce((sum, u) => sum + u.skillWeight, 0);
     draftOrderRef.current = computeDraftOrder(squads, allUnassigned.length, totalPoolWeight);
