@@ -191,20 +191,42 @@ export function CourtScorekeeperPanel({
         })}
       </div>
 
-      {/* Deuce / Next-point-wins indicator */}
+      {/* What the live score means: game point / deuce / the golden point, and
+          otherwise plain words for why the game isn't over yet. Previously only
+          the tied cases said anything, so a scorekeeper at 12-9 or 20-18 saw
+          nothing at all and found out at "Submit game". */}
       {(() => {
         const indicator = gameStatusIndicator(a, b, rules);
-        if (!indicator) return null;
+        if (indicator) {
+          const label =
+            indicator === "next_point_wins"
+              ? "⚡ Next point wins"
+              : indicator === "game_point"
+                ? "⚡ Game point"
+                : "Deuce";
+          return (
+            <div
+              className={cn(
+                "border-ink -mt-[2px] border-x-2 px-3 py-1.5 text-center font-mono text-[11px] font-bold uppercase tracking-[0.14em]",
+                indicator === "deuce"
+                  ? "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300"
+                  : "bg-candy-tint text-candy-dark",
+              )}
+            >
+              {label}
+            </div>
+          );
+        }
+        const hint =
+          liveStatus.status === "in_progress" || liveStatus.status === "invalid"
+            ? liveStatus.message
+            : liveStatus.status === "tied"
+              ? "Tied — one side has to go ahead."
+              : null;
+        if (!hint) return null;
         return (
-          <div
-            className={cn(
-              "border-ink -mt-[2px] border-x-2 px-3 py-1.5 text-center font-mono text-[11px] font-bold uppercase tracking-[0.14em]",
-              indicator === "next_point_wins"
-                ? "bg-candy-tint text-candy-dark"
-                : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
-            )}
-          >
-            {indicator === "next_point_wins" ? "⚡ Next point wins" : "Deuce"}
+          <div className="border-ink text-muted-foreground -mt-[2px] border-x-2 px-3 py-1.5 text-center text-[11px]">
+            {hint}
           </div>
         );
       })()}

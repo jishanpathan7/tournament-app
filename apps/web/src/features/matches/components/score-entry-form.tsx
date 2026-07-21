@@ -22,7 +22,11 @@ import {
   type ScoreFormValues,
   validateScoreForm,
 } from "@/features/matches/config";
-import { rulesFromSportConfig } from "@/features/matches/badminton-scoring";
+import {
+  classifyGame,
+  formatMatchRules,
+  rulesFromSportConfig,
+} from "@/features/matches/badminton-scoring";
 import { ApiError, errorMessage } from "@/lib/problem";
 import { queryKeys } from "@/lib/query-keys";
 import { cn } from "@/lib/utils";
@@ -120,7 +124,23 @@ export function ScoreEntryForm({
         ? sideLabels[values.winnerSide]
         : null;
 
+  // Per-game verdict under this division's own rules — the same checks the backend
+  // runs, mirrored client-side so an illegal line is named as you type instead of
+  // coming back as a 422 after you've entered all three games.
+  const gameIssues = values.games.map((g) => {
+    if (g.a === null || g.b === null) return null;
+    const verdict = classifyGame(g.a, g.b, rules);
+    return verdict.status === "invalid" || verdict.status === "in_progress"
+      ? verdict.message
+      : null;
+  });
+
   const submit = () => {
+    const firstBadGame = gameIssues.findIndex((m) => m !== null);
+    if (values.resultType === "normal" && firstBadGame !== -1) {
+      setError(`Game ${firstBadGame + 1}: ${gameIssues[firstBadGame]}`);
+      return;
+    }
     const validation = validateScoreForm(values);
     if (validation) {
       setError(validation);
@@ -172,6 +192,12 @@ export function ScoreEntryForm({
             Game {Math.min(filledGames + 1, rules.bestOf)} of {rules.bestOf}
           </span>
         </div>
+      ) : null}
+
+      {showGames ? (
+        <p className="text-muted-foreground text-2xs font-mono uppercase tracking-[0.14em]">
+          {formatMatchRules(rules)}
+        </p>
       ) : null}
 
       {showGames ? (
@@ -255,6 +281,11 @@ export function ScoreEntryForm({
                   </Button>
                 ) : null}
               </div>
+              {gameIssues[i] ? (
+                <p className="text-pink-dark text-xs font-semibold" role="status">
+                  {gameIssues[i]}
+                </p>
+              ) : null}
             </div>
           ))}
           <Button

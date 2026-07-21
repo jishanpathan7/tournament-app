@@ -20,8 +20,12 @@ import {
 } from "@/features/matches/config";
 import {
   classifyGame,
+  formatMatchRules,
+  gameStatusIndicator,
+  resolveTiedGame,
   rulesFromSportConfig,
   type BadmintonRules,
+  type GameSide,
 } from "@/features/matches/badminton-scoring";
 import * as scoringApi from "@/features/scoring/scoring-api";
 import { useScoreMatch } from "@/features/scoring/use-matches";
@@ -166,6 +170,7 @@ function MobileScorekeeperMatch({
   const [etag, setEtag] = useState<string | null>(null);
   const [fetchingEtag, setFetchingEtag] = useState(true);
   const [walkoverOpen, setWalkoverOpen] = useState(false);
+  const [tieOpen, setTieOpen] = useState(false);
   const score = useScoreMatch(match.id, tournamentId);
 
   useEffect(() => {
@@ -197,23 +202,45 @@ function MobileScorekeeperMatch({
     });
   };
 
+  const recordGame = (game: { a: number; b: number }) => {
+    if (classifyGame(game.a, game.b, rules).status !== "complete") return;
+    const nextGames = [...completedGames, game];
+    setCompletedGames(nextGames);
+    setLiveGame(emptyLiveGame());
+    setActiveGameIndex(nextGames.length);
+    toast.success(`Game ${nextGames.length} recorded`);
+  };
+
   const submitGame = () => {
     const a = liveGame.a ?? 0;
     const b = liveGame.b ?? 0;
     const gameStatus = classifyGame(a, b, rules);
     if (gameStatus.status === "tied") {
-      toast.error("Scores are tied — resolve the tie first.");
+      // Asking who won is the only way out of a tie — a toast telling the
+      // scorekeeper to "resolve it" gave them nothing to act on.
+      setTieOpen(true);
       return;
     }
     if (gameStatus.status !== "complete") {
       toast.error(gameStatus.message ?? "Game is not finished yet.");
       return;
     }
-    const nextGames = [...completedGames, { a, b }];
-    setCompletedGames(nextGames);
-    setLiveGame(emptyLiveGame());
-    setActiveGameIndex(nextGames.length);
-    toast.success(`Game ${nextGames.length} recorded`);
+    recordGame({ a, b });
+  };
+
+  /** Turn a tie into a legal final line — at 14-all under 15-point rules the game
+   * actually ends 16-14, which the scorekeeper shouldn't have to work out. */
+  const resolveTie = (winner: GameSide) => {
+    const a = liveGame.a ?? 0;
+    const status = classifyGame(a, liveGame.b ?? 0, rules);
+    if (status.status !== "tied") return;
+    const resolved = resolveTiedGame(status.score, winner, rules);
+    if (!resolved) {
+      toast.error("Couldn't resolve this tie.");
+      return;
+    }
+    setTieOpen(false);
+    recordGame(resolved);
   };
 
   const undoGame = () => {
@@ -319,6 +346,41 @@ function MobileScorekeeperMatch({
         })}
       </div>
 
+      {/* What the current score means under this division's rules — deuce, the golden
+          point, or how far off a finish still is. Without it the scorekeeper only
+          finds out at "Submit game". */}
+      {(() => {
+        const a = liveGame.a ?? 0;
+        const b = liveGame.b ?? 0;
+        const indicator = gameStatusIndicator(a, b, rules);
+        if (indicator) {
+          return (
+            <div
+              className={cn(
+                "border-ink -mb-[2px] border-x-2 px-3 py-1.5 text-center font-mono text-[11px] font-bold uppercase tracking-[0.14em]",
+                indicator === "next_point_wins"
+                  ? "bg-candy-tint text-candy-dark"
+                  : "bg-yellow-50 text-yellow-700 dark:bg-yellow-950 dark:text-yellow-300",
+              )}
+            >
+              {indicator === "next_point_wins" ? "⚡ Next point wins" : "Deuce"}
+            </div>
+          );
+        }
+        const verdict = classifyGame(a, b, rules);
+        const hint =
+          verdict.status === "in_progress" || verdict.status === "invalid"
+            ? verdict.message
+            : verdict.status === "tied"
+              ? "Tied — one side has to go ahead."
+              : null;
+        return (
+          <p className="text-muted-foreground px-4 pb-1 text-center text-[11px]">
+            {hint ?? formatMatchRules(rules)}
+          </p>
+        );
+      })()}
+
       <div className="border-ink grid flex-1 grid-cols-2 border-y-2">
         <ScoreSide
           label={labelA}
@@ -381,6 +443,29 @@ function MobileScorekeeperMatch({
           Saved when you complete the match
         </p>
       </div>
+
+      <Dialog open={tieOpen} onOpenChange={setTieOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Who won this game?</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">
+            Tied at {liveGame.a ?? 0}–{liveGame.b ?? 0}. Pick the winner and we&apos;ll write the
+            final score the rules allow.
+          </p>
+          <div className="flex gap-3 pt-2">
+            <Button tone="candy" className="flex-1" onClick={() => resolveTie("a")}>
+              {labelA}
+            </Button>
+            <Button tone="candy" className="flex-1" onClick={() => resolveTie("b")}>
+              {labelB}
+            </Button>
+          </div>
+          <Button tone="ghost" size="sm" onClick={() => setTieOpen(false)}>
+            Keep scoring
+          </Button>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={walkoverOpen} onOpenChange={setWalkoverOpen}>
         <DialogContent>

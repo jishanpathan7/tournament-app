@@ -160,9 +160,15 @@ export function gameStatusIndicator(
   a: number,
   b: number,
   rules: BadmintonRules = BADMINTON_DEFAULTS,
-): "deuce" | "next_point_wins" | null {
-  if (a !== b) return null;
+): "deuce" | "next_point_wins" | "game_point" | null {
   const { pointsPerSet, maxPoints, winBy } = rules;
+  if (a !== b) {
+    // A leader one rally from taking the game — ask the score itself rather than
+    // re-deriving the threshold, so this stays true for any rules config.
+    const hi = Math.max(a, b);
+    const lo = Math.min(a, b);
+    return classifyGame(hi + 1, lo, rules).status === "complete" ? "game_point" : null;
+  }
   if (a >= maxPoints - winBy + 1 && a < maxPoints) return "next_point_wins";
   if (a >= pointsPerSet - winBy + 1) return "deuce";
   return null;

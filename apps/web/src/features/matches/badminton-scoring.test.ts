@@ -166,9 +166,10 @@ describe("gameStatusIndicator — SIBL rules", () => {
     expect(gameStatusIndicator(20, 20, SIBL)).toBe("next_point_wins");
   });
 
-  it("returns null when scores are not tied", () => {
-    expect(gameStatusIndicator(15, 14, SIBL)).toBeNull();
-    expect(gameStatusIndicator(20, 19, SIBL)).toBeNull();
+  it("calls an untied score by whether the next rally ends it", () => {
+    // 16-14 and 21-19 are both legal finishes, so both of these are game point.
+    expect(gameStatusIndicator(15, 14, SIBL)).toBe("game_point");
+    expect(gameStatusIndicator(20, 19, SIBL)).toBe("game_point");
   });
 });
 
@@ -207,5 +208,43 @@ describe("SIBL match flow", () => {
     ];
     expect(matchDecided(games, SIBL)).toBe(false);
     expect(decidingGameIndex(2, games, SIBL)).toBe(true);
+  });
+});
+
+describe("resolveTiedGame under SIBL rules (to 15, cap 21)", () => {
+  const sibl = { bestOf: 3, pointsPerSet: 15, winBy: 2, maxPoints: 21 };
+
+  it("takes a tie past the target by two", () => {
+    expect(resolveTiedGame(14, "a", sibl)).toEqual({ a: 16, b: 14 });
+  });
+
+  it("collapses to the golden point at the cap", () => {
+    expect(resolveTiedGame(20, "b", sibl)).toEqual({ a: 20, b: 21 });
+  });
+
+  it("always produces a line the validator accepts", () => {
+    for (const tied of [0, 5, 13, 14, 17, 20]) {
+      const line = resolveTiedGame(tied, "a", sibl)!;
+      expect(classifyGame(line.a, line.b, sibl).status).toBe("complete");
+    }
+  });
+});
+
+describe("gameStatusIndicator — a leader on game point", () => {
+  const sibl = { bestOf: 3, pointsPerSet: 15, winBy: 2, maxPoints: 21 };
+
+  it("flags the score one rally from ending the game", () => {
+    expect(gameStatusIndicator(14, 9, sibl)).toBe("game_point");
+    expect(gameStatusIndicator(16, 15, sibl)).toBe("game_point");
+  });
+
+  it("stays quiet when the game is not close", () => {
+    expect(gameStatusIndicator(12, 9, sibl)).toBeNull();
+  });
+
+  it("stays quiet on a score that is already a finished game", () => {
+    // 20-18 has the two-point margin — the game is over, not one rally away.
+    expect(gameStatusIndicator(20, 18, sibl)).toBeNull();
+    expect(gameStatusIndicator(21, 19, sibl)).toBeNull();
   });
 });
