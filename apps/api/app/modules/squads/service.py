@@ -8,9 +8,10 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, ValidationError
+from app.cache import keys as cache_keys
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_sport_registry
+from app.core.factory import get_cache, get_sport_registry
 from app.db.models import Registration, Squad, SquadMember, Tournament
 from app.engine.squad_distribution import snake_distribute
 from app.modules.registrations.entrant import entrant_display_name
@@ -30,6 +31,14 @@ _AGGREGATE = "squad"
 
 async def _emit(session: AsyncSession, event_type: str, payload: dict) -> None:
     await emit_event(session, aggregate=_AGGREGATE, event_type=event_type, payload=payload)
+
+
+async def _evict_public_roster(tournament_id: uuid.UUID) -> None:
+    """A team's name is stamped on every public surface that mentions its players —
+    the roster, the court queue, the schedule — so a rename or a roster move has to
+    drop the whole tournament's cached views, not just one of them. Otherwise the
+    microsite serves the old name until each TTL happens to lapse."""
+    await get_cache().delete_many(list(cache_keys.public_tournament_keys(tournament_id).values()))
 
 
 async def get_board(
@@ -116,6 +125,7 @@ async def update_squad(
         after={"name": squad.name},
     )
     await _emit(session, events.SQUAD_UPDATED, {"squad_id": str(squad.id)})
+    await _evict_public_roster(squad.tournament_id)
 
     board = await _build_board(session, org_id, squad.tournament_id)
     return _find_squad_view(board, squad.id)
@@ -148,6 +158,7 @@ async def delete_squad(
         before={"tournament_id": str(tournament_id)},
     )
     await _emit(session, events.SQUAD_DELETED, {"squad_id": str(squad_id)})
+    await _evict_public_roster(tournament_id)
 
 
 async def assign_member(
@@ -195,6 +206,7 @@ async def assign_member(
         events.SQUAD_MEMBER_ASSIGNED,
         {"squad_id": str(squad_id), "registration_id": str(registration_id)},
     )
+    await _evict_public_roster(squad.tournament_id)
 
     board = await _build_board(session, org_id, squad.tournament_id)
     return _find_squad_view(board, squad_id)
@@ -225,6 +237,7 @@ async def remove_member(
         events.SQUAD_MEMBER_REMOVED,
         {"squad_id": str(squad_id), "registration_id": str(registration_id)},
     )
+    await _evict_public_roster(squad.tournament_id)
 
 
 async def swap_members(
@@ -303,6 +316,7 @@ async def swap_members(
     # would echo the pre-swap rosters.
     session.expire_all()
 
+    await _evict_public_roster(tournament_id)
     return await _build_board(session, org_id, tournament_id)
 
 
@@ -395,6 +409,7 @@ async def auto_distribute(
         events.SQUAD_AUTO_DISTRIBUTED,
         {"tournament_id": str(tournament_id), "team_count": team_count},
     )
+    await _evict_public_roster(tournament_id)
 
     board = await _build_board(session, org_id, tournament_id, tournament=tournament)
     return AutoDistributeResponse(squads=board.squads, summary=board.summary)
