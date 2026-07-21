@@ -200,6 +200,14 @@ export function DrawSetupPanel({
         )}
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* A franchise division still needs Clear — it is how a draw built the wrong
+              way gets removed — but never Generate, which would rebuild it wrongly. */}
+          {canManage && isFranchise && stage.drawn && !stage.locked ? (
+            <Button tone="paper" size="sm" onClick={() => setClearOpen(true)}>
+              <Trash2 className="h-4 w-4" strokeWidth={2.25} />
+              Clear draw
+            </Button>
+          ) : null}
           {canManage && !isFranchise ? (
             <>
               {!stage.drawn ? (
