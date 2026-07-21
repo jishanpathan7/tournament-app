@@ -283,6 +283,48 @@ async def test_preferred_partner_from_registration_is_honored(app, client):
 # ---- publish ----
 
 
+async def test_published_pair_carries_its_squad_not_its_own_name(app, client):
+    """The pair's team tag must name the SQUAD it was drafted from.
+
+    Regression: surfaces read `Team.name`, which for a pair is the pair's own
+    name, so every tag duplicated the pair heading instead of showing the
+    franchise.
+    """
+    await _new_org(client)
+    tid, did = await _doubles_division(client)
+    regs = await _six_entrants(client, did)
+
+    # Draft everyone into one squad. Note: do NOT approve — pairing only considers
+    # submitted/waitlisted entrants, and squads accept submitted too.
+    squad = await client.post(
+        f"{TOUR}/{tid}/squads", json={"name": "Smashers"}, headers=_csrf(client)
+    )
+    assert squad.status_code == 201, squad.text
+    squad_id = squad.json()["id"]
+    for rid in regs.values():
+        assign = await client.post(
+            f"/api/v1/squads/{squad_id}/members",
+            json={"registrationId": rid},
+            headers=_csrf(client),
+        )
+        assert assign.status_code == 200, assign.text
+
+    run = await _generate(client, did)
+    published = await client.post(
+        f"/api/v1/pairing/runs/{run['id']}/publish", headers=_csrf(client)
+    )
+    assert published.status_code == 200, published.text
+
+    participants = await client.get(f"/api/v1/divisions/{did}/participants")
+    pairs = [p for p in participants.json() if p["kind"] == "pair"]
+    assert pairs, "expected published pairs"
+
+    for pair in pairs:
+        assert pair["teamName"] == "Smashers"
+        # The tag must not merely echo the pair's own label.
+        assert pair["teamName"] != pair["displayName"]
+
+
 async def test_publish_materializes_pair_participants(app, client):
     await _new_org(client)
     _tid, did = await _doubles_division(client)

@@ -26,7 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.db.enums import ParticipantStatus, Visibility
-from app.db.models import Division, Match, Participant, Stage, Tournament
+from app.db.models import Division, Match, Participant, Stage, Team, Tournament
 
 
 async def get_tournament_by_slug(session: AsyncSession, slug: str) -> Tournament | None:
@@ -144,7 +144,7 @@ async def list_participants(
             Participant.organization_id == org_id,
             Participant.status == ParticipantStatus.APPROVED.value,
         )
-        .options(selectinload(Participant.team))
+        .options(selectinload(Participant.team).selectinload(Team.squad))
         .order_by(Participant.seed.nulls_last(), Participant.created_at)
     )
     return (await session.execute(stmt)).scalars().all()
@@ -162,7 +162,7 @@ async def get_participant(
             Division.tournament_id == tid,
             Participant.status == ParticipantStatus.APPROVED.value,
         )
-        .options(selectinload(Participant.team))
+        .options(selectinload(Participant.team).selectinload(Team.squad))
     )
     return (await session.execute(stmt)).scalar_one_or_none()
 

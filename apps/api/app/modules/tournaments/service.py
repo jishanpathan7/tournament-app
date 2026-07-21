@@ -14,6 +14,7 @@ import uuid
 from typing import Any
 
 from sqlalchemy import delete as sa_delete
+from sqlalchemy import select
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -247,6 +248,53 @@ async def delete_tournament(
         tournament.id,
         before={"name": tournament.name, "slug": tournament.slug, "status": tournament.status},
     )
+
+
+async def purge_tournament(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    confirm_name: str,
+) -> None:
+    """Hard-delete a soft-deleted tournament and everything under it. Irreversible.
+
+    Two gates before anything is removed: the tournament must already be soft-deleted,
+    and the caller must echo its name back. The audit row is written first so the
+    record of the purge outlives the data it describes.
+    """
+    tournament = await repo.get_deleted_tournament(session, org_id, tournament_id)
+    if tournament is None:
+        raise NotFoundError("No deleted tournament with that id")
+    if confirm_name.strip() != tournament.name:
+        raise ValidationError(
+            "Type the tournament's name exactly to confirm the purge",
+            code="purge_name_mismatch",
+        )
+
+    await _audit_event(
+        session,
+        org_id,
+        actor_id,
+        events.TOURNAMENT_PURGED,
+        tournament.id,
+        before={"name": tournament.name, "slug": tournament.slug, "status": tournament.status},
+    )
+
+    # participants → squads is RESTRICT (a squad may not vanish while a participant
+    # still claims it), so the cascade from tournaments cannot resolve that edge on
+    # its own. Clearing the participants first lets the rest cascade normally.
+    await session.execute(
+        sa_delete(Participant).where(
+            Participant.division_id.in_(
+                select(Division.id).where(Division.tournament_id == tournament_id)
+            )
+        )
+    )
+    await session.execute(sa_delete(Tournament).where(Tournament.id == tournament_id))
+    await session.flush()
+    await get_cache().delete_many(list(cache_keys.public_tournament_keys(tournament_id).values()))
 
 
 async def transition_status(
@@ -539,20 +587,40 @@ async def generate_draw(
     division = await _require_division(session, org_id, stage.division_id)
     tournament = await _require_tournament(session, org_id, division.tournament_id)
 
-    participants = list(await repo.approved_participants(session, org_id, division.id))
+    # A franchise division is drawn as team-vs-team ties, each holding several
+    # doubles matches — a different structure this generic draw cannot build. It
+    # used to run anyway and pull every entrant level at once (players, their pairs
+    # and their squads), drawing them all against each other.
+    if division.participant_type == ParticipantKind.SQUAD.value:
+        raise ValidationError(
+            "this is a team division — use the team draw to generate fixtures",
+            code="use_franchise_draw",
+        )
+
+    # Only the entrants the division actually fields — see approved_participants.
+    participants = list(
+        await repo.approved_participants(
+            session, org_id, division.id, kind=division.participant_type
+        )
+    )
     if len(participants) < 2:
         raise ValidationError(
             "at least 2 approved participants are required to draw", code="too_few_participants"
         )
-    # Check-in gate: don't draw with un-checked-in participants unless the organizer
-    # explicitly overrides. Attendance lives on the participant row (Registration Ops).
+    # Check-in gate: don't draw with un-checked-in players unless the organizer
+    # explicitly overrides. Attendance is a fact about people, so this looks at the
+    # individual rows — a pair or a franchise team can never check in itself, and
+    # gating on those would block the draw permanently once pairs exist.
     if not override_readiness:
-        not_checked_in = sum(
-            1 for p in participants if p.attendance != AttendanceStatus.CHECKED_IN.value
-        )
+        people = list(
+            await repo.approved_participants(
+                session, org_id, division.id, kind=ParticipantKind.INDIVIDUAL.value
+            )
+        ) or list(participants)
+        not_checked_in = sum(1 for p in people if p.attendance != AttendanceStatus.CHECKED_IN.value)
         if not_checked_in:
             raise ValidationError(
-                f"{not_checked_in} of {len(participants)} participants haven't checked in — "
+                f"{not_checked_in} of {len(people)} players haven't checked in — "
                 "check them in or override to draw anyway",
                 code="checkin_incomplete",
             )
@@ -619,7 +687,11 @@ async def advance_to_knockout(
             code="too_few_ranked",
         )
 
-    participants = list(await repo.approved_participants(session, org_id, division.id))
+    participants = list(
+        await repo.approved_participants(
+            session, org_id, division.id, kind=division.participant_type
+        )
+    )
     ko_participants = [p for p in participants if str(p.id) in top_ids]
     if len(ko_participants) < 2:
         raise ValidationError(

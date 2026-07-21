@@ -29,6 +29,14 @@ export interface UnassignedRegistrationView {
   status: string;
 }
 
+/** Atomically trade one member between two squads (both move or neither does). */
+export interface SwapMembersRequest {
+  squadAId: string;
+  registrationAId: string;
+  squadBId: string;
+  registrationBId: string;
+}
+
 export interface SquadSummary {
   squadCount: number;
   assigned: number;

@@ -503,3 +503,111 @@ async def test_delete_tournament_soft_hides_from_list(app, client):
         TOUR, json={"name": "Again", "slug": slug, "sportKey": "badminton"}, headers=_csrf(client)
     )
     assert resp.status_code == 201, resp.text
+
+
+# ---- purge (irreversible hard delete) ----
+
+
+async def test_purge_removes_the_tournament_and_its_data(app, client, db_session):
+    """The hard part is participants → squads, which is RESTRICT: a squad may not
+    vanish while a participant still points at it, so the cascade from `tournaments`
+    cannot resolve that edge alone. Build exactly that shape before purging."""
+    from sqlalchemy import func, select
+
+    from app.db.enums import ParticipantKind, ParticipantStatus
+    from app.db.models import Division, Participant, Squad, Tournament
+
+    await _new_org(client)
+    tid = await _tournament(client)
+    did = await _division(client, tid)
+    await _stage(client, did)
+
+    squad = (
+        await client.post(f"{TOUR}/{tid}/squads", json={"name": "Team 1"}, headers=_csrf(client))
+    ).json()
+    division = (
+        await db_session.execute(select(Division).where(Division.id == uuid.UUID(did)))
+    ).scalar_one()
+    db_session.add(
+        Participant(
+            organization_id=division.organization_id,
+            division_id=division.id,
+            kind=ParticipantKind.SQUAD.value,
+            squad_id=uuid.UUID(squad["id"]),
+            display_name="Team 1",
+            status=ParticipantStatus.APPROVED.value,
+        )
+    )
+    await db_session.commit()
+
+    name = (await client.get(f"{TOUR}/{tid}")).json()["name"]
+    assert (await client.delete(f"{TOUR}/{tid}", headers=_csrf(client))).status_code == 204
+
+    resp = await client.post(
+        f"{TOUR}/{tid}/purge", json={"confirmName": name}, headers=_csrf(client)
+    )
+    assert resp.status_code == 204, resp.text
+
+    # The children go with it — a soft delete would have left these behind.
+    divisions = await db_session.execute(
+        select(func.count()).select_from(Division).where(Division.tournament_id == uuid.UUID(tid))
+    )
+    assert divisions.scalar_one() == 0
+    participants = await db_session.execute(
+        select(func.count())
+        .select_from(Participant)
+        .where(Participant.division_id == uuid.UUID(did))
+    )
+    assert participants.scalar_one() == 0
+    squads = await db_session.execute(
+        select(func.count()).select_from(Squad).where(Squad.tournament_id == uuid.UUID(tid))
+    )
+    assert squads.scalar_one() == 0
+    gone = await db_session.execute(
+        select(func.count()).select_from(Tournament).where(Tournament.id == uuid.UUID(tid))
+    )
+    assert gone.scalar_one() == 0
+
+
+async def test_purge_refuses_a_tournament_that_is_still_live(app, client):
+    """Purge only ever follows a delete — it is not a shortcut past it."""
+    await _new_org(client)
+    tid = await _tournament(client)
+    name = (await client.get(f"{TOUR}/{tid}")).json()["name"]
+
+    resp = await client.post(
+        f"{TOUR}/{tid}/purge", json={"confirmName": name}, headers=_csrf(client)
+    )
+    assert resp.status_code == 404, resp.text
+    assert (await client.get(f"{TOUR}/{tid}")).status_code == 200
+
+
+async def test_purge_refuses_a_mismatched_name(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    await client.delete(f"{TOUR}/{tid}", headers=_csrf(client))
+
+    resp = await client.post(
+        f"{TOUR}/{tid}/purge", json={"confirmName": "not the name"}, headers=_csrf(client)
+    )
+    assert resp.status_code == 422, resp.text
+    assert resp.json()["code"] == "purge_name_mismatch"
+
+    # Still there, still purgeable once the name is right.
+    ok = await client.post(
+        f"{TOUR}/{tid}/purge", json={"confirmName": "SIBL"}, headers=_csrf(client)
+    )
+    assert ok.status_code == 204, ok.text
+
+
+async def test_purge_cannot_reach_another_orgs_tournament(app, client):
+    await _new_org(client)
+    tid = await _tournament(client)
+    await client.delete(f"{TOUR}/{tid}", headers=_csrf(client))
+
+    async with _client(app) as other:
+        await _new_org(other)
+        resp = await other.post(
+            f"{TOUR}/{tid}/purge", json={"confirmName": "SIBL"}, headers=_csrf(other)
+        )
+        assert resp.status_code == 404, resp.text

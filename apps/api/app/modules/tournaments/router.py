@@ -44,6 +44,7 @@ from app.modules.tournaments.schemas import (
     DrawRequest,
     DrawResponse,
     PublishRequest,
+    PurgeTournamentRequest,
     StageResponse,
     StatusTransitionRequest,
     TournamentResponse,
@@ -277,6 +278,28 @@ async def delete_tournament(
         org_id=principal.organization_id,
         actor_id=principal.user_id,
         tournament_id=tournament_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/tournaments/{tournament_id}/purge",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(authed_csrf)],
+)
+async def purge_tournament(
+    tournament_id: uuid.UUID,
+    body: PurgeTournamentRequest,
+    principal: Principal = Depends(_delete),
+    session: AsyncSession = Depends(get_request_session),
+) -> Response:
+    """Permanently remove a tournament that has already been deleted. Irreversible."""
+    await service.purge_tournament(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        tournament_id=tournament_id,
+        confirm_name=body.confirm_name,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -632,9 +655,9 @@ async def export_matches(
                 m.status,
                 (m.round.label or "") if m.round else "",
                 p_a.display_name if p_a else (str(mp_a.participant_id) if mp_a else ""),
-                (p_a.team.name if p_a and p_a.team else "") if p_a else "",
+                (p_a.team.squad.name if p_a and p_a.team and p_a.team.squad else "") if p_a else "",
                 p_b.display_name if p_b else (str(mp_b.participant_id) if mp_b else ""),
-                (p_b.team.name if p_b and p_b.team else "") if p_b else "",
+                (p_b.team.squad.name if p_b and p_b.team and p_b.team.squad else "") if p_b else "",
                 winner_p.display_name if winner_p else "",
                 score,
                 m.scheduled_at.isoformat() if m.scheduled_at else "",
@@ -679,7 +702,7 @@ async def export_standings(
                     [
                         str(stage.id),
                         p.display_name if p else str(s.participant_id),
-                        (p.team.name if p.team else "") if p else "",
+                        (p.team.squad.name if p.team and p.team.squad else "") if p else "",
                         str(s.rank) if s.rank is not None else "",
                         str(s.played),
                         str(s.won),

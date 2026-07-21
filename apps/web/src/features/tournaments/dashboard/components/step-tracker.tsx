@@ -10,9 +10,16 @@ const STEPS: TournamentStep[] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 
 type StepStatus = "done" | "current" | "pending";
 
-function stepStatus(step: TournamentStep, current: TournamentStep): StepStatus {
-  if (step < current) return "done";
+function stepStatus(
+  step: TournamentStep,
+  current: TournamentStep,
+  completed?: Set<TournamentStep>,
+): StepStatus {
+  // Completion is a fact about the tournament, not about position in the list —
+  // work finished out of order still reads as finished.
+  if (completed?.has(step)) return "done";
   if (step === current) return "current";
+  if (!completed && step < current) return "done";
   return "pending";
 }
 
@@ -28,15 +35,19 @@ export function TournamentStepTracker({
   tournamentId,
   variant = "sidebar",
   franchiseMode = true,
+  completed,
 }: {
   step: TournamentStep;
   tournamentId?: string;
   variant?: "sidebar" | "primary";
   franchiseMode?: boolean;
+  /** Steps actually finished. Omit to fall back to positional completion. */
+  completed?: Set<TournamentStep>;
 }) {
   const visibleSteps = STEPS.filter(
     (s) =>
-      (STEP_META[s].phase !== "after" || s === step) && (franchiseMode || (s !== 3 && s !== 4)),
+      // Only "Assign to teams" is franchise-only. Check-in applies everywhere.
+      (STEP_META[s].phase !== "after" || s === step) && (franchiseMode || s !== 4),
   );
 
   return (
@@ -51,7 +62,7 @@ export function TournamentStepTracker({
       </p>
       <ol className={cn("flex flex-col gap-1", variant === "primary" && "sm:grid sm:grid-cols-2")}>
         {visibleSteps.map((s) => {
-          const status = stepStatus(s, step);
+          const status = stepStatus(s, step, completed);
           const meta = STEP_META[s];
           const isCurrent = status === "current";
           const href =

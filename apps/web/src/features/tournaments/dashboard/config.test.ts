@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  completedSteps,
   deriveAlerts,
   deriveChampions,
   deriveMatchProgress,
@@ -122,5 +123,41 @@ describe("deriveAlerts", () => {
       } as never,
     });
     expect(alerts.some((a) => a.id === "delayed-courts")).toBe(true);
+  });
+});
+
+describe("completedSteps", () => {
+  const none = {
+    hasApproved: false,
+    squadsReady: false,
+    pairingPublished: false,
+    checkInReady: false,
+    drawComplete: false,
+    courtsReady: false,
+    franchiseMode: true,
+  };
+
+  it("marks work done even when it happened out of order", () => {
+    // Teams built and paired before check-in. The checklist used to infer
+    // completion from position, so both read as pending while the teams page
+    // showed four full, paired teams.
+    const done = completedSteps("registration", {
+      ...none,
+      hasApproved: true,
+      squadsReady: true,
+      pairingPublished: true,
+    });
+    expect(done.has(4)).toBe(true); // assign to teams
+    expect(done.has(5)).toBe(true); // generate pairs
+    expect(done.has(3)).toBe(false); // check-in genuinely still outstanding
+  });
+
+  it("does not mark anything beyond what the signals say", () => {
+    const done = completedSteps("registration", none);
+    expect([...done]).toEqual([1]); // only "event setup", implied by leaving draft
+  });
+
+  it("treats a draft tournament as having nothing finished", () => {
+    expect([...completedSteps("draft", none)]).toEqual([]);
   });
 });

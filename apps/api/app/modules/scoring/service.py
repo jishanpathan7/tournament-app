@@ -120,7 +120,9 @@ def build_match_view(
                 score_against=int(against) if against is not None else None,
                 rank=mp.rank,
                 display_name=p.display_name if p else None,
-                team_name=p.team.name if p and p.team else None,
+                # The SQUAD this pair was drafted from — `Team.name` is the pair's
+                # own name, so using it would label a pair with itself.
+                team_name=p.team.squad.name if p and p.team and p.team.squad else None,
             )
         )
     return MatchView(

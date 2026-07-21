@@ -32,15 +32,16 @@ def _division_readiness(
     approved_participants = [
         p for p in participants if p.status == ParticipantStatus.APPROVED.value
     ]
-    has_published_pairs = any(p.kind == ParticipantKind.PAIR.value for p in approved_participants)
+    # Attendance is a fact about people. Pairs and franchise teams are groupings of
+    # the same people, and can never check in themselves — counting them left 30
+    # pairs and 4 teams permanently "awaiting check-in" after every player had
+    # already arrived. Whenever individual rows exist, they are the ones to count.
+    individuals = [p for p in approved_participants if p.kind == ParticipantKind.INDIVIDUAL.value]
 
-    if franchise_mode and has_published_pairs:
-        # Count players from registrations; check-in stays on individual participant rows.
+    if individuals:
+        # Count players from registrations; check-in stays on individual rows.
         approved_regs = [r for r in registrations if r.status == RegistrationStatus.APPROVED.value]
-        individuals = [
-            p for p in approved_participants if p.kind == ParticipantKind.INDIVIDUAL.value
-        ]
-        approved_count = len(approved_regs)
+        approved_count = len(approved_regs) or len(individuals)
         checked_in = sum(
             1 for p in individuals if p.attendance == AttendanceStatus.CHECKED_IN.value
         )

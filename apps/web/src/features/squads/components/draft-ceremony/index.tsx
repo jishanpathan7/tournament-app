@@ -1,20 +1,78 @@
 "use client";
 
 import gsap from "gsap";
-import { ArrowLeft, ChevronRight, RotateCcw, Trophy } from "lucide-react";
+import { ArrowLeft, ChevronRight, RotateCcw, Settings2, Sparkles, Trophy } from "lucide-react";
 import Link from "next/link";
 import ReactConfetti from "react-confetti";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { dur, ease, stagger } from "@/lib/motion";
 import {
   CeremonyWheel,
   type WheelHandle,
 } from "@/features/squads/components/draft-ceremony/ceremony-wheel";
-import { skillLabel, useCeremony } from "@/features/squads/components/draft-ceremony/use-ceremony";
-import type { SquadView, UnassignedRegistrationView } from "@/features/squads/types";
+import {
+  DEFAULT_CARD_SLOTS,
+  SPEED_MULTIPLIER,
+  type CeremonySettings,
+  type CeremonySpeed,
+} from "@/features/squads/components/draft-ceremony/ceremony-settings";
+import {
+  allCards,
+  getCard,
+  isChoiceCard,
+  isRerollCard,
+} from "@/features/squads/components/draft-ceremony/power-cards";
+import type {
+  CardPreview,
+  PowerEvent as EnginePowerEvent,
+} from "@/features/squads/components/draft-ceremony/power-cards/types";
+import {
+  buildWheelSlots,
+  isPlayerSlot,
+  type PowerKind,
+  type WheelSlot,
+} from "@/features/squads/components/draft-ceremony/power-slots";
+import {
+  skillLabel,
+  useCeremony,
+  type ActivityEntry,
+} from "@/features/squads/components/draft-ceremony/use-ceremony";
+import type {
+  SquadMemberView,
+  SquadView,
+  UnassignedRegistrationView,
+} from "@/features/squads/types";
+
+/** Scale an animation duration (seconds) by the ceremony playback speed. */
+function scaled(seconds: number, speed: CeremonySpeed) {
+  return seconds * SPEED_MULTIPLIER[speed];
+}
+
+/** A power moment to announce. */
+interface PowerEvent {
+  kind: PowerKind;
+  /** Line under the title, e.g. "Team A drew 🔄 Jo Tera Hai Wo Mera". */
+  detail: string;
+  /** Optional reassurance line, e.g. "Bonus card — no pick lost". */
+  note?: string;
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+/**
+ * How long a power overlay stays up, in seconds.
+ *
+ * Winning a card is the first time anyone reads it, so it holds far longer than a
+ * normal beat — captains are taking in a name, an icon and a rule at once. Results
+ * of a card already known get less.
+ *
+ * `MIN_HOLD_MS` is a floor the speed setting cannot go below: playback speed is
+ * about animation, not about how fast people read.
+ */
+const CARD_REVEAL_HOLD = 6;
+const CARD_RESULT_HOLD = 4;
+const MIN_HOLD_MS = 5000;
 
 const VICTORY_SOUND_URL = "/sounds/victory-fanfare.mp3";
 const BG = "#1e293b"; // --foreground (dark surface)
@@ -35,6 +93,39 @@ const CONFETTI_COLORS = ["#4f6bf6", "#34d399", "#fbbf24", "#f472b6", "#9db0fb", 
 
 function squadAccent(i: number) {
   return SQUAD_ACCENTS[i % SQUAD_ACCENTS.length]!;
+}
+
+/**
+ * Short monogram for a team. Teams were distinguished purely by accent colour,
+ * which is no help to a colourblind viewer squinting at a projector — the mark
+ * gives a second, non-colour cue.
+ */
+function teamMark(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0]![0]! + words[1]![0]!).toUpperCase();
+  return name.trim().slice(0, 2).toUpperCase();
+}
+
+/** Colour chip carrying the team monogram. */
+function TeamMark({
+  name,
+  color,
+  size = "sm",
+}: {
+  name: string;
+  color: string;
+  size?: "sm" | "md";
+}) {
+  const dim = size === "md" ? "h-5 w-5 text-[9px]" : "h-4 w-4 text-[8px]";
+  return (
+    <span
+      aria-hidden
+      className={`${dim} flex shrink-0 items-center justify-center rounded font-black leading-none text-white`}
+      style={{ backgroundColor: color }}
+    >
+      {teamMark(name)}
+    </span>
+  );
 }
 
 function playFanfare() {
@@ -131,24 +222,59 @@ function WinnerBurst({ burstKey }: { burstKey: number }) {
   );
 }
 
-// ── Reveal overlay ────────────────────────────────────────────────────────────
+// ── Reveal overlay (tiered player profile card) ───────────────────────────────
 
 interface RevealInfo {
   playerName: string;
   skillLevel: string | null;
+  divisionName: string | null;
   squadName: string;
   squadColor: string;
   wheelRect: DOMRect | null;
 }
 
+/** Per-tier presentation — only applied when Fun Mode + tiered reveals are on. */
+interface TierStyle {
+  eyebrow: string;
+  accent: string;
+  entrance: string;
+  glow: number;
+}
+
+function tierStyle(skillLevel: string | null, tiered: boolean): TierStyle {
+  if (!tiered) {
+    return { eyebrow: "Now joining", accent: "#9db0fb", entrance: "back.out(1.6)", glow: 0.2 };
+  }
+  switch (skillLevel) {
+    case "advanced":
+      return { eyebrow: "⚡ Elite Pick", accent: "#fbbf24", entrance: "back.out(2.2)", glow: 0.4 };
+    case "intermediate":
+      return { eyebrow: "Now joining", accent: "#34d399", entrance: "back.out(1.7)", glow: 0.28 };
+    case "beginner":
+      return {
+        eyebrow: "Welcome aboard",
+        accent: "#f472b6",
+        entrance: "back.out(1.4)",
+        glow: 0.24,
+      };
+    default:
+      return { eyebrow: "Now joining", accent: "#9db0fb", entrance: "back.out(1.5)", glow: 0.22 };
+  }
+}
+
 function RevealOverlay({
   info,
+  tiered,
+  speed,
   onDone,
 }: {
   info: RevealInfo;
+  tiered: boolean;
+  speed: CeremonySpeed;
   onDone: (cardRect: DOMRect | null) => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
+  const tier = tierStyle(info.skillLevel, tiered);
 
   useEffect(() => {
     const el = cardRef.current;
@@ -161,18 +287,18 @@ function RevealOverlay({
 
     const tl = gsap.timeline();
 
-    // Entrance: scale up from wheel position
+    // Entrance: scale up from wheel position with the tier's ease.
     tl.fromTo(
       el,
       { scale: 0.25, opacity: 0, y: 40 },
-      { scale: 1, opacity: 1, y: 0, duration: dur.md, ease: "back.out(1.6)" },
+      { scale: 1, opacity: 1, y: 0, duration: scaled(dur.md, speed), ease: tier.entrance },
     )
-      .to(el, { duration: 1.8 }) // hold
+      .to(el, { duration: scaled(1.8, speed) }) // hold
       .to(el, {
         scale: 0.8,
         opacity: 0,
         y: -24,
-        duration: dur.sm,
+        duration: scaled(dur.sm, speed),
         ease: ease.in,
         onComplete() {
           // Fire fly-to-team with card position
@@ -184,30 +310,43 @@ function RevealOverlay({
     return () => {
       tl.kill();
     };
-  }, [onDone]);
+  }, [onDone, speed, tier.entrance]);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
       <div
         ref={cardRef}
-        className="flex flex-col items-center gap-4 rounded-3xl px-14 py-10 text-center shadow-2xl backdrop-blur-md"
+        className="flex flex-col items-center gap-4 rounded-3xl px-16 py-12 text-center shadow-2xl backdrop-blur-md"
         style={{
           background: `linear-gradient(135deg, ${info.squadColor}22 0%, rgba(30,41,59,0.95) 100%)`,
-          border: `2px solid ${info.squadColor}55`,
-          boxShadow: `0 0 60px ${info.squadColor}33, 0 20px 60px rgba(0,0,0,0.6)`,
+          border: `2px solid ${tier.accent}66`,
+          boxShadow: `0 0 80px ${tier.accent}${Math.round(tier.glow * 100)}, 0 20px 60px rgba(0,0,0,0.6)`,
         }}
       >
-        <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-white/50">
-          Now joining
+        <p
+          className="font-mono text-sm font-bold uppercase tracking-[0.25em]"
+          style={{ color: tier.accent }}
+        >
+          {tier.eyebrow}
         </p>
-        <p className="text-5xl font-black text-white drop-shadow-lg">{info.playerName}</p>
-        {info.skillLevel && (
-          <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/70">
-            {skillLabel(info.skillLevel)}
-          </span>
-        )}
+        <p className="text-6xl font-black text-white drop-shadow-lg">{info.playerName}</p>
+        <div className="flex items-center gap-2">
+          {info.skillLevel && (
+            <span
+              className="rounded-full px-3 py-1 text-sm font-bold"
+              style={{ background: `${tier.accent}22`, color: tier.accent }}
+            >
+              {skillLabel(info.skillLevel)}
+            </span>
+          )}
+          {info.divisionName && (
+            <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/60">
+              {info.divisionName}
+            </span>
+          )}
+        </div>
         <div
-          className="flex items-center gap-2 rounded-full px-5 py-2 text-sm font-black text-white shadow-lg"
+          className="mt-1 flex items-center gap-2 rounded-full px-6 py-2.5 text-base font-black text-white shadow-lg"
           style={{ backgroundColor: info.squadColor }}
         >
           <span>→ {info.squadName}</span>
@@ -224,13 +363,20 @@ interface RosterProps {
   assignments: { registrationId: string; displayName: string; squadId: string }[];
   columnRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   flashSquadId: string | null;
+  teamCards: Record<string, PowerKind[]>;
 }
 
-function SquadRoster({ squads, assignments, columnRefs, flashSquadId }: RosterProps) {
+function SquadRoster({ squads, assignments, columnRefs, flashSquadId, teamCards }: RosterProps) {
   return (
     <div className="flex flex-col gap-2.5">
       {squads.map((squad, i) => {
-        const mine = assignments.filter((a) => a.squadId === squad.id);
+        // Once the board refetches (or a session is restored) a drafted player is
+        // already in squad.members — only show session pills for ones that aren't,
+        // otherwise they render twice.
+        const onBoard = new Set(squad.members.map((m) => m.registrationId));
+        const mine = assignments.filter(
+          (a) => a.squadId === squad.id && !onBoard.has(a.registrationId),
+        );
         const total = squad.memberCount + mine.length;
         const color = squadAccent(i);
         const isComplete =
@@ -248,8 +394,29 @@ function SquadRoster({ squads, assignments, columnRefs, flashSquadId }: RosterPr
             }}
           >
             <div className="mb-2 flex items-center gap-2">
-              <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: color }} />
+              <TeamMark name={squad.name} color={color} />
               <span className="text-sm font-bold text-white">{squad.name}</span>
+              {/* Passive cards (the shield) are a standing property of the team —
+                  show them ON the team so protection is visible BEFORE a raid,
+                  not discovered when a swap mysteriously fails. Driven by mode. */}
+              {(teamCards[squad.id] ?? [])
+                .filter((id) => getCard(id).mode === "passive")
+                .map((id, idx) => {
+                  const card = getCard(id);
+                  return (
+                    <span
+                      key={`${id}-${idx}`}
+                      title={`${card.label} — ${card.hint}`}
+                      className="flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs"
+                      style={{
+                        background: `${card.color}30`,
+                        border: `1px solid ${card.color}88`,
+                      }}
+                    >
+                      {card.emoji}
+                    </span>
+                  );
+                })}
               <span className="ml-auto font-mono text-xs text-white/40">{total}</span>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -424,10 +591,12 @@ function SkillTabs({
 function SpinButton({
   phase,
   disabled,
+  lastPlayer,
   onClick,
 }: {
   phase: "idle" | "spinning" | "revealing";
   disabled: boolean;
+  lastPlayer?: boolean;
   onClick: () => void;
 }) {
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -453,7 +622,15 @@ function SpinButton({
   }, [phase, disabled]);
 
   const label =
-    phase === "spinning" ? "Spinning…" : phase === "revealing" ? "Assigned!" : "🎯  Spin";
+    phase === "spinning"
+      ? lastPlayer
+        ? "Assigning…"
+        : "Spinning…"
+      : phase === "revealing"
+        ? "Assigned!"
+        : lastPlayer
+          ? "✓  Assign last player"
+          : "🎯  Spin";
 
   return (
     <button
@@ -635,7 +812,10 @@ function CompletionScreen({
 
           <div className="grid w-full gap-3 sm:grid-cols-2">
             {squads.map((squad, i) => {
-              const newOnes = sessionAssignments.filter((a) => a.squadId === squad.id);
+              const onBoard = new Set(squad.members.map((m) => m.registrationId));
+              const newOnes = sessionAssignments.filter(
+                (a) => a.squadId === squad.id && !onBoard.has(a.registrationId),
+              );
               const total = squad.memberCount + newOnes.length;
               const color = squadAccent(i);
               return (
@@ -648,10 +828,7 @@ function CompletionScreen({
                   }}
                 >
                   <div className="mb-3 flex items-center gap-2">
-                    <span
-                      className="h-2.5 w-2.5 shrink-0 rounded-full"
-                      style={{ backgroundColor: color }}
-                    />
+                    <TeamMark name={squad.name} color={color} size="md" />
                     <span className="font-bold text-white">{squad.name}</span>
                     <span className="ml-auto font-mono text-sm text-white/40">{total} players</span>
                   </div>
@@ -701,6 +878,422 @@ function CompletionScreen({
   );
 }
 
+// ── Activity timeline ─────────────────────────────────────────────────────────
+
+/** One line of timeline copy, derived from the event + card metadata. */
+function describeEvent(event: EnginePowerEvent): { emoji: string; text: string } | null {
+  switch (event.type) {
+    case "CardAwarded":
+      return {
+        emoji: getCard(event.cardId).emoji,
+        text: `${event.squadName} drew ${getCard(event.cardId).label}`,
+      };
+    case "CardPlayed":
+      return { emoji: getCard(event.cardId).emoji, text: event.detail };
+    case "SwapCompleted":
+      return {
+        emoji: getCard(event.cardId).emoji,
+        text: `${event.aName} ⇄ ${event.bName} · ${event.fromSquad} ↔ ${event.toSquad}`,
+      };
+    case "SwapBlocked":
+      return {
+        emoji: "🛡️",
+        text:
+          event.reason === "immunity"
+            ? `Raid on ${event.toSquad} blocked`
+            : `No eligible players on ${event.toSquad}`,
+      };
+    default:
+      return null;
+  }
+}
+
+/**
+ * Running log of every power moment. Makes the draft auditable in the room —
+ * and is where a disputed swap gets reversed, since only the most recent
+ * reversible play can be undone (arbitrary history would be ambiguous).
+ */
+function ActivityTimeline({
+  activity,
+  undoableId,
+  onUndo,
+  isUndoing,
+}: {
+  activity: ActivityEntry[];
+  undoableId: string | null;
+  onUndo: () => void;
+  isUndoing: boolean;
+}) {
+  if (activity.length === 0) return null;
+  const newestFirst = [...activity].reverse();
+
+  return (
+    <div className="mb-4">
+      <p className="text-2xs mb-2 font-mono font-bold uppercase tracking-widest text-white/30">
+        Activity
+      </p>
+      <div className="flex max-h-52 flex-col gap-1 overflow-y-auto">
+        {newestFirst.map((entry) => {
+          const described = describeEvent(entry.event);
+          if (!described) return null;
+          const canUndo = entry.id === undoableId;
+          return (
+            <div
+              key={entry.id}
+              className="flex items-start gap-2 rounded-lg bg-white/[0.03] px-2 py-1.5"
+              style={{ opacity: entry.undone ? 0.4 : 1 }}
+            >
+              <span className="text-sm leading-tight">{described.emoji}</span>
+              <span
+                className="flex-1 text-xs leading-snug text-white/70"
+                style={{ textDecoration: entry.undone ? "line-through" : undefined }}
+              >
+                {described.text}
+              </span>
+              {canUndo && (
+                <button
+                  onClick={onUndo}
+                  disabled={isUndoing}
+                  className="text-2xs shrink-0 rounded-md border border-white/20 px-1.5 py-0.5 font-bold text-white/60 transition-colors hover:bg-white/10 hover:text-white disabled:opacity-40"
+                >
+                  {isUndoing ? "…" : "Undo"}
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Team power-card inventory (TV rail) ──────────────────────────────────────
+
+/**
+ * Always-visible power-card rail. Deliberately NOT in the collapsible sidebar:
+ * the draft is projected to a room, so ownership has to be legible at a distance
+ * and usable on a tablet. Renders entirely from registry metadata + `card.mode`,
+ * so a newly registered card appears here with no change to this component.
+ */
+function TeamCardsRail({
+  squads,
+  teamCards,
+  spentCards,
+  armed,
+  onCardClick,
+  onTargetTeam,
+}: {
+  squads: SquadView[];
+  teamCards: Record<string, PowerKind[]>;
+  spentCards: Record<string, PowerKind[]>;
+  armed: { squadId: string; cardId: PowerKind } | null;
+  onCardClick: (squadId: string, kind: PowerKind) => void;
+  onTargetTeam: (squadId: string) => void;
+}) {
+  const anyActivity = squads.some(
+    (s) => (teamCards[s.id] ?? []).length > 0 || (spentCards[s.id] ?? []).length > 0,
+  );
+  if (!anyActivity && !armed) return null;
+
+  return (
+    <div className="border-white/8 shrink-0 border-t" style={{ background: BG_SIDEBAR }}>
+      <div className="flex items-center gap-2 px-5 pb-1 pt-2.5">
+        <Sparkles className="h-3.5 w-3.5 text-[#fbbf24]" />
+        <p className="text-2xs font-mono font-bold uppercase tracking-widest text-[#fbbf24]/80">
+          Power Cards
+        </p>
+        {armed && (
+          <span className="animate-pulse text-xs font-black text-[#f472b6]">
+            Choose a team to raid →
+          </span>
+        )}
+      </div>
+
+      <div className="flex gap-2.5 overflow-x-auto px-5 pb-3 pt-1">
+        {squads.map((s, i) => {
+          const hand = teamCards[s.id] ?? [];
+          const spent = spentCards[s.id] ?? [];
+          if (hand.length === 0 && spent.length === 0 && !armed) return null;
+
+          const color = squadAccent(i);
+          const targetable = !!armed && armed.squadId !== s.id;
+          return (
+            <div
+              key={s.id}
+              onClick={() => targetable && onTargetTeam(s.id)}
+              className="flex min-w-[9.5rem] shrink-0 flex-col gap-2 rounded-2xl px-3 py-2.5 transition-colors"
+              style={{
+                background: targetable ? "rgba(219,39,119,0.2)" : "rgba(255,255,255,0.04)",
+                border: targetable ? "2px solid #db2777" : `1px solid ${color}33`,
+                cursor: targetable ? "pointer" : "default",
+              }}
+            >
+              <div className="flex items-center gap-2">
+                <TeamMark name={s.name} color={color} size="md" />
+                <span className="truncate text-sm font-black text-white">{s.name}</span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                {hand.length === 0 && spent.length === 0 && (
+                  <span className="text-xs text-white/25">no cards</span>
+                )}
+
+                {hand.map((k, idx) => {
+                  const card = getCard(k);
+                  // Instant + targeted play from the rail; self plays from its own
+                  // on-turn button; passive is shown but not clickable.
+                  const playable = card.mode === "instant" || card.mode === "targeted";
+                  const isArmed = armed?.squadId === s.id && armed?.cardId === k;
+                  return (
+                    <button
+                      key={`${k}-${idx}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (playable) onCardClick(s.id, k);
+                      }}
+                      title={`${card.label} — ${card.hint}`}
+                      className="flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 transition-transform hover:scale-105"
+                      style={{
+                        background: `${card.color}2e`,
+                        border: isArmed ? `2px solid ${card.color}` : `1.5px solid ${card.color}77`,
+                        cursor: playable ? "pointer" : "default",
+                      }}
+                    >
+                      <span className="text-xl leading-none">{card.emoji}</span>
+                      <span className="text-2xs font-black leading-tight text-white">
+                        {card.label}
+                      </span>
+                    </button>
+                  );
+                })}
+
+                {/* Spent cards stay visible (dimmed) so the room can see what was
+                    used — a card that silently vanishes reads as a bug. */}
+                {spent.map((k, idx) => {
+                  const card = getCard(k);
+                  return (
+                    <span
+                      key={`spent-${k}-${idx}`}
+                      title={`${card.label} — already played`}
+                      className="flex items-center gap-1 rounded-xl border border-white/10 px-2 py-1 opacity-35 grayscale"
+                    >
+                      <span className="text-base leading-none">{card.emoji}</span>
+                      <span className="text-2xs font-bold text-white/70 line-through">
+                        {card.label}
+                      </span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Player picker (for cards that need a choice) ──────────────────────────────
+
+/**
+ * Generic chooser for any card declaring a `selection`. Renders the card's own
+ * prompt and the pool it asks for, so a future card needing a choice reuses this
+ * untouched. Cancel costs nothing — the card is only spent once a pick is made.
+ */
+function PlayerPickerOverlay({
+  cardId,
+  squadName,
+  players,
+  onPick,
+  onCancel,
+}: {
+  cardId: PowerKind;
+  squadName: string;
+  players: UnassignedRegistrationView[];
+  onPick: (player: UnassignedRegistrationView) => void;
+  onCancel: () => void;
+}) {
+  const card = getCard(cardId);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-[64] flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="flex max-h-[80vh] w-[min(92vw,44rem)] flex-col gap-4 rounded-[2rem] px-8 py-7"
+        style={{
+          background: `linear-gradient(160deg, ${card.color}26 0%, rgba(30,41,59,0.98) 100%)`,
+          border: `2px solid ${card.color}88`,
+          boxShadow: `0 0 80px ${card.color}44, 0 24px 70px rgba(0,0,0,0.6)`,
+        }}
+      >
+        <div className="text-center">
+          <p
+            className="font-mono text-xs font-black uppercase tracking-[0.28em]"
+            style={{ color: card.color }}
+          >
+            {card.emoji} {card.title}
+          </p>
+          <p className="mt-1 text-2xl font-black text-white">
+            {card.selection?.prompt ?? "Choose a player"}
+          </p>
+          <p className="mt-1 text-sm text-white/50">{squadName} is picking</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3">
+          {players.map((p) => (
+            <button
+              key={p.registrationId}
+              onClick={() => onPick(p)}
+              className="flex flex-col items-start gap-0.5 rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-left transition-colors hover:border-white/30 hover:bg-white/10"
+            >
+              <span className="truncate text-sm font-bold text-white">{p.displayName}</span>
+              {p.skillLevel && (
+                <span className="text-2xs font-semibold text-white/40">
+                  {skillLabel(p.skillLevel)}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+
+        <button
+          onClick={onCancel}
+          className="mx-auto h-10 rounded-full border border-white/25 px-7 text-sm font-bold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+        >
+          Cancel — keep the card
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Card confirm dialog ───────────────────────────────────────────────────────
+
+/**
+ * Generic pre-execution confirm. Rendered purely from card metadata + the card's
+ * own `preview()` result, so any card exposing a preview gets this for free —
+ * there is no card-specific logic here. Nothing is mutated until Confirm.
+ */
+function CardConfirmDialog({
+  cardId,
+  preview,
+  onConfirm,
+  onCancel,
+}: {
+  cardId: PowerKind;
+  preview: CardPreview;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  const card = getCard(cardId);
+  const ref = useRef<HTMLDivElement>(null);
+  // "no-players" is unactionable — everything else can be confirmed.
+  const canConfirm = preview.ok || preview.reason === "immunity";
+
+  useEffect(() => {
+    if (!ref.current || prefersReducedMotion()) return;
+    gsap.fromTo(
+      ref.current,
+      { scale: 0.85, opacity: 0, y: 16 },
+      { scale: 1, opacity: 1, y: 0, duration: 0.28, ease: "back.out(1.7)" },
+    );
+  }, []);
+
+  // Escape always cancels — a safe out at any moment.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div className="fixed inset-0 z-[64] flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Confirm ${card.title}`}
+        className="flex w-[min(90vw,34rem)] flex-col items-center gap-5 rounded-[2rem] px-10 py-9 text-center"
+        style={{
+          background: `linear-gradient(160deg, ${card.color}2b 0%, rgba(30,41,59,0.98) 100%)`,
+          border: `2px solid ${card.color}88`,
+          boxShadow: `0 0 80px ${card.color}44, 0 24px 70px rgba(0,0,0,0.6)`,
+        }}
+      >
+        <span className="text-6xl drop-shadow-lg">{card.emoji}</span>
+        <p
+          className="font-mono text-xs font-black uppercase tracking-[0.28em]"
+          style={{ color: card.color }}
+        >
+          Confirm Power Card
+        </p>
+        <p className="text-3xl font-black text-white">{card.title}</p>
+
+        {/* The swap itself — both sides named explicitly so nothing is disputed. */}
+        {preview.swap ? (
+          <div className="flex w-full flex-col gap-2 rounded-2xl bg-black/25 px-5 py-4">
+            <div className="flex items-center justify-between gap-3 text-left">
+              <span className="text-sm text-white/50">{preview.swap.fromSquad}</span>
+              <span className="text-lg font-black text-white">{preview.swap.a.displayName}</span>
+            </div>
+            <div className="text-center text-2xl font-black" style={{ color: card.color }}>
+              ⇄
+            </div>
+            <div className="flex items-center justify-between gap-3 text-left">
+              <span className="text-sm text-white/50">{preview.swap.toSquad}</span>
+              <span className="text-lg font-black text-white">{preview.swap.b.displayName}</span>
+            </div>
+          </div>
+        ) : (
+          <p className="text-xl font-bold text-white/85">{preview.summary}</p>
+        )}
+
+        {preview.reason === "immunity" && (
+          <p className="text-sm font-bold text-[#fbbf24]">
+            This will be blocked — both cards are spent.
+          </p>
+        )}
+
+        <div className="mt-1 flex gap-3">
+          <button
+            onClick={onCancel}
+            className="h-11 rounded-full border border-white/25 px-7 text-sm font-bold text-white/70 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            Cancel
+          </button>
+          {canConfirm && (
+            <button
+              onClick={onConfirm}
+              autoFocus
+              className="h-11 rounded-full px-8 text-sm font-black text-white shadow-lg transition-transform hover:scale-[1.03] active:scale-[0.98]"
+              style={{ backgroundColor: card.color }}
+            >
+              Play {card.label}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main ceremony screen ──────────────────────────────────────────────────────
 
 type SpinPhase = "idle" | "spinning" | "revealing";
@@ -715,6 +1308,20 @@ function MainScreen({
   isAssigning,
   history,
   currentSquad,
+  settings,
+  powersEnabled,
+  teamCards,
+  spentCards,
+  activity,
+  undoableEntry,
+  onUndoLastPlay,
+  onUnassignLast,
+  onAwardCard,
+  onPlayCard,
+  onPreviewCard,
+  justCompletedSquadId,
+  onClearCompleted,
+  isWildcardActive,
   onAssign,
   onUndo,
   onChangeSkill,
@@ -728,6 +1335,24 @@ function MainScreen({
   isAssigning: boolean;
   history: { registrationId: string; displayName: string; squadId: string }[];
   currentSquad: SquadView | undefined;
+  settings: CeremonySettings;
+  powersEnabled: boolean;
+  teamCards: Record<string, PowerKind[]>;
+  spentCards: Record<string, PowerKind[]>;
+  activity: ActivityEntry[];
+  undoableEntry: ActivityEntry | null;
+  onUndoLastPlay: () => Promise<EnginePowerEvent[]>;
+  onUnassignLast: () => Promise<{ registrationId: string; squadId: string } | null>;
+  onAwardCard: (squadId: string, cardId: PowerKind) => EnginePowerEvent[];
+  onPlayCard: (
+    cardId: PowerKind,
+    squadId: string,
+    targetSquadId?: string,
+  ) => Promise<EnginePowerEvent[]>;
+  onPreviewCard: (cardId: PowerKind, squadId: string, targetSquadId?: string) => CardPreview | null;
+  justCompletedSquadId: string | null;
+  onClearCompleted: () => void;
+  isWildcardActive: boolean;
   onAssign: (
     player: UnassignedRegistrationView,
     squadId?: string,
@@ -746,6 +1371,57 @@ function MainScreen({
   const [revealInfo, setRevealInfo] = useState<RevealInfo | null>(null);
   const [burstKey, setBurstKey] = useState(0);
   const [flashSquadId, setFlashSquadId] = useState<string | null>(null);
+  const [countdownActive, setCountdownActive] = useState(false);
+  // Shown during the bonus re-spin so the room knows the pick still stands.
+  const [respinNote, setRespinNote] = useState<string | null>(null);
+  // Teams that have already had their 3·2·1 moment (countdown is once per team).
+  const countedDownTeamsRef = useRef<Set<string>>(new Set());
+  const [isUndoing, setIsUndoing] = useState(false);
+  // The pick just made, kept so a self-mode card can re-roll it. Cleared as soon
+  // as the next spin starts — you can only re-roll the pick you just saw.
+  const [lastPick, setLastPick] = useState<{
+    squadId: string;
+    player: UnassignedRegistrationView;
+    slotIndex: number;
+  } | null>(null);
+  const [isRerolling, setIsRerolling] = useState(false);
+  // A card that needs a player chosen before it resolves (e.g. Meri Marzi).
+  const [choosing, setChoosing] = useState<PowerKind | null>(null);
+  // Resolver for the current power-overlay hold, so it can be cut short.
+  const dismissHoldRef = useRef<(() => void) | null>(null);
+
+  /**
+   * Hold an overlay for `ms`, but let the organizer skip it. Power moments are
+   * fun the first time and drag by the tenth; being stuck watching a fixed
+   * animation with a room waiting is worse than ending it early.
+   */
+  function holdOverlay(ms: number): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const timer = setTimeout(() => {
+        dismissHoldRef.current = null;
+        resolve();
+      }, ms);
+      dismissHoldRef.current = () => {
+        clearTimeout(timer);
+        dismissHoldRef.current = null;
+        resolve();
+      };
+    });
+  }
+
+  const dismissOverlay = useCallback(() => dismissHoldRef.current?.(), []);
+  // Active power being resolved on the wheel (drives the PowerOverlay).
+  const [powerEvent, setPowerEvent] = useState<PowerEvent | null>(null);
+  // A targeted card that has been picked up and is awaiting a target team.
+  // Tracks WHICH card is armed, not just the team, so any targeted card works.
+  const [armed, setArmed] = useState<{ squadId: string; cardId: PowerKind } | null>(null);
+  // A previewed-but-unconfirmed play. Nothing is mutated while this is set.
+  const [pendingPlay, setPendingPlay] = useState<{
+    cardId: PowerKind;
+    squadId: string;
+    targetSquadId: string;
+    preview: CardPreview;
+  } | null>(null);
   const [ghostFly, setGhostFly] = useState<{
     name: string;
     color: string;
@@ -754,32 +1430,193 @@ function MainScreen({
   } | null>(null);
 
   const currentSquadIdx = squads.findIndex((s) => s.id === currentSquad?.id);
-  const canSpin = spinPhase === "idle" && pool.length > 0 && !isAssigning;
+  const canSpin =
+    spinPhase === "idle" &&
+    pool.length > 0 &&
+    !isAssigning &&
+    !countdownActive &&
+    !powerEvent &&
+    !pendingPlay;
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
 
-  async function handleSpin() {
-    if (!canSpin || !wheelRef.current || !currentSquad) return;
-    const idx = Math.floor(Math.random() * pool.length);
+  // The deck for this wheel: each card repeated as many times as the organizer
+  // asked for. Exact counts, so asking for two of each yields two of each.
+  const deck = useMemo(() => {
+    if (!powersEnabled) return [];
+    return allCards()
+      .filter((c) => c.wheelEligible)
+      .flatMap((c) => {
+        const n = settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS;
+        return Array.from({ length: Math.max(0, n) }, () => c.id);
+      });
+  }, [powersEnabled, settings.cardSlots]);
+
+  // The wheel slots are built ONCE per skill group and then held FIXED: power slots
+  // stay put across spins, and only the picked player (and a landed power) are
+  // removed. This is what makes powers land reliably and stop reshuffling every
+  // spin. We rebuild only when the skill group changes or when data first arrives.
+  const [wheelSlots, setWheelSlots] = useState<WheelSlot[]>([]);
+  const builtForSkillRef = useRef<string | null | undefined>(undefined);
+  useEffect(() => {
+    const needsRebuild = builtForSkillRef.current !== resolvedSkill || wheelSlots.length === 0;
+    if (!needsRebuild || pool.length === 0) return;
+    setWheelSlots(buildWheelSlots(pool, deck));
+    builtForSkillRef.current = resolvedSkill;
+    // Guarded by the ref + length check so `pool` identity churn does NOT rebuild
+    // (which would reshuffle the powers). Player removal is done in runSpin.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedSkill, pool, deck]);
+
+  // How many power slots are actually still on the wheel right now — the teaser
+  // reads this, not the fixed setting, so it stops counting consumed slots.
+  const remainingPowerSlots = wheelSlots.filter((s) => s.type === "power").length;
+
+  // Organizer shortcut: Space bar spins (so the ceremony can be driven hands-free
+  // from across the room). Ignored while typing in an input.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA")) return;
+      if (e.code === "Space" && canSpin) {
+        e.preventDefault();
+        handleSpin();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // handleSpin closes over current render values; re-bind when spinnability changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canSpin, isWildcardActive, settings.funMode, settings.onTheClock, currentSquad?.id]);
+
+  /** Entry point for the Spin button — gate behind the 3·2·1 countdown. */
+  function handleSpin() {
+    if (!canSpin || !currentSquad) return;
+    // Last player left → no spin/countdown; runSpin auto-assigns them.
+    const lastPlayer = pool.length <= 1;
+    // Countdown only on a team's FIRST pick. Running it before all ~40 picks adds
+    // over a minute of dead air and the bit goes stale; once per team keeps the
+    // "on the clock" beat without stalling the ceremony.
+    const firstPickForTeam = !countedDownTeamsRef.current.has(currentSquad.id);
+    // Wildcard Finish: the last picks fire rapidly, no countdown, for a crescendo.
+    if (
+      settings.funMode &&
+      settings.onTheClock &&
+      !isWildcardActive &&
+      !lastPlayer &&
+      firstPickForTeam
+    ) {
+      countedDownTeamsRef.current.add(currentSquad.id);
+      setCountdownActive(true); // countdown's onDone triggers runSpin
+    } else {
+      void runSpin();
+    }
+  }
+
+  /**
+   * One turn. The wheel may land on a rare power slot first — if so, the power
+   * resolves (a few seconds) and the wheel auto-re-spins to a real player. The
+   * team still receives exactly one player, so balance is never affected. The
+   * player is only committed at the end.
+   */
+  async function runSpin() {
+    if (!wheelRef.current || !currentSquad) return;
+    const slots = wheelSlots;
+    const playerIdxs = slots.reduce<number[]>((acc, s, i) => {
+      if (isPlayerSlot(s)) acc.push(i);
+      return acc;
+    }, []);
+    if (playerIdxs.length === 0) {
+      setSpinPhase("idle");
+      return;
+    }
+
     setSpinPhase("spinning");
     setHighlightIndex(null);
+    // A new spin retires the previous result — only the latest is re-rollable.
+    setLastPick(null);
 
-    await wheelRef.current.spin(idx);
+    let target: number;
+    let landedPowerId: string | null = null;
 
-    const player = pool[idx];
-    if (!player) {
+    if (playerIdxs.length === 1) {
+      // Last player left on the wheel — no point spinning; we already know they go
+      // to the team on the clock. Assign directly (skip the wheel + any powers).
+      target = playerIdxs[0]!;
+    } else {
+      // First spin: land anywhere (players + powers).
+      target = Math.floor(Math.random() * slots.length);
+      await wheelRef.current.spin(target);
+
+      const landed = slots[target];
+      if (landed && landed.type === "power") {
+        // Landing AWARDS the card to the team on the clock — it does not fire now.
+        landedPowerId = landed.id;
+        setHighlightIndex(target);
+        onAwardCard(currentSquad.id, landed.power);
+        const meta = getCard(landed.power);
+        setPowerEvent({
+          kind: landed.power,
+          detail: `${currentSquad.name} drew ${meta.emoji} ${meta.label}`,
+          // Say it out loud: landing on a power is a BONUS, not a wasted turn.
+          // Without this the room reads the re-spin as the team losing a pick.
+          note: "Bonus card — no pick lost. Spinning again for a player…",
+        });
+        await holdOverlay(Math.max(MIN_HOLD_MS, scaled(CARD_REVEAL_HOLD, settings.speed) * 1000));
+        setPowerEvent(null);
+
+        // Auto re-spin to a real player — the team's pick is unaffected.
+        setHighlightIndex(null);
+        setRespinNote(`${currentSquad.name} still picks — bonus card awarded`);
+        target = playerIdxs[Math.floor(Math.random() * playerIdxs.length)]!;
+        await wheelRef.current.spin(target);
+        setRespinNote(null);
+      }
+    }
+
+    const playerSlot = slots[target];
+    if (!playerSlot || playerSlot.type !== "player") {
       setSpinPhase("idle");
       return;
     }
+    const player = playerSlot.player;
 
+    const committed = await commitPick(player, landedPowerId, target);
+    if (!committed) setSpinPhase("idle");
+  }
+
+  /**
+   * Commit one pick: assign, clear the slot, celebrate, reveal. Shared by the
+   * wheel and by cards that let a team choose their player instead of spinning,
+   * so both routes produce the identical on-screen moment.
+   */
+  async function commitPick(
+    player: UnassignedRegistrationView,
+    landedPowerId: string | null,
+    highlight: number | null,
+  ): Promise<boolean> {
+    const slots = wheelSlots;
     const result = await onAssign(player);
-    if (!result) {
-      setSpinPhase("idle");
-      return;
-    }
+    if (!result) return false;
+
+    // Keep the wheel FIXED: drop only the picked player and the power that was just
+    // collected. Everything else stays exactly where it is.
+    const pickedSlotIndex = slots.findIndex(
+      (s) => s.type === "player" && s.id === player.registrationId,
+    );
+    setWheelSlots((prev) =>
+      prev.filter((s) => {
+        if (s.type === "player" && s.id === player.registrationId) return false;
+        if (landedPowerId && s.type === "power" && s.id === landedPowerId) return false;
+        return true;
+      }),
+    );
+
+    // Remember the pick so a self-mode card (First Ball Trial) can re-roll it.
+    setLastPick({ squadId: result.squadId, player, slotIndex: pickedSlotIndex });
 
     setBurstKey((k) => k + 1);
     playFanfare();
-    setHighlightIndex(idx);
+    setHighlightIndex(highlight);
 
     // Capture wheel center rect for reveal/fly
     const wheelRect = wheelWrapRef.current?.getBoundingClientRect() ?? null;
@@ -787,6 +1624,7 @@ function MainScreen({
     setRevealInfo({
       playerName: result.displayName,
       skillLevel: result.skillLevel,
+      divisionName: player.divisionName,
       squadName: result.squadName,
       squadColor: squadAccent(squads.findIndex((s) => s.id === result.squadId)),
       wheelRect,
@@ -796,6 +1634,7 @@ function MainScreen({
     // Flash team column
     setFlashSquadId(result.squadId);
     setTimeout(() => setFlashSquadId(null), 2000);
+    return true;
   }
 
   function handleRevealDone(cardRect: DOMRect | null) {
@@ -819,6 +1658,163 @@ function MainScreen({
   }
 
   const handleGhostDone = useCallback(() => setGhostFly(null), []);
+
+  /**
+   * Map engine domain events to the on-screen power overlay, hold, then clear.
+   * The presentation reacts to events; it never re-derives card rules.
+   */
+  async function showPowerEvents(events: EnginePowerEvent[]) {
+    const played = events.find((e) => e.type === "CardPlayed");
+    const swapDone = events.find((e) => e.type === "SwapCompleted");
+    const blocked = events.find((e) => e.type === "SwapBlocked");
+
+    let display: PowerEvent | null = null;
+    if (played) {
+      display = { kind: played.cardId, detail: played.detail };
+    } else if (swapDone) {
+      display = { kind: swapDone.cardId, detail: `${swapDone.aName}  ⇄  ${swapDone.bName}` };
+    } else if (blocked) {
+      // Name the blocking card from its own metadata, never a hardcoded string.
+      const immunity = events.find((e) => e.type === "ImmunityTriggered");
+      const blocker = immunity ? getCard(immunity.cardId) : null;
+      display = {
+        kind: blocked.cardId,
+        detail:
+          blocked.reason === "immunity" && blocker
+            ? `${blocker.emoji} Blocked by ${blocked.toSquad}'s ${blocker.label}!`
+            : "No eligible players to swap",
+        // Immunity cancels the raid at a cost to BOTH sides — say so, or the
+        // shielded team looks like it got the block for free.
+        note:
+          blocked.reason === "immunity"
+            ? "Both cards are spent — the shield is used up too"
+            : "No card was spent — you can play it again",
+      };
+    }
+    if (!display) return;
+
+    setPowerEvent(display);
+    await holdOverlay(Math.max(MIN_HOLD_MS, scaled(CARD_RESULT_HOLD, settings.speed) * 1000));
+    setPowerEvent(null);
+  }
+
+  // Play a card from a team's hand — dispatched by the card's mode (no card ids
+  // hardcoded here). Instant plays immediately; targeted arms target-picking.
+  async function onCardClick(squadId: string, kind: PowerKind) {
+    const mode = getCard(kind).mode;
+    if (mode === "targeted") {
+      setArmed((prev) =>
+        prev && prev.squadId === squadId && prev.cardId === kind ? null : { squadId, cardId: kind },
+      );
+      return;
+    }
+    if (mode === "instant") {
+      const events = await onPlayCard(kind, squadId);
+      await showPowerEvents(events);
+    }
+    // self plays from its own on-turn button; passive is not clickable.
+  }
+
+  /**
+   * Target chosen for a targeted card — PREVIEW only. Nothing is mutated until
+   * the organizer confirms in the dialog, so a stray click is always recoverable.
+   */
+  function onTargetTeam(targetId: string) {
+    const play = armed;
+    setArmed(null);
+    if (!play || play.squadId === targetId) return;
+
+    const preview = onPreviewCard(play.cardId, play.squadId, targetId);
+    if (!preview) return;
+    setPendingPlay({
+      cardId: play.cardId,
+      squadId: play.squadId,
+      targetSquadId: targetId,
+      preview,
+    });
+  }
+
+  /**
+   * Play a self-mode card (First Ball Trial) to re-roll the pick just revealed.
+   *
+   * The card is only meaningful AFTER a result is on the table — there is nothing
+   * to re-roll before the wheel stops. So this takes the player back off the team,
+   * returns them to the wheel, spends the card, and spins that team again.
+   */
+  async function handleReroll(cardId: PowerKind) {
+    if (isRerolling || !lastPick) return;
+    setIsRerolling(true);
+    try {
+      const reverted = await onUnassignLast();
+      if (!reverted) return; // server refused — card is not spent
+
+      // Put the player back on the wheel where they were.
+      const returning = lastPick;
+      setWheelSlots((prev) => {
+        const slot: WheelSlot = {
+          type: "player",
+          id: returning.player.registrationId,
+          player: returning.player,
+        };
+        const next = [...prev];
+        next.splice(Math.min(Math.max(returning.slotIndex, 0), next.length), 0, slot);
+        return next;
+      });
+
+      await onPlayCard(cardId, returning.squadId);
+      setLastPick(null);
+      await runSpin();
+    } finally {
+      setIsRerolling(false);
+    }
+  }
+
+  /**
+   * Resolve a card that needed a player chosen. The card is spent, then the pick
+   * is committed through the same path a spin uses, so the room sees the usual
+   * reveal rather than a player silently appearing.
+   */
+  async function handleChoosePlayer(cardId: PowerKind, player: UnassignedRegistrationView) {
+    if (!currentSquad) return;
+    setChoosing(null);
+    setSpinPhase("spinning");
+    const events = await onPlayCard(cardId, currentSquad.id);
+    await showPowerEvents(events);
+    const ok = await commitPick(player, null, null);
+    if (!ok) setSpinPhase("idle");
+  }
+
+  /** Reverse the most recent reversible play and announce it to the room. */
+  async function handleUndo() {
+    if (isUndoing) return;
+    setIsUndoing(true);
+    try {
+      const events = await onUndoLastPlay();
+      const reverted = events.find((e) => e.type === "SwapCompleted");
+      if (reverted) {
+        setPowerEvent({
+          kind: reverted.cardId,
+          detail: `Reversed — ${reverted.aName} ⇄ ${reverted.bName}`,
+          note: "Swap undone. The card has been returned.",
+        });
+        await holdOverlay(Math.max(MIN_HOLD_MS, scaled(CARD_RESULT_HOLD, settings.speed) * 1000));
+        setPowerEvent(null);
+      }
+    } finally {
+      setIsUndoing(false);
+    }
+  }
+
+  /** Organizer confirmed the previewed play — now execute it. */
+  async function onConfirmPlay() {
+    const pending = pendingPlay;
+    setPendingPlay(null);
+    if (!pending) return;
+
+    setPowerEvent({ kind: pending.cardId, detail: "Making the trade…" });
+    const events = await onPlayCard(pending.cardId, pending.squadId, pending.targetSquadId);
+    await showPowerEvents(events);
+  }
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden">
@@ -853,8 +1849,23 @@ function MainScreen({
             }}
           />
 
+          {settings.funMode && isWildcardActive && spinPhase !== "revealing" && (
+            <div className="flex items-center gap-2 rounded-full border border-[#fbbf24]/50 bg-[#fbbf24]/15 px-5 py-2 text-sm font-black uppercase tracking-wider text-[#fbbf24]">
+              <Sparkles className="h-4 w-4" />
+              Wildcard Finish
+            </div>
+          )}
+
           {currentSquad && spinPhase !== "revealing" && (
             <SquadBanner squad={currentSquad} squadIndex={currentSquadIdx} />
+          )}
+
+          {/* Bonus re-spin in flight — keeps the room oriented mid-spin. */}
+          {respinNote && (
+            <div className="flex items-center gap-2 rounded-full border border-[#34d399]/50 bg-[#34d399]/15 px-5 py-1.5 text-sm font-black text-[#34d399]">
+              <Sparkles className="h-4 w-4" />
+              {respinNote}
+            </div>
           )}
 
           <WinnerBurst burstKey={burstKey} />
@@ -871,14 +1882,100 @@ function MainScreen({
               <div ref={wheelWrapRef} className="relative z-10">
                 <CeremonyWheel
                   ref={wheelRef}
-                  players={pool}
+                  slots={wheelSlots}
                   highlightIndex={highlightIndex}
                   reducedMotion={prefersReducedMotion()}
                 />
               </div>
 
               <div className="relative z-10 flex flex-col items-center gap-2">
-                <SpinButton phase={spinPhase} disabled={!canSpin} onClick={handleSpin} />
+                <SpinButton
+                  phase={spinPhase}
+                  disabled={!canSpin}
+                  lastPlayer={pool.length === 1}
+                  onClick={handleSpin}
+                />
+
+                {/* Power slots present on the wheel — tease the room. Counted from
+                    the LIVE wheel so it stops claiming slots that were consumed. */}
+                {powersEnabled && remainingPowerSlots > 0 && spinPhase === "idle" && (
+                  <span className="flex items-center gap-1.5 text-xs font-bold text-[#fbbf24]">
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {remainingPowerSlots} power {remainingPowerSlots === 1 ? "slot" : "slots"} left
+                    on this wheel
+                  </span>
+                )}
+
+                {/* Self cards that need a choice (e.g. Meri Marzi) are played on
+                    your own turn INSTEAD of spinning. Rendered from the card's
+                    `selection` descriptor, so a new such card needs no code here. */}
+                {currentSquad &&
+                  spinPhase === "idle" &&
+                  canSpin &&
+                  (teamCards[currentSquad.id] ?? [])
+                    .filter((id) => isChoiceCard(getCard(id)))
+                    .slice(0, 1)
+                    .map((id) => {
+                      const card = getCard(id);
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => setChoosing(id)}
+                          title={card.hint}
+                          className="flex flex-col items-center gap-0.5 rounded-2xl border px-4 py-1.5 transition-transform hover:scale-105"
+                          style={{
+                            borderColor: `${card.color}88`,
+                            background: `${card.color}26`,
+                            color: card.color,
+                          }}
+                        >
+                          <span className="text-xs font-black">
+                            {card.emoji} Use {card.label}
+                          </span>
+                          <span className="text-2xs font-semibold opacity-70">{card.hint}</span>
+                        </button>
+                      );
+                    })}
+
+                {/* Self-mode cards (e.g. First Ball Trial) re-roll the pick that
+                    was just revealed — offered only while that result is the
+                    latest one, since there is nothing to re-roll before then.
+                    Cards that need a choice are played BEFORE the spin instead, so
+                    they are excluded here — otherwise Meri Marzi renders in both
+                    places and the re-roll path spends it without letting you pick. */}
+                {lastPick &&
+                  spinPhase === "idle" &&
+                  (teamCards[lastPick.squadId] ?? [])
+                    .filter((id) => isRerollCard(getCard(id)))
+                    .slice(0, 1)
+                    .map((id) => {
+                      const card = getCard(id);
+                      return (
+                        <button
+                          key={id}
+                          onClick={() => void handleReroll(id)}
+                          disabled={isRerolling}
+                          title={card.hint}
+                          className="flex flex-col items-center gap-0.5 rounded-2xl border border-[#4f6bf6]/50 bg-[#4f6bf6]/15 px-4 py-1.5 text-[#9db0fb] transition-transform hover:scale-105 disabled:opacity-50"
+                        >
+                          <span className="text-xs font-black">
+                            {isRerolling
+                              ? "Re-rolling…"
+                              : `${card.emoji} Re-roll with ${card.label}`}
+                          </span>
+                          <span className="text-2xs font-semibold text-[#9db0fb]/70">
+                            Puts {lastPick.player.displayName} back and spins again
+                          </span>
+                        </button>
+                      );
+                    })}
+
+                {canSpin && (
+                  <span className="text-2xs font-mono uppercase tracking-widest text-white/25">
+                    Press Space to spin
+                  </span>
+                )}
+
                 {history.length > 0 && spinPhase === "idle" && (
                   <button
                     onClick={onUndo}
@@ -898,6 +1995,14 @@ function MainScreen({
           className="border-white/8 hidden w-72 shrink-0 overflow-y-auto border-l p-4 lg:block"
           style={{ background: BG_SIDEBAR }}
         >
+          {settings.funMode && settings.powerSlots && (
+            <ActivityTimeline
+              activity={activity}
+              undoableId={undoableEntry?.id ?? null}
+              onUndo={() => void handleUndo()}
+              isUndoing={isUndoing}
+            />
+          )}
           <p className="text-2xs mb-3 font-mono font-bold uppercase tracking-widest text-white/30">
             Teams
           </p>
@@ -906,12 +2011,78 @@ function MainScreen({
             assignments={history}
             columnRefs={columnRefs}
             flashSquadId={flashSquadId}
+            teamCards={teamCards}
           />
         </aside>
       </div>
 
+      {/* Power-card rail — full width, outside the collapsible sidebar so it is
+          readable on a projector and usable on a tablet. */}
+      {settings.funMode && settings.powerSlots && (
+        <TeamCardsRail
+          squads={squads}
+          teamCards={teamCards}
+          spentCards={spentCards}
+          armed={armed}
+          onCardClick={onCardClick}
+          onTargetTeam={onTargetTeam}
+        />
+      )}
+
       {/* Overlays */}
-      {revealInfo && <RevealOverlay info={revealInfo} onDone={handleRevealDone} />}
+      {countdownActive && (
+        <CountdownOverlay
+          speed={settings.speed}
+          onDone={() => {
+            setCountdownActive(false);
+            void runSpin();
+          }}
+        />
+      )}
+      {pendingPlay && (
+        <CardConfirmDialog
+          cardId={pendingPlay.cardId}
+          preview={pendingPlay.preview}
+          onConfirm={() => void onConfirmPlay()}
+          onCancel={() => setPendingPlay(null)}
+        />
+      )}
+      {choosing && currentSquad && (
+        <PlayerPickerOverlay
+          cardId={choosing}
+          squadName={currentSquad.name}
+          players={wheelSlots.filter(isPlayerSlot).map((s) => s.player)}
+          onPick={(player) => void handleChoosePlayer(choosing, player)}
+          onCancel={() => setChoosing(null)}
+        />
+      )}
+      {powerEvent && <PowerOverlay event={powerEvent} onDismiss={dismissOverlay} />}
+      {revealInfo && (
+        <RevealOverlay
+          info={revealInfo}
+          tiered={settings.funMode && settings.tieredReveals}
+          speed={settings.speed}
+          onDone={handleRevealDone}
+        />
+      )}
+      {settings.funMode &&
+        justCompletedSquadId &&
+        spinPhase === "idle" &&
+        !revealInfo &&
+        (() => {
+          const idx = squads.findIndex((s) => s.id === justCompletedSquadId);
+          const squad = squads[idx];
+          if (!squad) return null;
+          return (
+            <TeamCompleteOverlay
+              squad={squad}
+              squadIndex={idx}
+              sessionMembers={history}
+              speed={settings.speed}
+              onDone={onClearCompleted}
+            />
+          );
+        })()}
       {ghostFly && (
         <GhostFly
           name={ghostFly.name}
@@ -925,12 +2096,496 @@ function MainScreen({
   );
 }
 
+// ── Fun Mode settings panel ───────────────────────────────────────────────────
+
+const SPEED_LABELS: Record<CeremonySpeed, string> = {
+  relaxed: "Relaxed",
+  normal: "Normal",
+  fast: "Fast",
+};
+
+function SettingToggle({
+  label,
+  hint,
+  checked,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  hint?: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-white/5 disabled:opacity-40"
+    >
+      <span
+        className="relative h-5 w-9 shrink-0 rounded-full transition-colors"
+        style={{ background: checked ? "#4f6bf6" : "rgba(255,255,255,0.15)" }}
+      >
+        <span
+          className="absolute top-0.5 h-4 w-4 rounded-full bg-white transition-all"
+          style={{ left: checked ? "1.125rem" : "0.125rem" }}
+        />
+      </span>
+      <span className="flex flex-col">
+        <span className="text-sm font-semibold text-white">{label}</span>
+        {hint && <span className="text-xs text-white/40">{hint}</span>}
+      </span>
+    </button>
+  );
+}
+
+function SettingsPanel({
+  settings,
+  onUpdate,
+  onClose,
+}: {
+  settings: CeremonySettings;
+  onUpdate: (patch: Partial<CeremonySettings>) => void;
+  onClose: () => void;
+}) {
+  const fun = settings.funMode;
+  const totalCardSlots = allCards()
+    .filter((c) => c.wheelEligible)
+    .reduce((sum, c) => sum + (settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS), 0);
+  return (
+    <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-white/10 bg-[#28324a] p-3 shadow-2xl">
+      <div className="mb-2 flex items-center gap-2 px-2 pt-1">
+        <Sparkles className="h-4 w-4 text-[#fbbf24]" />
+        <span className="text-sm font-bold text-white">Fun Draft Mode</span>
+        <button
+          onClick={onClose}
+          className="ml-auto text-xs text-white/40 transition-colors hover:text-white"
+        >
+          Done
+        </button>
+      </div>
+
+      <SettingToggle
+        label="Fun Mode"
+        hint="Off = standard Balanced Draft"
+        checked={fun}
+        onChange={(v) => onUpdate({ funMode: v })}
+      />
+
+      <div className="bg-white/8 my-2 h-px" />
+
+      <SettingToggle
+        label="Team introductions"
+        hint="Captain walk-in before the draft"
+        checked={settings.teamIntroductions}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ teamIntroductions: v })}
+      />
+      <SettingToggle
+        label="On the clock"
+        hint="3·2·1 countdown on each team's first pick"
+        checked={settings.onTheClock}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ onTheClock: v })}
+      />
+      <SettingToggle
+        label="Tiered reveals"
+        hint="Different animation per skill tier"
+        checked={settings.tieredReveals}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ tieredReveals: v })}
+      />
+      <SettingToggle
+        label="Power slots"
+        hint="Rare surprise powers on the wheel"
+        checked={settings.powerSlots}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ powerSlots: v })}
+      />
+
+      {/* Deck composition: one count per card. 0 switches a card off, so the
+          count is also the on/off control. Listed from the registry, so a newly
+          registered card appears here on its own. */}
+      {fun && settings.powerSlots && (
+        <div className="ml-4 border-l border-white/10 pl-2">
+          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-white/50">Cards on each wheel</p>
+          <div className="flex flex-col gap-0.5 px-1 pb-1">
+            {allCards()
+              .filter((c) => c.wheelEligible)
+              .map((c) => {
+                const n = settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS;
+                const set = (next: number) =>
+                  onUpdate({
+                    cardSlots: {
+                      ...settings.cardSlots,
+                      [c.id]: Math.max(0, Math.min(10, next)),
+                    },
+                  });
+                return (
+                  <div key={c.id} className="flex items-center gap-2 px-2 py-1">
+                    <span className="text-base leading-none">{c.emoji}</span>
+                    <span
+                      className="truncate text-xs font-bold"
+                      style={{ color: n > 0 ? "white" : "rgba(255,255,255,0.35)" }}
+                    >
+                      {c.label}
+                    </span>
+                    <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                      <button
+                        onClick={() => set(n - 1)}
+                        aria-label={`One fewer ${c.label}`}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                      >
+                        −
+                      </button>
+                      <span className="w-4 text-center font-mono text-sm font-bold text-white">
+                        {n}
+                      </span>
+                      <button
+                        onClick={() => set(n + 1)}
+                        aria-label={`One more ${c.label}`}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+          <p className="px-3 pb-2 pt-1 text-xs text-white/40">
+            {totalCardSlots === 0
+              ? "No cards — the wheel will be players only."
+              : `${totalCardSlots} card${totalCardSlots === 1 ? "" : "s"} on every wheel, spread out and shuffled.`}
+          </p>
+        </div>
+      )}
+
+      <SettingToggle
+        label="Wildcard finish"
+        hint="Final 3 picks revealed together"
+        checked={settings.wildcardFinish}
+        disabled={!fun}
+        onChange={(v) => onUpdate({ wildcardFinish: v })}
+      />
+
+      <div className="bg-white/8 my-2 h-px" />
+
+      <div className="px-2 py-1">
+        <p className="mb-2 text-xs font-semibold text-white/50">Animation speed</p>
+        <div className="flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+          {(Object.keys(SPEED_LABELS) as CeremonySpeed[]).map((s) => (
+            <button
+              key={s}
+              onClick={() => onUpdate({ speed: s })}
+              className="flex-1 rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+              style={{
+                background: settings.speed === s ? "rgba(255,255,255,0.15)" : "transparent",
+                color: settings.speed === s ? "white" : "rgba(255,255,255,0.4)",
+              }}
+            >
+              {SPEED_LABELS[s]}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Team introductions (Fun Mode walk-in) ─────────────────────────────────────
+
+function IntrosScreen({
+  squads,
+  captainBySquad,
+  speed,
+  onDone,
+}: {
+  squads: SquadView[];
+  captainBySquad: Map<string, SquadMemberView | null>;
+  speed: CeremonySpeed;
+  onDone: () => void;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!containerRef.current || prefersReducedMotion()) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".intro-team",
+        { y: 48, opacity: 0, scale: 0.9 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: scaled(dur.md, speed),
+          ease: "back.out(1.4)",
+          stagger: scaled(stagger.lg, speed),
+        },
+      );
+    }, containerRef);
+    return () => ctx.revert();
+  }, [speed]);
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-10 text-center">
+      <div>
+        <p className="font-mono text-sm font-bold uppercase tracking-[0.3em] text-[#fbbf24]">
+          Introducing
+        </p>
+        <h1 className="mt-3 font-serif text-6xl font-black tracking-tight text-white">The Teams</h1>
+      </div>
+
+      <div
+        ref={containerRef}
+        className="grid w-full max-w-4xl grid-cols-2 gap-5 md:grid-cols-3 lg:grid-cols-4"
+      >
+        {squads.map((squad, i) => {
+          const color = squadAccent(i);
+          const captain = captainBySquad.get(squad.id);
+          return (
+            <div
+              key={squad.id}
+              className="intro-team flex flex-col items-center gap-3 rounded-3xl p-6"
+              style={{
+                background: `linear-gradient(160deg, ${color}22 0%, rgba(255,255,255,0.03) 100%)`,
+                border: `1.5px solid ${color}44`,
+              }}
+            >
+              <span
+                className="flex h-14 w-14 items-center justify-center rounded-2xl text-2xl font-black text-white"
+                style={{ backgroundColor: color }}
+              >
+                {squad.name.charAt(0).toUpperCase()}
+              </span>
+              <span className="text-lg font-black text-white">{squad.name}</span>
+              <span className="text-sm text-white/50">
+                {captain ? (
+                  <>
+                    <span className="text-white/30">Captain</span> {captain.displayName}
+                  </>
+                ) : (
+                  "Awaiting captain"
+                )}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      <button
+        onClick={onDone}
+        className="flex h-14 items-center gap-3 rounded-full px-10 text-lg font-black text-white shadow-2xl transition-transform hover:scale-[1.03] active:scale-[0.98]"
+        style={{
+          background: "linear-gradient(135deg, #4f6bf6 0%, #9db0fb 100%)",
+          boxShadow: "0 12px 40px rgba(79,107,246,0.45)",
+        }}
+      >
+        Start the Draft
+        <ChevronRight className="h-5 w-5" />
+      </button>
+    </div>
+  );
+}
+
+// ── Countdown overlay (3·2·1 before spin) ─────────────────────────────────────
+
+function CountdownOverlay({ speed, onDone }: { speed: CeremonySpeed; onDone: () => void }) {
+  const [n, setN] = useState(3);
+  const numRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (prefersReducedMotion()) {
+      onDone();
+      return;
+    }
+    const step = Math.max(300, scaled(650, speed)); // ms per number
+    const t1 = setTimeout(() => setN(2), step);
+    const t2 = setTimeout(() => setN(1), step * 2);
+    const t3 = setTimeout(() => onDone(), step * 3);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [speed, onDone]);
+
+  useEffect(() => {
+    if (!numRef.current || prefersReducedMotion()) return;
+    gsap.fromTo(
+      numRef.current,
+      { scale: 0.4, opacity: 0 },
+      { scale: 1, opacity: 1, duration: scaled(0.28, speed), ease: "back.out(2)" },
+    );
+  }, [n, speed]);
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[58] flex items-center justify-center bg-black/40 backdrop-blur-sm">
+      <div
+        ref={numRef}
+        className="font-serif text-[14rem] font-black leading-none text-white drop-shadow-2xl"
+      >
+        {n}
+      </div>
+    </div>
+  );
+}
+
+// ── Team completion celebration ───────────────────────────────────────────────
+
+function TeamCompleteOverlay({
+  squad,
+  squadIndex,
+  sessionMembers,
+  speed,
+  onDone,
+}: {
+  squad: SquadView;
+  squadIndex: number;
+  sessionMembers: { registrationId: string; displayName: string; squadId: string }[];
+  speed: CeremonySpeed;
+  onDone: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const color = squadAccent(squadIndex);
+  const onBoard = new Set(squad.members.map((m) => m.registrationId));
+  const drafted = sessionMembers.filter(
+    (a) => a.squadId === squad.id && !onBoard.has(a.registrationId),
+  );
+
+  useEffect(() => {
+    const hold = Math.max(1600, scaled(2400, speed));
+    const el = cardRef.current;
+    if (el && !prefersReducedMotion()) {
+      gsap.fromTo(
+        el,
+        { scale: 0.7, opacity: 0, y: 30 },
+        { scale: 1, opacity: 1, y: 0, duration: scaled(dur.md, speed), ease: "back.out(1.5)" },
+      );
+    }
+    const t = setTimeout(onDone, hold);
+    return () => clearTimeout(t);
+  }, [speed, onDone]);
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-[62] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+      <ReactConfetti
+        className="pointer-events-none fixed inset-0"
+        colors={[color, "#fffdf5", CONFETTI_COLORS[0]!]}
+        numberOfPieces={180}
+        recycle={false}
+        gravity={0.22}
+      />
+      <div
+        ref={cardRef}
+        className="flex flex-col items-center gap-5 rounded-[2rem] px-16 py-12 text-center"
+        style={{
+          background: `linear-gradient(160deg, ${color}33 0%, rgba(30,41,59,0.97) 100%)`,
+          border: `2px solid ${color}66`,
+          boxShadow: `0 0 90px ${color}44, 0 24px 70px rgba(0,0,0,0.65)`,
+        }}
+      >
+        <p className="font-mono text-sm font-bold uppercase tracking-[0.3em]" style={{ color }}>
+          Team Complete
+        </p>
+        <p className="text-6xl font-black text-white drop-shadow-lg">{squad.name}</p>
+        <div className="flex max-w-xl flex-wrap justify-center gap-2">
+          {squad.members.map((m) => (
+            <span
+              key={m.registrationId}
+              className="rounded-lg bg-white/10 px-3 py-1 text-sm font-semibold text-white/70"
+            >
+              {m.displayName}
+            </span>
+          ))}
+          {drafted.map((a) => (
+            <span
+              key={a.registrationId}
+              className="rounded-lg px-3 py-1 text-sm font-bold text-white"
+              style={{ backgroundColor: `${color}66` }}
+            >
+              {a.displayName}
+            </span>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Power slot resolve overlay ────────────────────────────────────────────────
+
+function PowerOverlay({ event, onDismiss }: { event: PowerEvent; onDismiss: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const meta = getCard(event.kind);
+
+  useEffect(() => {
+    if (!ref.current || prefersReducedMotion()) return;
+    gsap.fromTo(
+      ref.current,
+      { scale: 0.4, opacity: 0, rotate: -6 },
+      { scale: 1, opacity: 1, rotate: 0, duration: 0.4, ease: "back.out(2)" },
+    );
+  }, [event]);
+
+  // Skippable: click anywhere, Space, or Escape. By the tenth power moment the
+  // organizer wants the room moving again, not to sit through the animation.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" || e.code === "Space" || e.key === "Enter") {
+        e.preventDefault();
+        onDismiss();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onDismiss]);
+
+  return (
+    <div
+      onClick={onDismiss}
+      role="presentation"
+      className="fixed inset-0 z-[59] flex cursor-pointer items-center justify-center bg-black/45 backdrop-blur-sm"
+    >
+      <div
+        ref={ref}
+        className="flex flex-col items-center gap-4 rounded-[2rem] px-16 py-12 text-center"
+        style={{
+          background: `linear-gradient(160deg, ${meta.color}33 0%, rgba(30,41,59,0.97) 100%)`,
+          border: `2px solid ${meta.color}88`,
+          boxShadow: `0 0 90px ${meta.color}55, 0 24px 70px rgba(0,0,0,0.6)`,
+        }}
+      >
+        <span className="text-8xl drop-shadow-lg">{meta.emoji}</span>
+        <p
+          className="font-mono text-sm font-black uppercase tracking-[0.28em]"
+          style={{ color: meta.color }}
+        >
+          Power Card
+        </p>
+        <p className="text-5xl font-black text-white">{meta.title}</p>
+        {/* What the card actually does. The name alone means nothing the first
+            time a captain sees it, and this is the only moment it is explained. */}
+        <p className="max-w-lg text-lg font-semibold leading-snug text-white/70">{meta.hint}</p>
+        <p className="text-xl font-bold text-white/85">{event.detail}</p>
+        {event.note && <p className="text-base font-bold text-[#34d399]">{event.note}</p>}
+        <p className="text-2xs font-mono uppercase tracking-widest text-white/30">
+          Click or press Space to continue
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
   const ceremony = useCeremony(tournamentId);
   const shellRef = useRef<HTMLDivElement>(null);
   const prevPhase = useRef<string>("intro");
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   // Phase transition: cross-fade between screens
   useEffect(() => {
@@ -989,6 +2644,12 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
         </Link>
         <span className="text-white/15">/</span>
         <span className="font-mono text-sm font-semibold text-white/60">Draft Ceremony</span>
+        {ceremony.settings.funMode && (
+          <span className="flex items-center gap-1 rounded-full bg-[#fbbf24]/15 px-2 py-0.5 text-xs font-bold text-[#fbbf24]">
+            <Sparkles className="h-3 w-3" />
+            Fun Mode
+          </span>
+        )}
         {ceremony.phase === "main" && (
           <>
             <span className="text-white/15">·</span>
@@ -997,6 +2658,24 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
             </span>
           </>
         )}
+
+        {/* Settings (organizer only — hidden mid-ceremony overlays) */}
+        <div className="relative ml-auto">
+          <button
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="flex h-9 items-center gap-1.5 rounded-full border border-white/10 px-3 text-xs font-bold text-white/50 transition-colors hover:text-white"
+          >
+            <Settings2 className="h-4 w-4" />
+            Setup
+          </button>
+          {settingsOpen && (
+            <SettingsPanel
+              settings={ceremony.settings}
+              onUpdate={ceremony.updateSettings}
+              onClose={() => setSettingsOpen(false)}
+            />
+          )}
+        </div>
       </nav>
 
       {ceremony.phase === "intro" && (
@@ -1004,6 +2683,15 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           squads={ceremony.squads}
           totalUnassigned={ceremony.totalRemaining}
           onStart={ceremony.start}
+        />
+      )}
+
+      {ceremony.phase === "intros" && (
+        <IntrosScreen
+          squads={ceremony.squads}
+          captainBySquad={ceremony.captainBySquad}
+          speed={ceremony.settings.speed}
+          onDone={ceremony.beginDraft}
         />
       )}
 
@@ -1018,6 +2706,20 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
           isAssigning={ceremony.isAssigning}
           history={ceremony.history}
           currentSquad={ceremony.currentSquad}
+          settings={ceremony.settings}
+          powersEnabled={ceremony.powersEnabled}
+          teamCards={ceremony.teamCards}
+          spentCards={ceremony.spentCards}
+          activity={ceremony.activity}
+          undoableEntry={ceremony.undoableEntry}
+          onUndoLastPlay={ceremony.undoLastPlay}
+          onUnassignLast={ceremony.unassignLast}
+          onAwardCard={ceremony.awardCard}
+          onPlayCard={ceremony.playCard}
+          onPreviewCard={ceremony.previewCard}
+          justCompletedSquadId={ceremony.justCompletedSquadId}
+          onClearCompleted={ceremony.clearJustCompleted}
+          isWildcardActive={ceremony.isWildcardActive}
           onAssign={ceremony.assign}
           onUndo={ceremony.undo}
           onChangeSkill={ceremony.changeSkill}

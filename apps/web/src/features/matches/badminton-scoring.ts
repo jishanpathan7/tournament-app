@@ -90,8 +90,12 @@ export function classifyGame(
     }
     return { status: "invalid", message: `Illegal margin at ${a}-${b}.` };
   }
-  // hi === maxPoints (golden point): only legal losing score is maxPoints - 1
-  return lo >= maxPoints - 1
+  // hi === maxPoints. Two legal ways to get here:
+  //   maxPoints-1     — the golden point, from deuce at (maxPoints-1)-all
+  //   maxPoints-winBy — a normal win by 2, e.g. 20-19 → 21-19
+  // Anything further behind is unreachable: the game would already have ended
+  // on a 2-point lead.
+  return lo >= maxPoints - winBy
     ? { status: "complete", winner }
     : { status: "invalid", message: `Illegal cap score ${a}-${b}.` };
 }
@@ -156,9 +160,15 @@ export function gameStatusIndicator(
   a: number,
   b: number,
   rules: BadmintonRules = BADMINTON_DEFAULTS,
-): "deuce" | "next_point_wins" | null {
-  if (a !== b) return null;
+): "deuce" | "next_point_wins" | "game_point" | null {
   const { pointsPerSet, maxPoints, winBy } = rules;
+  if (a !== b) {
+    // A leader one rally from taking the game — ask the score itself rather than
+    // re-deriving the threshold, so this stays true for any rules config.
+    const hi = Math.max(a, b);
+    const lo = Math.min(a, b);
+    return classifyGame(hi + 1, lo, rules).status === "complete" ? "game_point" : null;
+  }
   if (a >= maxPoints - winBy + 1 && a < maxPoints) return "next_point_wins";
   if (a >= pointsPerSet - winBy + 1) return "deuce";
   return null;

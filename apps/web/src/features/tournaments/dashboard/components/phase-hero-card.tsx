@@ -192,11 +192,11 @@ function Step2Hero({ tournamentId }: { tournamentId: string }) {
   );
 }
 
-// ─── Step 3: Create Teams ─────────────────────────────────────────────────────
+// ─── Assign to teams (step 4) ────────────────────────────────────────────────
 
-function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
+function TeamsHero({ tournamentId, signals }: { tournamentId: string; signals: StepSignals }) {
   return (
-    <HeroShell step={3} title={STEP_META[3].label}>
+    <HeroShell step={4} title={STEP_META[4].label}>
       <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
           {signals.franchiseMode
@@ -229,9 +229,9 @@ function Step3Hero({ tournamentId, signals }: { tournamentId: string; signals: S
   );
 }
 
-// ─── Step 4: Pair Each Team ───────────────────────────────────────────────────
+// ─── Generate pairs (step 5) ─────────────────────────────────────────────────
 
-function Step4Hero({
+function PairingHero({
   tournamentId,
   signals,
   readiness,
@@ -242,12 +242,17 @@ function Step4Hero({
 }) {
   const { data: divisions = [] } = useDivisions(tournamentId);
 
+  // Only doubles/team divisions can be paired. Singles ("individual") divisions
+  // have team_size 1 and the API rejects pairing them (422 pairing_unsupported),
+  // so never offer a pairing link for them.
+  const pairableDivisions = divisions.filter((d) => d.participantType !== "individual");
+
   const pairedByDivisionId = new Map(
     (readiness?.divisions ?? []).map((d) => [d.divisionId, d.unpairedEntrants === 0]),
   );
 
   return (
-    <HeroShell step={4} title={STEP_META[4].label}>
+    <HeroShell step={5} title={STEP_META[5].label}>
       <div className="flex flex-col gap-3">
         <p className="text-muted-foreground text-sm">
           {signals.franchiseMode
@@ -262,8 +267,19 @@ function Step4Hero({
                 Generate Doubles Pairs
               </Link>
             </Button>
+          ) : pairableDivisions.length === 0 ? (
+            // Doubles divisions register individuals (participantType "individual")
+            // and are paired *within teams*, not via the standalone per-division
+            // route (which the API rejects for individual divisions). Send the
+            // organizer to the teams flow instead of a link that 422s.
+            <Button asChild tone="candy" size="sm">
+              <Link href={`/console/tournaments/${tournamentId}/teams`}>
+                <GitMerge className="h-4 w-4" strokeWidth={2.25} />
+                Set up teams to pair doubles
+              </Link>
+            </Button>
           ) : (
-            divisions.map((d) => {
+            pairableDivisions.map((d) => {
               const done = pairedByDivisionId.get(d.id) ?? false;
               return (
                 <Button key={d.id} asChild tone={done ? "paper" : "candy"} size="sm">
@@ -285,17 +301,17 @@ function Step4Hero({
   );
 }
 
-// ─── Step 5: Check-in & Readiness ────────────────────────────────────────────
+// ─── Check-in & readiness (step 3) ───────────────────────────────────────────
 
-function Step5Hero({ tournamentId }: { tournamentId: string }) {
-  const { data: step5Divisions = [] } = useDivisions(tournamentId);
-  const firstDivisionId = step5Divisions[0]?.id;
+function CheckInHero({ tournamentId }: { tournamentId: string }) {
+  const { data: divisions = [] } = useDivisions(tournamentId);
+  const firstDivisionId = divisions[0]?.id;
   const checkInHref = firstDivisionId
     ? `/console/tournaments/${tournamentId}/divisions/${firstDivisionId}/attendance`
     : `/console/tournaments/${tournamentId}/players`;
 
   return (
-    <HeroShell step={5} title={STEP_META[5].label}>
+    <HeroShell step={3} title={STEP_META[3].label}>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-sm">
           Mark attendance and confirm everyone is ready before generating the draw.
@@ -537,12 +553,15 @@ export function PhaseHeroCard({
       return <Step1Hero tournamentId={tournamentId} />;
     case 2:
       return <Step2Hero tournamentId={tournamentId} />;
+    // Order must track STEP_META / deriveTournamentStep: 3 check-in, 4 teams,
+    // 5 pairs. These were previously mapped to the wrong heroes, so the
+    // "Check-in" step offered team/draft actions instead of check-in.
     case 3:
-      return <Step3Hero tournamentId={tournamentId} signals={signals} />;
+      return <CheckInHero tournamentId={tournamentId} />;
     case 4:
-      return <Step4Hero tournamentId={tournamentId} signals={signals} readiness={readiness} />;
+      return <TeamsHero tournamentId={tournamentId} signals={signals} />;
     case 5:
-      return <Step5Hero tournamentId={tournamentId} />;
+      return <PairingHero tournamentId={tournamentId} signals={signals} readiness={readiness} />;
     case 6:
       return <Step6Hero tournamentId={tournamentId} signals={signals} />;
     case 7:

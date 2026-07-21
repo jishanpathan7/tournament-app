@@ -5,7 +5,7 @@ from __future__ import annotations
 import uuid
 from collections.abc import Sequence
 
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -13,6 +13,7 @@ from app.db.enums import PairingRunStatus, RegistrationStatus
 from app.db.models import (
     Division,
     PairingRun,
+    Participant,
     Registration,
     SportProfile,
     Squad,
@@ -115,6 +116,20 @@ async def get_member_by_registration(
         SquadMember.organization_id == org_id,
     )
     return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def rename_squad_participants(
+    session: AsyncSession, org_id: uuid.UUID, squad_id: uuid.UUID, name: str
+) -> None:
+    """A squad competes in the draw through a squad-kind Participant whose
+    ``display_name`` was copied from the team at materialization. Standings, rankings
+    and the public bracket all read that copy, so a rename has to carry across or the
+    team keeps its old name everywhere it actually competes."""
+    await session.execute(
+        update(Participant)
+        .where(Participant.squad_id == squad_id, Participant.organization_id == org_id)
+        .values(display_name=name)
+    )
 
 
 async def clear_tournament_squad_members(

@@ -119,6 +119,29 @@ export function deriveTournamentStep(
   return 7;
 }
 
+/**
+ * Which steps are genuinely finished, independent of the current step.
+ *
+ * The checklist used to infer completion from position alone, so a tournament
+ * whose teams were built before check-in showed "Assign to teams" as pending
+ * while the teams page showed four full, paired teams. Work that is visibly done
+ * has to read as done.
+ */
+export function completedSteps(
+  status: TournamentStatus,
+  signals: StepSignals,
+): Set<TournamentStep> {
+  const done = new Set<TournamentStep>();
+  if (status !== "draft") done.add(1);
+  if (signals.hasApproved) done.add(2);
+  if (signals.checkInReady) done.add(3);
+  if (signals.squadsReady) done.add(4);
+  if (signals.pairingPublished) done.add(5);
+  if (signals.drawComplete) done.add(6);
+  if (signals.courtsReady) done.add(7);
+  return done;
+}
+
 export function deriveStepSignals(
   readiness: TournamentReadinessView | undefined,
   registrationTotals: RegistrationTotals,

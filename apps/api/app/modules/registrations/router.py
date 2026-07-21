@@ -80,7 +80,8 @@ def _participant_response(p: Participant) -> ParticipantResponse:
         status=p.status,
         user_id=p.user_id,
         team_id=p.team_id,
-        team_name=p.team.name if p.team else None,
+        # SQUAD name, not the pair's own name (see Team.squad_id).
+        team_name=p.team.squad.name if p.team and p.team.squad else None,
         created_at=p.created_at,
     )
 

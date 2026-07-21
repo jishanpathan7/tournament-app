@@ -41,6 +41,12 @@ class PublishRequest(ApiModel):
     artifacts: list[str] = Field(default_factory=list)  # any of: draw | schedule | results
 
 
+class PurgeTournamentRequest(ApiModel):
+    """Echoing the name back is the guard on an irreversible delete."""
+
+    confirm_name: str
+
+
 class TournamentResponse(ApiModel):
     id: uuid.UUID
     slug: str

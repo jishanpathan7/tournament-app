@@ -179,11 +179,15 @@ async def _side_labels_and_teams(
         from sqlalchemy.orm import selectinload as _sil
 
         from app.db.models import Participant as _P
+        from app.db.models import Team as _T
 
-        stmt = _sel(_P).where(_P.id == mp.participant_id).options(_sil(_P.team))
+        stmt = (
+            _sel(_P).where(_P.id == mp.participant_id).options(_sil(_P.team).selectinload(_T.squad))
+        )
         participant = (await session.execute(stmt)).scalar_one_or_none()
         labels.append(participant.display_name if participant else "Unknown")
-        team_names.append(participant.team.name if participant and participant.team else None)
+        squad = participant.team.squad if participant and participant.team else None
+        team_names.append(squad.name if squad else None)
     return labels, team_names
 
 

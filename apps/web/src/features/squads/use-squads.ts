@@ -9,16 +9,36 @@ import {
   deleteSquad,
   getSquads,
   removeSquadMember,
+  swapSquadMembers,
   updateSquad,
 } from "@/features/squads/squads-api";
+import { queryKeys } from "@/lib/query-keys";
 import type {
   AutoDistributeRequest,
   CreateSquadRequest,
+  SwapMembersRequest,
   TournamentSquadsView,
   UpdateSquadRequest,
 } from "@/features/squads/types";
 
 const key = (tournamentId: string) => ["squads", tournamentId] as const;
+
+/**
+ * A team's name is stamped onto its players everywhere they appear — the participants
+ * list, every match card, the draw, the public microsite. Invalidating only the teams
+ * board left all of those showing the old name until something else happened to
+ * refetch them, so a rename looked like it had half-applied.
+ */
+function invalidateTeamNames(qc: ReturnType<typeof useQueryClient>, tournamentId: string) {
+  void qc.invalidateQueries({ queryKey: key(tournamentId) });
+  void qc.invalidateQueries({ queryKey: queryKeys.tournaments.participants(tournamentId) });
+  void qc.invalidateQueries({ queryKey: queryKeys.tournaments.matches(tournamentId) });
+  // Division-scoped rosters and pairing runs carry the tag too, and the public
+  // microsite reads its own copy — both are keyed by ids we don't have here, so
+  // match on the prefix.
+  void qc.invalidateQueries({ queryKey: ["divisions"] });
+  void qc.invalidateQueries({ queryKey: ["public"] });
+}
 
 export function useSquads(tournamentId: string) {
   return useQuery({
@@ -31,7 +51,7 @@ export function useCreateSquad(tournamentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateSquadRequest) => createSquad(tournamentId, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+    onSuccess: () => invalidateTeamNames(qc, tournamentId),
   });
 }
 
@@ -39,7 +59,7 @@ export function useAutoDistributeSquads(tournamentId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: AutoDistributeRequest) => autoDistributeSquads(tournamentId, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+    onSuccess: () => invalidateTeamNames(qc, tournamentId),
   });
 }
 
@@ -48,7 +68,7 @@ export function useUpdateSquad(tournamentId: string) {
   return useMutation({
     mutationFn: ({ squadId, ...body }: UpdateSquadRequest & { squadId: string }) =>
       updateSquad(squadId, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+    onSuccess: () => invalidateTeamNames(qc, tournamentId),
   });
 }
 
@@ -57,7 +77,7 @@ export function useAssignSquadMember(tournamentId: string) {
   return useMutation({
     mutationFn: ({ squadId, registrationId }: { squadId: string; registrationId: string }) =>
       assignSquadMember(squadId, { registrationId }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+    onSuccess: () => invalidateTeamNames(qc, tournamentId),
   });
 }
 
@@ -66,7 +86,19 @@ export function useRemoveSquadMember(tournamentId: string) {
   return useMutation({
     mutationFn: ({ squadId, registrationId }: { squadId: string; registrationId: string }) =>
       removeSquadMember(squadId, registrationId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+    onSuccess: () => invalidateTeamNames(qc, tournamentId),
+  });
+}
+
+/** Atomic 1-for-1 member trade — seeds the cache with the board the API returns. */
+export function useSwapSquadMembers(tournamentId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SwapMembersRequest) => swapSquadMembers(tournamentId, body),
+    onSuccess: (board) => {
+      qc.setQueryData(key(tournamentId), board);
+      invalidateTeamNames(qc, tournamentId);
+    },
   });
 }
 
@@ -107,6 +139,6 @@ export function useDeleteSquad(tournamentId: string) {
     onError: (_err, _squadId, ctx) => {
       if (ctx?.prev) qc.setQueryData(key(tournamentId), ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key(tournamentId) }),
+    onSettled: () => invalidateTeamNames(qc, tournamentId),
   });
 }

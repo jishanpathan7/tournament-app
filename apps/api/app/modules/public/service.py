@@ -91,6 +91,12 @@ async def list_stages_with_drawn(
 
 
 async def list_participants(session: AsyncSession, tournament: Tournament) -> Sequence[Participant]:
+    """Every approved participant at every layer — individual, pair and squad.
+
+    Deliberately unfiltered: this is the lookup table the bracket, schedule and match
+    pages resolve their sides against, and a franchise draw's sides are *pairs*. The
+    roster page collapses the layers for display; doing it here blanked the bracket.
+    """
     return await repo.list_participants(session, tournament.organization_id, tournament.id)
 
 
@@ -210,13 +216,17 @@ async def get_player_stats(session: AsyncSession, tournament: Tournament) -> Pla
     matches = await scoring_repo.list_tournament_matches(session, org_id, tournament.id)
     participants = await repo.list_participants(session, org_id, tournament.id)
 
-    # squad name lookup: participant_id → squad name (via squad_id on participant)
+    # participant_id → team name. Only squad-kind rows carry ``squad_id`` directly;
+    # a pair belongs to its franchise through its Team, which is how every other
+    # surface resolves the tag. Reading only ``squad_id`` left every pair — i.e. every
+    # row on Top Performers — with no team at all.
     squad_names: dict[uuid.UUID, str] = {}
     squads = await squads_repo.list_squads(session, org_id, tournament.id)
     squad_map = {s.id: s.name for s in squads}
     for p in participants:
-        if p.squad_id and p.squad_id in squad_map:
-            squad_names[p.id] = squad_map[p.squad_id]
+        squad_id = p.squad_id or (p.team.squad_id if p.team else None)
+        if squad_id and squad_id in squad_map:
+            squad_names[p.id] = squad_map[squad_id]
 
     stats: dict[uuid.UUID, dict[str, int]] = {}
 

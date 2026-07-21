@@ -142,7 +142,8 @@ def test_validate_participants_rejects(kind, rosters):
         [[21, 15], [21, 10]],  # 2-0
         [[21, 15], [15, 21], [21, 18]],  # 2-1
         [[22, 20], [21, 19]],  # deuce win
-        [[30, 29], [21, 10]],  # golden point cap (only legal cap score)
+        [[30, 29], [21, 10]],  # golden point cap, from 29-all
+        [[30, 28], [21, 10]],  # cap reached by winning by 2 from 29-28
     ],
 )
 def test_valid_normal_matches(games):
@@ -327,7 +328,7 @@ def test_sibl_valid_scores(games):
     "games,reason",
     [
         ([[15, 14], [15, 8]], "15-14: need win by 2"),
-        ([[21, 19], [15, 8]], "21-19: illegal cap score (only 21-20 allowed)"),
+        ([[21, 18], [15, 8]], "21-18: unreachable, game ends on a 2-point lead first"),
         ([[22, 20], [15, 8]], "22-20: exceeds cap"),
         ([[14, 15], [15, 8]], "14-15: mirror of 15-14"),
     ],
@@ -361,6 +362,10 @@ def test_sibl_cap_golden_point_21_20_valid():
     _validate({"games": [[21, 20], [15, 8]]}, SIBL)
 
 
-def test_sibl_cap_21_19_invalid():
-    with pytest.raises(EngineValidationError):
-        _validate({"games": [[21, 19], [15, 8]]}, SIBL)
+def test_sibl_cap_21_19_valid_win_by_two():
+    """Win-by-2 applies right up to the cap.
+
+    19-19 -> 20-19 (margin 1, play continues) -> 21-19. A legal rally sequence,
+    so an umpire with a real 21-19 must be able to submit it.
+    """
+    _validate({"games": [[21, 19], [15, 8]]}, SIBL)

@@ -57,6 +57,12 @@ export async function deleteTournament(id: string): Promise<void> {
   await api.delete(`/tournaments/${id}`);
 }
 
+/** Irreversible. Only works on a tournament that is already deleted, and the name
+ * must be echoed back exactly — the backend rejects a mismatch. */
+export async function purgeTournament(id: string, confirmName: string): Promise<void> {
+  await api.post(`/tournaments/${id}/purge`, { confirmName });
+}
+
 export function listDivisions(tournamentId: string): Promise<DivisionResponse[]> {
   return apiGet<DivisionResponse[]>(`/tournaments/${tournamentId}/divisions`);
 }

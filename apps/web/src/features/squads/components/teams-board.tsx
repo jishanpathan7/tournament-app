@@ -3,7 +3,7 @@
 import { DndContext, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
 import { useQueries } from "@tanstack/react-query";
-import { ChevronDown, Dices, MoreHorizontal, Users, Wand2 } from "lucide-react";
+import { ChevronDown, Dices, Loader2, MoreHorizontal, Users, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -78,6 +78,9 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const [setupOpen, setSetupOpen] = useState(false);
   const [noDraftTeamsOpen, setNoDraftTeamsOpen] = useState(false);
   const [tapHintDismissed, setTapHintDismissed] = useState(false);
+  // Message shown in the blocking creation overlay (null = hidden). Contextual to
+  // which team-creation action is running.
+  const [creatingLabel, setCreatingLabel] = useState<string | null>(null);
 
   const { isManual: isManualPairing } = usePairCreationMode(tournamentId);
 
@@ -177,12 +180,43 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
     updateSquad.isPending;
 
   function onAutoDistribute(count: number) {
+    setCreatingLabel(`Building ${count} teams and balancing players…`);
     autoDistribute.mutate(
       { teamCount: count, replaceExisting: true },
       {
         onSuccess: (res) =>
           toast.success(`Balanced ${res.summary.assigned} players across ${count} teams`),
         onError: (err) => toast.error(errorMessage(err, "Couldn't auto-assign teams")),
+        onSettled: () => setCreatingLabel(null),
+      },
+    );
+  }
+
+  // Create `count` empty teams — no players assigned. Sequential so the auto-named
+  // "Team N" numbers don't collide.
+  async function onCreateEmptyTeams(count: number) {
+    const base = board?.squads.length ?? 0;
+    setCreatingLabel(`Creating ${count} empty teams…`);
+    try {
+      for (let i = 0; i < count; i++) {
+        await createSquad.mutateAsync({ name: `Team ${base + i + 1}` });
+      }
+      toast.success(`Created ${count} empty teams`);
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't create teams"));
+    } finally {
+      setCreatingLabel(null);
+    }
+  }
+
+  function onAddSingleTeam() {
+    setCreatingLabel("Creating team…");
+    createSquad.mutate(
+      { name: `Team ${(board?.squads.length ?? 0) + 1}` },
+      {
+        onSuccess: () => toast.success("Team created"),
+        onError: (err) => toast.error(errorMessage(err, "Couldn't create team")),
+        onSettled: () => setCreatingLabel(null),
       },
     );
   }
@@ -276,18 +310,18 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          disabled={busy}
-          onClick={() =>
-            createSquad.mutate(
-              { name: `Team ${(board?.squads.length ?? 0) + 1}` },
-              {
-                onSuccess: () => toast.success("Team created"),
-                onError: (err) => toast.error(errorMessage(err, "Couldn't create team")),
-              },
-            )
-          }
-        >
+        {TEAM_COUNT_PRESETS.map((count) => (
+          <DropdownMenuItem
+            key={`empty-${count}`}
+            disabled={busy}
+            onClick={() => onCreateEmptyTeams(count)}
+          >
+            <Users className="h-4 w-4" />
+            Empty {count} teams
+          </DropdownMenuItem>
+        ))}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem disabled={busy} onClick={onAddSingleTeam}>
           + Add team
         </DropdownMenuItem>
       </DropdownMenuContent>
@@ -329,6 +363,19 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
 
   return (
     <div className="flex flex-col gap-6">
+      {creatingLabel ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="bg-background flex flex-col items-center gap-4 rounded-2xl px-10 py-8 shadow-2xl">
+            <Loader2 className="text-candy h-8 w-8 animate-spin" />
+            <p className="text-sm font-semibold">{creatingLabel}</p>
+          </div>
+        </div>
+      ) : null}
+
       <PageHeader
         eyebrow="Pre-pairing"
         title="Teams"
@@ -339,7 +386,6 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
       <WorkflowProgress
         workflow={workflow}
         tournamentId={tournamentId}
-        divisionId={firstDivisionId ?? undefined}
         assigned={board.summary.assigned}
         onNextAction={workflow.nextSquad ? openNextUnpairedSquad : undefined}
       />
@@ -354,16 +400,10 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             </Button>
           ) : null}
           {workflow.readyForDraw && canManage ? (
+            /* Teams are paired, so the next step is the draw — not check-in,
+               which happens before teams are built. */
             <Button asChild tone="candy" size="sm">
-              <Link
-                href={
-                  firstDivisionId
-                    ? `/console/tournaments/${tournamentId}/divisions/${firstDivisionId}/attendance`
-                    : `/console/tournaments/${tournamentId}/players`
-                }
-              >
-                Go to Check-in
-              </Link>
+              <Link href={`/console/tournaments/${tournamentId}/draws`}>Generate matches</Link>
             </Button>
           ) : null}
           {workflow.playersAssigned && needsLockCount > 0 && !workflow.readyForDraw && canManage ? (

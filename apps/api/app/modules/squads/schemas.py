@@ -66,6 +66,15 @@ class AssignMemberRequest(ApiModel):
     registration_id: uuid.UUID
 
 
+class SwapMembersRequest(ApiModel):
+    """Atomically trade one member between two squads (both move or neither does)."""
+
+    squad_a_id: uuid.UUID
+    registration_a_id: uuid.UUID
+    squad_b_id: uuid.UUID
+    registration_b_id: uuid.UUID
+
+
 class AutoDistributeRequest(ApiModel):
     team_count: int = Field(ge=2, le=32)
     division_id: uuid.UUID | None = None

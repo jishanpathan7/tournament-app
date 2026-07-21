@@ -71,6 +71,10 @@ async def materialize_squad_participants(
     for idx, squad in enumerate(squads):
         existing = await repo.get_squad_participant_by_squad(session, org_id, division_id, squad.id)
         if existing is not None:
+            # The name was copied from the team when this row was first created, so a
+            # team renamed since then would otherwise keep competing under its old name.
+            if existing.display_name != squad.name:
+                existing.display_name = squad.name
             out.append(existing)
             continue
         participant = Participant(

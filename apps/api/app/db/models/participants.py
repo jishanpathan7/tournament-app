@@ -51,10 +51,17 @@ class Team(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDeleteMixin,
     captain_user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
     )
+    # The franchise squad this pair was drafted from. `Team.name` is the PAIR's
+    # own name ("A / B"), so squad identity has to be carried separately or
+    # surfaces end up labelling a pair with itself.
+    squad_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("squads.id", ondelete="SET NULL"), nullable=True, index=True
+    )
 
     roster_entries: Mapped[list[RosterEntry]] = relationship(
         back_populates="team", cascade="all, delete-orphan", passive_deletes=True
     )
+    squad: Mapped["Squad | None"] = relationship(lazy="raise_on_sql")
 
 
 class RosterEntry(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):

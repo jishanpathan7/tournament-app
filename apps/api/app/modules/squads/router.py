@@ -22,6 +22,7 @@ from app.modules.squads.schemas import (
     AutoDistributeResponse,
     CreateSquadRequest,
     SquadView,
+    SwapMembersRequest,
     TournamentSquadsView,
     UpdateSquadRequest,
 )
@@ -80,6 +81,30 @@ async def auto_distribute(
         team_count=body.team_count,
         division_id=body.division_id,
         replace_existing=body.replace_existing,
+    )
+
+
+@router.post(
+    "/tournaments/{tournament_id}/squads/swap-members",
+    response_model=TournamentSquadsView,
+    dependencies=[Depends(authed_csrf)],
+)
+async def swap_members(
+    tournament_id: uuid.UUID,
+    body: SwapMembersRequest,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> TournamentSquadsView:
+    """Atomically trade one member between two squads (both move or neither does)."""
+    return await service.swap_members(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        tournament_id=tournament_id,
+        squad_a_id=body.squad_a_id,
+        registration_a_id=body.registration_a_id,
+        squad_b_id=body.squad_b_id,
+        registration_b_id=body.registration_b_id,
     )
 
 

@@ -8,9 +8,10 @@ from decimal import Decimal
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, ValidationError
+from app.cache import keys as cache_keys
 from app.core import audit
 from app.core.events import emit_event
-from app.core.factory import get_sport_registry
+from app.core.factory import get_cache, get_sport_registry
 from app.db.models import Registration, Squad, SquadMember, Tournament
 from app.engine.squad_distribution import snake_distribute
 from app.modules.registrations.entrant import entrant_display_name
@@ -30,6 +31,14 @@ _AGGREGATE = "squad"
 
 async def _emit(session: AsyncSession, event_type: str, payload: dict) -> None:
     await emit_event(session, aggregate=_AGGREGATE, event_type=event_type, payload=payload)
+
+
+async def _evict_public_roster(tournament_id: uuid.UUID) -> None:
+    """A team's name is stamped on every public surface that mentions its players —
+    the roster, the court queue, the schedule — so a rename or a roster move has to
+    drop the whole tournament's cached views, not just one of them. Otherwise the
+    microsite serves the old name until each TTL happens to lapse."""
+    await get_cache().delete_many(list(cache_keys.public_tournament_keys(tournament_id).values()))
 
 
 async def get_board(
@@ -98,6 +107,7 @@ async def update_squad(
 
     if name is not None:
         squad.name = name.strip()
+        await repo.rename_squad_participants(session, org_id, squad.id, squad.name)
     if clear_captain:
         squad.captain_registration_id = None
     elif captain_registration_id is not None:
@@ -116,6 +126,7 @@ async def update_squad(
         after={"name": squad.name},
     )
     await _emit(session, events.SQUAD_UPDATED, {"squad_id": str(squad.id)})
+    await _evict_public_roster(squad.tournament_id)
 
     board = await _build_board(session, org_id, squad.tournament_id)
     return _find_squad_view(board, squad.id)
@@ -148,6 +159,7 @@ async def delete_squad(
         before={"tournament_id": str(tournament_id)},
     )
     await _emit(session, events.SQUAD_DELETED, {"squad_id": str(squad_id)})
+    await _evict_public_roster(tournament_id)
 
 
 async def assign_member(
@@ -195,6 +207,7 @@ async def assign_member(
         events.SQUAD_MEMBER_ASSIGNED,
         {"squad_id": str(squad_id), "registration_id": str(registration_id)},
     )
+    await _evict_public_roster(squad.tournament_id)
 
     board = await _build_board(session, org_id, squad.tournament_id)
     return _find_squad_view(board, squad_id)
@@ -225,6 +238,87 @@ async def remove_member(
         events.SQUAD_MEMBER_REMOVED,
         {"squad_id": str(squad_id), "registration_id": str(registration_id)},
     )
+    await _evict_public_roster(squad.tournament_id)
+
+
+async def swap_members(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    squad_a_id: uuid.UUID,
+    registration_a_id: uuid.UUID,
+    squad_b_id: uuid.UUID,
+    registration_b_id: uuid.UUID,
+) -> TournamentSquadsView:
+    """Atomically trade one member between two squads.
+
+    Both members move within a single transaction, so a failure part-way can never
+    leave a player unassigned (the four-call client-side sequence it replaces could).
+    Captains are not swappable — the roster keeps its designated captain.
+    """
+    if squad_a_id == squad_b_id:
+        raise ValidationError("Cannot swap within the same team")
+    if registration_a_id == registration_b_id:
+        raise ValidationError("Cannot swap a player with themselves")
+
+    squad_a = await repo.get_squad(session, org_id, squad_a_id)
+    squad_b = await repo.get_squad(session, org_id, squad_b_id)
+    if squad_a is None or squad_b is None:
+        raise NotFoundError("Team not found")
+    if squad_a.tournament_id != tournament_id or squad_b.tournament_id != tournament_id:
+        raise ValidationError("Teams do not belong to this tournament")
+
+    member_a = await repo.get_member_by_registration(session, org_id, registration_a_id)
+    member_b = await repo.get_member_by_registration(session, org_id, registration_b_id)
+    if member_a is None or member_a.squad_id != squad_a_id:
+        raise NotFoundError("Member not on this team")
+    if member_b is None or member_b.squad_id != squad_b_id:
+        raise NotFoundError("Member not on this team")
+
+    if squad_a.captain_registration_id == registration_a_id:
+        raise ValidationError("Cannot swap a team captain")
+    if squad_b.captain_registration_id == registration_b_id:
+        raise ValidationError("Cannot swap a team captain")
+
+    # Single-transaction move: reassign both rows, no delete/insert window.
+    member_a.squad_id = squad_b_id
+    member_b.squad_id = squad_a_id
+    await session.flush()
+
+    audit.record(
+        session,
+        organization_id=org_id,
+        actor_id=actor_id,
+        action="squad.swap",
+        entity="squad",
+        entity_id=squad_a_id,
+        after={
+            "squad_a_id": str(squad_a_id),
+            "registration_a_id": str(registration_a_id),
+            "squad_b_id": str(squad_b_id),
+            "registration_b_id": str(registration_b_id),
+        },
+    )
+    await _emit(
+        session,
+        events.SQUAD_MEMBERS_SWAPPED,
+        {
+            "squad_a_id": str(squad_a_id),
+            "registration_a_id": str(registration_a_id),
+            "squad_b_id": str(squad_b_id),
+            "registration_b_id": str(registration_b_id),
+        },
+    )
+
+    # Mutating member.squad_id directly does not update the already-loaded
+    # Squad.members collections, so expire before rebuilding or the response
+    # would echo the pre-swap rosters.
+    session.expire_all()
+
+    await _evict_public_roster(tournament_id)
+    return await _build_board(session, org_id, tournament_id)
 
 
 async def auto_distribute(
@@ -316,6 +410,7 @@ async def auto_distribute(
         events.SQUAD_AUTO_DISTRIBUTED,
         {"tournament_id": str(tournament_id), "team_count": team_count},
     )
+    await _evict_public_roster(tournament_id)
 
     board = await _build_board(session, org_id, tournament_id, tournament=tournament)
     return AutoDistributeResponse(squads=board.squads, summary=board.summary)
