@@ -14,6 +14,7 @@ import uuid
 from typing import Any
 
 from sqlalchemy import delete as sa_delete
+from sqlalchemy import select
 from sqlalchemy import update as sa_update
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -247,6 +248,53 @@ async def delete_tournament(
         tournament.id,
         before={"name": tournament.name, "slug": tournament.slug, "status": tournament.status},
     )
+
+
+async def purge_tournament(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+    confirm_name: str,
+) -> None:
+    """Hard-delete a soft-deleted tournament and everything under it. Irreversible.
+
+    Two gates before anything is removed: the tournament must already be soft-deleted,
+    and the caller must echo its name back. The audit row is written first so the
+    record of the purge outlives the data it describes.
+    """
+    tournament = await repo.get_deleted_tournament(session, org_id, tournament_id)
+    if tournament is None:
+        raise NotFoundError("No deleted tournament with that id")
+    if confirm_name.strip() != tournament.name:
+        raise ValidationError(
+            "Type the tournament's name exactly to confirm the purge",
+            code="purge_name_mismatch",
+        )
+
+    await _audit_event(
+        session,
+        org_id,
+        actor_id,
+        events.TOURNAMENT_PURGED,
+        tournament.id,
+        before={"name": tournament.name, "slug": tournament.slug, "status": tournament.status},
+    )
+
+    # participants → squads is RESTRICT (a squad may not vanish while a participant
+    # still claims it), so the cascade from tournaments cannot resolve that edge on
+    # its own. Clearing the participants first lets the rest cascade normally.
+    await session.execute(
+        sa_delete(Participant).where(
+            Participant.division_id.in_(
+                select(Division.id).where(Division.tournament_id == tournament_id)
+            )
+        )
+    )
+    await session.execute(sa_delete(Tournament).where(Tournament.id == tournament_id))
+    await session.flush()
+    await get_cache().delete_many(list(cache_keys.public_tournament_keys(tournament_id).values()))
 
 
 async def transition_status(

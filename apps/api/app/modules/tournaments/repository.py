@@ -47,6 +47,18 @@ async def stage_matches_with_participants(
     return (await session.execute(stmt)).scalars().all()
 
 
+async def get_deleted_tournament(
+    session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
+) -> Tournament | None:
+    """A soft-deleted tournament — the only kind a purge is allowed to touch."""
+    stmt = select(Tournament).where(
+        Tournament.id == tid,
+        Tournament.organization_id == org_id,
+        Tournament.deleted_at.isnot(None),
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def get_tournament(
     session: AsyncSession, org_id: uuid.UUID, tid: uuid.UUID
 ) -> Tournament | None:

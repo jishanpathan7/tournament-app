@@ -44,6 +44,7 @@ from app.modules.tournaments.schemas import (
     DrawRequest,
     DrawResponse,
     PublishRequest,
+    PurgeTournamentRequest,
     StageResponse,
     StatusTransitionRequest,
     TournamentResponse,
@@ -277,6 +278,28 @@ async def delete_tournament(
         org_id=principal.organization_id,
         actor_id=principal.user_id,
         tournament_id=tournament_id,
+    )
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/tournaments/{tournament_id}/purge",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(authed_csrf)],
+)
+async def purge_tournament(
+    tournament_id: uuid.UUID,
+    body: PurgeTournamentRequest,
+    principal: Principal = Depends(_delete),
+    session: AsyncSession = Depends(get_request_session),
+) -> Response:
+    """Permanently remove a tournament that has already been deleted. Irreversible."""
+    await service.purge_tournament(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        tournament_id=tournament_id,
+        confirm_name=body.confirm_name,
     )
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 

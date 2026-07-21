@@ -239,6 +239,18 @@ export function useAdvanceToKnockout(stageId: string, divisionId: string, tourna
   });
 }
 
+export function usePurgeTournament() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, confirmName }: { id: string; confirmName: string }) =>
+      tournamentsApi.purgeTournament(id, confirmName),
+    onSuccess: (_data, { id }) => {
+      queryClient.removeQueries({ queryKey: queryKeys.tournaments.detail(id) });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.list() });
+    },
+  });
+}
+
 export function useDeleteTournament() {
   const queryClient = useQueryClient();
   return useMutation({

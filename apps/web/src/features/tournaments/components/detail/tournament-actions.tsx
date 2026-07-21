@@ -16,8 +16,9 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { STATUS_TRANSITIONS, type StatusTransition } from "@/features/tournaments/config";
+import { DeleteTournamentDialog } from "@/features/tournaments/components/detail/delete-tournament-dialog";
 import { PublishDialog } from "@/features/tournaments/components/detail/publish-dialog";
-import { useDeleteTournament, useTransitionStatus } from "@/features/tournaments/use-tournaments";
+import { useTransitionStatus } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
 import { toast } from "@/components/ui/sonner";
 import { ACTIONS } from "@/lib/permissions";
@@ -34,7 +35,6 @@ export function TournamentActions({ tournament }: { tournament: TournamentRespon
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
   const canDelete = can(ACTIONS.TOURNAMENT_DELETE);
   const transition = useTransitionStatus(tournament.id);
-  const deleteTournament = useDeleteTournament();
   const [pending, setPending] = useState<StatusTransition | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [publishOpen, setPublishOpen] = useState(false);
@@ -55,17 +55,6 @@ export function TournamentActions({ tournament }: { tournament: TournamentRespon
       },
     );
     setPending(null);
-  };
-
-  const onDelete = () => {
-    deleteTournament.mutate(tournament.id, {
-      onSuccess: () => {
-        toast.success("Tournament deleted");
-        setDeleteOpen(false);
-        router.push("/console/tournaments");
-      },
-      onError: (error) => toast.error(errorMessage(error, "Couldn't delete tournament")),
-    });
   };
 
   return (
@@ -145,15 +134,11 @@ export function TournamentActions({ tournament }: { tournament: TournamentRespon
         onConfirm={() => pending && runTransition(pending)}
       />
 
-      <ConfirmDialog
+      <DeleteTournamentDialog
+        tournament={tournament}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
-        title="Delete tournament?"
-        description={`“${tournament.name}” will be removed from the console and public site. Registrations, draws, and scores are kept in the database but hidden.`}
-        confirmLabel="Delete tournament"
-        confirmTone="pink"
-        loading={deleteTournament.isPending}
-        onConfirm={onDelete}
+        onDeleted={() => router.push("/console/tournaments")}
       />
 
       {canManage ? (
