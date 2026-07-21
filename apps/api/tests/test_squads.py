@@ -275,3 +275,53 @@ async def test_draw_uses_only_the_competing_entrants(app, client):
     # And nothing was created — no half-built draw left behind.
     matches = await client.get(f"/api/v1/stages/{stage.json()['id']}/matches")
     assert matches.json() == []
+
+
+# ============================================================
+# Renaming a team
+# ============================================================
+
+
+async def test_rename_carries_to_the_participant_that_competes(app, client, db_session):
+    """A squad competes through a squad-kind Participant whose display_name was copied
+    from the team when the tie draw materialized it. Standings, team rankings and the
+    public bracket read that copy — so a rename that stopped at the Squad row left the
+    team competing under its old name everywhere it actually appears."""
+    from sqlalchemy import select
+
+    from app.db.enums import ParticipantKind, ParticipantStatus
+    from app.db.models import Participant, Squad
+
+    await _new_org(client)
+    tid, did = await _tournament_with_division(client)
+    squad_id = await _squad(client, tid, "Team 1")
+
+    squad = (
+        await db_session.execute(select(Squad).where(Squad.id == uuid.UUID(squad_id)))
+    ).scalar_one()
+    db_session.add(
+        Participant(
+            organization_id=squad.organization_id,
+            division_id=uuid.UUID(did),
+            kind=ParticipantKind.SQUAD.value,
+            squad_id=squad.id,
+            display_name="Team 1",
+            status=ParticipantStatus.APPROVED.value,
+        )
+    )
+    await db_session.commit()
+
+    resp = await client.patch(
+        f"/api/v1/squads/{squad_id}", json={"name": "Shuttle Squad"}, headers=_csrf(client)
+    )
+    assert resp.status_code == 200, resp.text
+
+    name = (
+        await db_session.execute(
+            select(Participant.display_name).where(Participant.squad_id == squad.id)
+        )
+    ).scalar_one()
+    assert name == "Shuttle Squad"
+
+    await db_session.execute(Participant.__table__.delete().where(Participant.squad_id == squad.id))
+    await db_session.commit()

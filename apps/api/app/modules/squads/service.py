@@ -107,6 +107,7 @@ async def update_squad(
 
     if name is not None:
         squad.name = name.strip()
+        await repo.rename_squad_participants(session, org_id, squad.id, squad.name)
     if clear_captain:
         squad.captain_registration_id = None
     elif captain_registration_id is not None:
