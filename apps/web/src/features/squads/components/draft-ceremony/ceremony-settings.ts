@@ -12,7 +12,9 @@
  */
 
 import type { PowerCardId } from "@/features/squads/components/draft-ceremony/power-cards/types";
-import type { SkillKey } from "@/features/squads/components/draft-ceremony/power-slots";
+
+/** Slots a card gets when the organizer has not set a count for it. */
+export const DEFAULT_CARD_SLOTS = 1;
 
 export type CeremonySpeed = "relaxed" | "normal" | "fast";
 
@@ -27,14 +29,18 @@ export interface CeremonySettings {
   tieredReveals: boolean;
   /** Master gate for surprise Power Slots woven into the wheel. */
   powerSlots: boolean;
-  /** Exactly how many power slots appear on each skill-level wheel (organizer set). */
-  powerSlotsBySkill: Record<SkillKey, number>;
   /**
-   * Cards the organizer has switched OFF. Stored as a deny-list rather than an
-   * allow-list so a newly registered card is enabled by default and needs no
-   * migration of saved settings.
+   * How many slots each card gets on every wheel — the deck composition.
+   *
+   * Exact counts rather than a total, because a total left the identity of each
+   * slot to an independent coin flip: six slots could land four Meri Marzi and no
+   * Jo Tera Hai Wo Mera. Asking for two of each now yields exactly two of each.
+   *
+   * A count of 0 switches the card off, so this doubles as the on/off control.
+   * A card missing from the map falls back to 1, so a newly registered card
+   * appears without any settings migration.
    */
-  disabledCardIds: PowerCardId[];
+  cardSlots: Record<PowerCardId, number>;
   /** Bundle the final three picks into a rapid-fire crescendo. */
   wildcardFinish: boolean;
   /** Playback speed — scales all animation durations. Organizer can change live. */
@@ -47,8 +53,7 @@ export const DEFAULT_SETTINGS: CeremonySettings = {
   onTheClock: true,
   tieredReveals: true,
   powerSlots: true,
-  powerSlotsBySkill: { advanced: 2, intermediate: 2, beginner: 1, unknown: 1 },
-  disabledCardIds: [],
+  cardSlots: {},
   wildcardFinish: true,
   speed: "normal",
 };

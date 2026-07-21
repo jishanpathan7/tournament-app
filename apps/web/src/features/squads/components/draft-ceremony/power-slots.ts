@@ -48,16 +48,19 @@ export function isPlayerSlot(
 }
 
 /**
- * Build the wheel's slot list: all available players plus exactly `powerCount`
- * power slots (organizer-controlled, per skill level), spread out so no two
- * powers sit adjacent. Each power's kind is drawn at random from `allowedCards`
- * — the cards the organizer left switched on. Returns players-only when the
- * count is 0, no card is enabled, or the pool is too small to hide a power in.
+ * Build the wheel's slot list: every player, plus exactly the cards in `deck`,
+ * spread out so no two cards sit adjacent.
+ *
+ * The deck carries each card as many times as the organizer asked for, so the
+ * composition is exact. Card identity used to be drawn independently per slot,
+ * which meant six slots could land four of one card and none of another.
+ *
+ * Returns players-only when the deck is empty or the pool is too small to hide a
+ * card in.
  */
 export function buildWheelSlots(
   pool: UnassignedRegistrationView[],
-  powerCount: number,
-  allowedCards: PowerCardId[] = ALL_POWER_KINDS,
+  deck: PowerCardId[],
 ): WheelSlot[] {
   const players: WheelSlot[] = pool.map((p) => ({
     type: "player",
@@ -65,15 +68,16 @@ export function buildWheelSlots(
     player: p,
   }));
 
-  if (powerCount <= 0 || players.length < 2 || allowedCards.length === 0) return players;
+  if (deck.length === 0 || players.length < 2) return players;
 
-  // Never insert more powers than players (keeps the wheel mostly players).
-  const count = Math.min(powerCount, players.length);
+  // Never place more cards than players — keeps the wheel mostly names.
+  // Shuffle so position on the wheel does not give the card away.
+  const cards = shuffle(deck).slice(0, players.length);
   const slots: WheelSlot[] = [...players];
 
-  const gap = Math.floor(slots.length / (count + 1)) || 1;
-  for (let k = count; k >= 1; k--) {
-    const kind = allowedCards[Math.floor(Math.random() * allowedCards.length)]!;
+  const gap = Math.floor(slots.length / (cards.length + 1)) || 1;
+  for (let k = cards.length; k >= 1; k--) {
+    const kind = cards[k - 1]!;
     const insertAt = Math.min(slots.length, Math.max(1, gap * k + (k - 1)));
     slots.splice(insertAt, 0, {
       type: "power",
@@ -82,4 +86,14 @@ export function buildWheelSlots(
     });
   }
   return slots;
+}
+
+/** Fisher-Yates, on a copy. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
 }

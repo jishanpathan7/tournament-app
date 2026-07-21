@@ -8,7 +8,8 @@ import { describe, expect, it, vi } from "vitest";
 
 import "./index"; // self-registers every card
 import { canPlay, isUndoable, playCard, previewCard, reduceTeamCards, undoCard } from "./engine";
-import { getCard } from "./registry";
+import { allCards, getCard } from "./registry";
+import { isChoiceCard, isRerollCard } from "./index";
 import type { CardContext, MutationPort, SwapSide } from "./types";
 import type { SquadMemberView, SquadView } from "@/features/squads/types";
 
@@ -103,6 +104,37 @@ describe("Meri Marzi (self, needs a choice)", () => {
     const c = ctx({ cardId: "choose", squadId: "A", teamCards: { A: ["choose"] } });
     const { events } = await playCard("choose", c);
     expect(events.map((e) => e.type)).toEqual(["CardConsumed", "CardPlayed"]);
+  });
+});
+
+describe("self-card roles", () => {
+  it("never offers the same card in both places", () => {
+    // Regression: the re-roll slot matched every self card, so Meri Marzi showed
+    // as both a picker and a re-roll — and the re-roll path spent it without
+    // letting anyone choose.
+    for (const card of allCards()) {
+      expect(isChoiceCard(card) && isRerollCard(card)).toBe(false);
+    }
+  });
+
+  it("routes each self card to exactly one of the two", () => {
+    for (const card of allCards().filter((c) => c.mode === "self")) {
+      expect(isChoiceCard(card) !== isRerollCard(card)).toBe(true);
+    }
+  });
+
+  it("puts Meri Marzi in the picker and First Ball Trial in the re-roll", () => {
+    expect(isChoiceCard(getCard("choose"))).toBe(true);
+    expect(isRerollCard(getCard("choose"))).toBe(false);
+    expect(isRerollCard(getCard("respin"))).toBe(true);
+    expect(isChoiceCard(getCard("respin"))).toBe(false);
+  });
+
+  it("leaves non-self cards out of both", () => {
+    for (const id of ["swap", "protection"]) {
+      expect(isChoiceCard(getCard(id))).toBe(false);
+      expect(isRerollCard(getCard(id))).toBe(false);
+    }
   });
 });
 

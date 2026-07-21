@@ -12,11 +12,17 @@ import {
   type WheelHandle,
 } from "@/features/squads/components/draft-ceremony/ceremony-wheel";
 import {
+  DEFAULT_CARD_SLOTS,
   SPEED_MULTIPLIER,
   type CeremonySettings,
   type CeremonySpeed,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
-import { allCards, getCard } from "@/features/squads/components/draft-ceremony/power-cards";
+import {
+  allCards,
+  getCard,
+  isChoiceCard,
+  isRerollCard,
+} from "@/features/squads/components/draft-ceremony/power-cards";
 import type {
   CardPreview,
   PowerEvent as EnginePowerEvent,
@@ -24,8 +30,6 @@ import type {
 import {
   buildWheelSlots,
   isPlayerSlot,
-  skillKeyOf,
-  SKILL_KEYS,
   type PowerKind,
   type WheelSlot,
 } from "@/features/squads/components/draft-ceremony/power-slots";
@@ -55,6 +59,20 @@ interface PowerEvent {
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+/**
+ * How long a power overlay stays up, in seconds.
+ *
+ * Winning a card is the first time anyone reads it, so it holds far longer than a
+ * normal beat — captains are taking in a name, an icon and a rule at once. Results
+ * of a card already known get less.
+ *
+ * `MIN_HOLD_MS` is a floor the speed setting cannot go below: playback speed is
+ * about animation, not about how fast people read.
+ */
+const CARD_REVEAL_HOLD = 6;
+const CARD_RESULT_HOLD = 4;
+const MIN_HOLD_MS = 5000;
 
 const VICTORY_SOUND_URL = "/sounds/victory-fanfare.mp3";
 const BG = "#1e293b"; // --foreground (dark surface)
@@ -1421,19 +1439,17 @@ function MainScreen({
     !pendingPlay;
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
 
-  // Cards the organizer left switched on — only these can appear on the wheel.
-  const enabledCardIds = useMemo(
-    () =>
-      allCards()
-        .filter((c) => c.wheelEligible && !settings.disabledCardIds.includes(c.id))
-        .map((c) => c.id),
-    [settings.disabledCardIds],
-  );
-
-  // Organizer sets exactly how many power slots each skill-level wheel gets.
-  const powerCount = powersEnabled
-    ? (settings.powerSlotsBySkill[skillKeyOf(resolvedSkill)] ?? 0)
-    : 0;
+  // The deck for this wheel: each card repeated as many times as the organizer
+  // asked for. Exact counts, so asking for two of each yields two of each.
+  const deck = useMemo(() => {
+    if (!powersEnabled) return [];
+    return allCards()
+      .filter((c) => c.wheelEligible)
+      .flatMap((c) => {
+        const n = settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS;
+        return Array.from({ length: Math.max(0, n) }, () => c.id);
+      });
+  }, [powersEnabled, settings.cardSlots]);
 
   // The wheel slots are built ONCE per skill group and then held FIXED: power slots
   // stay put across spins, and only the picked player (and a landed power) are
@@ -1444,12 +1460,12 @@ function MainScreen({
   useEffect(() => {
     const needsRebuild = builtForSkillRef.current !== resolvedSkill || wheelSlots.length === 0;
     if (!needsRebuild || pool.length === 0) return;
-    setWheelSlots(buildWheelSlots(pool, powerCount, enabledCardIds));
+    setWheelSlots(buildWheelSlots(pool, deck));
     builtForSkillRef.current = resolvedSkill;
     // Guarded by the ref + length check so `pool` identity churn does NOT rebuild
     // (which would reshuffle the powers). Player removal is done in runSpin.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [resolvedSkill, pool, powerCount, enabledCardIds]);
+  }, [resolvedSkill, pool, deck]);
 
   // How many power slots are actually still on the wheel right now — the teaser
   // reads this, not the fixed setting, so it stops counting consumed slots.
@@ -1545,7 +1561,7 @@ function MainScreen({
           // Without this the room reads the re-spin as the team losing a pick.
           note: "Bonus card — no pick lost. Spinning again for a player…",
         });
-        await holdOverlay(scaled(1.7, settings.speed) * 1000);
+        await holdOverlay(Math.max(MIN_HOLD_MS, scaled(CARD_REVEAL_HOLD, settings.speed) * 1000));
         setPowerEvent(null);
 
         // Auto re-spin to a real player — the team's pick is unaffected.
@@ -1678,7 +1694,7 @@ function MainScreen({
     if (!display) return;
 
     setPowerEvent(display);
-    await holdOverlay(scaled(1.9, settings.speed) * 1000);
+    await holdOverlay(Math.max(MIN_HOLD_MS, scaled(CARD_RESULT_HOLD, settings.speed) * 1000));
     setPowerEvent(null);
   }
 
@@ -1781,7 +1797,7 @@ function MainScreen({
           detail: `Reversed — ${reverted.aName} ⇄ ${reverted.bName}`,
           note: "Swap undone. The card has been returned.",
         });
-        await holdOverlay(scaled(1.9, settings.speed) * 1000);
+        await holdOverlay(Math.max(MIN_HOLD_MS, scaled(CARD_RESULT_HOLD, settings.speed) * 1000));
         setPowerEvent(null);
       }
     } finally {
@@ -1897,7 +1913,7 @@ function MainScreen({
                   spinPhase === "idle" &&
                   canSpin &&
                   (teamCards[currentSquad.id] ?? [])
-                    .filter((id) => getCard(id).mode === "self" && getCard(id).selection)
+                    .filter((id) => isChoiceCard(getCard(id)))
                     .slice(0, 1)
                     .map((id) => {
                       const card = getCard(id);
@@ -1924,11 +1940,13 @@ function MainScreen({
                 {/* Self-mode cards (e.g. First Ball Trial) re-roll the pick that
                     was just revealed — offered only while that result is the
                     latest one, since there is nothing to re-roll before then.
-                    Rendered from any held card whose mode is "self". */}
+                    Cards that need a choice are played BEFORE the spin instead, so
+                    they are excluded here — otherwise Meri Marzi renders in both
+                    places and the re-roll path spends it without letting you pick. */}
                 {lastPick &&
                   spinPhase === "idle" &&
                   (teamCards[lastPick.squadId] ?? [])
-                    .filter((id) => getCard(id).mode === "self")
+                    .filter((id) => isRerollCard(getCard(id)))
                     .slice(0, 1)
                     .map((id) => {
                       const card = getCard(id);
@@ -2133,6 +2151,9 @@ function SettingsPanel({
   onClose: () => void;
 }) {
   const fun = settings.funMode;
+  const totalCardSlots = allCards()
+    .filter((c) => c.wheelEligible)
+    .reduce((sum, c) => sum + (settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS), 0);
   return (
     <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-white/10 bg-[#28324a] p-3 shadow-2xl">
       <div className="mb-2 flex items-center gap-2 px-2 pt-1">
@@ -2184,99 +2205,61 @@ function SettingsPanel({
         onChange={(v) => onUpdate({ powerSlots: v })}
       />
 
-      {/* Power slots per skill-level wheel — organizer sets exact counts. */}
+      {/* Deck composition: one count per card. 0 switches a card off, so the
+          count is also the on/off control. Listed from the registry, so a newly
+          registered card appears here on its own. */}
       {fun && settings.powerSlots && (
         <div className="ml-4 border-l border-white/10 pl-2">
-          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-white/50">
-            Power slots per wheel
-          </p>
-          {SKILL_KEYS.map((sk) => (
-            <div key={sk} className="flex items-center gap-3 px-3 py-1.5">
-              <span className="text-sm font-semibold capitalize text-white">
-                {sk === "unknown" ? "No level" : sk}
-              </span>
-              <div className="ml-auto flex items-center gap-2">
-                <button
-                  onClick={() =>
-                    onUpdate({
-                      powerSlotsBySkill: {
-                        ...settings.powerSlotsBySkill,
-                        [sk]: Math.max(0, (settings.powerSlotsBySkill[sk] ?? 0) - 1),
-                      },
-                    })
-                  }
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-                >
-                  −
-                </button>
-                <span className="w-4 text-center font-mono text-sm font-bold text-white">
-                  {settings.powerSlotsBySkill[sk] ?? 0}
-                </span>
-                <button
-                  onClick={() =>
-                    onUpdate({
-                      powerSlotsBySkill: {
-                        ...settings.powerSlotsBySkill,
-                        [sk]: Math.min(10, (settings.powerSlotsBySkill[sk] ?? 0) + 1),
-                      },
-                    })
-                  }
-                  className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-          ))}
-          {/* Per-card on/off, listed from the registry so a newly registered card
-              appears here automatically and is enabled by default. */}
-          <p className="px-3 pb-1 pt-3 text-xs font-semibold text-white/50">Cards in play</p>
-          <div className="flex flex-col gap-1 px-1 pb-1">
+          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-white/50">Cards on each wheel</p>
+          <div className="flex flex-col gap-0.5 px-1 pb-1">
             {allCards()
               .filter((c) => c.wheelEligible)
               .map((c) => {
-                const on = !settings.disabledCardIds.includes(c.id);
+                const n = settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS;
+                const set = (next: number) =>
+                  onUpdate({
+                    cardSlots: {
+                      ...settings.cardSlots,
+                      [c.id]: Math.max(0, Math.min(10, next)),
+                    },
+                  });
                 return (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() =>
-                      onUpdate({
-                        disabledCardIds: on
-                          ? [...settings.disabledCardIds, c.id]
-                          : settings.disabledCardIds.filter((id) => id !== c.id),
-                      })
-                    }
-                    className="flex w-full items-start gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/5"
-                  >
+                  <div key={c.id} className="flex items-center gap-2 px-2 py-1">
+                    <span className="text-base leading-none">{c.emoji}</span>
                     <span
-                      className="relative mt-0.5 h-4 w-7 shrink-0 rounded-full transition-colors"
-                      style={{ background: on ? c.color : "rgba(255,255,255,0.15)" }}
+                      className="truncate text-xs font-bold"
+                      style={{ color: n > 0 ? "white" : "rgba(255,255,255,0.35)" }}
                     >
-                      <span
-                        className="absolute top-0.5 h-3 w-3 rounded-full bg-white transition-all"
-                        style={{ left: on ? "0.9rem" : "0.125rem" }}
-                      />
+                      {c.label}
                     </span>
-                    <span className="flex flex-col">
-                      <span
-                        className="text-xs font-bold"
-                        style={{ color: on ? "white" : "rgba(255,255,255,0.4)" }}
+                    <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                      <button
+                        onClick={() => set(n - 1)}
+                        aria-label={`One fewer ${c.label}`}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
                       >
-                        {c.emoji} {c.label}
+                        −
+                      </button>
+                      <span className="w-4 text-center font-mono text-sm font-bold text-white">
+                        {n}
                       </span>
-                      <span className="text-2xs leading-snug text-white/35">{c.hint}</span>
-                    </span>
-                  </button>
+                      <button
+                        onClick={() => set(n + 1)}
+                        aria-label={`One more ${c.label}`}
+                        className="flex h-6 w-6 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
                 );
               })}
-            {settings.disabledCardIds.length >=
-              allCards().filter((c) => c.wheelEligible).length && (
-              <p className="text-2xs px-2 py-1 font-semibold text-[#fbbf24]">
-                All cards are off — the wheel will have no power slots.
-              </p>
-            )}
           </div>
+          <p className="px-3 pb-2 pt-1 text-xs text-white/40">
+            {totalCardSlots === 0
+              ? "No cards — the wheel will be players only."
+              : `${totalCardSlots} card${totalCardSlots === 1 ? "" : "s"} on every wheel, spread out and shuffled.`}
+          </p>
         </div>
       )}
 
@@ -2583,6 +2566,9 @@ function PowerOverlay({ event, onDismiss }: { event: PowerEvent; onDismiss: () =
           Power Card
         </p>
         <p className="text-5xl font-black text-white">{meta.title}</p>
+        {/* What the card actually does. The name alone means nothing the first
+            time a captain sees it, and this is the only moment it is explained. */}
+        <p className="max-w-lg text-lg font-semibold leading-snug text-white/70">{meta.hint}</p>
         <p className="text-xl font-bold text-white/85">{event.detail}</p>
         {event.note && <p className="text-base font-bold text-[#34d399]">{event.note}</p>}
         <p className="text-2xs font-mono uppercase tracking-widest text-white/30">
