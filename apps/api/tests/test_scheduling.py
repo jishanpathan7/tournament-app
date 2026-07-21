@@ -514,3 +514,54 @@ async def test_organization_isolation_on_schedule(app, client):
             headers=_csrf(other),
         )
         assert resp.status_code == 404
+
+
+# ============================================================
+# Tournament window covers whole days
+# ============================================================
+
+
+def test_single_day_tournament_can_be_scheduled():
+    """A tournament on one date must be schedulable during that day.
+
+    Regression: start and end are picked as dates, so a one-day event stored both
+    as midnight. Comparing the raw instants meant every match on the day finished
+    "after the tournament ends", and bulk schedule returned 422 for the whole
+    event — the exact shape of a company tournament run on a single evening.
+    """
+    import datetime
+
+    from app.modules.scheduling.service import _window, _window_end
+
+    utc = datetime.timezone.utc
+    # A one-day tournament, as the date picker stores it: midnight to midnight.
+    starts_at = ends_at = datetime.datetime(2026, 7, 21, 0, 0, tzinfo=utc)
+
+    start, end = _window(datetime.datetime(2026, 7, 21, 15, 30, tzinfo=utc), 30)
+
+    assert start >= starts_at
+    assert end <= _window_end(ends_at)
+
+
+def test_window_still_rejects_another_day():
+    """Widening to whole days must not make the window meaningless."""
+    import datetime
+
+    from app.modules.scheduling.service import _window, _window_end
+
+    utc = datetime.timezone.utc
+    ends_at = datetime.datetime(2026, 7, 21, 0, 0, tzinfo=utc)
+
+    _, end = _window(datetime.datetime(2026, 7, 22, 10, 0, tzinfo=utc), 30)
+    assert end > _window_end(ends_at)
+
+
+def test_a_real_end_time_is_still_enforced():
+    """Widening applies only to date-only ends, never to a genuine time."""
+    import datetime
+
+    from app.modules.scheduling.service import _window_end
+
+    utc = datetime.timezone.utc
+    ends_at = datetime.datetime(2026, 7, 21, 12, 0, tzinfo=utc)
+    assert _window_end(ends_at) == ends_at

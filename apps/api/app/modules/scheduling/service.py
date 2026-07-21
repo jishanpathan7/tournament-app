@@ -82,6 +82,28 @@ def _now() -> datetime.datetime:
     return datetime.datetime.now(datetime.timezone.utc)
 
 
+def _window_end(ends_at: datetime.datetime) -> datetime.datetime:
+    """The instant the tournament window closes.
+
+    A date-only end arrives as midnight, meaning "this day" rather than "the very
+    first moment of it", so it is stretched to cover the whole day. A genuine time
+    is respected as given.
+
+    Without this a single-day tournament was unschedulable: start and end both
+    landed on midnight, so every match on the day finished after the tournament
+    had supposedly ended, and bulk schedule rejected the entire event.
+    """
+    is_date_only = (
+        ends_at.hour == 0
+        and ends_at.minute == 0
+        and ends_at.second == 0
+        and ends_at.microsecond == 0
+    )
+    if not is_date_only:
+        return ends_at
+    return ends_at.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+
 def _window(
     scheduled_at: datetime.datetime, duration_minutes: int
 ) -> tuple[datetime.datetime, datetime.datetime]:
@@ -173,6 +195,7 @@ async def evaluate_conflicts(
             )
 
     start, end = _window(scheduled_at, duration_minutes)
+    window_end = _window_end(tournament.ends_at) if tournament.ends_at else None
     if tournament.starts_at is not None and start < tournament.starts_at:
         conflicts.append(
             ConflictView(
@@ -182,7 +205,7 @@ async def evaluate_conflicts(
                 message="Scheduled before the tournament starts.",
             )
         )
-    if tournament.ends_at is not None and end > tournament.ends_at:
+    if window_end is not None and end > window_end:
         conflicts.append(
             ConflictView(
                 kind="outside_tournament_window",
