@@ -91,6 +91,12 @@ async def list_stages_with_drawn(
 
 
 async def list_participants(session: AsyncSession, tournament: Tournament) -> Sequence[Participant]:
+    """Every approved participant at every layer — individual, pair and squad.
+
+    Deliberately unfiltered: this is the lookup table the bracket, schedule and match
+    pages resolve their sides against, and a franchise draw's sides are *pairs*. The
+    roster page collapses the layers for display; doing it here blanked the bracket.
+    """
     return await repo.list_participants(session, tournament.organization_id, tournament.id)
 
 

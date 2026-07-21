@@ -17,8 +17,18 @@ export function PublicParticipantsList({ slug }: { slug: string }) {
   const participants = usePublicParticipants(slug);
 
   const byDivision = useMemo(() => {
+    const rows = participants.data ?? [];
+    // A division holds the same humans at several layers — individual, pair and squad
+    // rows all trace back to one registration. This page lists people, so where a
+    // division has individual rows we show only those; a division that only ever had
+    // pairs has nothing to collapse into and is left alone. The API deliberately
+    // returns every layer, since the bracket resolves its sides against it.
+    const withIndividuals = new Set(
+      rows.filter((p) => p.kind === "individual").map((p) => p.divisionId),
+    );
     const map = new Map<string, PublicParticipantView[]>();
-    for (const p of participants.data ?? []) {
+    for (const p of rows) {
+      if (withIndividuals.has(p.divisionId) && p.kind !== "individual") continue;
       map.set(p.divisionId, [...(map.get(p.divisionId) ?? []), p]);
     }
     return map;
