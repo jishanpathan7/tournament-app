@@ -19,13 +19,11 @@ const WORKFLOW_STEPS = [
 export function WorkflowProgress({
   workflow,
   tournamentId,
-  divisionId,
   assigned,
   onNextAction,
 }: {
   workflow: WorkflowState;
   tournamentId: string;
-  divisionId?: string;
   assigned: number;
   onNextAction?: () => void;
 }) {
@@ -78,15 +76,11 @@ export function WorkflowProgress({
           </div>
 
           {workflow.readyForDraw ? (
+            /* Teams are built and paired, so the next step is the draw. This used
+               to point back at check-in, which comes before teams, not after. */
             <Button asChild tone="mint" size="sm">
-              <Link
-                href={
-                  divisionId
-                    ? `/console/tournaments/${tournamentId}/divisions/${divisionId}/attendance`
-                    : `/console/tournaments/${tournamentId}/players`
-                }
-              >
-                Go to Check-in
+              <Link href={`/console/tournaments/${tournamentId}/draws`}>
+                Generate matches
                 <ArrowRight className="h-4 w-4" />
               </Link>
             </Button>

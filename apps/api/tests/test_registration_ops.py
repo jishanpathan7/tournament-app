@@ -792,3 +792,43 @@ async def test_readiness_org_isolation(app, client):
         await _new_org(other)
         resp = await other.get(f"/api/v1/tournaments/{tid}/readiness")
         assert resp.status_code == 404
+
+
+# ============================================================
+# Attendance counts people, not the groupings they belong to
+# ============================================================
+
+
+def test_readiness_ignores_pairs_and_teams_when_counting_check_in():
+    """Pairs and franchise teams can never check in — only players can.
+
+    Regression: after pairing and drafting, a division held the same people three
+    times over (58 individuals, 30 pairs, 4 teams). Attendance counted every row,
+    so 34 groupings sat permanently "awaiting check-in" long after all 58 players
+    had arrived, and the alert never cleared.
+    """
+    from app.db.enums import AttendanceStatus, ParticipantKind, ParticipantStatus
+    from app.modules.registration_ops.readiness_service import _division_readiness
+
+    class _P:
+        def __init__(self, kind, attendance):
+            self.kind = kind
+            self.attendance = attendance
+            self.status = ParticipantStatus.APPROVED.value
+
+    class _Div:
+        id = uuid.uuid4()
+        name = "Mix Doubles"
+        participant_type = ParticipantKind.SQUAD.value
+        min_entrants = 2
+
+    participants = (
+        [_P(ParticipantKind.INDIVIDUAL.value, AttendanceStatus.CHECKED_IN.value)] * 58
+        + [_P(ParticipantKind.PAIR.value, AttendanceStatus.PENDING.value)] * 30
+        + [_P(ParticipantKind.SQUAD.value, AttendanceStatus.PENDING.value)] * 4
+    )
+
+    view = _division_readiness(_Div(), participants, [], drawn=True)
+
+    assert view.checked_in == 58
+    assert view.pending == 0, "pairs and teams must not count as awaiting check-in"

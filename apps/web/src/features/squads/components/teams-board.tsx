@@ -386,7 +386,6 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
       <WorkflowProgress
         workflow={workflow}
         tournamentId={tournamentId}
-        divisionId={firstDivisionId ?? undefined}
         assigned={board.summary.assigned}
         onNextAction={workflow.nextSquad ? openNextUnpairedSquad : undefined}
       />
@@ -401,16 +400,10 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
             </Button>
           ) : null}
           {workflow.readyForDraw && canManage ? (
+            /* Teams are paired, so the next step is the draw — not check-in,
+               which happens before teams are built. */
             <Button asChild tone="candy" size="sm">
-              <Link
-                href={
-                  firstDivisionId
-                    ? `/console/tournaments/${tournamentId}/divisions/${firstDivisionId}/attendance`
-                    : `/console/tournaments/${tournamentId}/players`
-                }
-              >
-                Go to Check-in
-              </Link>
+              <Link href={`/console/tournaments/${tournamentId}/draws`}>Generate matches</Link>
             </Button>
           ) : null}
           {workflow.playersAssigned && needsLockCount > 0 && !workflow.readyForDraw && canManage ? (

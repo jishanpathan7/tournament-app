@@ -6,6 +6,8 @@ import Link from "next/link";
 import { ErrorState } from "@/components/common/error-state";
 import { LoadingPanel } from "@/components/common/loading";
 import { Button } from "@/components/ui/button";
+import { completedSteps } from "@/features/tournaments/dashboard/config";
+import type { TournamentStatus } from "@tournament/api-client";
 import { AfterPanel } from "@/features/tournaments/dashboard/components/after-panel";
 import { ActivityFeedPanel } from "@/features/tournaments/dashboard/components/activity-feed-panel";
 import { AlertsPanel } from "@/features/tournaments/dashboard/components/alerts-panel";
@@ -118,6 +120,7 @@ export function TournamentDashboard({ tournamentId }: { tournamentId: string }) 
               tournamentId={tournamentId}
               variant="primary"
               franchiseMode={data.stepSignals.franchiseMode}
+              completed={completedSteps(tournament.status as TournamentStatus, data.stepSignals)}
             />
           </div>
         ) : null}

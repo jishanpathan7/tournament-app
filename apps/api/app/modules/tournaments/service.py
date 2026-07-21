@@ -559,15 +559,20 @@ async def generate_draw(
         raise ValidationError(
             "at least 2 approved participants are required to draw", code="too_few_participants"
         )
-    # Check-in gate: don't draw with un-checked-in participants unless the organizer
-    # explicitly overrides. Attendance lives on the participant row (Registration Ops).
+    # Check-in gate: don't draw with un-checked-in players unless the organizer
+    # explicitly overrides. Attendance is a fact about people, so this looks at the
+    # individual rows — a pair or a franchise team can never check in itself, and
+    # gating on those would block the draw permanently once pairs exist.
     if not override_readiness:
-        not_checked_in = sum(
-            1 for p in participants if p.attendance != AttendanceStatus.CHECKED_IN.value
-        )
+        people = list(
+            await repo.approved_participants(
+                session, org_id, division.id, kind=ParticipantKind.INDIVIDUAL.value
+            )
+        ) or list(participants)
+        not_checked_in = sum(1 for p in people if p.attendance != AttendanceStatus.CHECKED_IN.value)
         if not_checked_in:
             raise ValidationError(
-                f"{not_checked_in} of {len(participants)} participants haven't checked in — "
+                f"{not_checked_in} of {len(people)} players haven't checked in — "
                 "check them in or override to draw anyway",
                 code="checkin_incomplete",
             )
