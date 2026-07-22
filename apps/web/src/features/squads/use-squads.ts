@@ -40,10 +40,16 @@ function invalidateTeamNames(qc: ReturnType<typeof useQueryClient>, tournamentId
   void qc.invalidateQueries({ queryKey: ["public"] });
 }
 
-export function useSquads(tournamentId: string) {
+export function useSquads(tournamentId: string, options?: { alwaysFresh?: boolean }) {
   return useQuery({
     queryKey: key(tournamentId),
     queryFn: () => getSquads(tournamentId),
+    // The Draft Ceremony runs full-screen on a projector, often in a separate
+    // tab from where the organizer edits teams — cross-tab there is no cache
+    // invalidation, so it must refetch on mount and whenever it regains focus.
+    ...(options?.alwaysFresh
+      ? { staleTime: 0, refetchOnMount: "always" as const, refetchOnWindowFocus: true }
+      : {}),
   });
 }
 

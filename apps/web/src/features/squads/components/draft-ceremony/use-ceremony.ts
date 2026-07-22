@@ -147,7 +147,9 @@ export function computeDraftOrder(
 }
 
 export function useCeremony(tournamentId: string) {
-  const squadsQuery = useSquads(tournamentId);
+  // alwaysFresh: the ceremony is projected full-screen, frequently in a different
+  // tab from the Teams page — team renames must show the moment we regain focus.
+  const squadsQuery = useSquads(tournamentId, { alwaysFresh: true });
   const assignMutation = useAssignSquadMember(tournamentId);
   const removeMutation = useRemoveSquadMember(tournamentId);
   const swapMutation = useSwapSquadMembers(tournamentId);

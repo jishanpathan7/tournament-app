@@ -228,6 +228,8 @@ interface RevealInfo {
   playerName: string;
   skillLevel: string | null;
   divisionName: string | null;
+  /** Id, not just name — names can be renamed mid-ceremony and may not be unique. */
+  squadId: string;
   squadName: string;
   squadColor: string;
   wheelRect: DOMRect | null;
@@ -313,10 +315,10 @@ function RevealOverlay({
   }, [onDone, speed, tier.entrance]);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center">
+    <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center p-6">
       <div
         ref={cardRef}
-        className="flex flex-col items-center gap-4 rounded-3xl px-16 py-12 text-center shadow-2xl backdrop-blur-md"
+        className="flex max-w-[min(92vw,68rem)] flex-col items-center gap-4 rounded-3xl px-8 py-10 text-center shadow-2xl backdrop-blur-md sm:px-16 sm:py-12"
         style={{
           background: `linear-gradient(135deg, ${info.squadColor}22 0%, rgba(30,41,59,0.95) 100%)`,
           border: `2px solid ${tier.accent}66`,
@@ -324,32 +326,34 @@ function RevealOverlay({
         }}
       >
         <p
-          className="font-mono text-sm font-bold uppercase tracking-[0.25em]"
+          className="font-mono text-sm font-bold uppercase tracking-[0.25em] lg:text-base"
           style={{ color: tier.accent }}
         >
           {tier.eyebrow}
         </p>
-        <p className="text-6xl font-black text-white drop-shadow-lg">{info.playerName}</p>
+        <p className="max-w-full break-words text-[clamp(2.5rem,7vw,6.5rem)] font-black leading-tight text-white drop-shadow-lg">
+          {info.playerName}
+        </p>
         <div className="flex items-center gap-2">
           {info.skillLevel && (
             <span
-              className="rounded-full px-3 py-1 text-sm font-bold"
+              className="rounded-full px-3 py-1 text-sm font-bold lg:text-base"
               style={{ background: `${tier.accent}22`, color: tier.accent }}
             >
               {skillLabel(info.skillLevel)}
             </span>
           )}
           {info.divisionName && (
-            <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/60">
+            <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold text-white/60 lg:text-base">
               {info.divisionName}
             </span>
           )}
         </div>
         <div
-          className="mt-1 flex items-center gap-2 rounded-full px-6 py-2.5 text-base font-black text-white shadow-lg"
+          className="mt-1 flex max-w-full items-center gap-2 rounded-full px-6 py-2.5 text-base font-black text-white shadow-lg lg:px-8 lg:py-3 lg:text-xl"
           style={{ backgroundColor: info.squadColor }}
         >
-          <span>→ {info.squadName}</span>
+          <span className="truncate">→ {info.squadName}</span>
         </div>
       </div>
     </div>
@@ -512,7 +516,7 @@ function SquadBanner({ squad, squadIndex }: { squad: SquadView | undefined; squa
   return (
     <div
       ref={ref}
-      className="flex items-center gap-2.5 rounded-full px-5 py-2 text-sm font-black text-white"
+      className="flex max-w-full items-center gap-2.5 rounded-full px-5 py-2 text-sm font-black text-white lg:px-7 lg:py-2.5 lg:text-xl"
       style={{
         backgroundColor: `${color}22`,
         border: `1.5px solid ${color}55`,
@@ -520,11 +524,15 @@ function SquadBanner({ squad, squadIndex }: { squad: SquadView | undefined; squa
       }}
     >
       <span
-        className="h-2.5 w-2.5 rounded-full"
+        className="h-2.5 w-2.5 shrink-0 rounded-full lg:h-3 lg:w-3"
         style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
       />
-      <span className="text-xs font-normal text-white/60">Now picking for</span>
-      <span style={{ color }}>{squad.name}</span>
+      <span className="shrink-0 text-xs font-normal text-white/60 lg:text-base">
+        Now picking for
+      </span>
+      <span className="truncate" style={{ color }}>
+        {squad.name}
+      </span>
     </div>
   );
 }
@@ -637,7 +645,7 @@ function SpinButton({
       ref={btnRef}
       onClick={onClick}
       disabled={disabled}
-      className="relative flex h-14 w-52 items-center justify-center rounded-full text-lg font-black text-white shadow-xl transition-all disabled:cursor-not-allowed disabled:opacity-50"
+      className="relative flex h-14 w-52 items-center justify-center rounded-full text-lg font-black text-white shadow-xl transition-all disabled:cursor-not-allowed disabled:opacity-50 lg:h-16 lg:w-64 lg:text-xl"
       style={{
         background: disabled
           ? "rgba(255,255,255,0.12)"
@@ -694,10 +702,10 @@ function IntroScreen({
           🎯
         </div>
         <div className="intro-item">
-          <h1 className="font-serif text-6xl font-black tracking-tight text-white">
+          <h1 className="font-serif text-[clamp(3rem,6vw,6rem)] font-black tracking-tight text-white">
             Draft Ceremony
           </h1>
-          <p className="mt-3 text-lg text-white/50">
+          <p className="mt-3 text-lg text-white/50 lg:text-2xl">
             {totalUnassigned} players · {squads.length} teams
           </p>
         </div>
@@ -792,7 +800,10 @@ function CompletionScreen({
         gravity={0.16}
       />
       <div className="flex flex-1 flex-col items-center justify-center gap-8 overflow-y-auto px-6 py-10">
-        <div ref={containerRef} className="flex w-full max-w-2xl flex-col items-center gap-6">
+        <div
+          ref={containerRef}
+          className="flex w-full max-w-2xl flex-col items-center gap-6 xl:max-w-4xl"
+        >
           <div
             className="complete-item flex h-24 w-24 items-center justify-center rounded-3xl text-5xl shadow-2xl"
             style={{
@@ -804,10 +815,10 @@ function CompletionScreen({
           </div>
 
           <div className="complete-item text-center">
-            <h1 className="font-serif text-5xl font-black tracking-tight text-white">
+            <h1 className="font-serif text-[clamp(2.75rem,5vw,5rem)] font-black tracking-tight text-white">
               Draft Complete!
             </h1>
-            <p className="mt-2 text-white/50">All players assigned to their teams</p>
+            <p className="mt-2 text-white/50 lg:text-xl">All players assigned to their teams</p>
           </div>
 
           <div className="grid w-full gap-3 sm:grid-cols-2">
@@ -880,20 +891,29 @@ function CompletionScreen({
 
 // ── Activity timeline ─────────────────────────────────────────────────────────
 
-/** One line of timeline copy, derived from the event + card metadata. */
-function describeEvent(event: EnginePowerEvent): { emoji: string; text: string } | null {
+/**
+ * One line of timeline copy, derived from the event + card metadata.
+ *
+ * Events snapshot squad NAMES at the moment they happened, but they also carry
+ * ids — resolve the name live wherever an id exists, so a team renamed
+ * mid-ceremony reads by its current name throughout the log.
+ */
+function describeEvent(
+  event: EnginePowerEvent,
+  squadName: (id: string, fallback: string) => string,
+): { emoji: string; text: string } | null {
   switch (event.type) {
     case "CardAwarded":
       return {
         emoji: getCard(event.cardId).emoji,
-        text: `${event.squadName} drew ${getCard(event.cardId).label}`,
+        text: `${squadName(event.squadId, event.squadName)} drew ${getCard(event.cardId).label}`,
       };
     case "CardPlayed":
       return { emoji: getCard(event.cardId).emoji, text: event.detail };
     case "SwapCompleted":
       return {
         emoji: getCard(event.cardId).emoji,
-        text: `${event.aName} ⇄ ${event.bName} · ${event.fromSquad} ↔ ${event.toSquad}`,
+        text: `${event.aName} ⇄ ${event.bName} · ${squadName(event.a.squadId, event.fromSquad)} ↔ ${squadName(event.b.squadId, event.toSquad)}`,
       };
     case "SwapBlocked":
       return {
@@ -915,17 +935,21 @@ function describeEvent(event: EnginePowerEvent): { emoji: string; text: string }
  */
 function ActivityTimeline({
   activity,
+  squads,
   undoableId,
   onUndo,
   isUndoing,
 }: {
   activity: ActivityEntry[];
+  squads: SquadView[];
   undoableId: string | null;
   onUndo: () => void;
   isUndoing: boolean;
 }) {
   if (activity.length === 0) return null;
   const newestFirst = [...activity].reverse();
+  const squadName = (id: string, fallback: string) =>
+    squads.find((s) => s.id === id)?.name ?? fallback;
 
   return (
     <div className="mb-4">
@@ -934,7 +958,7 @@ function ActivityTimeline({
       </p>
       <div className="flex max-h-52 flex-col gap-1 overflow-y-auto">
         {newestFirst.map((entry) => {
-          const described = describeEvent(entry.event);
+          const described = describeEvent(entry.event, squadName);
           if (!described) return null;
           const canUndo = entry.id === undoableId;
           return (
@@ -1625,6 +1649,7 @@ function MainScreen({
       playerName: result.displayName,
       skillLevel: result.skillLevel,
       divisionName: player.divisionName,
+      squadId: result.squadId,
       squadName: result.squadName,
       squadColor: squadAccent(squads.findIndex((s) => s.id === result.squadId)),
       wheelRect,
@@ -1638,10 +1663,9 @@ function MainScreen({
   }
 
   function handleRevealDone(cardRect: DOMRect | null) {
-    // Launch fly-to-team ghost
+    // Launch fly-to-team ghost — target resolved by id, never by (renamable) name.
     if (cardRect && revealInfo) {
-      const squadId = squads.find((s) => s.name === revealInfo.squadName)?.id;
-      const targetEl = squadId ? columnRefs.current.get(squadId) : null;
+      const targetEl = columnRefs.current.get(revealInfo.squadId) ?? null;
       if (targetEl && !prefersReducedMotion()) {
         const toRect = targetEl.getBoundingClientRect();
         setGhostFly({
@@ -1830,8 +1854,10 @@ function MainScreen({
           }}
         />
         <div className="ml-auto flex items-center gap-3">
-          <span className="font-mono text-xs text-white/35">{totalRemaining} remaining</span>
-          <div className="w-28">
+          <span className="font-mono text-xs text-white/35 lg:text-sm">
+            {totalRemaining} remaining
+          </span>
+          <div className="w-28 lg:w-44 2xl:w-56">
             <ProgressBar total={totalPlayers} remaining={totalRemaining} />
           </div>
         </div>
@@ -1839,8 +1865,10 @@ function MainScreen({
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Wheel area */}
-        <div className="relative flex flex-1 flex-col items-center justify-center gap-5 p-6">
+        {/* Wheel area — three fixed zones (status · wheel · controls) so nothing
+            ever overlaps or gets clipped: the wheel takes whatever height is left
+            after the other two, and scales itself to fit. */}
+        <div className="relative grid flex-1 grid-rows-[auto_minmax(0,1fr)_auto] gap-3 p-4 lg:gap-4 lg:p-6">
           {/* Ambient glow behind wheel */}
           <div
             className="pointer-events-none absolute inset-0 z-0"
@@ -1849,37 +1877,49 @@ function MainScreen({
             }}
           />
 
-          {settings.funMode && isWildcardActive && spinPhase !== "revealing" && (
-            <div className="flex items-center gap-2 rounded-full border border-[#fbbf24]/50 bg-[#fbbf24]/15 px-5 py-2 text-sm font-black uppercase tracking-wider text-[#fbbf24]">
-              <Sparkles className="h-4 w-4" />
-              Wildcard Finish
-            </div>
-          )}
+          {/* Status zone — reserved height even while a reveal hides the banner,
+              so the wheel does not jump between picks. */}
+          <div className="relative z-10 flex min-h-[3.5rem] flex-wrap items-center justify-center gap-3">
+            {settings.funMode && isWildcardActive && spinPhase !== "revealing" && (
+              <div className="flex items-center gap-2 rounded-full border border-[#fbbf24]/50 bg-[#fbbf24]/15 px-5 py-2 text-sm font-black uppercase tracking-wider text-[#fbbf24] lg:text-base">
+                <Sparkles className="h-4 w-4" />
+                Wildcard Finish
+              </div>
+            )}
 
-          {currentSquad && spinPhase !== "revealing" && (
-            <SquadBanner squad={currentSquad} squadIndex={currentSquadIdx} />
-          )}
+            {currentSquad && spinPhase !== "revealing" && (
+              <SquadBanner squad={currentSquad} squadIndex={currentSquadIdx} />
+            )}
 
-          {/* Bonus re-spin in flight — keeps the room oriented mid-spin. */}
-          {respinNote && (
-            <div className="flex items-center gap-2 rounded-full border border-[#34d399]/50 bg-[#34d399]/15 px-5 py-1.5 text-sm font-black text-[#34d399]">
-              <Sparkles className="h-4 w-4" />
-              {respinNote}
-            </div>
-          )}
+            {/* Bonus re-spin in flight — keeps the room oriented mid-spin. */}
+            {respinNote && (
+              <div className="flex items-center gap-2 rounded-full border border-[#34d399]/50 bg-[#34d399]/15 px-5 py-1.5 text-sm font-black text-[#34d399] lg:text-base">
+                <Sparkles className="h-4 w-4" />
+                {respinNote}
+              </div>
+            )}
+          </div>
 
           <WinnerBurst burstKey={burstKey} />
 
           {poolEmpty ? (
-            <div className="text-center">
-              <p className="text-lg font-bold text-white">
+            <div className="z-10 flex flex-col items-center justify-center text-center">
+              <p className="text-lg font-bold text-white lg:text-2xl">
                 All {skillLabel(resolvedSkill)} players assigned
               </p>
-              <p className="mt-1 text-sm text-white/40">Switch skill group or you&apos;re done!</p>
+              <p className="mt-1 text-sm text-white/40 lg:text-base">
+                Switch skill group or you&apos;re done!
+              </p>
             </div>
           ) : (
             <>
-              <div ref={wheelWrapRef} className="relative z-10">
+              {/* Wheel zone — fills the remaining height; the wheel sizes itself
+                  to the SHORTER of the zone's height/width, so a projector gets a
+                  materially bigger wheel and a laptop never clips it. */}
+              <div
+                ref={wheelWrapRef}
+                className="relative z-10 flex min-h-0 items-center justify-center"
+              >
                 <CeremonyWheel
                   ref={wheelRef}
                   slots={wheelSlots}
@@ -1990,14 +2030,16 @@ function MainScreen({
           )}
         </div>
 
-        {/* Team roster sidebar */}
+        {/* Team roster sidebar — widens with the display so a projector shows a
+            readable roster instead of a laptop-sized strip. */}
         <aside
-          className="border-white/8 hidden w-72 shrink-0 overflow-y-auto border-l p-4 lg:block"
+          className="border-white/8 hidden w-72 shrink-0 overflow-y-auto border-l p-4 lg:block xl:w-80 2xl:w-[26rem]"
           style={{ background: BG_SIDEBAR }}
         >
           {settings.funMode && settings.powerSlots && (
             <ActivityTimeline
               activity={activity}
+              squads={squads}
               undoableId={undoableEntry?.id ?? null}
               onUndo={() => void handleUndo()}
               isUndoing={isUndoing}
@@ -2332,10 +2374,12 @@ function IntrosScreen({
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-10 text-center">
       <div>
-        <p className="font-mono text-sm font-bold uppercase tracking-[0.3em] text-[#fbbf24]">
+        <p className="font-mono text-sm font-bold uppercase tracking-[0.3em] text-[#fbbf24] lg:text-base">
           Introducing
         </p>
-        <h1 className="mt-3 font-serif text-6xl font-black tracking-tight text-white">The Teams</h1>
+        <h1 className="mt-3 font-serif text-[clamp(3rem,6vw,6rem)] font-black tracking-tight text-white">
+          The Teams
+        </h1>
       </div>
 
       <div
@@ -2480,7 +2524,7 @@ function TeamCompleteOverlay({
       />
       <div
         ref={cardRef}
-        className="flex flex-col items-center gap-5 rounded-[2rem] px-16 py-12 text-center"
+        className="flex max-w-[min(92vw,68rem)] flex-col items-center gap-5 rounded-[2rem] px-8 py-10 text-center sm:px-16 sm:py-12"
         style={{
           background: `linear-gradient(160deg, ${color}33 0%, rgba(30,41,59,0.97) 100%)`,
           border: `2px solid ${color}66`,
@@ -2490,8 +2534,10 @@ function TeamCompleteOverlay({
         <p className="font-mono text-sm font-bold uppercase tracking-[0.3em]" style={{ color }}>
           Team Complete
         </p>
-        <p className="text-6xl font-black text-white drop-shadow-lg">{squad.name}</p>
-        <div className="flex max-w-xl flex-wrap justify-center gap-2">
+        <p className="max-w-full break-words text-[clamp(2.5rem,6vw,6rem)] font-black leading-tight text-white drop-shadow-lg">
+          {squad.name}
+        </p>
+        <div className="flex max-w-3xl flex-wrap justify-center gap-2">
           {squad.members.map((m) => (
             <span
               key={m.registrationId}
@@ -2551,26 +2597,34 @@ function PowerOverlay({ event, onDismiss }: { event: PowerEvent; onDismiss: () =
     >
       <div
         ref={ref}
-        className="flex flex-col items-center gap-4 rounded-[2rem] px-16 py-12 text-center"
+        className="flex max-w-[min(92vw,60rem)] flex-col items-center gap-4 rounded-[2rem] px-8 py-10 text-center sm:px-16 sm:py-12"
         style={{
           background: `linear-gradient(160deg, ${meta.color}33 0%, rgba(30,41,59,0.97) 100%)`,
           border: `2px solid ${meta.color}88`,
           boxShadow: `0 0 90px ${meta.color}55, 0 24px 70px rgba(0,0,0,0.6)`,
         }}
       >
-        <span className="text-8xl drop-shadow-lg">{meta.emoji}</span>
+        <span className="text-7xl drop-shadow-lg lg:text-8xl">{meta.emoji}</span>
         <p
           className="font-mono text-sm font-black uppercase tracking-[0.28em]"
           style={{ color: meta.color }}
         >
           Power Card
         </p>
-        <p className="text-5xl font-black text-white">{meta.title}</p>
+        <p className="break-words text-[clamp(2rem,4.5vw,4rem)] font-black leading-tight text-white">
+          {meta.title}
+        </p>
         {/* What the card actually does. The name alone means nothing the first
             time a captain sees it, and this is the only moment it is explained. */}
-        <p className="max-w-lg text-lg font-semibold leading-snug text-white/70">{meta.hint}</p>
-        <p className="text-xl font-bold text-white/85">{event.detail}</p>
-        {event.note && <p className="text-base font-bold text-[#34d399]">{event.note}</p>}
+        <p className="max-w-xl text-lg font-semibold leading-snug text-white/70 lg:text-xl">
+          {meta.hint}
+        </p>
+        <p className="max-w-full break-words text-xl font-bold text-white/85 lg:text-2xl">
+          {event.detail}
+        </p>
+        {event.note && (
+          <p className="text-base font-bold text-[#34d399] lg:text-lg">{event.note}</p>
+        )}
         <p className="text-2xs font-mono uppercase tracking-widest text-white/30">
           Click or press Space to continue
         </p>
