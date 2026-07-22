@@ -5,6 +5,13 @@
 builder = "nixpacks"
 
 [deploy]
+# Schema first, then traffic. Without this, code shipped ahead of its migration
+# and the first request touching a new column returned a 500 — which is exactly
+# how `teams.squad_id` reached production missing. Railway runs this in the app's
+# own environment (private network reachable, native libs loaded), which a
+# `railway ssh` shell does not get.
+preDeployCommand = "alembic upgrade head"
+
 # Railway injects $PORT automatically. The app must bind to 0.0.0.0:$PORT.
 startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1"
 
