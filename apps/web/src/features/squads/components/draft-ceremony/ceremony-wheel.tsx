@@ -267,140 +267,138 @@ export const CeremonyWheel = forwardRef<WheelHandle, Props>(function CeremonyWhe
   const textX = CX + startR;
 
   return (
-    <div className="relative flex select-none items-center justify-center">
-      {/* Pointer */}
-      <div
-        className="pointer-events-none absolute z-10"
-        style={{
-          top: -6,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 0,
-          height: 0,
-          borderLeft: "16px solid transparent",
-          borderRight: "16px solid transparent",
-          borderTop: "32px solid #FFFDF5",
-          filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))",
-        }}
-      />
+    <div className="flex h-full max-h-full w-full select-none items-center justify-center">
+      {/* This box is always exactly wheel-sized, so the pointer and glow track
+          the wheel itself, not the surrounding layout zone. */}
+      <div className="relative aspect-square h-full max-h-[min(88vw,1100px)] max-w-full">
+        {/* Pointer */}
+        <div
+          className="pointer-events-none absolute z-10"
+          style={{
+            top: -6,
+            left: "50%",
+            transform: "translateX(-50%)",
+            width: 0,
+            height: 0,
+            borderLeft: "16px solid transparent",
+            borderRight: "16px solid transparent",
+            borderTop: "32px solid #FFFDF5",
+            filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.7))",
+          }}
+        />
 
-      {/* Glow flash overlay (landing) */}
-      <div
-        ref={glowRef}
-        className="pointer-events-none absolute inset-0 z-[5] rounded-full opacity-0"
-        style={{
-          background: "radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 70%)",
-        }}
-      />
+        {/* Glow flash overlay (landing) */}
+        <div
+          ref={glowRef}
+          className="pointer-events-none absolute inset-0 z-[5] rounded-full opacity-0"
+          style={{
+            background: "radial-gradient(circle, rgba(255,255,255,0.22) 0%, transparent 70%)",
+          }}
+        />
 
-      {/* Rotating wheel */}
-      <div ref={wrapRef} style={{ willChange: "transform, opacity" }}>
-        <div ref={spinnerRef} style={{ willChange: "transform" }}>
-          {/* Sized to the display rather than a fixed 600px. The viewBox means
-              every label scales with it, so a projector gets materially bigger
-              names instead of the same small ones on a bigger screen. */}
-          <svg
-            viewBox={`0 0 ${CX * 2} ${CY * 2}`}
-            style={{
-              display: "block",
-              // Must also clear the banner, spin button and card rail, so this is
-              // sized to fit a laptop while still growing on a projector.
-              width: "min(60vh, 86vw, 800px)",
-              height: "min(60vh, 86vw, 800px)",
-            }}
-          >
-            <defs>
-              <filter id="wheel-drop" x="-8%" y="-8%" width="116%" height="116%">
-                <feDropShadow dx="0" dy="8" stdDeviation="16" floodOpacity="0.45" />
-              </filter>
-              <filter id="wheel-glow" x="-12%" y="-12%" width="124%" height="124%">
-                <feGaussianBlur stdDeviation="8" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-              <filter id="txt-shadow" x="-10%" y="-30%" width="120%" height="160%">
-                <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.8" />
-              </filter>
-              <radialGradient id="hub-grad" cx="50%" cy="35%" r="65%">
-                <stop offset="0%" stopColor="#9db0fb" />
-                <stop offset="100%" stopColor="#3a4fd8" />
-              </radialGradient>
-            </defs>
+        {/* Rotating wheel — fills the height its layout zone grants it (capped
+            for ultra-wide rooms), so a projector gets a materially bigger wheel
+            with bigger labels while a laptop never has it clipped. */}
+        <div ref={wrapRef} className="h-full w-full" style={{ willChange: "transform, opacity" }}>
+          <div ref={spinnerRef} className="h-full w-full" style={{ willChange: "transform" }}>
+            {/* The viewBox means every label scales with the rendered size. */}
+            <svg
+              viewBox={`0 0 ${CX * 2} ${CY * 2}`}
+              style={{ display: "block", width: "100%", height: "100%" }}
+            >
+              <defs>
+                <filter id="wheel-drop" x="-8%" y="-8%" width="116%" height="116%">
+                  <feDropShadow dx="0" dy="8" stdDeviation="16" floodOpacity="0.45" />
+                </filter>
+                <filter id="wheel-glow" x="-12%" y="-12%" width="124%" height="124%">
+                  <feGaussianBlur stdDeviation="8" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+                <filter id="txt-shadow" x="-10%" y="-30%" width="120%" height="160%">
+                  <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodOpacity="0.8" />
+                </filter>
+                <radialGradient id="hub-grad" cx="50%" cy="35%" r="65%">
+                  <stop offset="0%" stopColor="#9db0fb" />
+                  <stop offset="100%" stopColor="#3a4fd8" />
+                </radialGradient>
+              </defs>
 
-            <g filter="url(#wheel-drop)">
-              {n === 0 ? (
-                <circle cx={CX} cy={CY} r={R} fill="#28324a" />
-              ) : (
-                players.map((slot, i) => {
-                  const start = i * segAngle;
-                  const end = start + segAngle;
-                  const mid = start + segAngle / 2;
-                  const isPower = slot.type === "power";
-                  const color = isPower ? getCard(slot.power).color : segColor(i);
-                  const isHL = highlightIndex === i;
+              <g filter="url(#wheel-drop)">
+                {n === 0 ? (
+                  <circle cx={CX} cy={CY} r={R} fill="#28324a" />
+                ) : (
+                  players.map((slot, i) => {
+                    const start = i * segAngle;
+                    const end = start + segAngle;
+                    const mid = start + segAngle / 2;
+                    const isPower = slot.type === "power";
+                    const color = isPower ? getCard(slot.power).color : segColor(i);
+                    const isHL = highlightIndex === i;
 
-                  return (
-                    <g key={slot.id}>
-                      <path
-                        d={segmentPath(start, end)}
-                        fill={color}
-                        stroke={isPower ? "#fffdf5" : "#1e293b"}
-                        strokeWidth={isPower ? 3.5 : 2.5}
-                        opacity={isHL ? 1 : highlightIndex !== null ? 0.55 : 0.9}
-                        filter={isPower ? "url(#wheel-glow)" : undefined}
-                        style={{ transition: "opacity 0.3s ease" }}
-                      />
-                      {(() => {
-                        const isFlipped = mid > 90 && mid < 270;
-                        const rot = isFlipped ? mid - 90 + 180 : mid - 90;
-                        const tx = isFlipped ? CX - startR : textX;
-                        const anchor = isFlipped ? "end" : "start";
-                        return (
-                          <g transform={`rotate(${rot}, ${CX}, ${CY})`}>
-                            <text
-                              x={tx}
-                              y={CY}
-                              textAnchor={anchor}
-                              dominantBaseline="central"
-                              fontSize={isPower ? fs + 1 : fs}
-                              fontWeight={isPower ? "900" : "700"}
-                              fill="white"
-                              filter="url(#txt-shadow)"
-                              style={{
-                                pointerEvents: "none",
-                                userSelect: "none",
-                                letterSpacing: "0.01em",
-                              }}
-                            >
-                              {slotLabel(slot, n)}
-                            </text>
-                          </g>
-                        );
-                      })()}
-                    </g>
-                  );
-                })
-              )}
+                    return (
+                      <g key={slot.id}>
+                        <path
+                          d={segmentPath(start, end)}
+                          fill={color}
+                          stroke={isPower ? "#fffdf5" : "#1e293b"}
+                          strokeWidth={isPower ? 3.5 : 2.5}
+                          opacity={isHL ? 1 : highlightIndex !== null ? 0.55 : 0.9}
+                          filter={isPower ? "url(#wheel-glow)" : undefined}
+                          style={{ transition: "opacity 0.3s ease" }}
+                        />
+                        {(() => {
+                          const isFlipped = mid > 90 && mid < 270;
+                          const rot = isFlipped ? mid - 90 + 180 : mid - 90;
+                          const tx = isFlipped ? CX - startR : textX;
+                          const anchor = isFlipped ? "end" : "start";
+                          return (
+                            <g transform={`rotate(${rot}, ${CX}, ${CY})`}>
+                              <text
+                                x={tx}
+                                y={CY}
+                                textAnchor={anchor}
+                                dominantBaseline="central"
+                                fontSize={isPower ? fs + 1 : fs}
+                                fontWeight={isPower ? "900" : "700"}
+                                fill="white"
+                                filter="url(#txt-shadow)"
+                                style={{
+                                  pointerEvents: "none",
+                                  userSelect: "none",
+                                  letterSpacing: "0.01em",
+                                }}
+                              >
+                                {slotLabel(slot, n)}
+                              </text>
+                            </g>
+                          );
+                        })()}
+                      </g>
+                    );
+                  })
+                )}
 
-              {/* Outer rim */}
-              <circle cx={CX} cy={CY} r={R} fill="none" stroke="#1e293b" strokeWidth={4} />
-              {/* Inner ring accent */}
-              <circle
-                cx={CX}
-                cy={CY}
-                r={HUB + 2}
-                fill="none"
-                stroke="rgba(255,255,255,0.12)"
-                strokeWidth={1}
-              />
-              {/* Hub */}
-              <circle cx={CX} cy={CY} r={HUB} fill="url(#hub-grad)" />
-              <circle cx={CX} cy={CY} r={14} fill="white" opacity={0.92} />
-              <circle cx={CX} cy={CY} r={7} fill="#4F6BF6" />
-            </g>
-          </svg>
+                {/* Outer rim */}
+                <circle cx={CX} cy={CY} r={R} fill="none" stroke="#1e293b" strokeWidth={4} />
+                {/* Inner ring accent */}
+                <circle
+                  cx={CX}
+                  cy={CY}
+                  r={HUB + 2}
+                  fill="none"
+                  stroke="rgba(255,255,255,0.12)"
+                  strokeWidth={1}
+                />
+                {/* Hub */}
+                <circle cx={CX} cy={CY} r={HUB} fill="url(#hub-grad)" />
+                <circle cx={CX} cy={CY} r={14} fill="white" opacity={0.92} />
+                <circle cx={CX} cy={CY} r={7} fill="#4F6BF6" />
+              </g>
+            </svg>
+          </div>
         </div>
       </div>
     </div>

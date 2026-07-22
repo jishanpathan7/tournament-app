@@ -150,9 +150,13 @@ export function deriveStepSignals(
 ): StepSignals {
   const squadsReady =
     (readiness?.squadsReady ?? true) && (readiness?.unassignedSquadMembers ?? 0) === 0;
+  // "Every division has zero unpaired entrants" is vacuously true for a fresh
+  // tournament with no players — pairing only counts as DONE once someone has
+  // actually been approved and paired, or the checklist ticks it on day one.
+  const hasApprovedEntrants = (readiness?.divisions ?? []).some((d) => d.approved > 0);
   const pairingPublished = readiness
-    ? readiness.divisions.every((d) => d.unpairedEntrants === 0)
-    : true;
+    ? hasApprovedEntrants && readiness.divisions.every((d) => d.unpairedEntrants === 0)
+    : false;
   const checkInReady = readiness
     ? readiness.divisions.every((d) => d.readyForDraw || d.readyForStart)
     : false;
