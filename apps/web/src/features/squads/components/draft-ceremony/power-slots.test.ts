@@ -8,7 +8,12 @@
 
 import { describe, expect, it } from "vitest";
 
-import { buildWheelSlots } from "@/features/squads/components/draft-ceremony/power-slots";
+import {
+  buildDeckForWheel,
+  buildWheelSlots,
+  wheelDeckCapacity,
+} from "@/features/squads/components/draft-ceremony/power-slots";
+import type { PowerCardId } from "@/features/squads/components/draft-ceremony/power-cards/types";
 import type { UnassignedRegistrationView } from "@/features/squads/types";
 
 function pool(n: number): UnassignedRegistrationView[] {
@@ -91,5 +96,49 @@ describe("buildWheelSlots — deck composition", () => {
       seen.add(slots.map((s) => (s.type === "power" ? s.power : "-")).join(""));
     }
     expect(seen.size).toBeGreaterThan(1);
+  });
+});
+
+describe("buildDeckForWheel — per-wheel counts", () => {
+  const ids = ["respin", "protection", "swap"] as PowerCardId[];
+
+  it("repeats each card as many times as that wheel asked for", () => {
+    const deck = buildDeckForWheel(ids, { respin: 2, protection: 1, swap: 0 }, 1);
+    expect(deck.filter((d) => d === "respin")).toHaveLength(2);
+    expect(deck.filter((d) => d === "protection")).toHaveLength(1);
+    expect(deck.filter((d) => d === "swap")).toHaveLength(0);
+  });
+
+  it("lets two wheels hold different numbers of the same card", () => {
+    // The whole point: advanced is thin, intermediate is crowded.
+    const advanced = buildDeckForWheel(ids, { respin: 1, protection: 1, swap: 1 }, 1);
+    const intermediate = buildDeckForWheel(ids, { respin: 2, protection: 2, swap: 2 }, 1);
+    expect(advanced).toHaveLength(3);
+    expect(intermediate).toHaveLength(6);
+  });
+
+  it("falls back for a tier the organizer never opened", () => {
+    expect(buildDeckForWheel(ids, undefined, 1)).toHaveLength(3);
+  });
+
+  it("treats a negative count as off rather than throwing", () => {
+    expect(buildDeckForWheel(ids, { respin: -3 }, 1)).toHaveLength(2);
+  });
+});
+
+describe("wheelDeckCapacity", () => {
+  it("reports the shortfall when a wheel is too thin for the deck", () => {
+    // 6 cards configured, only 4 players left on the advanced wheel.
+    expect(wheelDeckCapacity(6, 4)).toEqual({ requested: 6, fits: 4, dropped: 2 });
+  });
+
+  it("reports no shortfall when everything fits", () => {
+    expect(wheelDeckCapacity(4, 30)).toEqual({ requested: 4, fits: 4, dropped: 0 });
+  });
+
+  it("matches what buildWheelSlots actually places", () => {
+    const deck = Array.from({ length: 6 }, () => "respin" as PowerCardId);
+    const placed = buildWheelSlots(pool(4), deck).filter((s) => s.type === "power").length;
+    expect(placed).toBe(wheelDeckCapacity(6, 4).fits);
   });
 });

@@ -104,6 +104,27 @@ describe("ceremony session persistence", () => {
     expect(loaded?.settings.cardSlots).toEqual({});
   });
 
+  it("lifts an old shared card deck onto every wheel", () => {
+    // Card counts used to be one flat map for all wheels. A session saved then
+    // would restore {respin: 2} where {advanced: {respin: 2}} is expected, and
+    // every count would read as undefined halfway through a live ceremony.
+    const stale = session({ settings: { ...DEFAULT_SETTINGS } });
+    (stale.settings as unknown as { cardSlots: unknown }).cardSlots = { respin: 2, swap: 0 };
+    window.localStorage.setItem(`playlane:ceremony:${TID}`, JSON.stringify(stale));
+
+    const loaded = loadSession(TID);
+    expect(loaded?.settings.cardSlots.advanced).toEqual({ respin: 2, swap: 0 });
+    expect(loaded?.settings.cardSlots.intermediate).toEqual({ respin: 2, swap: 0 });
+  });
+
+  it("leaves an already per-wheel deck alone", () => {
+    const perWheel = { advanced: { respin: 1 }, intermediate: { respin: 3 } };
+    const saved = session({ settings: { ...DEFAULT_SETTINGS, cardSlots: perWheel } });
+    window.localStorage.setItem(`playlane:ceremony:${TID}`, JSON.stringify(saved));
+
+    expect(loadSession(TID)?.settings.cardSlots).toEqual(perWheel);
+  });
+
   it("clears on demand", () => {
     saveSession(TID, session());
     clearSession(TID);
