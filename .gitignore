@@ -24,6 +24,8 @@ __pycache__/
 .env
 .env.local
 .env.*.local
+# Production DB credentials for scripts/migrate-prod.sh — never commit.
+.env.prod
 !.env.example
 
 # Coverage / logs
