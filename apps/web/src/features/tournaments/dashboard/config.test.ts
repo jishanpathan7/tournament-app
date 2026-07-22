@@ -6,6 +6,7 @@ import {
   deriveChampions,
   deriveMatchProgress,
   deriveRegistrationTotals,
+  deriveStepSignals,
   deriveTournamentStats,
   getDashboardPhase,
 } from "@/features/tournaments/dashboard/config";
@@ -51,6 +52,49 @@ describe("deriveRegistrationTotals", () => {
       waitlisted: 0,
       rejected: 0,
     });
+  });
+});
+
+describe("deriveStepSignals", () => {
+  const totals = { approved: 0, pending: 0, waitlisted: 0, rejected: 0 };
+  const noDraw = { drawn: 0, total: 0 };
+  const division = (over: Record<string, unknown>) =>
+    ({
+      approved: 0,
+      unpairedEntrants: 0,
+      readyForDraw: false,
+      readyForStart: false,
+      participantType: "pair",
+      ...over,
+    }) as never;
+  const readiness = (divisions: never[]) =>
+    ({ squadsReady: false, unassignedSquadMembers: 0, squadCount: 0, divisions }) as never;
+
+  it("does not mark pairing done for a tournament with no approved entrants", () => {
+    // Every division trivially has zero unpaired entrants before anyone joins —
+    // the checklist must not show "Generate pairs" as complete on day one.
+    const signals = deriveStepSignals(readiness([division({})]), totals, noDraw, undefined);
+    expect(signals.pairingPublished).toBe(false);
+  });
+
+  it("marks pairing done once approved entrants exist and none are unpaired", () => {
+    const signals = deriveStepSignals(
+      readiness([division({ approved: 8, unpairedEntrants: 0 })]),
+      { ...totals, approved: 8 },
+      noDraw,
+      undefined,
+    );
+    expect(signals.pairingPublished).toBe(true);
+  });
+
+  it("keeps pairing outstanding while entrants remain unpaired", () => {
+    const signals = deriveStepSignals(
+      readiness([division({ approved: 8, unpairedEntrants: 3 })]),
+      { ...totals, approved: 8 },
+      noDraw,
+      undefined,
+    );
+    expect(signals.pairingPublished).toBe(false);
   });
 });
 
