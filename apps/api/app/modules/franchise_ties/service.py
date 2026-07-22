@@ -764,11 +764,16 @@ async def rollup_leg_to_tie(
         await session.flush()
         return False
 
-    if state.winning_side is not None and len(ordered) >= 2:
-        win_mp = ordered[state.winning_side]
-        lose_mp = ordered[1 - state.winning_side]
-        win_mp.outcome = MatchOutcome.WIN.value
-        lose_mp.outcome = MatchOutcome.LOSS.value
+    if len(ordered) >= 2:
+        if state.winning_side is not None:
+            ordered[state.winning_side].outcome = MatchOutcome.WIN.value
+            ordered[1 - state.winning_side].outcome = MatchOutcome.LOSS.value
+        else:
+            # Level on legs with everything played — a genuine drawn fixture.
+            # Leaving the outcome unset made a completed tie look unplayed to
+            # anything reading match_participants rather than the leg tally.
+            ordered[0].outcome = MatchOutcome.DRAW.value
+            ordered[1].outcome = MatchOutcome.DRAW.value
 
     tie.status = MatchStatus.COMPLETED.value
     await session.flush()

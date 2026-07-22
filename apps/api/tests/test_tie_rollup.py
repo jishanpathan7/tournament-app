@@ -39,3 +39,36 @@ def test_rollup_all_legs_played_away_wins():
     )
     assert state.decided
     assert state.winning_side == 1
+
+
+def test_a_level_tie_with_every_leg_played_is_a_draw():
+    """Found by running a real tournament: with an even number of legs a 1-1 (or
+    4-4) finish left the tie permanently 'scheduled'. Both teams had played
+    everything, neither got the draw point, and the fixture never reached the
+    standings at all."""
+    state = rollup_legs(
+        games_per_tie=2,
+        legs=(LegOutcome(winning_side=0), LegOutcome(winning_side=1)),
+    )
+    assert state.decided is True
+    assert state.winning_side is None
+    assert (state.home_leg_wins, state.away_leg_wins) == (1, 1)
+
+
+def test_the_sibl_default_of_eight_legs_can_end_level():
+    state = rollup_legs(
+        games_per_tie=8,
+        legs=tuple(LegOutcome(winning_side=i % 2) for i in range(8)),
+    )
+    assert (state.home_leg_wins, state.away_leg_wins) == (4, 4)
+    assert state.decided is True
+    assert state.winning_side is None
+
+
+def test_a_tie_still_waits_while_legs_are_outstanding():
+    # Only half played and level — not a draw yet, just unfinished.
+    state = rollup_legs(
+        games_per_tie=8,
+        legs=(LegOutcome(winning_side=0), LegOutcome(winning_side=1)),
+    )
+    assert state.decided is False

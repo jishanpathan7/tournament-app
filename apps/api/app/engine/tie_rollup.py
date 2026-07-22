@@ -42,9 +42,12 @@ def rollup_legs(*, games_per_tie: int, legs: tuple[LegOutcome, ...]) -> TieRollu
             home += 1
         elif leg.winning_side == 1:
             away += 1
-    decided = (
-        home >= threshold or away >= threshold or (home + away >= games_per_tie and home != away)
-    )
+    # A tie is over when one side clinches, or when every leg has been played —
+    # including when those legs finish level. The level case used to be excluded,
+    # so an even number of legs ending 4-4 left the tie permanently "scheduled":
+    # both teams had played everything, neither was awarded the draw point, and
+    # the fixture never appeared in the standings at all.
+    decided = home >= threshold or away >= threshold or home + away >= games_per_tie
     winner: int | None = None
     if decided:
         if home > away:
