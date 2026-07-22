@@ -28,9 +28,19 @@ import type {
   PowerEvent as EnginePowerEvent,
 } from "@/features/squads/components/draft-ceremony/power-cards/types";
 import {
+  legalSwaps,
+  sameSkill,
+} from "@/features/squads/components/draft-ceremony/power-cards/cards/jo-tera-hai-wo-mera";
+import {
+  buildDeckForWheel,
   buildWheelSlots,
   isPlayerSlot,
+  SKILL_KEYS,
+  SKILL_LABELS,
+  skillKeyOf,
+  wheelDeckCapacity,
   type PowerKind,
+  type SkillKey,
   type WheelSlot,
 } from "@/features/squads/components/draft-ceremony/power-slots";
 import {
@@ -43,6 +53,7 @@ import type {
   SquadView,
   UnassignedRegistrationView,
 } from "@/features/squads/types";
+import { cn } from "@/lib/utils";
 
 /** Scale an animation duration (seconds) by the ceremony playback speed. */
 function scaled(seconds: number, speed: CeremonySpeed) {
@@ -264,7 +275,7 @@ function tierStyle(skillLevel: string | null, tiered: boolean): TierStyle {
   }
 }
 
-function RevealOverlay({
+export function RevealOverlay({
   info,
   tiered,
   speed,
@@ -278,12 +289,21 @@ function RevealOverlay({
   const cardRef = useRef<HTMLDivElement>(null);
   const tier = tierStyle(info.skillLevel, tiered);
 
+  // The parent re-renders several times while a reveal is on screen (the team
+  // flash clears after 2s, the ghost-fly state lands, timers fire). `onDone` is
+  // rebuilt on each of those renders, so listing it as a dependency tore down
+  // the timeline and played the whole card entrance again — the name appeared to
+  // pop two or three times. Read the latest callback through a ref instead, and
+  // let the animation run exactly once per reveal.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
   useEffect(() => {
     const el = cardRef.current;
     if (!el) return;
 
     if (prefersReducedMotion()) {
-      const t = setTimeout(() => onDone(null), 600);
+      const t = setTimeout(() => onDoneRef.current(null), 600);
       return () => clearTimeout(t);
     }
 
@@ -305,14 +325,18 @@ function RevealOverlay({
         onComplete() {
           // Fire fly-to-team with card position
           const cardRect = el.getBoundingClientRect();
-          onDone(cardRect);
+          onDoneRef.current(cardRect);
         },
       });
 
     return () => {
       tl.kill();
     };
-  }, [onDone, speed, tier.entrance]);
+    // Deliberately mount-only: one reveal, one animation. The parent gives this
+    // component a key per pick, so a new player remounts it rather than
+    // restarting an in-flight timeline.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   return (
     <div className="pointer-events-none fixed inset-0 z-[60] flex items-center justify-center p-6">
@@ -1006,6 +1030,7 @@ function TeamCardsRail({
   armed,
   onCardClick,
   onTargetTeam,
+  layout,
 }: {
   squads: SquadView[];
   teamCards: Record<string, PowerKind[]>;
@@ -1013,27 +1038,43 @@ function TeamCardsRail({
   armed: { squadId: string; cardId: PowerKind } | null;
   onCardClick: (squadId: string, kind: PowerKind) => void;
   onTargetTeam: (squadId: string) => void;
+  /**
+   * "column" is the projector layout: a left rail beside the wheel, stacked and
+   * fully visible. "footer" is the narrow-screen fallback — cards are *played*
+   * from here, so they can never simply be hidden when the rail does not fit.
+   */
+  layout: "column" | "footer";
 }) {
   const anyActivity = squads.some(
     (s) => (teamCards[s.id] ?? []).length > 0 || (spentCards[s.id] ?? []).length > 0,
   );
   if (!anyActivity && !armed) return null;
 
+  const isColumn = layout === "column";
+
   return (
-    <div className="border-white/8 shrink-0 border-t" style={{ background: BG_SIDEBAR }}>
-      <div className="flex items-center gap-2 px-5 pb-1 pt-2.5">
+    <aside
+      className={cn(
+        "border-white/8 shrink-0 overflow-y-auto",
+        isColumn
+          ? "hidden w-64 flex-col border-r p-4 lg:flex xl:w-72 2xl:w-80"
+          : "flex flex-col border-t px-5 py-3 lg:hidden",
+      )}
+      style={{ background: BG_SIDEBAR }}
+    >
+      <div className="mb-3 flex items-center gap-2">
         <Sparkles className="h-3.5 w-3.5 text-[#fbbf24]" />
         <p className="text-2xs font-mono font-bold uppercase tracking-widest text-[#fbbf24]/80">
           Power Cards
         </p>
-        {armed && (
-          <span className="animate-pulse text-xs font-black text-[#f472b6]">
-            Choose a team to raid →
-          </span>
-        )}
       </div>
+      {armed && (
+        <p className="mb-2 animate-pulse text-xs font-black text-[#f472b6]">
+          Choose a team to raid →
+        </p>
+      )}
 
-      <div className="flex gap-2.5 overflow-x-auto px-5 pb-3 pt-1">
+      <div className={cn(isColumn ? "flex flex-col gap-2.5" : "flex gap-2.5 overflow-x-auto")}>
         {squads.map((s, i) => {
           const hand = teamCards[s.id] ?? [];
           const spent = spentCards[s.id] ?? [];
@@ -1045,7 +1086,10 @@ function TeamCardsRail({
             <div
               key={s.id}
               onClick={() => targetable && onTargetTeam(s.id)}
-              className="flex min-w-[9.5rem] shrink-0 flex-col gap-2 rounded-2xl px-3 py-2.5 transition-colors"
+              className={cn(
+                "flex flex-col gap-2 rounded-2xl px-3 py-2.5 transition-colors",
+                !isColumn && "min-w-[9.5rem] shrink-0",
+              )}
               style={{
                 background: targetable ? "rgba(219,39,119,0.2)" : "rgba(255,255,255,0.04)",
                 border: targetable ? "2px solid #db2777" : `1px solid ${color}33`,
@@ -1112,6 +1156,169 @@ function TeamCardsRail({
             </div>
           );
         })}
+      </div>
+    </aside>
+  );
+}
+
+/** The pair a captain picked by hand, by registration id. */
+type ChosenSwap = { fromRegistrationId: string; toRegistrationId: string };
+
+/**
+ * Swap picker — the captain chooses BOTH players, one per side.
+ *
+ * Skill levels must match, so choosing on one side dims every player on the
+ * other whose level differs. Showing them dimmed rather than hiding them is
+ * deliberate: a captain looking for a name needs to see it is there and why it
+ * cannot be taken, otherwise a missing player reads as a bug.
+ */
+function SwapPickerOverlay({
+  from,
+  to,
+  onConfirm,
+  onCancel,
+}: {
+  from: SquadView;
+  to: SquadView;
+  onConfirm: (chosen: ChosenSwap) => void;
+  onCancel: () => void;
+}) {
+  const card = getCard("swap");
+  const [mine, setMine] = useState<SquadMemberView | null>(null);
+  const [theirs, setTheirs] = useState<SquadMemberView | null>(null);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onCancel();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  const pairs = legalSwaps(from, to);
+  // A player is offerable only if some legal trade involves them at all — that
+  // already excludes captains and anyone whose level no one on the other side has.
+  const myOptions = from.members.filter((m) =>
+    pairs.some((p) => p.a.registrationId === m.registrationId),
+  );
+  const theirOptions = to.members.filter((m) =>
+    pairs.some((p) => p.b.registrationId === m.registrationId),
+  );
+
+  function column(
+    title: string,
+    squadName: string,
+    options: SquadMemberView[],
+    selected: SquadMemberView | null,
+    counterpart: SquadMemberView | null,
+    onSelect: (m: SquadMemberView) => void,
+  ) {
+    return (
+      <div className="flex min-h-0 flex-1 flex-col gap-2">
+        <p className="text-2xs font-mono font-bold uppercase tracking-widest text-white/40">
+          {title}
+        </p>
+        <p className="truncate text-sm font-black text-white">{squadName}</p>
+        <div className="flex min-h-0 flex-col gap-1.5 overflow-y-auto pr-1">
+          {options.map((m) => {
+            const isSelected = selected?.registrationId === m.registrationId;
+            // Dimmed once the other side is chosen and the levels differ.
+            const blocked = counterpart !== null && !sameSkill(m, counterpart);
+            return (
+              <button
+                key={m.registrationId}
+                onClick={() => !blocked && onSelect(m)}
+                disabled={blocked}
+                className="flex items-center gap-2 rounded-xl px-3 py-2 text-left transition-colors disabled:cursor-not-allowed"
+                style={{
+                  background: isSelected ? `${card.color}33` : "rgba(255,255,255,0.05)",
+                  border: isSelected
+                    ? `2px solid ${card.color}`
+                    : "1px solid rgba(255,255,255,0.1)",
+                  opacity: blocked ? 0.3 : 1,
+                }}
+              >
+                <span className="truncate text-sm font-bold text-white">{m.displayName}</span>
+                <span className="text-2xs ml-auto shrink-0 font-mono uppercase text-white/50">
+                  {skillLabel(m.skillLevel)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  const ready = mine !== null && theirs !== null;
+
+  return (
+    <div className="fixed inset-0 z-[64] flex items-center justify-center bg-black/60 p-6 backdrop-blur-sm">
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="flex max-h-[80vh] w-[min(92vw,48rem)] flex-col gap-4 rounded-[2rem] px-8 py-7"
+        style={{
+          background: `linear-gradient(160deg, ${card.color}26 0%, rgba(30,41,59,0.98) 100%)`,
+          border: `2px solid ${card.color}88`,
+          boxShadow: `0 0 80px ${card.color}44, 0 24px 70px rgba(0,0,0,0.6)`,
+        }}
+      >
+        <div className="text-center">
+          <p
+            className="font-mono text-xs font-black uppercase tracking-[0.28em]"
+            style={{ color: card.color }}
+          >
+            {card.emoji} {card.title}
+          </p>
+          <p className="mt-1 text-lg font-black text-white">
+            {from.name} <span style={{ color: card.color }}>⇄</span> {to.name}
+          </p>
+          <p className="mt-1 text-xs text-white/50">Both players must be the same skill level.</p>
+        </div>
+
+        {pairs.length === 0 ? (
+          <p className="rounded-2xl bg-white/5 px-4 py-6 text-center text-sm font-semibold text-white/70">
+            No same-skill players to trade with {to.name}. Your card is not used — raid a different
+            team.
+          </p>
+        ) : (
+          <div className="flex min-h-0 gap-4">
+            {column("You give", from.name, myOptions, mine, theirs, setMine)}
+            <div className="self-center text-2xl" style={{ color: card.color }}>
+              ⇄
+            </div>
+            {column("You take", to.name, theirOptions, theirs, mine, setTheirs)}
+          </div>
+        )}
+
+        <div className="flex justify-center gap-3">
+          <button
+            onClick={onCancel}
+            className="rounded-full border border-white/15 px-6 py-2.5 text-sm font-bold text-white/70 transition-colors hover:bg-white/10"
+          >
+            Cancel
+          </button>
+          {pairs.length > 0 && (
+            <button
+              onClick={() =>
+                ready &&
+                onConfirm({
+                  fromRegistrationId: mine.registrationId,
+                  toRegistrationId: theirs.registrationId,
+                })
+              }
+              disabled={!ready}
+              className="rounded-full px-8 py-2.5 text-sm font-black text-white transition-transform enabled:hover:scale-105 disabled:opacity-40"
+              style={{ background: card.color }}
+            >
+              {ready ? "Swap them" : "Pick one from each side"}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1372,8 +1579,14 @@ function MainScreen({
     cardId: PowerKind,
     squadId: string,
     targetSquadId?: string,
+    chosenSwap?: ChosenSwap,
   ) => Promise<EnginePowerEvent[]>;
-  onPreviewCard: (cardId: PowerKind, squadId: string, targetSquadId?: string) => CardPreview | null;
+  onPreviewCard: (
+    cardId: PowerKind,
+    squadId: string,
+    targetSquadId?: string,
+    chosenSwap?: ChosenSwap,
+  ) => CardPreview | null;
   justCompletedSquadId: string | null;
   onClearCompleted: () => void;
   isWildcardActive: boolean;
@@ -1439,12 +1652,16 @@ function MainScreen({
   // A targeted card that has been picked up and is awaiting a target team.
   // Tracks WHICH card is armed, not just the team, so any targeted card works.
   const [armed, setArmed] = useState<{ squadId: string; cardId: PowerKind } | null>(null);
+  // Target chosen for a swap, waiting on the captain to pick the two players.
+  const [swapPicker, setSwapPicker] = useState<{ from: SquadView; to: SquadView } | null>(null);
   // A previewed-but-unconfirmed play. Nothing is mutated while this is set.
   const [pendingPlay, setPendingPlay] = useState<{
     cardId: PowerKind;
     squadId: string;
     targetSquadId: string;
     preview: CardPreview;
+    /** The hand-picked pair, carried through so confirm plays exactly that trade. */
+    chosenSwap?: ChosenSwap;
   } | null>(null);
   const [ghostFly, setGhostFly] = useState<{
     name: string;
@@ -1460,20 +1677,22 @@ function MainScreen({
     !isAssigning &&
     !countdownActive &&
     !powerEvent &&
-    !pendingPlay;
+    !pendingPlay &&
+    // Space spins the wheel; it must not fire behind an open swap picker.
+    !swapPicker;
   const poolEmpty = pool.length === 0 && totalRemaining > 0;
 
-  // The deck for this wheel: each card repeated as many times as the organizer
-  // asked for. Exact counts, so asking for two of each yields two of each.
+  // The deck for THIS wheel. Tiers hold very different numbers of players, so
+  // the counts are per skill group: four cards is a surprise on a 30-player
+  // intermediate wheel and near-constant on a 10-player advanced one.
   const deck = useMemo(() => {
     if (!powersEnabled) return [];
-    return allCards()
+    const wheel = skillKeyOf(resolvedSkill);
+    const ids = allCards()
       .filter((c) => c.wheelEligible)
-      .flatMap((c) => {
-        const n = settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS;
-        return Array.from({ length: Math.max(0, n) }, () => c.id);
-      });
-  }, [powersEnabled, settings.cardSlots]);
+      .map((c) => c.id);
+    return buildDeckForWheel(ids, settings.cardSlots[wheel], DEFAULT_CARD_SLOTS);
+  }, [powersEnabled, settings.cardSlots, resolvedSkill]);
 
   // The wheel slots are built ONCE per skill group and then held FIXED: power slots
   // stay put across spins, and only the picked player (and a landed power) are
@@ -1750,11 +1969,39 @@ function MainScreen({
 
     const preview = onPreviewCard(play.cardId, play.squadId, targetId);
     if (!preview) return;
+
+    // Immunity is decided before anyone picks — no point choosing players for a
+    // raid that is already blocked. Otherwise the captain chooses both players.
+    if (play.cardId === "swap" && preview.reason !== "immunity") {
+      const from = squads.find((sq) => sq.id === play.squadId);
+      const to = squads.find((sq) => sq.id === targetId);
+      if (from && to) {
+        setSwapPicker({ from, to });
+        return;
+      }
+    }
+
     setPendingPlay({
       cardId: play.cardId,
       squadId: play.squadId,
       targetSquadId: targetId,
       preview,
+    });
+  }
+
+  /** Captain picked the two players — preview that exact trade, then confirm. */
+  function onSwapChosen(chosen: ChosenSwap) {
+    const picker = swapPicker;
+    setSwapPicker(null);
+    if (!picker) return;
+    const preview = onPreviewCard("swap", picker.from.id, picker.to.id, chosen);
+    if (!preview) return;
+    setPendingPlay({
+      cardId: "swap",
+      squadId: picker.from.id,
+      targetSquadId: picker.to.id,
+      preview,
+      chosenSwap: chosen,
     });
   }
 
@@ -1836,7 +2083,12 @@ function MainScreen({
     if (!pending) return;
 
     setPowerEvent({ kind: pending.cardId, detail: "Making the trade…" });
-    const events = await onPlayCard(pending.cardId, pending.squadId, pending.targetSquadId);
+    const events = await onPlayCard(
+      pending.cardId,
+      pending.squadId,
+      pending.targetSquadId,
+      pending.chosenSwap,
+    );
     await showPowerEvents(events);
   }
 
@@ -1865,6 +2117,21 @@ function MainScreen({
 
       {/* Body */}
       <div className="flex flex-1 overflow-hidden">
+        {/* Power cards on the left, roster on the right — the wheel keeps the
+            middle. As a footer this rail ate vertical space the wheel needed and
+            scrolled sideways; as a column it stacks and stays fully visible. */}
+        {settings.funMode && settings.powerSlots && (
+          <TeamCardsRail
+            squads={squads}
+            teamCards={teamCards}
+            spentCards={spentCards}
+            armed={armed}
+            onCardClick={onCardClick}
+            onTargetTeam={onTargetTeam}
+            layout="column"
+          />
+        )}
+
         {/* Wheel area — three fixed zones (status · wheel · controls) so nothing
             ever overlaps or gets clipped: the wheel takes whatever height is left
             after the other two, and scales itself to fit. */}
@@ -2058,8 +2325,8 @@ function MainScreen({
         </aside>
       </div>
 
-      {/* Power-card rail — full width, outside the collapsible sidebar so it is
-          readable on a projector and usable on a tablet. */}
+      {/* Below lg the left rail is hidden, but cards are played from it — so the
+          old full-width strip stays as the narrow-screen fallback. */}
       {settings.funMode && settings.powerSlots && (
         <TeamCardsRail
           squads={squads}
@@ -2068,6 +2335,7 @@ function MainScreen({
           armed={armed}
           onCardClick={onCardClick}
           onTargetTeam={onTargetTeam}
+          layout="footer"
         />
       )}
 
@@ -2079,6 +2347,14 @@ function MainScreen({
             setCountdownActive(false);
             void runSpin();
           }}
+        />
+      )}
+      {swapPicker && (
+        <SwapPickerOverlay
+          from={swapPicker.from}
+          to={swapPicker.to}
+          onConfirm={onSwapChosen}
+          onCancel={() => setSwapPicker(null)}
         />
       )}
       {pendingPlay && (
@@ -2101,6 +2377,9 @@ function MainScreen({
       {powerEvent && <PowerOverlay event={powerEvent} onDismiss={dismissOverlay} />}
       {revealInfo && (
         <RevealOverlay
+          // One mount per pick: the overlay animates once, and the next player
+          // gets a fresh component rather than reusing a finished timeline.
+          key={`${revealInfo.squadId}:${revealInfo.playerName}`}
           info={revealInfo}
           tiered={settings.funMode && settings.tieredReveals}
           speed={settings.speed}
@@ -2187,15 +2466,28 @@ function SettingsPanel({
   settings,
   onUpdate,
   onClose,
+  poolSizeBySkill,
+  currentWheel,
 }: {
   settings: CeremonySettings;
   onUpdate: (patch: Partial<CeremonySettings>) => void;
   onClose: () => void;
+  /** Unassigned players per tier — drives the "won't fit" warning. */
+  poolSizeBySkill: Record<string, number>;
+  /** The wheel currently on screen, so the panel opens on the relevant tier. */
+  currentWheel: SkillKey;
 }) {
   const fun = settings.funMode;
+  // Counts are per wheel, so the panel edits one tier at a time.
+  const [wheel, setWheel] = useState<SkillKey>(currentWheel);
+  const wheelCounts = settings.cardSlots[wheel];
   const totalCardSlots = allCards()
     .filter((c) => c.wheelEligible)
-    .reduce((sum, c) => sum + (settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS), 0);
+    .reduce((sum, c) => sum + (wheelCounts?.[c.id] ?? DEFAULT_CARD_SLOTS), 0);
+  const playersOnWheel = poolSizeBySkill[wheel] ?? 0;
+  const capacity = wheelDeckCapacity(totalCardSlots, playersOnWheel);
+  // Only offer tiers that actually have players left to draft.
+  const tiers = SKILL_KEYS.filter((k) => (poolSizeBySkill[k] ?? 0) > 0);
   return (
     <div className="absolute right-0 top-full z-50 mt-2 w-80 rounded-2xl border border-white/10 bg-[#28324a] p-3 shadow-2xl">
       <div className="mb-2 flex items-center gap-2 px-2 pt-1">
@@ -2252,17 +2544,41 @@ function SettingsPanel({
           registered card appears here on its own. */}
       {fun && settings.powerSlots && (
         <div className="ml-4 border-l border-white/10 pl-2">
-          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-white/50">Cards on each wheel</p>
+          <p className="px-3 pb-1 pt-2 text-xs font-semibold text-white/50">
+            Cards on the {SKILL_LABELS[wheel].toLowerCase()} wheel
+          </p>
+          {tiers.length > 1 && (
+            <div className="mx-1 mb-1 flex gap-1 rounded-full border border-white/10 bg-white/5 p-1">
+              {tiers.map((k) => (
+                <button
+                  key={k}
+                  onClick={() => setWheel(k)}
+                  className={cn(
+                    "flex-1 rounded-full px-2 py-1 text-[11px] font-bold transition-colors",
+                    k === wheel ? "bg-white/15 text-white" : "text-white/45 hover:text-white/80",
+                  )}
+                >
+                  {SKILL_LABELS[k]}
+                  <span className="ml-1 font-mono font-normal opacity-60">
+                    {poolSizeBySkill[k] ?? 0}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="flex flex-col gap-0.5 px-1 pb-1">
             {allCards()
               .filter((c) => c.wheelEligible)
               .map((c) => {
-                const n = settings.cardSlots[c.id] ?? DEFAULT_CARD_SLOTS;
+                const n = wheelCounts?.[c.id] ?? DEFAULT_CARD_SLOTS;
                 const set = (next: number) =>
                   onUpdate({
                     cardSlots: {
                       ...settings.cardSlots,
-                      [c.id]: Math.max(0, Math.min(10, next)),
+                      [wheel]: {
+                        ...wheelCounts,
+                        [c.id]: Math.max(0, Math.min(10, next)),
+                      },
                     },
                   });
                 return (
@@ -2299,9 +2615,16 @@ function SettingsPanel({
           </div>
           <p className="px-3 pb-2 pt-1 text-xs text-white/40">
             {totalCardSlots === 0
-              ? "No cards — the wheel will be players only."
-              : `${totalCardSlots} card${totalCardSlots === 1 ? "" : "s"} on every wheel, spread out and shuffled.`}
+              ? `No cards — the ${SKILL_LABELS[wheel].toLowerCase()} wheel will be players only.`
+              : `${totalCardSlots} card${totalCardSlots === 1 ? "" : "s"} among ${playersOnWheel} player${playersOnWheel === 1 ? "" : "s"}, spread out and shuffled.`}
           </p>
+          {capacity.dropped > 0 && (
+            <p className="mx-2 mb-2 rounded-lg bg-[#fbbf24]/15 px-3 py-2 text-xs font-semibold text-[#fbbf24]">
+              Only {capacity.fits} will appear — the {SKILL_LABELS[wheel].toLowerCase()} wheel has{" "}
+              {playersOnWheel} player{playersOnWheel === 1 ? "" : "s"} left, and a wheel never holds
+              more cards than players.
+            </p>
+          )}
         </div>
       )}
 
@@ -2436,25 +2759,30 @@ function IntrosScreen({
 
 // ── Countdown overlay (3·2·1 before spin) ─────────────────────────────────────
 
-function CountdownOverlay({ speed, onDone }: { speed: CeremonySpeed; onDone: () => void }) {
+export function CountdownOverlay({ speed, onDone }: { speed: CeremonySpeed; onDone: () => void }) {
   const [n, setN] = useState(3);
   const numRef = useRef<HTMLDivElement>(null);
 
+  // Same trap as the reveal card: `onDone` is an inline arrow at the call site,
+  // so depending on it restarted the 3·2·1 timers on every parent render.
+  const onDoneRef = useRef(onDone);
+  onDoneRef.current = onDone;
+
   useEffect(() => {
     if (prefersReducedMotion()) {
-      onDone();
+      onDoneRef.current();
       return;
     }
     const step = Math.max(300, scaled(650, speed)); // ms per number
     const t1 = setTimeout(() => setN(2), step);
     const t2 = setTimeout(() => setN(1), step * 2);
-    const t3 = setTimeout(() => onDone(), step * 3);
+    const t3 = setTimeout(() => onDoneRef.current(), step * 3);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
       clearTimeout(t3);
     };
-  }, [speed, onDone]);
+  }, [speed]);
 
   useEffect(() => {
     if (!numRef.current || prefersReducedMotion()) return;
@@ -2727,6 +3055,8 @@ export function DraftCeremonyShell({ tournamentId }: { tournamentId: string }) {
               settings={ceremony.settings}
               onUpdate={ceremony.updateSettings}
               onClose={() => setSettingsOpen(false)}
+              poolSizeBySkill={ceremony.poolSizeBySkill}
+              currentWheel={skillKeyOf(ceremony.resolvedSkill)}
             />
           )}
         </div>
