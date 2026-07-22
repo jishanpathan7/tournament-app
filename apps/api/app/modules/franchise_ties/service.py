@@ -139,10 +139,28 @@ async def squad_pair_map(
 
 
 def _default_games_per_tie(squad_pairs: dict[uuid.UUID, list[Participant]]) -> int:
+    """Legs per tie: the LARGEST team's pair count, so nobody is left out.
+
+    This used to take the smallest, which silently stranded the extra pairs of a
+    bigger team — with 8 pairs against a 7-pair field, the 8th pair was never
+    reachable and those two players went home having played nothing. Sizing to
+    the largest team means every pair appears in every tie; a smaller team simply
+    fields one of its pairs twice (see ``_leg_pair_index``).
+    """
     counts = [len(v) for v in squad_pairs.values()]
     if not counts:
         return 1
-    return max(1, min(counts))
+    return max(1, max(counts))
+
+
+def _leg_pair_index(tie_index: int, leg_index: int, games_per_tie: int, pair_count: int) -> int:
+    """Which pair a squad fields for this leg.
+
+    The offset rotates with the tie so the pair that has to play twice is a
+    different one each time. Restarting at pair 1 every tie made a single pair of
+    a short-handed team carry double the load all tournament.
+    """
+    return (tie_index * games_per_tie + leg_index) % pair_count
 
 
 async def generate_franchise_draw(
@@ -382,7 +400,7 @@ async def advance_franchise_knockout(
     )
     games_per_tie = int(cfg.get("gamesPerTie") or 1)
     expanded = 0
-    for tie in await repo.list_tie_matches(session, org_id, stage_id):
+    for tie_index, tie in enumerate(await repo.list_tie_matches(session, org_id, stage_id)):
         if tie.status not in (MatchStatus.SCHEDULED.value, MatchStatus.LIVE.value):
             continue
         if len(tie.participants) < 2:
@@ -395,6 +413,7 @@ async def advance_franchise_knockout(
             tie=tie,
             pairs_by_squad=pairs_by_squad,
             games_per_tie=games_per_tie,
+            tie_index=tie_index,
         )
     await session.flush()
     return {"expanded": expanded}
@@ -409,8 +428,14 @@ async def expand_tie_legs(
     tie: Match,
     pairs_by_squad: dict[uuid.UUID, list[Participant]],
     games_per_tie: int,
+    tie_index: int = 0,
 ) -> int:
-    """Materialize doubles legs for a tie with both squads known. Idempotent."""
+    """Materialize doubles legs for a tie with both squads known. Idempotent.
+
+    ``tie_index`` rotates which pair starts the tie, so a team fielding fewer
+    pairs than there are legs doubles up a different pair each time instead of
+    working the same one twice in every tie.
+    """
     if await repo.tie_has_legs(session, org_id, tie.id):
         return 0
 
@@ -451,8 +476,12 @@ async def expand_tie_legs(
 
     leg_count = 0
     for leg_index in range(games_per_tie):
-        home_pair = home_pairs[leg_index % len(home_pairs)]
-        away_pair = away_pairs[leg_index % len(away_pairs)]
+        home_pair = home_pairs[
+            _leg_pair_index(tie_index, leg_index, games_per_tie, len(home_pairs))
+        ]
+        away_pair = away_pairs[
+            _leg_pair_index(tie_index, leg_index, games_per_tie, len(away_pairs))
+        ]
         leg = Match(
             organization_id=org_id,
             tournament_id=tournament_id,
@@ -569,6 +598,7 @@ async def _persist_franchise_structure(
             tie=tie,
             pairs_by_squad=pairs_by_squad,
             games_per_tie=games_per_tie,
+            tie_index=tie_count - 1,
         )
 
     await session.flush()
