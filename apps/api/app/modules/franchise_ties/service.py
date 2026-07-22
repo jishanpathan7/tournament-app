@@ -156,11 +156,24 @@ def _default_games_per_tie(squad_pairs: dict[uuid.UUID, list[Participant]]) -> i
 def _leg_pair_index(tie_index: int, leg_index: int, games_per_tie: int, pair_count: int) -> int:
     """Which pair a squad fields for this leg.
 
-    The offset rotates with the tie so the pair that has to play twice is a
-    different one each time. Restarting at pair 1 every tie made a single pair of
-    a short-handed team carry double the load all tournament.
+    Leg *n* is pair *n* on both sides, so a team's first pair always meets the
+    other team's first pair. That alignment is what makes manual tiered pairing
+    work at all — order your pairs strongest-first on every team and the draw
+    gives you advanced-v-advanced, intermediate-v-intermediate.
+
+    Only the overflow legs deviate: a team with fewer pairs than there are legs
+    has to field someone twice, and which pair that is rotates with the tie so
+    the extra shift moves around instead of always landing on pair 1.
     """
-    return (tie_index * games_per_tie + leg_index) % pair_count
+    if pair_count > games_per_tie:
+        # More pairs than legs — only possible when the organizer sets the count
+        # below the largest roster. Slide the window across ties so the extras
+        # still get on court; alignment gives way, since not every pair can play
+        # in a tie that is too short to hold them.
+        return (tie_index * games_per_tie + leg_index) % pair_count
+    if leg_index < pair_count:
+        return leg_index
+    return (tie_index + (leg_index - pair_count)) % pair_count
 
 
 async def generate_franchise_draw(

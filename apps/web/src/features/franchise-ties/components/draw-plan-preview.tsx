@@ -107,6 +107,12 @@ export function DrawPlanPreview({ tournamentId }: { tournamentId: string }) {
             generating if you would rather everyone played the same number.
           </p>
         )}
+        {short.length > 0 && (
+          <p>
+            Pair 1 meets pair 1, pair 2 meets pair 2, and so on. Teams that are a pair short field
+            someone twice in the last match of each fixture, so only that match is unmatched.
+          </p>
+        )}
         {drawsPossible && (
           <p>
             With {perFixture} matches a fixture can finish level — a drawn fixture is worth 1 point

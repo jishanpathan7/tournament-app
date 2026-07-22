@@ -282,6 +282,13 @@ export function ManualPairingBuilder({
           <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
             Pairs ({run.teams.length})
           </p>
+          {/* The order is not cosmetic: leg N of every fixture is pair N against
+              the other team's pair N. Order each team the same way — strongest
+              first, say — and you get advanced-v-advanced matchups. */}
+          <p className="text-muted-foreground text-xs">
+            P1 plays the other team&apos;s P1, P2 plays their P2, and so on. Order these the same
+            way on every team to control who faces whom.
+          </p>
           <div className="flex flex-col gap-2">
             {run.teams.map((team, i) => {
               const members = team.memberIds
@@ -299,6 +306,9 @@ export function ManualPairingBuilder({
                     <span className="text-muted-foreground font-mono text-xs">P{i + 1}</span>
                     <span className="font-semibold">
                       {members.map((m) => m.displayName).join(" + ")}
+                    </span>
+                    <span className="text-muted-foreground text-xs">
+                      {members.map((m) => skillMeta(m.skillLevel).label).join(" · ")}
                     </span>
                     {team.locked && <Lock className="h-3.5 w-3.5 text-emerald-600" />}
                   </div>

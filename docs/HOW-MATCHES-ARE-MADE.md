@@ -138,7 +138,11 @@ Sizing to the largest team is what guarantees **nobody sits out**. A team with f
 
 > **Note:** when the number of matches per fixture is even, a fixture can finish level — a **drawn fixture**, worth 1 point to each team.
 
-Because pairs were built to roughly equal strength in step 2, pair 1 vs pair 1 is a fair match — not the strongest against the weakest.
+**Pair 1 always meets pair 1**, pair 2 meets pair 2, and so on. With automatic pairing that hardly matters — every pair is built to the same strength anyway.
+
+It matters a great deal if you pair **manually**. Manual mode has no skill rule at all: you can put two advanced players together. If you then order each team's pairs the same way — strongest first, say — the draw gives you advanced-v-advanced, intermediate-v-intermediate. Order one team differently and you have quietly set an advanced pair against a beginner pair.
+
+A team that is a pair short fields someone twice in the last match of a fixture, so only that one match is unmatched.
 
 ---
 
