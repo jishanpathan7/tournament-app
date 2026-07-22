@@ -9,6 +9,7 @@ import {
   saveSession,
   SESSION_VERSION,
 } from "@/features/squads/components/draft-ceremony/ceremony-session";
+import { skillKeyOf } from "@/features/squads/components/draft-ceremony/power-slots";
 import {
   DEFAULT_SETTINGS,
   WILDCARD_PICK_COUNT,
@@ -332,10 +333,16 @@ export function useCeremony(tournamentId: string) {
   );
 
   const buildContext = useCallback(
-    (cardId: PowerCardId, squadId: string, targetSquadId?: string): CardContext => ({
+    (
+      cardId: PowerCardId,
+      squadId: string,
+      targetSquadId?: string,
+      chosenSwap?: CardContext["chosenSwap"],
+    ): CardContext => ({
       cardId,
       squadId,
       targetSquadId,
+      chosenSwap,
       squads,
       teamCards,
       port,
@@ -377,8 +384,13 @@ export function useCeremony(tournamentId: string) {
 
   /** Preview a play without mutating (drives the confirm dialog). */
   const previewCard = useCallback(
-    (cardId: PowerCardId, squadId: string, targetSquadId?: string): CardPreview | null =>
-      enginePreview(cardId, buildContext(cardId, squadId, targetSquadId)),
+    (
+      cardId: PowerCardId,
+      squadId: string,
+      targetSquadId?: string,
+      chosenSwap?: CardContext["chosenSwap"],
+    ): CardPreview | null =>
+      enginePreview(cardId, buildContext(cardId, squadId, targetSquadId, chosenSwap)),
     [buildContext],
   );
 
@@ -388,8 +400,16 @@ export function useCeremony(tournamentId: string) {
    * moved players so the roster stays in sync.
    */
   const playCard = useCallback(
-    async (cardId: PowerCardId, squadId: string, targetSquadId?: string): Promise<PowerEvent[]> => {
-      const { events } = await enginePlay(cardId, buildContext(cardId, squadId, targetSquadId));
+    async (
+      cardId: PowerCardId,
+      squadId: string,
+      targetSquadId?: string,
+      chosenSwap?: CardContext["chosenSwap"],
+    ): Promise<PowerEvent[]> => {
+      const { events } = await enginePlay(
+        cardId,
+        buildContext(cardId, squadId, targetSquadId, chosenSwap),
+      );
       setTeamCards((prev) => reduceTeamCards(prev, events));
       // Mirror every consumption into the spent log so the rail can show it.
       setSpentCards((prev) => {
@@ -585,10 +605,19 @@ export function useCeremony(tournamentId: string) {
     .map((id) => squads.find((s) => s.id === id))
     .filter((s): s is SquadView => s !== undefined);
 
+  // Players still unassigned on each wheel — the settings panel needs this to
+  // warn when a tier is too thin to hold the cards configured for it.
+  const poolSizeBySkill = allUnassigned.reduce<Record<string, number>>((acc, p) => {
+    const key = skillKeyOf(p.skillLevel ?? null);
+    acc[key] = (acc[key] ?? 0) + 1;
+    return acc;
+  }, {});
+
   return {
     phase,
     squads,
     pool,
+    poolSizeBySkill,
     skillGroups,
     resolvedSkill,
     totalRemaining,

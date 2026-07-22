@@ -125,7 +125,17 @@ async def squad_pair_map(
             code="pairing_mismatch",
         )
 
-    squad_pairs: dict[uuid.UUID, list[Participant]] = defaultdict(list)
+    # Ordered strongest-first, because leg N of a tie is pair N on both sides.
+    # Ordering by strength is what makes that alignment MEAN something: the
+    # strongest pair of one team meets the strongest of the other. Left in
+    # creation order it only held if every captain happened to enter their pairs
+    # in the same sequence — a convention nothing enforced, and one that silently
+    # set an advanced pair against a beginner pair when it slipped.
+    #
+    # Auto-paired squads are unaffected in practice: the fold builds every pair to
+    # the same target strength, so the sort is near-flat and creation order breaks
+    # the ties.
+    scored: dict[uuid.UUID, list[tuple[Decimal, Any, Participant]]] = defaultdict(list)
     for pt, pair in zip(all_proposed, pairs, strict=True):
         reg_ids = [uuid.UUID(str(r)) for r in (pt.member_ids or [])]
         squad_ids = {membership[r] for r in reg_ids if r in membership}
@@ -134,15 +144,50 @@ async def squad_pair_map(
                 "each doubles pair must belong to exactly one franchise team",
                 code="pair_squad_ambiguous",
             )
-        squad_pairs[next(iter(squad_ids))].append(pair)
-    return dict(squad_pairs)
+        scored[next(iter(squad_ids))].append((pt.strength or Decimal(0), pt.created_at, pair))
+
+    return {
+        squad_id: [pair for _, _, pair in sorted(rows, key=lambda r: (-r[0], r[1]))]
+        for squad_id, rows in scored.items()
+    }
 
 
 def _default_games_per_tie(squad_pairs: dict[uuid.UUID, list[Participant]]) -> int:
+    """Legs per tie: the LARGEST team's pair count, so nobody is left out.
+
+    This used to take the smallest, which silently stranded the extra pairs of a
+    bigger team — with 8 pairs against a 7-pair field, the 8th pair was never
+    reachable and those two players went home having played nothing. Sizing to
+    the largest team means every pair appears in every tie; a smaller team simply
+    fields one of its pairs twice (see ``_leg_pair_index``).
+    """
     counts = [len(v) for v in squad_pairs.values()]
     if not counts:
         return 1
-    return max(1, min(counts))
+    return max(1, max(counts))
+
+
+def _leg_pair_index(tie_index: int, leg_index: int, games_per_tie: int, pair_count: int) -> int:
+    """Which pair a squad fields for this leg.
+
+    Leg *n* is pair *n* on both sides, so a team's first pair always meets the
+    other team's first pair. That alignment is what makes manual tiered pairing
+    work at all — order your pairs strongest-first on every team and the draw
+    gives you advanced-v-advanced, intermediate-v-intermediate.
+
+    Only the overflow legs deviate: a team with fewer pairs than there are legs
+    has to field someone twice, and which pair that is rotates with the tie so
+    the extra shift moves around instead of always landing on pair 1.
+    """
+    if pair_count > games_per_tie:
+        # More pairs than legs — only possible when the organizer sets the count
+        # below the largest roster. Slide the window across ties so the extras
+        # still get on court; alignment gives way, since not every pair can play
+        # in a tie that is too short to hold them.
+        return (tie_index * games_per_tie + leg_index) % pair_count
+    if leg_index < pair_count:
+        return leg_index
+    return (tie_index + (leg_index - pair_count)) % pair_count
 
 
 async def generate_franchise_draw(
@@ -382,7 +427,7 @@ async def advance_franchise_knockout(
     )
     games_per_tie = int(cfg.get("gamesPerTie") or 1)
     expanded = 0
-    for tie in await repo.list_tie_matches(session, org_id, stage_id):
+    for tie_index, tie in enumerate(await repo.list_tie_matches(session, org_id, stage_id)):
         if tie.status not in (MatchStatus.SCHEDULED.value, MatchStatus.LIVE.value):
             continue
         if len(tie.participants) < 2:
@@ -395,6 +440,7 @@ async def advance_franchise_knockout(
             tie=tie,
             pairs_by_squad=pairs_by_squad,
             games_per_tie=games_per_tie,
+            tie_index=tie_index,
         )
     await session.flush()
     return {"expanded": expanded}
@@ -409,8 +455,14 @@ async def expand_tie_legs(
     tie: Match,
     pairs_by_squad: dict[uuid.UUID, list[Participant]],
     games_per_tie: int,
+    tie_index: int = 0,
 ) -> int:
-    """Materialize doubles legs for a tie with both squads known. Idempotent."""
+    """Materialize doubles legs for a tie with both squads known. Idempotent.
+
+    ``tie_index`` rotates which pair starts the tie, so a team fielding fewer
+    pairs than there are legs doubles up a different pair each time instead of
+    working the same one twice in every tie.
+    """
     if await repo.tie_has_legs(session, org_id, tie.id):
         return 0
 
@@ -451,8 +503,12 @@ async def expand_tie_legs(
 
     leg_count = 0
     for leg_index in range(games_per_tie):
-        home_pair = home_pairs[leg_index % len(home_pairs)]
-        away_pair = away_pairs[leg_index % len(away_pairs)]
+        home_pair = home_pairs[
+            _leg_pair_index(tie_index, leg_index, games_per_tie, len(home_pairs))
+        ]
+        away_pair = away_pairs[
+            _leg_pair_index(tie_index, leg_index, games_per_tie, len(away_pairs))
+        ]
         leg = Match(
             organization_id=org_id,
             tournament_id=tournament_id,
@@ -569,6 +625,7 @@ async def _persist_franchise_structure(
             tie=tie,
             pairs_by_squad=pairs_by_squad,
             games_per_tie=games_per_tie,
+            tie_index=tie_count - 1,
         )
 
     await session.flush()

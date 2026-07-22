@@ -1,11 +1,17 @@
 /**
  * 🔄 Jo Tera Hai Wo Mera — targeted 1-for-1 player swap with another team.
  *
- * Picks the closest-skill non-captain pair (keeps balance barely changed; the
- * 1-for-1 trade keeps sizes identical). BLOCKED if the target holds Dabur
- * Immunity — both cards are then consumed. Behavior is a faithful port of the
- * legacy `swapBetween`; the only forthcoming change (P0) is making the four
- * mutations atomic behind a single port method + a preview/confirm dialog.
+ * The raiding captain chooses BOTH players, and the two must share a skill
+ * level. That is stricter than the old behaviour, which auto-picked the
+ * closest-skill pair and would happily trade advanced for intermediate when
+ * nothing nearer existed. Requiring an exact match means a swap leaves both
+ * teams' skill totals mathematically unchanged, so card play can never erode
+ * the balance the draft worked to produce.
+ *
+ * Captains are never swappable — they are the team's identity on screen.
+ * BLOCKED if the target holds Dabur Immunity; both cards are then consumed.
+ * When no same-skill pair exists the raid is blocked and the card is NOT
+ * consumed, so the captain can go after a different team.
  */
 
 import { registerPowerCard } from "../registry";
@@ -17,23 +23,56 @@ function eligible(sq: SquadView): SquadMemberView[] {
   return sq.members.filter((m) => m.registrationId !== sq.captainRegistrationId);
 }
 
-/** Closest-skill pair between two teams (min |skillWeight| difference). */
-function closestPair(
+/**
+ * Skill bucket a player trades within. Players with no recorded level form
+ * their own group rather than acting as wildcards — otherwise "unspecified"
+ * would be a back door to the advanced-for-beginner trade the rule forbids.
+ */
+export function skillBucket(member: SquadMemberView): string {
+  return member.skillLevel ?? "__unspecified__";
+}
+
+export function sameSkill(a: SquadMemberView, b: SquadMemberView): boolean {
+  return skillBucket(a) === skillBucket(b);
+}
+
+/**
+ * Every legal trade between two teams: non-captains on both sides, matched on
+ * skill. Drives the picker's list and the "is this raid possible at all" check.
+ */
+export function legalSwaps(
   from: SquadView,
   to: SquadView,
-): { a: SquadMemberView; b: SquadMemberView } | null {
-  const fromPlayers = eligible(from);
-  const toPlayers = eligible(to);
-  if (fromPlayers.length === 0 || toPlayers.length === 0) return null;
-
-  let best: { a: SquadMemberView; b: SquadMemberView; diff: number } | null = null;
-  for (const a of fromPlayers) {
-    for (const b of toPlayers) {
-      const diff = Math.abs(a.skillWeight - b.skillWeight);
-      if (!best || diff < best.diff) best = { a, b, diff };
+): { a: SquadMemberView; b: SquadMemberView }[] {
+  const out: { a: SquadMemberView; b: SquadMemberView }[] = [];
+  for (const a of eligible(from)) {
+    for (const b of eligible(to)) {
+      if (sameSkill(a, b)) out.push({ a, b });
     }
   }
-  return best ? { a: best.a, b: best.b } : null;
+  return out;
+}
+
+/**
+ * The pair to act on: the captain's choice when they made one, otherwise the
+ * first legal pair as a suggestion so a one-click confirm still works. A choice
+ * that breaks the rules is rejected rather than silently corrected — a captain
+ * must never be told a swap happened that isn't the one they picked.
+ */
+function resolvePair(
+  from: SquadView,
+  to: SquadView,
+  chosen: CardContext["chosenSwap"],
+): { a: SquadMemberView; b: SquadMemberView } | null {
+  const legal = legalSwaps(from, to);
+  if (!chosen) return legal[0] ?? null;
+  return (
+    legal.find(
+      (p) =>
+        p.a.registrationId === chosen.fromRegistrationId &&
+        p.b.registrationId === chosen.toRegistrationId,
+    ) ?? null
+  );
 }
 
 function resolveTeams(ctx: CardContext) {
@@ -66,9 +105,12 @@ export const joTeraHaiWoMera: PowerCard = {
       };
     }
 
-    const pair = closestPair(from, to);
+    const pair = resolvePair(from, to, ctx.chosenSwap);
     if (!pair) {
-      return { ok: false, summary: "No eligible players to swap", reason: "no-players" };
+      const summary = ctx.chosenSwap
+        ? "Those two are not the same skill level"
+        : `No same-skill players to trade with ${to.name}`;
+      return { ok: false, summary, reason: "no-players" };
     }
     return {
       ok: true,
@@ -93,7 +135,7 @@ export const joTeraHaiWoMera: PowerCard = {
       };
     }
 
-    const pair = closestPair(from, to);
+    const pair = resolvePair(from, to, ctx.chosenSwap);
     if (!pair) {
       // No eligible players — the swap card is NOT consumed (re-playable).
       return {

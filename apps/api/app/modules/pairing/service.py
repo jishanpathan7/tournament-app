@@ -268,13 +268,20 @@ async def create_manual_pair(
                 f"Registration {mid} is already paired in this run", code="already_paired"
             )
 
+    # Score it like any other pair. Left at zero, a manual pair looked weightless
+    # everywhere strength is read — including the draw, which orders a squad's
+    # pairs by strength so pair 1 meets pair 1.
+    weights = {str(r.id): ctx.profile.skill_weight(r.skill_level) for r in ctx.entrants}
+    target, max_dev = _run_bounds(run)
+    strength = sum((weights.get(str(m), Decimal(0)) for m in member_ids), Decimal(0))
+
     session.add(
         ProposedTeam(
             organization_id=org_id,
             pairing_run_id=run.id,
             member_ids=[str(m) for m in member_ids],  # stored as str UUIDs per schema
-            strength=Decimal(0),
-            confidence=Decimal(0),
+            strength=strength,
+            confidence=pairing_confidence(strength, target, max_dev),
             reasons=["Manually created"],
             locked=False,
             team_name=None,

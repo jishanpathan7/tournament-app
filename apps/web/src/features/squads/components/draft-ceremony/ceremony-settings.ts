@@ -11,10 +11,14 @@
  * affected.
  */
 
+import type { SkillKey } from "@/features/squads/components/draft-ceremony/power-slots";
 import type { PowerCardId } from "@/features/squads/components/draft-ceremony/power-cards/types";
 
 /** Slots a card gets when the organizer has not set a count for it. */
 export const DEFAULT_CARD_SLOTS = 1;
+
+/** Counts for one wheel: card id → how many of that card sit on it. */
+export type WheelCardSlots = Partial<Record<PowerCardId, number>>;
 
 export type CeremonySpeed = "relaxed" | "normal" | "fast";
 
@@ -30,17 +34,20 @@ export interface CeremonySettings {
   /** Master gate for surprise Power Slots woven into the wheel. */
   powerSlots: boolean;
   /**
-   * How many slots each card gets on every wheel — the deck composition.
+   * Deck composition **per wheel** — outer key is the skill tier, inner key the
+   * card. Tiers hold very different numbers of players (advanced is thin,
+   * intermediate is crowded), so one shared count made powers feel commonplace
+   * on the small wheel and absent on the big one.
    *
    * Exact counts rather than a total, because a total left the identity of each
    * slot to an independent coin flip: six slots could land four Meri Marzi and no
    * Jo Tera Hai Wo Mera. Asking for two of each now yields exactly two of each.
    *
-   * A count of 0 switches the card off, so this doubles as the on/off control.
-   * A card missing from the map falls back to 1, so a newly registered card
-   * appears without any settings migration.
+   * A count of 0 switches the card off on that wheel, so this doubles as the
+   * on/off control. Anything unset falls back to 1, so a newly registered card —
+   * or a tier the organizer never opened — works without a settings migration.
    */
-  cardSlots: Record<PowerCardId, number>;
+  cardSlots: Partial<Record<SkillKey, WheelCardSlots>>;
   /** Bundle the final three picks into a rapid-fire crescendo. */
   wildcardFinish: boolean;
   /** Playback speed — scales all animation durations. Organizer can change live. */

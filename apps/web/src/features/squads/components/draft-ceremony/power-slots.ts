@@ -37,6 +37,31 @@ export function skillKeyOf(skillLevel: string | null): SkillKey {
   return "unknown";
 }
 
+/** Human label for a wheel, used in the settings tier switcher. */
+export const SKILL_LABELS: Record<SkillKey, string> = {
+  advanced: "Advanced",
+  intermediate: "Intermediate",
+  beginner: "Beginner",
+  unknown: "Unspecified",
+};
+
+/**
+ * How many of each card actually fit on a wheel.
+ *
+ * `buildWheelSlots` never places more cards than players, so on a thin wheel
+ * some configured cards simply do not appear. That clamp is deliberate — a wheel
+ * of mostly powers stops being a draft — but it used to happen silently, and the
+ * organizer only found out by watching a card never turn up. Returns what was
+ * asked for, what fits, and the shortfall so settings can say so up front.
+ */
+export function wheelDeckCapacity(
+  requested: number,
+  playerCount: number,
+): { requested: number; fits: number; dropped: number } {
+  const fits = Math.min(requested, playerCount);
+  return { requested, fits, dropped: Math.max(0, requested - fits) };
+}
+
 export type WheelSlot =
   | { type: "player"; id: string; player: UnassignedRegistrationView }
   | { type: "power"; id: string; power: PowerKind };
@@ -96,4 +121,23 @@ function shuffle<T>(items: T[]): T[] {
     [out[i], out[j]] = [out[j]!, out[i]!];
   }
   return out;
+}
+
+/**
+ * The deck for one wheel: each card repeated as many times as the organizer asked
+ * for on *that* tier.
+ *
+ * Falls back to `fallback` (1) for any card the organizer never touched, so a
+ * tier that has never been opened still behaves exactly as it did before per-wheel
+ * counts existed, and a newly registered card appears without a migration.
+ */
+export function buildDeckForWheel(
+  cardIds: PowerCardId[],
+  counts: Partial<Record<PowerCardId, number>> | undefined,
+  fallback: number,
+): PowerCardId[] {
+  return cardIds.flatMap((id) => {
+    const n = counts?.[id] ?? fallback;
+    return Array.from({ length: Math.max(0, n) }, () => id);
+  });
 }

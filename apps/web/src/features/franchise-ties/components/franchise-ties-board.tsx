@@ -17,6 +17,7 @@ import {
   useGenerateFranchiseDraw,
   useGenerateFranchiseKnockoutDraw,
 } from "@/features/franchise-ties/use-franchise-ties";
+import { DrawPlanPreview } from "@/features/franchise-ties/components/draw-plan-preview";
 import { SquadStandings } from "@/features/franchise-ties/components/squad-standings";
 import { useDivisions, useStages } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
@@ -104,15 +105,20 @@ export function FranchiseTiesBoard({
       ) : board.isError ? (
         <ErrorState error={board.error} onRetry={() => board.refetch()} />
       ) : !board.data?.ties.length ? (
-        <EmptyState
-          icon={Trophy}
-          title={isKnockout ? "No knockout finals yet" : "No team draw yet"}
-          description={
-            isKnockout
-              ? "Finish the round-robin stage, then generate single-elimination finals seeded from standings."
-              : "Assign players to teams, publish doubles pairings for each team, then generate the draw."
-          }
-        />
+        <div className="flex flex-col gap-4">
+          {/* Show the plan BEFORE committing — the draw runs once, and undoing it
+              means clearing and rescheduling everything. */}
+          {!isKnockout && <DrawPlanPreview tournamentId={tournamentId} />}
+          <EmptyState
+            icon={Trophy}
+            title={isKnockout ? "No knockout finals yet" : "No team draw yet"}
+            description={
+              isKnockout
+                ? "Finish the round-robin stage, then generate single-elimination finals seeded from standings."
+                : "Assign players to teams, publish doubles pairings for each team, then generate the draw."
+            }
+          />
+        </div>
       ) : (
         <div className="flex flex-col gap-4">
           {board.data.ties.map((tie) => (

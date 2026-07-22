@@ -15,6 +15,7 @@ import {
   type CeremonySettings,
 } from "@/features/squads/components/draft-ceremony/ceremony-settings";
 import { findCard } from "@/features/squads/components/draft-ceremony/power-cards";
+import { SKILL_KEYS } from "@/features/squads/components/draft-ceremony/power-slots";
 import type { TeamCards } from "@/features/squads/components/draft-ceremony/power-cards/engine";
 import type {
   ActivityEntry,
@@ -88,11 +89,34 @@ export function loadSession(tournamentId: string): CeremonySession | null {
       // Layer over the defaults so a blob written before a setting existed still
       // restores — otherwise the missing field lands as undefined and the
       // ceremony crashes on first read.
-      settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+      settings: {
+        ...DEFAULT_SETTINGS,
+        ...parsed.settings,
+        cardSlots: migrateCardSlots(parsed.settings?.cardSlots),
+      },
     };
   } catch {
     return null;
   }
+}
+
+/**
+ * Card counts used to be one flat map shared by every wheel; they are now keyed
+ * by skill tier. A session saved under the old shape would otherwise restore a
+ * `{cardId: number}` map where a `{tier: {cardId: number}}` one is expected, and
+ * every count would read as undefined mid-ceremony. Lift the old flat map onto
+ * every tier, which is exactly what it used to mean.
+ */
+function migrateCardSlots(stored: unknown): CeremonySettings["cardSlots"] {
+  if (!stored || typeof stored !== "object") return DEFAULT_SETTINGS.cardSlots;
+  const entries = Object.entries(stored as Record<string, unknown>);
+  const isFlat = entries.some(([, v]) => typeof v === "number");
+  if (!isFlat) return stored as CeremonySettings["cardSlots"];
+  const flat = Object.fromEntries(entries.filter(([, v]) => typeof v === "number")) as Record<
+    string,
+    number
+  >;
+  return Object.fromEntries(SKILL_KEYS.map((k) => [k, { ...flat }]));
 }
 
 export function clearSession(tournamentId: string): void {
