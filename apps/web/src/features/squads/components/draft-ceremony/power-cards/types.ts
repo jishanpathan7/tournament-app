@@ -79,6 +79,12 @@ export interface CardContext {
   squadId: string;
   /** Target team for a `targeted` play. */
   targetSquadId?: string;
+  /**
+   * Registration ids for a swap the captain chose by hand. Cards validate this
+   * against their own rules; when absent a card may fall back to a suggestion of
+   * its own, so an unattended play still does something sensible.
+   */
+  chosenSwap?: { fromRegistrationId: string; toRegistrationId: string };
   /** Live board snapshot (plain data). */
   squads: SquadView[];
   /** Cards each team currently holds. */
