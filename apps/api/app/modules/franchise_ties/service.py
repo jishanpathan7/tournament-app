@@ -125,7 +125,17 @@ async def squad_pair_map(
             code="pairing_mismatch",
         )
 
-    squad_pairs: dict[uuid.UUID, list[Participant]] = defaultdict(list)
+    # Ordered strongest-first, because leg N of a tie is pair N on both sides.
+    # Ordering by strength is what makes that alignment MEAN something: the
+    # strongest pair of one team meets the strongest of the other. Left in
+    # creation order it only held if every captain happened to enter their pairs
+    # in the same sequence — a convention nothing enforced, and one that silently
+    # set an advanced pair against a beginner pair when it slipped.
+    #
+    # Auto-paired squads are unaffected in practice: the fold builds every pair to
+    # the same target strength, so the sort is near-flat and creation order breaks
+    # the ties.
+    scored: dict[uuid.UUID, list[tuple[Decimal, Any, Participant]]] = defaultdict(list)
     for pt, pair in zip(all_proposed, pairs, strict=True):
         reg_ids = [uuid.UUID(str(r)) for r in (pt.member_ids or [])]
         squad_ids = {membership[r] for r in reg_ids if r in membership}
@@ -134,8 +144,12 @@ async def squad_pair_map(
                 "each doubles pair must belong to exactly one franchise team",
                 code="pair_squad_ambiguous",
             )
-        squad_pairs[next(iter(squad_ids))].append(pair)
-    return dict(squad_pairs)
+        scored[next(iter(squad_ids))].append((pt.strength or Decimal(0), pt.created_at, pair))
+
+    return {
+        squad_id: [pair for _, _, pair in sorted(rows, key=lambda r: (-r[0], r[1]))]
+        for squad_id, rows in scored.items()
+    }
 
 
 def _default_games_per_tie(squad_pairs: dict[uuid.UUID, list[Participant]]) -> int:

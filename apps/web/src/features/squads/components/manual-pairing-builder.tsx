@@ -61,6 +61,10 @@ export function ManualPairingBuilder({
 
   const entrantsMap = new Map<string, EntrantView>(run.entrants.map((e) => [e.registrationId, e]));
 
+  // Same order the draw uses (strongest first, creation order breaking ties), so
+  // the P-number shown here is the P-number that plays the other team's P-number.
+  const orderedTeams = [...run.teams].sort((a, b) => b.strength - a.strength);
+
   const pairedIds = new Set(run.teams.flatMap((t) => t.memberIds));
   const availableEntrants = run.entrants.filter((e) => !pairedIds.has(e.registrationId));
 
@@ -282,15 +286,16 @@ export function ManualPairingBuilder({
           <p className="text-muted-foreground text-xs font-semibold uppercase tracking-widest">
             Pairs ({run.teams.length})
           </p>
-          {/* The order is not cosmetic: leg N of every fixture is pair N against
-              the other team's pair N. Order each team the same way — strongest
-              first, say — and you get advanced-v-advanced matchups. */}
+          {/* Numbered strongest-first, matching the order the draw uses. Leg N of
+              a fixture is pair N on both sides, so P1 always meets the other
+              team's P1 — no reliance on captains entering pairs in the same
+              sequence. */}
           <p className="text-muted-foreground text-xs">
-            P1 plays the other team&apos;s P1, P2 plays their P2, and so on. Order these the same
-            way on every team to control who faces whom.
+            Ranked strongest first. P1 plays the other team&apos;s P1, P2 plays their P2, and so on
+            — so pair up by skill and the matchups follow.
           </p>
           <div className="flex flex-col gap-2">
-            {run.teams.map((team, i) => {
+            {orderedTeams.map((team, i) => {
               const members = team.memberIds
                 .map((id) => entrantsMap.get(id))
                 .filter(Boolean) as EntrantView[];

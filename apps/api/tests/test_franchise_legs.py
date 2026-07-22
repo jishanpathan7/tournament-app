@@ -76,3 +76,33 @@ def test_only_the_overflow_leg_repeats_a_pair():
         assert len(repeated) == 1
         doubled.append(repeated[0])
     assert len(set(doubled)) > 1, "the same pair carried the extra shift every tie"
+
+
+def test_strength_order_makes_the_alignment_mean_something():
+    """Leg N is pair N on both sides, so ordering each squad's pairs
+    strongest-first is what puts the two strongest pairs on the same court.
+
+    Ordering used to be creation order, which only produced like-for-like
+    matchups if every captain happened to enter their pairs in the same
+    sequence — nothing enforced that, and when it slipped an advanced pair
+    silently met a beginner pair.
+    """
+    from decimal import Decimal
+
+    # (strength, created_at, label) as squad_pair_map builds them.
+    team_a = [(Decimal(4), 1, "A-mixed"), (Decimal(6), 2, "A-advanced"), (Decimal(2), 3, "A-weak")]
+    team_b = [(Decimal(6), 1, "B-advanced"), (Decimal(2), 2, "B-weak"), (Decimal(4), 3, "B-mixed")]
+
+    def order(rows):
+        return [n for _, _, n in sorted(rows, key=lambda r: (-r[0], r[1]))]
+
+    a, b = order(team_a), order(team_b)
+
+    # Entered in different sequences, but both come out strongest-first.
+    assert a == ["A-advanced", "A-mixed", "A-weak"]
+    assert b == ["B-advanced", "B-mixed", "B-weak"]
+
+    # Leg N pairs them up like for like.
+    for leg in range(3):
+        i = _leg_pair_index(0, leg, 3, 3)
+        assert a[i].split("-")[1] == b[i].split("-")[1]

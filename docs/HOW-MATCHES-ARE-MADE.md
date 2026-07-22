@@ -140,7 +140,9 @@ Sizing to the largest team is what guarantees **nobody sits out**. A team with f
 
 **Pair 1 always meets pair 1**, pair 2 meets pair 2, and so on. With automatic pairing that hardly matters — every pair is built to the same strength anyway.
 
-It matters a great deal if you pair **manually**. Manual mode has no skill rule at all: you can put two advanced players together. If you then order each team's pairs the same way — strongest first, say — the draw gives you advanced-v-advanced, intermediate-v-intermediate. Order one team differently and you have quietly set an advanced pair against a beginner pair.
+It matters a great deal if you pair **manually**. Manual mode has no skill rule at all — you can put two advanced players together.
+
+**Pairs are ranked strongest first automatically**, on every team, so P1 is always a team's strongest pair. You don't have to enter them in any particular order. Make an advanced pair on each team and they will meet each other.
 
 A team that is a pair short fields someone twice in the last match of a fixture, so only that one match is unmatched.
 
