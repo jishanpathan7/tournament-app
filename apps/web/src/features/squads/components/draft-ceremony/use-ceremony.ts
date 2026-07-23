@@ -179,6 +179,10 @@ export function useCeremony(tournamentId: string) {
   const draftOrderRef = useRef<string[]>([]);
   // Total picks the ceremony will make — fixed once started (drives wildcard).
   const totalPicksRef = useRef<number>(0);
+  // Mirrors pickIndex for async flows: a re-roll reverts a pick and re-assigns in
+  // ONE event, so closures over the pickIndex state are one step behind — the
+  // ref is what assign() trusts for "where are we in the sequence right now".
+  const pickIndexRef = useRef(0);
 
   const board = squadsQuery.data;
   const allUnassigned = board?.unassigned ?? [];
@@ -217,6 +221,7 @@ export function useCeremony(tournamentId: string) {
     draftOrderRef.current = saved.draftOrder;
     totalPicksRef.current = saved.totalPicks;
     assignedIds.current = new Set(saved.assignedIds);
+    pickIndexRef.current = saved.pickIndex;
     setPickIndex(saved.pickIndex);
     setHistory(saved.history);
     setTeamCards(saved.teamCards);
@@ -496,6 +501,7 @@ export function useCeremony(tournamentId: string) {
     const totalPoolWeight = allUnassigned.reduce((sum, u) => sum + u.skillWeight, 0);
     draftOrderRef.current = computeDraftOrder(squads, allUnassigned.length, totalPoolWeight);
     totalPicksRef.current = draftOrderRef.current.length;
+    pickIndexRef.current = 0;
     setPickIndex(0);
     setTeamCards({});
     setSpentCards({});
@@ -526,6 +532,9 @@ export function useCeremony(tournamentId: string) {
 
       assignedIds.current = new Set([...assignedIds.current, player.registrationId]);
 
+      // The ref, not the state, is the truth mid-event: a re-roll reverts and
+      // re-assigns inside one handler, where the state closure is a step behind.
+      const nextIndex = pickIndexRef.current + 1;
       const record: Assignment = {
         registrationId: player.registrationId,
         displayName: player.displayName,
@@ -533,13 +542,13 @@ export function useCeremony(tournamentId: string) {
         squadName: targetSquad.name,
         skillLevel: player.skillLevel,
         skillWeight: player.skillWeight,
-        pickNumber: history.length + 1,
+        pickNumber: nextIndex,
       };
       setHistory((h) => [...h, record]);
-      setPickIndex((p) => p + 1);
+      pickIndexRef.current = nextIndex;
+      setPickIndex(nextIndex);
 
       // Team completion: does this team have any picks left in the sequence?
-      const nextIndex = pickIndex + 1;
       const teamHasMorePicks = draftOrderRef.current.slice(nextIndex).some((id) => id === targetId);
       if (!teamHasMorePicks && targetSquad.name) {
         setJustCompletedSquadId(targetId);
@@ -584,7 +593,8 @@ export function useCeremony(tournamentId: string) {
     );
     setHistory((h) => h.slice(0, -1));
     // Step back in the pre-computed sequence — order never changes.
-    setPickIndex((p) => Math.max(0, p - 1));
+    pickIndexRef.current = Math.max(0, pickIndexRef.current - 1);
+    setPickIndex(pickIndexRef.current);
     setJustCompletedSquadId(null);
     if (phase === "complete") setPhase("main");
     await squadsQuery.refetch();

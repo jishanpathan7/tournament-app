@@ -1698,7 +1698,18 @@ function MainScreen({
   // stay put across spins, and only the picked player (and a landed power) are
   // removed. This is what makes powers land reliably and stop reshuffling every
   // spin. We rebuild only when the skill group changes or when data first arrives.
-  const [wheelSlots, setWheelSlots] = useState<WheelSlot[]>([]);
+  //
+  // A ref mirrors the state because runSpin/commitPick are async closures: a
+  // re-roll mutates the slots (returns the player to the wheel) and spins again
+  // in the SAME event, so reading the state snapshot would use the pre-mutation
+  // slot list — misaligning the landing segment from the committed player.
+  const [wheelSlots, setWheelSlotsState] = useState<WheelSlot[]>([]);
+  const wheelSlotsRef = useRef<WheelSlot[]>([]);
+  const setWheelSlots = (next: WheelSlot[] | ((prev: WheelSlot[]) => WheelSlot[])) => {
+    const value = typeof next === "function" ? next(wheelSlotsRef.current) : next;
+    wheelSlotsRef.current = value;
+    setWheelSlotsState(value);
+  };
   const builtForSkillRef = useRef<string | null | undefined>(undefined);
   useEffect(() => {
     const needsRebuild = builtForSkillRef.current !== resolvedSkill || wheelSlots.length === 0;
@@ -1761,9 +1772,13 @@ function MainScreen({
    * team still receives exactly one player, so balance is never affected. The
    * player is only committed at the end.
    */
-  async function runSpin() {
-    if (!wheelRef.current || !currentSquad) return;
-    const slots = wheelSlots;
+  async function runSpin(forSquadId?: string) {
+    // A re-roll spins for the team whose pick was just reverted — NOT the render's
+    // `currentSquad`, which is a stale closure already pointing at the next team
+    // on the clock by the time the re-roll button is clickable.
+    const spinningSquad = forSquadId ? squads.find((s) => s.id === forSquadId) : currentSquad;
+    if (!wheelRef.current || !spinningSquad) return;
+    const slots = wheelSlotsRef.current;
     const playerIdxs = slots.reduce<number[]>((acc, s, i) => {
       if (isPlayerSlot(s)) acc.push(i);
       return acc;
@@ -1795,11 +1810,11 @@ function MainScreen({
         // Landing AWARDS the card to the team on the clock — it does not fire now.
         landedPowerId = landed.id;
         setHighlightIndex(target);
-        onAwardCard(currentSquad.id, landed.power);
+        onAwardCard(spinningSquad.id, landed.power);
         const meta = getCard(landed.power);
         setPowerEvent({
           kind: landed.power,
-          detail: `${currentSquad.name} drew ${meta.emoji} ${meta.label}`,
+          detail: `${spinningSquad.name} drew ${meta.emoji} ${meta.label}`,
           // Say it out loud: landing on a power is a BONUS, not a wasted turn.
           // Without this the room reads the re-spin as the team losing a pick.
           note: "Bonus card — no pick lost. Spinning again for a player…",
@@ -1809,7 +1824,7 @@ function MainScreen({
 
         // Auto re-spin to a real player — the team's pick is unaffected.
         setHighlightIndex(null);
-        setRespinNote(`${currentSquad.name} still picks — bonus card awarded`);
+        setRespinNote(`${spinningSquad.name} still picks — bonus card awarded`);
         target = playerIdxs[Math.floor(Math.random() * playerIdxs.length)]!;
         await wheelRef.current.spin(target);
         setRespinNote(null);
@@ -1823,7 +1838,7 @@ function MainScreen({
     }
     const player = playerSlot.player;
 
-    const committed = await commitPick(player, landedPowerId, target);
+    const committed = await commitPick(player, landedPowerId, target, forSquadId);
     if (!committed) setSpinPhase("idle");
   }
 
@@ -1836,9 +1851,13 @@ function MainScreen({
     player: UnassignedRegistrationView,
     landedPowerId: string | null,
     highlight: number | null,
+    forSquadId?: string,
   ): Promise<boolean> {
-    const slots = wheelSlots;
-    const result = await onAssign(player);
+    const slots = wheelSlotsRef.current;
+    // Pass the squad explicitly when this pick belongs to a specific team (the
+    // re-roll path) — otherwise the hook would resolve the team from its own
+    // stale pickIndex closure and hand the player to the NEXT team on the clock.
+    const result = await onAssign(player, forSquadId);
     if (!result) return false;
 
     // Keep the wheel FIXED: drop only the picked player and the power that was just
@@ -2034,7 +2053,9 @@ function MainScreen({
 
       await onPlayCard(cardId, returning.squadId);
       setLastPick(null);
-      await runSpin();
+      // Spin FOR the team whose pick was reverted — the closure's currentSquad
+      // already points at the next team by the time the button is clicked.
+      await runSpin(returning.squadId);
     } finally {
       setIsRerolling(false);
     }
