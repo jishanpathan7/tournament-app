@@ -118,6 +118,70 @@ async def _win_payload_and_score(client: AsyncClient, match: dict) -> None:
     assert resp.status_code == 200, resp.text
 
 
+# ---- global public-slug uniqueness (a public URL resolves by slug alone) ----
+
+
+async def test_public_slug_must_be_globally_unique_across_orgs(app, client):
+    await _new_org(client)
+    _tid_a, slug = await _tournament(client, visibility="public")
+
+    # A second org cannot claim the same public slug — the public URL is resolved
+    # by slug alone across every org, so it has to be unique.
+    await _new_org(client)
+    dup = await client.post(
+        TOUR,
+        json={"name": "Dup", "slug": slug, "sportKey": "badminton", "visibility": "public"},
+        headers=_csrf(client),
+    )
+    assert dup.status_code == 409, dup.text
+    assert dup.json()["code"] == "public_slug_taken"
+
+    # …but it may reuse the slug PRIVATELY — a private event is never publicly resolved.
+    priv = await client.post(
+        TOUR,
+        json={"name": "Priv", "slug": slug, "sportKey": "badminton", "visibility": "private"},
+        headers=_csrf(client),
+    )
+    assert priv.status_code == 201, priv.text
+
+
+async def test_going_public_rejects_a_slug_another_org_already_owns(app, client):
+    shared = _slug()
+    await _new_org(client)
+    await _tournament(client, visibility="public", slug=shared)
+
+    await _new_org(client)
+    tid_b, _ = await _tournament(client, visibility="private", slug=shared)
+    # Flipping org B's private copy to public would collide with org A → rejected.
+    resp = await client.patch(
+        f"{TOUR}/{tid_b}", json={"visibility": "public"}, headers=_csrf(client)
+    )
+    assert resp.status_code == 409, resp.text
+    assert resp.json()["code"] == "public_slug_taken"
+
+
+async def test_public_resolver_is_deterministic_when_slugs_collide(app, client, db_session):
+    """Legacy data may hold a collision from before the write-time guard — the
+    resolver must return one row (the public one), never 500 with MultipleResultsFound."""
+    from sqlalchemy import text
+
+    from app.modules.public import repository as public_repo
+
+    await _new_org(client)
+    tid_a, slug = await _tournament(client, visibility="public")
+    await _new_org(client)
+    tid_b, _ = await _tournament(client, visibility="private", slug=slug)
+
+    # Force B to be publicly resolvable too, straight in the DB (bypassing the guard).
+    await db_session.execute(
+        text("UPDATE tournaments SET visibility = 'unlisted' WHERE id = :id"), {"id": tid_b}
+    )
+
+    resolved = await public_repo.get_tournament_by_slug(db_session, slug)
+    assert resolved is not None
+    assert str(resolved.id) == tid_a  # the fully-public event wins the tiebreak
+
+
 # ---- visibility gating ----
 
 

@@ -139,6 +139,16 @@ async def create_tournament(
         raise ValidationError(f"Unsupported sport {sport_key!r}", code="unsupported_sport")
     if await repo.get_tournament_by_slug(session, org_id, slug) is not None:
         raise ConflictError("That tournament slug is taken")
+    # A public/unlisted slug becomes a shareable URL resolved by slug alone across
+    # every org — so it must be globally unique, not just unique within this org,
+    # or the public page can't tell the two apart.
+    if visibility in (Visibility.PUBLIC, Visibility.UNLISTED) and await repo.public_slug_conflict(
+        session, slug
+    ):
+        raise ConflictError(
+            "That public link is already used by another event — choose a different slug",
+            code="public_slug_taken",
+        )
     profile = await _ensure_sport_profile(session, org_id, sport_key)
     tournament = Tournament(
         organization_id=org_id,
@@ -182,6 +192,17 @@ async def update_tournament(
     if name is not None:
         tournament.name = name
     if visibility is not None:
+        # Going public/unlisted claims the slug as a global public URL — reject if
+        # another org already resolves that same slug (see create_tournament).
+        if visibility in (
+            Visibility.PUBLIC,
+            Visibility.UNLISTED,
+        ) and await repo.public_slug_conflict(session, tournament.slug, exclude_id=tournament.id):
+            raise ConflictError(
+                "That public link is already used by another event — "
+                "rename this event's slug first",
+                code="public_slug_taken",
+            )
         tournament.visibility = visibility.value
     if starts_at is not None:
         tournament.starts_at = starts_at
