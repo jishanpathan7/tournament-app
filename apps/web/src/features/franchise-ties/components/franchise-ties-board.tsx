@@ -18,6 +18,7 @@ import {
   useGenerateFranchiseKnockoutDraw,
 } from "@/features/franchise-ties/use-franchise-ties";
 import { DrawPlanPreview } from "@/features/franchise-ties/components/draw-plan-preview";
+import { PairingTierCheckBadge } from "@/features/franchise-ties/components/pairing-tier-check-badge";
 import { SquadStandings } from "@/features/franchise-ties/components/squad-standings";
 import { useDivisions, useStages } from "@/features/tournaments/use-tournaments";
 import { useCan } from "@/hooks/use-permissions";
@@ -109,6 +110,9 @@ export function FranchiseTiesBoard({
           {/* Show the plan BEFORE committing — the draw runs once, and undoing it
               means clearing and rescheduling everything. */}
           {!isKnockout && <DrawPlanPreview tournamentId={tournamentId} />}
+          {/* And confirm the pairs are tier-aligned before generating, so an
+              off-sheet pair is caught here rather than on court. */}
+          {!isKnockout && <PairingTierCheckBadge stageId={stageId} />}
           <EmptyState
             icon={Trophy}
             title={isKnockout ? "No knockout finals yet" : "No team draw yet"}

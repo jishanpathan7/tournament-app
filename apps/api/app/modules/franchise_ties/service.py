@@ -26,10 +26,13 @@ from app.modules.franchise_ties.schemas import (
     FranchiseDrawSummary,
     FranchiseTiesBoardView,
     FranchiseTieView,
+    PairingTierCheckView,
     SquadStandingRow,
     SquadStandingsView,
+    SquadTierProfileView,
     TieLegView,
 )
+from app.modules.franchise_ties.tier_check import analyze_tier_alignment
 from app.modules.pairing import repository as pairing_repo
 from app.modules.squads import repository as squad_repo
 from app.modules.tournaments import repository as tour_repo
@@ -150,6 +153,80 @@ async def squad_pair_map(
         squad_id: [pair for _, _, pair in sorted(rows, key=lambda r: (-r[0], r[1]))]
         for squad_id, rows in scored.items()
     }
+
+
+async def pair_strengths_by_squad(
+    session: AsyncSession,
+    org_id: uuid.UUID,
+    division_id: uuid.UUID,
+    tournament_id: uuid.UUID,
+) -> dict[uuid.UUID, list[Decimal]]:
+    """squad_id → the strengths of its published pairs (unordered).
+
+    Reuses the exact same load + scoring the draw uses, so a tier check reads the
+    identical numbers the engine will pair on — never a re-derivation that could
+    drift from the real alignment.
+    """
+    # Reuse squad_pair_map purely for its validation (pairing published, counts
+    # match) and its squad-id set; it returns Participants, so re-read the actual
+    # strengths from the runs — strength is what alignment depends on.
+    ordered = await squad_pair_map(
+        session, org_id=org_id, division_id=division_id, tournament_id=tournament_id
+    )
+    runs = await pairing_repo.list_all_published_runs(session, org_id, division_id)
+    membership = await squad_repo.squad_membership_by_registration(session, org_id, tournament_id)
+    out: dict[uuid.UUID, list[Decimal]] = {sid: [] for sid in ordered}
+    for run in runs:
+        for pt in run.proposed_teams:
+            reg_ids = [uuid.UUID(str(r)) for r in (pt.member_ids or [])]
+            squad_ids = {membership[r] for r in reg_ids if r in membership}
+            if len(squad_ids) != 1:
+                continue
+            out.setdefault(next(iter(squad_ids)), []).append(pt.strength or Decimal(0))
+    return out
+
+
+async def get_pairing_tier_check(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    stage_id: uuid.UUID,
+) -> PairingTierCheckView:
+    """Report whether every squad's pairs form the same strength profile.
+
+    Read-only pre-flight for the organizer: run it after entering manual pairs and
+    before generating ties, so an off-sheet pair (which would set an advanced pair
+    against beginners) is caught up front instead of on court.
+    """
+    stage = await repo.get_stage(session, org_id, stage_id)
+    if stage is None:
+        raise NotFoundError("Stage not found")
+    division = await tour_repo.get_division(session, org_id, stage.division_id)
+    if division is None:
+        raise NotFoundError("Division not found")
+    tournament = await tour_repo.get_tournament(session, org_id, division.tournament_id)
+    if tournament is None:
+        raise NotFoundError("Tournament not found")
+
+    strengths = await pair_strengths_by_squad(session, org_id, division.id, tournament.id)
+    squads = await squad_repo.list_squads(session, org_id, tournament.id)
+    names = {s.id: s.name for s in squads}
+
+    report = analyze_tier_alignment(strengths, names)
+    return PairingTierCheckView(
+        aligned=report.aligned,
+        reference_profile=list(report.reference),
+        squads=[
+            SquadTierProfileView(
+                squad_id=s.squad_id,
+                squad_name=s.squad_name,
+                profile=list(s.profile),
+                aligned=s.aligned,
+            )
+            for s in report.squads
+        ],
+        deviating_squads=[s.squad_name for s in report.deviating],
+    )
 
 
 def _default_games_per_tie(squad_pairs: dict[uuid.UUID, list[Participant]]) -> int:

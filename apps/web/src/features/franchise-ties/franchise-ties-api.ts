@@ -52,8 +52,26 @@ export interface SquadStandingsView {
   rows: SquadStandingRow[];
 }
 
+export interface SquadTierProfileView {
+  squadId: string;
+  squadName: string;
+  profile: number[];
+  aligned: boolean;
+}
+
+export interface PairingTierCheckView {
+  aligned: boolean;
+  referenceProfile: number[];
+  squads: SquadTierProfileView[];
+  deviatingSquads: string[];
+}
+
 export function getFranchiseStandings(stageId: string): Promise<SquadStandingsView> {
   return apiGet<SquadStandingsView>(`/stages/${stageId}/franchise-standings`);
+}
+
+export function getPairingTierCheck(stageId: string): Promise<PairingTierCheckView> {
+  return apiGet<PairingTierCheckView>(`/stages/${stageId}/pairing-tier-check`);
 }
 
 export function getFranchiseTiesBoard(stageId: string): Promise<FranchiseTiesBoardView> {
