@@ -40,8 +40,17 @@ async def get_tournament_by_slug(session: AsyncSession, slug: str) -> Tournament
             Tournament.deleted_at.is_(None),
         )
         .options(selectinload(Tournament.organization))
+        # Write-time validation keeps public slugs globally unique, so this normally
+        # matches one row. Should legacy data ever hold a collision, resolve it
+        # deterministically — prefer a fully public event, then the most recent —
+        # rather than raising MultipleResultsFound and 500ing the public page.
+        .order_by(
+            (Tournament.visibility == Visibility.PUBLIC.value).desc(),
+            Tournament.created_at.desc(),
+        )
+        .limit(1)
     )
-    return (await session.execute(stmt)).scalar_one_or_none()
+    return (await session.execute(stmt)).scalars().first()
 
 
 async def search_tournaments(

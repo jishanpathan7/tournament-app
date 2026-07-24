@@ -15,7 +15,7 @@ from sqlalchemy import and_, delete, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.db.enums import ParticipantStatus
+from app.db.enums import ParticipantStatus, Visibility
 from app.db.models import (
     AuditLog,
     Division,
@@ -79,6 +79,28 @@ async def get_tournament_by_slug(
         _not_deleted(),
     )
     return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def public_slug_conflict(
+    session: AsyncSession, slug: str, *, exclude_id: uuid.UUID | None = None
+) -> bool:
+    """Does another *publicly resolvable* tournament already own this slug?
+
+    The public microsite resolves ``/t/{slug}`` by slug ALONE across every org, so
+    two orgs both publishing the same slug makes that lookup ambiguous (it used to
+    500). Slug uniqueness is only enforced per-org by the DB, so this cross-org
+    guard closes the gap at write time. Visible cross-org here via the additive
+    ``tournaments_public_read`` RLS policy (public/unlisted rows are readable by
+    anyone), so it works from an org-scoped request session.
+    """
+    stmt = select(Tournament.id).where(
+        Tournament.slug == slug,
+        Tournament.visibility.in_([Visibility.PUBLIC.value, Visibility.UNLISTED.value]),
+        _not_deleted(),
+    )
+    if exclude_id is not None:
+        stmt = stmt.where(Tournament.id != exclude_id)
+    return (await session.execute(stmt.limit(1))).first() is not None
 
 
 async def list_tournaments(session: AsyncSession, org_id: uuid.UUID) -> Sequence[Tournament]:
