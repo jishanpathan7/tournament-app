@@ -11,13 +11,15 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, TypeVar
 
 from fastapi import APIRouter, Depends, Query, Request, status
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import Response
 
 from app.api.deps import get_public_session
+from app.api.schemas import ApiModel
 from app.cache import get_json
 from app.cache import keys as cache_keys
 from app.cache import set_json
@@ -46,6 +48,33 @@ from app.modules.scoring.schemas import MatchResultEventView, MatchView, Standin
 from app.realtime.channels import tournament_channel
 
 router = APIRouter(prefix="/public", tags=["public"])
+
+_ModelT = TypeVar("_ModelT", bound=ApiModel)
+
+
+def _revive(model: type[_ModelT], hit: Any) -> _ModelT | None:
+    """Rebuild a cached view, or None if the blob no longer fits the schema.
+
+    A cache entry written by an older deploy (or otherwise malformed) must never
+    hard-500 a public read: returning None here makes the caller fall through and
+    rebuild from the database, overwriting the stale entry. Without this, one bad
+    blob in a shared Redis takes a page down until the key's TTL expires.
+    """
+    if not isinstance(hit, dict):
+        return None
+    try:
+        return model(**hit)
+    except ValidationError:
+        return None
+
+
+def _revive_list(model: type[_ModelT], hit: Any) -> list[_ModelT] | None:
+    if not isinstance(hit, list):
+        return None
+    try:
+        return [model(**row) for row in hit]
+    except (ValidationError, TypeError):
+        return None
 
 
 def _tournament_view(tournament: Tournament, sport_key: str) -> PublicTournamentView:
@@ -111,8 +140,8 @@ async def get_tournament(
     tournament = await service.resolve_tournament(session, slug)
     key = cache_keys.public_tournament_keys(tournament.id)["overview"]
     hit = await get_json(cache, key)
-    if hit is not None:
-        return PublicTournamentView(**hit)
+    if (revived := _revive(PublicTournamentView, hit)) is not None:
+        return revived
     sport_key = await service.get_sport_key(session, tournament)
     view = _tournament_view(tournament, sport_key)
     await set_json(cache, key, view.model_dump(mode="json"), ttl=300)
@@ -128,8 +157,8 @@ async def list_divisions(
     tournament = await service.resolve_tournament(session, slug)
     key = cache_keys.public_tournament_keys(tournament.id)["divisions"]
     hit = await get_json(cache, key)
-    if hit is not None:
-        return [PublicDivisionView(**row) for row in hit]
+    if (revived := _revive_list(PublicDivisionView, hit)) is not None:
+        return revived
     rows = await service.list_divisions_with_counts(session, tournament)
     views = [
         PublicDivisionView(
@@ -180,8 +209,8 @@ async def list_stages(
     tournament = await service.resolve_tournament(session, slug)
     key = cache_keys.public_tournament_keys(tournament.id)["stages"]
     hit = await get_json(cache, key)
-    if hit is not None:
-        return [PublicStageView(**row) for row in hit]
+    if (revived := _revive_list(PublicStageView, hit)) is not None:
+        return revived
     rows = await service.list_stages_with_drawn(session, tournament)
     views = [
         PublicStageView(id=s.id, division_id=s.division_id, type=s.type, seq=s.seq, drawn=drawn)
@@ -200,8 +229,8 @@ async def list_participants(
     tournament = await service.resolve_tournament(session, slug)
     key = cache_keys.public_tournament_keys(tournament.id)["participants"]
     hit = await get_json(cache, key)
-    if hit is not None:
-        return [PublicParticipantView(**row) for row in hit]
+    if (revived := _revive_list(PublicParticipantView, hit)) is not None:
+        return revived
     rows = await service.list_participants(session, tournament)
     views = [
         PublicParticipantView(
@@ -253,8 +282,8 @@ async def get_courts(
     tournament = await service.resolve_tournament(session, slug)
     key = cache_keys.public_tournament_keys(tournament.id)["schedule"]
     hit = await get_json(cache, key)
-    if hit is not None:
-        return ScheduleQueueView(**hit)
+    if (revived := _revive(ScheduleQueueView, hit)) is not None:
+        return revived
     view = await scheduling_service.build_queue(session, tournament.organization_id, tournament.id)
     await set_json(cache, key, view.model_dump(mode="json"), ttl=60)
     return view
@@ -302,8 +331,8 @@ async def get_standings(
     tournament = await service.resolve_tournament(session, slug)
     key = cache_keys.public_standings_key(tournament.id, stage_id)
     hit = await get_json(cache, key)
-    if hit is not None:
-        return StandingsView(**hit)
+    if (revived := _revive(StandingsView, hit)) is not None:
+        return revived
     rows = await service.get_standings(session, tournament, stage_id)
     view = scoring_service.build_standings_view(stage_id, rows)
     await set_json(cache, key, view.model_dump(mode="json"), ttl=30)

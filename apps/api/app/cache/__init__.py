@@ -17,7 +17,14 @@ from app.core.ports import Cache
 
 async def get_json(cache: Cache, key: str) -> Any | None:
     raw = await cache.get(key)
-    return json.loads(raw) if raw is not None else None
+    if raw is None:
+        return None
+    try:
+        return json.loads(raw)
+    except (ValueError, TypeError):
+        # A corrupt/truncated blob must never take down a read path — treat it as a
+        # miss so the caller rebuilds from the source of truth.
+        return None
 
 
 async def set_json(cache: Cache, key: str, value: Any, *, ttl: int) -> None:
