@@ -21,6 +21,16 @@ export function useFranchiseTiesBoard(stageId: string | undefined) {
   });
 }
 
+/** Pre-flight tier-alignment check — do all teams share one pair-strength shape? */
+export function usePairingTierCheck(stageId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ftKeys.tierCheck(stageId ?? ""),
+    queryFn: () => api.getPairingTierCheck(stageId!),
+    enabled: !!stageId && enabled,
+    staleTime: 0,
+  });
+}
+
 export function useGenerateFranchiseDraw(stageId: string, tournamentId: string) {
   const queryClient = useQueryClient();
   return useMutation({

@@ -85,6 +85,7 @@ export const queryKeys = {
   franchiseTies: {
     standings: (stageId: string) => ["franchise-standings", stageId] as const,
     board: (stageId: string) => ["franchise-ties", stageId] as const,
+    tierCheck: (stageId: string) => ["franchise-tier-check", stageId] as const,
   },
 
   portal: {
