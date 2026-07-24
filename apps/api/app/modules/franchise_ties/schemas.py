@@ -9,6 +9,28 @@ from pydantic import Field
 from app.api.schemas import ApiModel
 
 
+class SquadTierProfileView(ApiModel):
+    squad_id: uuid.UUID
+    squad_name: str
+    # Pair strengths, strongest first — the order the draw aligns leg-for-leg on.
+    profile: list[float]
+    aligned: bool
+
+
+class PairingTierCheckView(ApiModel):
+    """Pre-flight fairness check: do all squads share one strength profile?
+
+    When ``aligned`` is true, every leg of every tie is an equal-strength matchup
+    (advanced-v-advanced … beginner-v-beginner). When false, ``deviatingSquads``
+    lists the teams whose pairs were entered off the fixed combinations.
+    """
+
+    aligned: bool
+    reference_profile: list[float]
+    squads: list[SquadTierProfileView]
+    deviating_squads: list[str]
+
+
 class FranchiseDrawRequest(ApiModel):
     games_per_tie: int | None = Field(
         default=None,

@@ -21,6 +21,7 @@ from app.modules.franchise_ties.schemas import (
     FranchiseDrawResponse,
     FranchiseKnockoutDrawRequest,
     FranchiseTiesBoardView,
+    PairingTierCheckView,
     SquadStandingsView,
 )
 
@@ -83,6 +84,22 @@ async def get_franchise_ties_board(
     session: AsyncSession = Depends(get_request_session),
 ) -> FranchiseTiesBoardView:
     return await service.get_ties_board(
+        session, org_id=principal.organization_id, stage_id=stage_id
+    )
+
+
+@router.get(
+    "/stages/{stage_id}/pairing-tier-check",
+    response_model=PairingTierCheckView,
+)
+async def get_pairing_tier_check(
+    stage_id: uuid.UUID,
+    principal: Principal = Depends(get_principal),
+    session: AsyncSession = Depends(get_request_session),
+) -> PairingTierCheckView:
+    """Pre-flight fairness check — run before generating ties to confirm every
+    squad's pairs form the same strength profile (tier-for-tier alignment)."""
+    return await service.get_pairing_tier_check(
         session, org_id=principal.organization_id, stage_id=stage_id
     )
 
