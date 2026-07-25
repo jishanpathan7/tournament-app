@@ -219,7 +219,12 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
           />
         ) : (
           <>
-            <PlayersTable rows={pageRows} onOpen={setOpenRow} />
+            <PlayersTable
+              rows={pageRows}
+              onOpen={setOpenRow}
+              canManage={canManage}
+              participantsByDivision={data.participantsByDivision}
+            />
             <Pagination
               page={page}
               pageCount={Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))}

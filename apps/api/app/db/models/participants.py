@@ -119,6 +119,10 @@ class Participant(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, SoftDelet
         UUID(as_uuid=True), ForeignKey("squads.id", ondelete="RESTRICT"), nullable=True, index=True
     )
     display_name: Mapped[str] = mapped_column(String(200), nullable=False)
+    email: Mapped[str | None] = mapped_column(String(254), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    partner_preference: Mapped[str | None] = mapped_column(String(200), nullable=True)
     seed: Mapped[int | None] = mapped_column(Integer, nullable=True)
     rating: Mapped[decimal.Decimal | None] = mapped_column(Numeric(8, 3), nullable=True)
     skill_level: Mapped[str | None] = mapped_column(SKILL_LEVEL, nullable=True)

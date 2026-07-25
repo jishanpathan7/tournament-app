@@ -5,6 +5,7 @@ rules are reimplemented here. Never commits — the request session owns the tra
 
 from __future__ import annotations
 
+import datetime
 import logging
 import uuid
 from typing import Any
@@ -34,6 +35,7 @@ from app.modules.registrations.entrant import (
     entrant_has_external_identity,
     form_entrant_name,
 )
+from app.modules.registrations.schemas import ParticipantUpdate
 from app.realtime.channels import org_channel
 
 logger = logging.getLogger("app.registrations")
@@ -211,6 +213,7 @@ async def approve_all(
                 continue
 
             user = user_cache.get(reg.submitted_by)
+            fr = reg.form_response
 
             participant = Participant(
                 organization_id=org_id,
@@ -218,6 +221,10 @@ async def approve_all(
                 kind=ParticipantKind.INDIVIDUAL.value,
                 user_id=(None if entrant_has_external_identity(reg) else reg.submitted_by),
                 display_name=entrant_display_name(reg, account_name=user.name if user else None),
+                email=fr.get("email"),
+                phone=fr.get("phone"),
+                gender=fr.get("gender"),
+                partner_preference=fr.get("preferredPartnerName"),
                 skill_level=reg.skill_level,
                 status=ParticipantStatus.APPROVED.value,
             )
@@ -347,6 +354,8 @@ async def _build_participant(
     kind = ParticipantKind(division.participant_type)
     profile = await _sport_profile(session, org_id, division)
 
+    fr = registration.form_response
+
     if kind is ParticipantKind.INDIVIDUAL:
         user = await repo.get_user(session, registration.submitted_by)
         identity = form_entrant_name(registration) or str(registration.submitted_by)
@@ -362,6 +371,10 @@ async def _build_participant(
             display_name=entrant_display_name(
                 registration, account_name=user.name if user else None
             ),
+            email=fr.get("email"),
+            phone=fr.get("phone"),
+            gender=fr.get("gender"),
+            partner_preference=fr.get("preferredPartnerName"),
             skill_level=registration.skill_level,
             status=ParticipantStatus.APPROVED.value,
         )
@@ -372,7 +385,7 @@ async def _build_participant(
     # pair / team → a Team + roster, referenced by the Participant.
     # If the registration has no pre-formed roster (single-player import for a franchise
     # doubles event), approve as an Individual so the pairing engine can pair them later.
-    players = registration.form_response.get("players", [])
+    players = fr.get("players", [])
     roster_ids = [_player_identity(p) for p in players] if isinstance(players, list) else []
     if not roster_ids:
         user = await repo.get_user(session, registration.submitted_by)
@@ -386,6 +399,10 @@ async def _build_participant(
             display_name=entrant_display_name(
                 registration, account_name=user.name if user else None
             ),
+            email=fr.get("email"),
+            phone=fr.get("phone"),
+            gender=fr.get("gender"),
+            partner_preference=fr.get("preferredPartnerName"),
             skill_level=registration.skill_level,
             status=ParticipantStatus.APPROVED.value,
         )
@@ -394,7 +411,7 @@ async def _build_participant(
         return participant
     _validate_roster(profile, kind, roster_ids)
 
-    team_name = registration.form_response.get("teamName") or f"Team {str(registration.id)[:8]}"
+    team_name = fr.get("teamName") or f"Team {str(registration.id)[:8]}"
     team = Team(organization_id=org_id, name=team_name, captain_user_id=registration.submitted_by)
     session.add(team)
     await session.flush()
@@ -413,12 +430,102 @@ async def _build_participant(
         kind=kind.value,
         team_id=team.id,
         display_name=team_name,
+        email=fr.get("email"),
+        phone=fr.get("phone"),
+        gender=fr.get("gender"),
+        partner_preference=fr.get("preferredPartnerName"),
         skill_level=registration.skill_level,
         status=ParticipantStatus.APPROVED.value,
     )
     session.add(participant)
     await session.flush()
     return participant
+
+
+async def update_participant(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    participant_id: uuid.UUID,
+    data: ParticipantUpdate,
+) -> Participant:
+    participant = await repo.get_participant(session, org_id, participant_id)
+    if participant is None:
+        raise NotFoundError("Participant not found")
+
+    if data.display_name is not None:
+        participant.display_name = data.display_name.strip()
+    if data.email is not None:
+        participant.email = data.email.strip() or None
+    if data.phone is not None:
+        participant.phone = data.phone.strip() or None
+    if data.gender is not None:
+        participant.gender = data.gender.strip() or None
+    if data.skill_level is not None:
+        participant.skill_level = data.skill_level.value
+    if data.partner_preference is not None:
+        participant.partner_preference = data.partner_preference.strip() or None
+
+    await session.flush()
+    audit.record(
+        session,
+        organization_id=org_id,
+        actor_id=actor_id,
+        action="participant.updated",
+        entity="participant",
+        entity_id=participant_id,
+    )
+    return participant
+
+
+async def remove_participant(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    actor_id: uuid.UUID,
+    participant_id: uuid.UUID,
+) -> dict[str, Any]:
+    participant = await repo.get_participant(session, org_id, participant_id)
+    if participant is None:
+        raise NotFoundError("Participant not found")
+
+    division = await _require_division(session, org_id, participant.division_id)
+    tournament = await repo.get_tournament(session, org_id, division.tournament_id)
+    if tournament is None:  # pragma: no cover
+        raise NotFoundError("Tournament not found")
+
+    if tournament.status == TournamentStatus.LIVE.value:
+        raise ConflictError(
+            "Cannot remove a participant during a live tournament",
+            code="live_tournament",
+        )
+
+    had_team = participant.team_id is not None
+    had_matches = await repo.has_match_links(session, org_id, participant_id)
+
+    # Soft-delete: mark withdrawn so all existing queries (standings, match views) can
+    # still reference the row without joining into deleted state.
+    participant.deleted_at = datetime.datetime.now(datetime.timezone.utc)
+    participant.status = ParticipantStatus.WITHDRAWN.value
+
+    # Unlink the registration so it can be re-approved or left as historical record.
+    reg = await repo.get_registration_for_participant(session, org_id, participant_id)
+    if reg is not None:
+        reg.participant_id = None
+        reg.status = RegistrationStatus.WITHDRAWN.value
+
+    await session.flush()
+    audit.record(
+        session,
+        organization_id=org_id,
+        actor_id=actor_id,
+        action="participant.removed",
+        entity="participant",
+        entity_id=participant_id,
+    )
+    await get_cache().delete(cache_keys.readiness_key(org_id, division.tournament_id))
+    return {"had_team": had_team, "had_matches": had_matches}
 
 
 def _validate_roster(profile: Any, kind: ParticipantKind, roster_ids: list[str]) -> None:

@@ -3692,10 +3692,20 @@ export interface components {
       kind: string;
       /** Displayname */
       displayName: string;
+      /** Email */
+      email?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Gender */
+      gender?: string | null;
+      /** Partnerpreference */
+      partnerPreference?: string | null;
       /** Seed */
       seed: number | null;
       /** Status */
       status: string;
+      /** Skilllevel */
+      skillLevel?: string | null;
       /** Userid */
       userId: string | null;
       /** Teamid */
@@ -3707,6 +3717,20 @@ export interface components {
        * Format: date-time
        */
       createdAt: string;
+    };
+    /** ParticipantUpdate */
+    ParticipantUpdate: {
+      /** Displayname */
+      displayName?: string | null;
+      /** Email */
+      email?: string | null;
+      /** Phone */
+      phone?: string | null;
+      /** Gender */
+      gender?: string | null;
+      skillLevel?: components["schemas"]["SkillLevel"] | null;
+      /** Partnerpreference */
+      partnerPreference?: string | null;
     };
     /** PartnerWarning */
     PartnerWarning: {
