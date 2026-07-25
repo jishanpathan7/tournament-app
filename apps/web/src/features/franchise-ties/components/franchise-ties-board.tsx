@@ -148,8 +148,15 @@ export function FranchiseTiesBoard({
                     key={leg.id}
                     className="border-ink/10 flex flex-wrap items-center justify-between gap-2 rounded-xl border px-3 py-2 text-sm"
                   >
-                    <span>
-                      Leg {leg.legIndex + 1}: {leg.homePairName} vs {leg.awayPairName}
+                    <span className="flex flex-wrap items-center gap-1.5">
+                      <span className="text-muted-foreground font-mono text-xs">
+                        Leg {leg.legIndex + 1}
+                      </span>
+                      {leg.homePairName}
+                      <SkillTags skills={leg.homePairSkills} />
+                      <span className="text-muted-foreground">vs</span>
+                      {leg.awayPairName}
+                      <SkillTags skills={leg.awayPairSkills} />
                     </span>
                     <div className="flex items-center gap-2">
                       <Badge tone={STATUS_TONE[leg.status] ?? "muted"} className="capitalize">
@@ -220,5 +227,43 @@ export function FranchiseTiesPage({ tournamentId }: { tournamentId: string }) {
         />
       ) : null}
     </div>
+  );
+}
+
+const SKILL_TAG: Record<string, { label: string; className: string }> = {
+  advanced: {
+    label: "ADV",
+    className: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300",
+  },
+  intermediate: {
+    label: "INT",
+    className: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
+  },
+  beginner: {
+    label: "BEG",
+    className: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
+  },
+};
+
+/** Small skill chips beside a pair, so an organizer can see at a glance whether a
+ *  leg is an equal matchup — advanced-v-advanced, beginner-v-beginner. */
+function SkillTags({ skills }: { skills: string[] }) {
+  if (!skills || skills.length === 0) return null;
+  return (
+    <span className="inline-flex gap-1">
+      {skills.map((s, i) => {
+        const tag = SKILL_TAG[s];
+        return (
+          <span
+            key={i}
+            className={`rounded px-1 py-0.5 font-mono text-[10px] font-bold leading-none ${
+              tag?.className ?? "bg-muted text-muted-foreground"
+            }`}
+          >
+            {tag?.label ?? s.slice(0, 3).toUpperCase()}
+          </span>
+        );
+      })}
+    </span>
   );
 }

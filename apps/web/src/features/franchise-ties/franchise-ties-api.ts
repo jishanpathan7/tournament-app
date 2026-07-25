@@ -6,6 +6,9 @@ export interface TieLegView {
   legIndex: number;
   homePairName: string;
   awayPairName: string;
+  /** Per-player skill of each side ("advanced" | "intermediate" | "beginner"). */
+  homePairSkills: string[];
+  awayPairSkills: string[];
 }
 
 export interface FranchiseTieView {

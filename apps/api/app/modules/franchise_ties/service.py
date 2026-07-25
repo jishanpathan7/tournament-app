@@ -34,6 +34,7 @@ from app.modules.franchise_ties.schemas import (
 )
 from app.modules.franchise_ties.tier_check import analyze_tier_alignment
 from app.modules.pairing import repository as pairing_repo
+from app.modules.registrations import repository as registrations_repo
 from app.modules.squads import repository as squad_repo
 from app.modules.tournaments import repository as tour_repo
 from app.modules.tournaments import service as tour_service
@@ -115,12 +116,7 @@ async def squad_pair_map(
         )
     membership = await squad_repo.squad_membership_by_registration(session, org_id, tournament_id)
 
-    # Aggregate proposed_teams across all runs, preserving global creation order so
-    # the zip against list_approved_pair_participants (also ordered by created_at) holds.
-    all_proposed = sorted(
-        (t for run in runs for t in run.proposed_teams),
-        key=lambda t: (t.created_at, str(t.id)),
-    )
+    all_proposed = [t for run in runs for t in run.proposed_teams]
     pairs = list(await repo.list_approved_pair_participants(session, org_id, division_id))
     if len(all_proposed) != len(pairs):
         raise ValidationError(
@@ -128,18 +124,47 @@ async def squad_pair_map(
             code="pairing_mismatch",
         )
 
-    # Ordered strongest-first, because leg N of a tie is pair N on both sides.
-    # Ordering by strength is what makes that alignment MEAN something: the
-    # strongest pair of one team meets the strongest of the other. Left in
-    # creation order it only held if every captain happened to enter their pairs
-    # in the same sequence — a convention nothing enforced, and one that silently
-    # set an advanced pair against a beginner pair when it slipped.
+    # Attach each proposed team to ITS participant by identity, never by position.
     #
-    # Auto-paired squads are unaffected in practice: the fold builds every pair to
-    # the same target strength, so the sort is near-flat and creation order breaks
-    # the ties.
+    # We used to zip proposed teams (ordered by draft-time created_at) against pair
+    # participants (ordered by publish-time created_at) and assume the two sequences
+    # lined up. With squad-scoped pairing — one run published per team — a squad
+    # drafted early but published last lands at a different index in each list, so a
+    # strength got stapled onto the wrong pair. Every squad's SET of strengths still
+    # looked right, so nothing caught it; the draw just sorted the wrong labels and a
+    # 4-strength pair met a 5.
+    #
+    # The participant's display_name was built at publish from its proposed team's
+    # members (``team_name`` or the members joined by ``_entrant_name``), so we can
+    # rebuild that exact string and match on it — a real link, not a coincidence.
+    from app.modules.pairing.service import _entrant_name
+
+    member_reg_ids = {uuid.UUID(str(r)) for pt in all_proposed for r in (pt.member_ids or [])}
+    reg_by_id = await registrations_repo.get_registrations_by_ids(session, org_id, member_reg_ids)
+
+    def _expected_name(pt: Any) -> str:
+        names = [
+            _entrant_name(reg)
+            for mid in (pt.member_ids or [])
+            if (reg := reg_by_id.get(uuid.UUID(str(mid)))) is not None
+        ]
+        return pt.team_name or (" / ".join(names) if names else f"Team {str(pt.id)[:8]}")
+
+    by_display: dict[str, list[Participant]] = defaultdict(list)
+    for pair in pairs:
+        by_display[pair.display_name].append(pair)
+
+    # Ordered strongest-first, because leg N of a tie is pair N on both sides — so
+    # the strongest pair of one team meets the strongest of the other.
     scored: dict[uuid.UUID, list[tuple[Decimal, Any, Participant]]] = defaultdict(list)
-    for pt, pair in zip(all_proposed, pairs, strict=True):
+    for pt in all_proposed:
+        bucket = by_display.get(_expected_name(pt))
+        if not bucket:
+            raise ValidationError(
+                "could not match a published pair to its team — regenerate pairing",
+                code="pairing_mismatch",
+            )
+        pair = bucket.pop(0)
         reg_ids = [uuid.UUID(str(r)) for r in (pt.member_ids or [])]
         squad_ids = {membership[r] for r in reg_ids if r in membership}
         if len(squad_ids) != 1:
@@ -870,6 +895,22 @@ async def get_ties_board(
     ties = await repo.list_tie_matches(session, org_id, stage_id)
     views: list[FranchiseTieView] = []
 
+    # player name → skill level for this stage's division, so each leg can carry the
+    # skill of both pairs. Names come from the same form_response the pair display
+    # name is built from, so splitting "A / B" and looking each up is reliable.
+    skill_by_name: dict[str, str] = {}
+    for reg in await registrations_repo.list_registrations(session, org_id, stage.division_id):
+        nm = str((reg.form_response or {}).get("name") or "").strip()
+        if nm and reg.skill_level:
+            skill_by_name[nm] = reg.skill_level
+
+    def _pair_skills(pair_name: str) -> list[str]:
+        if not pair_name or pair_name == "—":
+            return []
+        return [
+            skill_by_name[p.strip()] for p in pair_name.split(" / ") if p.strip() in skill_by_name
+        ]
+
     for tie in ties:
         legs = await repo.list_leg_matches(session, org_id, tie.id)
         payload = tie.result_payload or {}
@@ -903,6 +944,8 @@ async def get_ties_board(
                     leg_index=idx,
                     home_pair_name=home_pair,
                     away_pair_name=away_pair,
+                    home_pair_skills=_pair_skills(home_pair),
+                    away_pair_skills=_pair_skills(away_pair),
                 )
             )
 
