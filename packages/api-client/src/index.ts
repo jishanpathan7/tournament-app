@@ -57,6 +57,7 @@ export type SubmitRegistrationRequest = Schemas["SubmitRegistrationRequest"];
 export type ApproveResult = Schemas["ApproveResult"];
 export type BulkApproveResult = Schemas["BulkApproveResult"];
 export type ParticipantResponse = Schemas["ParticipantResponse"];
+export type ParticipantUpdate = Schemas["ParticipantUpdate"];
 export type TeamResponse = Schemas["TeamResponse"];
 export type RosterEntryItem = Schemas["RosterEntryItem"];
 

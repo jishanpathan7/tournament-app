@@ -29,6 +29,7 @@ from app.modules.registrations.schemas import (
     ApproveResult,
     BulkApproveResult,
     ParticipantResponse,
+    ParticipantUpdate,
     RegistrationResponse,
     RosterEntryItem,
     SubmitRegistrationRequest,
@@ -76,8 +77,13 @@ def _participant_response(p: Participant) -> ParticipantResponse:
         division_id=p.division_id,
         kind=p.kind,
         display_name=p.display_name,
+        email=p.email,
+        phone=p.phone,
+        gender=p.gender,
+        partner_preference=p.partner_preference,
         seed=p.seed,
         status=p.status,
+        skill_level=p.skill_level,
         user_id=p.user_id,
         team_id=p.team_id,
         # SQUAD name, not the pair's own name (see Team.squad_id).
@@ -226,6 +232,45 @@ async def withdraw_registration(
         registration_id=registration_id,
     )
     return _registration_response(registration)
+
+
+@router.patch(
+    "/participants/{participant_id}",
+    response_model=ParticipantResponse,
+    dependencies=[Depends(authed_csrf)],
+)
+async def update_participant(
+    participant_id: uuid.UUID,
+    body: ParticipantUpdate,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> ParticipantResponse:
+    participant = await service.update_participant(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        participant_id=participant_id,
+        data=body,
+    )
+    return _participant_response(participant)
+
+
+@router.delete(
+    "/participants/{participant_id}",
+    status_code=status.HTTP_200_OK,
+    dependencies=[Depends(authed_csrf)],
+)
+async def remove_participant(
+    participant_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> dict:
+    return await service.remove_participant(
+        session,
+        org_id=principal.organization_id,
+        actor_id=principal.user_id,
+        participant_id=participant_id,
+    )
 
 
 @router.get("/teams/{team_id}", response_model=TeamResponse)

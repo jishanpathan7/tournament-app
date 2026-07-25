@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   BulkApproveResult,
+  ParticipantUpdate,
   RegistrationResponse,
   SubmitRegistrationRequest,
 } from "@tournament/api-client";
@@ -94,6 +95,34 @@ export function useWaitlistRegistration(divisionId: string) {
 
 export function useWithdrawRegistration(divisionId: string) {
   return useRegistrationDecision(divisionId, registrationsApi.withdrawRegistration, "withdrawn");
+}
+
+export function useUpdateParticipant(divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ participantId, data }: { participantId: string; data: ParticipantUpdate }) =>
+      registrationsApi.updateParticipant(participantId, data),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(divisionId),
+      });
+    },
+  });
+}
+
+export function useRemoveParticipant(divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (participantId: string) => registrationsApi.removeParticipant(participantId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(divisionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["tournaments"],
+      });
+    },
+  });
 }
 
 export interface BulkActionResult {

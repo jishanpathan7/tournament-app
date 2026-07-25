@@ -293,7 +293,11 @@ export function RegistrationManagement({
                   Registrations tab.
                 </p>
               ) : null}
-              <ParticipantsTable participants={drawCompetitors} />
+              <ParticipantsTable
+                participants={drawCompetitors}
+                divisionId={divisionId}
+                canManage={canManage}
+              />
             </>
           )}
         </TabsContent>

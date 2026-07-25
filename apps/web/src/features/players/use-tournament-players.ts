@@ -126,6 +126,7 @@ export function useTournamentPlayers(tournamentId: string, options?: { enabled?:
     rows,
     stats,
     membersById,
+    participantsByDivision,
     isLoading,
     isError,
     error,

@@ -19,6 +19,7 @@ from app.db.models import (
     Tournament,
     User,
 )
+from app.db.models.competition import MatchParticipant
 
 
 async def get_registration(
@@ -62,12 +63,51 @@ async def count_approved(session: AsyncSession, org_id: uuid.UUID, division_id: 
     return int((await session.execute(stmt)).scalar_one())
 
 
+async def get_participant(
+    session: AsyncSession, org_id: uuid.UUID, participant_id: uuid.UUID
+) -> Participant | None:
+    stmt = (
+        select(Participant)
+        .where(
+            Participant.id == participant_id,
+            Participant.organization_id == org_id,
+            Participant.deleted_at.is_(None),
+        )
+        .options(selectinload(Participant.team).selectinload(Team.squad))
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def has_match_links(
+    session: AsyncSession, org_id: uuid.UUID, participant_id: uuid.UUID
+) -> bool:
+    stmt = select(func.count()).where(
+        MatchParticipant.participant_id == participant_id,
+        MatchParticipant.organization_id == org_id,
+    )
+    return int((await session.execute(stmt)).scalar_one()) > 0
+
+
+async def get_registration_for_participant(
+    session: AsyncSession, org_id: uuid.UUID, participant_id: uuid.UUID
+) -> Registration | None:
+    stmt = select(Registration).where(
+        Registration.participant_id == participant_id,
+        Registration.organization_id == org_id,
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
 async def list_participants(
     session: AsyncSession, org_id: uuid.UUID, division_id: uuid.UUID
 ) -> Sequence[Participant]:
     stmt = (
         select(Participant)
-        .where(Participant.division_id == division_id, Participant.organization_id == org_id)
+        .where(
+            Participant.division_id == division_id,
+            Participant.organization_id == org_id,
+            Participant.deleted_at.is_(None),
+        )
         .options(selectinload(Participant.team).selectinload(Team.squad))
         .order_by(Participant.created_at)
     )
@@ -80,7 +120,11 @@ async def list_participants_for_tournament(
     stmt = (
         select(Participant)
         .join(Division, Participant.division_id == Division.id)
-        .where(Division.tournament_id == tournament_id, Participant.organization_id == org_id)
+        .where(
+            Division.tournament_id == tournament_id,
+            Participant.organization_id == org_id,
+            Participant.deleted_at.is_(None),
+        )
         .options(selectinload(Participant.team).selectinload(Team.squad))
         .order_by(Participant.created_at)
     )

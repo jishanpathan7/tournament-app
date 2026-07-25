@@ -6,7 +6,7 @@ import datetime
 import uuid
 from typing import Any
 
-from pydantic import Field
+from pydantic import Field, field_validator
 
 from app.api.schemas import ApiModel
 from app.db.enums import SkillLevel
@@ -48,12 +48,33 @@ class ParticipantResponse(ApiModel):
     division_id: uuid.UUID
     kind: str
     display_name: str
+    email: str | None = None
+    phone: str | None = None
+    gender: str | None = None
+    partner_preference: str | None = None
     seed: int | None
     status: str
+    skill_level: str | None = None
     user_id: uuid.UUID | None
     team_id: uuid.UUID | None
     team_name: str | None = None
     created_at: datetime.datetime
+
+
+class ParticipantUpdate(ApiModel):
+    display_name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    gender: str | None = None
+    skill_level: SkillLevel | None = None
+    partner_preference: str | None = None
+
+    @field_validator("display_name")
+    @classmethod
+    def display_name_not_blank(cls, v: str | None) -> str | None:
+        if v is not None and not v.strip():
+            raise ValueError("display_name cannot be blank")
+        return v
 
 
 class RosterEntryItem(ApiModel):

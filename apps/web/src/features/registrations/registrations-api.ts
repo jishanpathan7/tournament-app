@@ -2,6 +2,7 @@ import type {
   ApproveResult,
   BulkApproveResult,
   ParticipantResponse,
+  ParticipantUpdate,
   RegistrationResponse,
   SubmitRegistrationRequest,
   TeamResponse,
@@ -63,4 +64,24 @@ export async function bulkApproveRegistrations(divisionId: string): Promise<Bulk
 
 export function getTeam(teamId: string): Promise<TeamResponse> {
   return apiGet<TeamResponse>(`/teams/${teamId}`);
+}
+
+export async function updateParticipant(
+  participantId: string,
+  data: ParticipantUpdate,
+): Promise<ParticipantResponse> {
+  const { data: res } = await api.patch<ParticipantResponse>(
+    `/participants/${participantId}`,
+    data,
+  );
+  return res;
+}
+
+export async function removeParticipant(
+  participantId: string,
+): Promise<{ hadTeam: boolean; hadMatches: boolean }> {
+  const { data } = await api.delete<{ had_team: boolean; had_matches: boolean }>(
+    `/participants/${participantId}`,
+  );
+  return { hadTeam: data.had_team, hadMatches: data.had_matches };
 }
