@@ -72,6 +72,11 @@ class TieLegView(ApiModel):
     leg_index: int
     home_pair_name: str
     away_pair_name: str
+    # Per-player skill levels for each side ("advanced" / "intermediate" /
+    # "beginner"), so the board can show at a glance whether a leg is an equal
+    # matchup — advanced-v-advanced, beginner-v-beginner.
+    home_pair_skills: list[str] = []
+    away_pair_skills: list[str] = []
 
 
 class FranchiseTieView(ApiModel):

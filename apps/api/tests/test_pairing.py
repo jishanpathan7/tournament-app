@@ -430,3 +430,123 @@ async def test_organization_isolation(app, client):
             f"/api/v1/divisions/{did}/pairing/generate", json={}, headers=_csrf(other)
         )
         assert resp.status_code == 404
+
+
+# ---- squad-scoped pairing: strength attaches to the right pair (regression) ----
+
+
+async def _sq_entrant(client, did, name, skill):
+    r = await client.post(
+        f"/api/v1/divisions/{did}/registrations",
+        json={"formResponse": {"name": name}, "skillLevel": skill},
+        headers=_csrf(client),
+    )
+    assert r.status_code == 201, r.text
+    rid = r.json()["id"]
+    await client.post(f"/api/v1/registrations/{rid}/approve", headers=_csrf(client))
+    return rid
+
+
+async def test_squad_scoped_pairing_attaches_strength_to_the_right_pair(app, client):
+    """Regression: with one pairing run published per squad, squad_pair_map used to
+    zip proposed teams (draft order) against pair participants (publish order) by
+    position. Publish a squad out of draft order and a strength landed on the wrong
+    pair — a 4-strength pair sorted ahead of a 5 and met the other team's 5. Match by
+    identity instead, so every squad still sorts strongest-first.
+    """
+    await _new_org(client)
+    tour = await client.post(
+        TOUR, json={"name": "SIBL", "slug": _slug(), "sportKey": "badminton"}, headers=_csrf(client)
+    )
+    tid = tour.json()["id"]
+    div = await client.post(
+        f"{TOUR}/{tid}/divisions",
+        json={"name": "Franchise", "participantType": "squad"},
+        headers=_csrf(client),
+    )
+    did = div.json()["id"]
+    await client.post(
+        f"{TOUR}/{tid}/status", json={"status": "registration"}, headers=_csrf(client)
+    )
+
+    # Two squads, each: 2 advanced + 2 intermediate → manual pairs adv+adv (6) and
+    # int+int (4), so a misordering is detectable.
+    squads = {}
+    for name in ("Alpha", "Beta"):
+        sq = await client.post(f"{TOUR}/{tid}/squads", json={"name": name}, headers=_csrf(client))
+        squads[name] = sq.json()["id"]
+
+    regs = {}
+    for name, sid in squads.items():
+        regs[name] = {
+            "a1": await _sq_entrant(client, did, f"{name} AdvOne", "advanced"),
+            "a2": await _sq_entrant(client, did, f"{name} AdvTwo", "advanced"),
+            "i1": await _sq_entrant(client, did, f"{name} IntOne", "intermediate"),
+            "i2": await _sq_entrant(client, did, f"{name} IntTwo", "intermediate"),
+        }
+        for rid in regs[name].values():
+            await client.post(
+                f"/api/v1/squads/{sid}/members", json={"registrationId": rid}, headers=_csrf(client)
+            )
+
+    async def build_run(name):
+        sid = squads[name]
+        run = await client.post(
+            f"/api/v1/divisions/{did}/pairing/generate",
+            json={"squadId": sid, "manual": True},
+            headers=_csrf(client),
+        )
+        assert run.status_code == 201, run.text
+        run_id = run.json()["id"]
+        for members in ([regs[name]["a1"], regs[name]["a2"]], [regs[name]["i1"], regs[name]["i2"]]):
+            added = await client.post(
+                f"/api/v1/pairing/runs/{run_id}/teams",
+                json={"memberIds": members},
+                headers=_csrf(client),
+            )
+            assert added.status_code in (200, 201), added.text
+        return run_id
+
+    # Draft Alpha first, then Beta — but PUBLISH Beta first. This is the order
+    # divergence that broke the positional zip.
+    run_alpha = await build_run("Alpha")
+    run_beta = await build_run("Beta")
+    for run_id in (run_beta, run_alpha):
+        pub = await client.post(f"/api/v1/pairing/runs/{run_id}/publish", headers=_csrf(client))
+        assert pub.status_code == 200, pub.text
+
+    # Generate the team draw and read the legs back through the real endpoint —
+    # the guarantee the organizer sees: leg N is an equal matchup on both sides.
+    stage = await client.post(
+        f"/api/v1/divisions/{did}/stages",
+        json={"type": "round_robin", "seq": 0},
+        headers=_csrf(client),
+    )
+    sid = stage.json()["id"]
+    draw = await client.post(f"/api/v1/stages/{sid}/franchise-draw", json={}, headers=_csrf(client))
+    assert draw.status_code in (200, 201), draw.text
+
+    board = await client.get(f"/api/v1/stages/{sid}/franchise-ties", headers=_csrf(client))
+    ties = board.json()["ties"]
+    assert ties, "expected a fixture"
+
+    weight = {"advanced": 3, "intermediate": 2, "beginner": 1}
+    skill_of = {}
+    for name, tier in (
+        ("AdvOne", "advanced"),
+        ("AdvTwo", "advanced"),
+        ("IntOne", "intermediate"),
+        ("IntTwo", "intermediate"),
+    ):
+        for sq in ("Alpha", "Beta"):
+            skill_of[f"{sq} {name}"] = weight[tier]
+
+    def strength(pair_name: str) -> int:
+        return sum(skill_of.get(p.strip(), 0) for p in pair_name.split(" / "))
+
+    # Alpha's strongest pair (6) must meet Beta's strongest (6), and the 4s meet.
+    for leg in ties[0]["legs"]:
+        h, a = strength(leg["homePairName"]), strength(leg["awayPairName"])
+        assert (
+            h == a
+        ), f"leg {leg['legIndex'] + 1}: {h} vs {a} — {leg['homePairName']} / {leg['awayPairName']}"
