@@ -31,7 +31,15 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 });
 
 // Endpoints where a 401 is a real outcome, not an expired access token to refresh.
-const NO_REFRESH = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/password-reset"];
+// /auth/me is intentionally included: unauthenticated visitors (e.g. reset-password page)
+// get 401 here, and retrying a refresh fires AUTH_EXPIRED_EVENT, which redirects to "/".
+const NO_REFRESH = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+  "/auth/password-reset",
+  "/auth/me",
+];
 
 type RetryConfig = InternalAxiosRequestConfig & { _retried?: boolean };
 
