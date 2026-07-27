@@ -96,6 +96,11 @@ async def invite_member(
         already = await repo.get_member(session, tournament_id, existing_user.id)
         if already is not None:
             raise ConflictError("user is already a member of this tournament")
+        # They must be a member of THIS org or the org-scoped tournament list will
+        # never surface the tournament to them — and without a membership they can't
+        # even switch their active org to it. The pending-invite accept path already
+        # does this; the direct-add path for existing users needs it too.
+        await _ensure_org_membership(session, existing_user.id, org_id)
         member = TournamentMember(
             organization_id=org_id,
             tournament_id=tournament_id,
