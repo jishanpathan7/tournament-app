@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import (
@@ -17,9 +17,11 @@ from app.api.deps import (
     get_request_session,
     require_permission,
 )
-from app.core import authz
+from app.core import authz, security
+from app.core.config import get_settings
 from app.core.factory import get_email_channel
 from app.core.ports import EmailChannel
+from app.db.enums import OrgRole
 from app.modules.tournament_members import service
 from app.modules.tournament_members.schemas import (
     GenerateInviteLinkRequest,
@@ -226,16 +228,42 @@ async def resend_invite(
 accept_router = APIRouter(prefix="/tournament-invites", tags=["tournament-members"])
 
 
+def _remint(
+    response: Response,
+    request: Request,
+    current: CurrentUser,
+    org_id: uuid.UUID,
+    role: OrgRole,
+) -> None:
+    token = security.encode_access(
+        user_id=current.user_id,
+        session_id=current.session_id,
+        organization_id=org_id,
+        org_role=role.value,
+        remember=current.remember,
+    )
+    settings = get_settings()
+    secure = settings.cookie_secure or request.url.scheme == "https"
+    security.set_access_cookie(response, token, secure=secure)
+
+
 @accept_router.post("/accept", dependencies=[Depends(authed_csrf)])
 async def accept_invite(
     body: dict,
+    request: Request,
+    response: Response,
     current_user: CurrentUser = Depends(get_current_user),
     session: AsyncSession = Depends(get_public_session),
 ) -> dict:
     token = body.get("token", "")
-    await service.accept_invite(
+    member, org_role = await service.accept_invite(
         session,
         raw_token=token,
         user_id=current_user.user_id,
     )
-    return {"accepted": True}
+    _remint(response, request, current_user, member.organization_id, org_role)
+    return {
+        "accepted": True,
+        "organization_id": str(member.organization_id),
+        "tournament_id": str(member.tournament_id),
+    }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { MailCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -20,6 +21,7 @@ export function TournamentInviteAcceptance() {
   const { session, isLoading } = useSession();
   const router = useRouter();
   const accept = useAcceptTournamentInvite();
+  const queryClient = useQueryClient();
   const ran = React.useRef(false);
 
   React.useEffect(() => {
@@ -30,9 +32,16 @@ export function TournamentInviteAcceptance() {
     }
     if (!ran.current) {
       ran.current = true;
-      accept.mutate(token, { onSuccess: () => router.replace("/console") });
+      accept.mutate(token, {
+        onSuccess: (data) => {
+          // Backend re-minted the access cookie with the invited org as active.
+          // Clear stale session/tenant caches so the new cookie is picked up.
+          queryClient.clear();
+          router.replace(`/console/tournaments/${data.tournamentId}`);
+        },
+      });
     }
-  }, [token, isLoading, session, router, accept]);
+  }, [token, isLoading, session, router, accept, queryClient]);
 
   if (!token) {
     return (

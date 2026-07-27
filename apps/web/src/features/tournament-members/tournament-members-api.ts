@@ -52,8 +52,14 @@ export async function generateInviteLink(
   return data;
 }
 
-export async function acceptTournamentInvite(token: string): Promise<void> {
-  await api.post("/tournament-invites/accept", { token });
+export async function acceptTournamentInvite(
+  token: string,
+): Promise<{ organizationId: string; tournamentId: string }> {
+  const { data } = await api.post<{ organization_id: string; tournament_id: string }>(
+    "/tournament-invites/accept",
+    { token },
+  );
+  return { organizationId: data.organization_id, tournamentId: data.tournament_id };
 }
 
 export async function resendInvite(

@@ -132,10 +132,33 @@ export function InviteMemberDialog({
     generateLink.mutate(role, {
       onSuccess: (data) => {
         const url = `${window.location.origin}/join?token=${data.token}`;
-        void navigator.clipboard.writeText(url).then(() => {
+        const onCopied = () => {
           setCopied(true);
           setTimeout(() => setCopied(false), 2000);
-        });
+        };
+        if (navigator.clipboard) {
+          navigator.clipboard
+            .writeText(url)
+            .then(onCopied)
+            .catch(() => {
+              toast.error("Couldn't copy to clipboard", { description: url });
+            });
+        } else {
+          // Fallback for browsers without clipboard API
+          const ta = document.createElement("textarea");
+          ta.value = url;
+          ta.style.cssText = "position:fixed;left:-9999px;top:-9999px";
+          document.body.appendChild(ta);
+          ta.focus();
+          ta.select();
+          try {
+            document.execCommand("copy");
+            onCopied();
+          } catch {
+            toast.error("Couldn't copy to clipboard", { description: url });
+          }
+          document.body.removeChild(ta);
+        }
       },
     });
   }

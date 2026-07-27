@@ -12,7 +12,8 @@ from app.api.errors import ConflictError, NotFoundError
 from app.core.events import emit_event
 from app.core.security import hash_token, new_opaque_token
 from app.db.enums import OrgRole, TournamentInviteStatus, TournamentRole
-from app.db.models import TournamentInvite, TournamentMember
+from app.db.models import Membership, TournamentInvite, TournamentMember
+from app.modules.auth import repository as auth_repo
 from app.modules.tournament_members import repository as repo
 
 INVITE_TTL_DAYS = 7
@@ -183,12 +184,31 @@ async def invite_member(
     return invite
 
 
+async def _ensure_org_membership(
+    session: AsyncSession,
+    user_id: uuid.UUID,
+    org_id: uuid.UUID,
+) -> OrgRole:
+    """Ensure the user has a Membership in the org; add MEMBER role if missing."""
+    existing = await auth_repo.get_membership(session, user_id, org_id)
+    if existing is not None:
+        return OrgRole(existing.org_role)
+    membership = Membership(
+        organization_id=org_id,
+        user_id=user_id,
+        org_role=OrgRole.VIEWER.value,
+    )
+    session.add(membership)
+    await session.flush()
+    return OrgRole.VIEWER
+
+
 async def accept_invite(
     session: AsyncSession,
     *,
     raw_token: str,
     user_id: uuid.UUID,
-) -> TournamentMember:
+) -> tuple[TournamentMember, OrgRole]:
     invite = await repo.get_invite_by_token_hash(session, hash_token(raw_token))
     if (
         invite is None
@@ -202,7 +222,8 @@ async def accept_invite(
         invite.status = TournamentInviteStatus.ACCEPTED.value
         invite.accepted_at = _now()
         invite.accepted_user_id = user_id
-        return already
+        org_role = await _ensure_org_membership(session, user_id, invite.organization_id)
+        return already, org_role
 
     member = TournamentMember(
         organization_id=invite.organization_id,
@@ -227,7 +248,8 @@ async def accept_invite(
             "role": invite.tournament_role,
         },
     )
-    return member
+    org_role = await _ensure_org_membership(session, user_id, invite.organization_id)
+    return member, org_role
 
 
 async def update_member_role(
