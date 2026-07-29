@@ -467,6 +467,18 @@ async def update_participant(
     if data.partner_preference is not None:
         participant.partner_preference = data.partner_preference.strip() or None
 
+    # Mirror name + skill onto the linked registration. Franchise team cards and the
+    # doubles-pairing engine read the REGISTRATION (squad members reference it), not
+    # the participant — so without this an edit here never reaches the Teams board or
+    # affects pairing strength. Skill in particular must stay in sync or a corrected
+    # level wouldn't change how fairly the player is paired.
+    reg = await repo.get_registration_for_participant(session, org_id, participant_id)
+    if reg is not None:
+        if data.display_name is not None:
+            reg.form_response = {**(reg.form_response or {}), "name": participant.display_name}
+        if data.skill_level is not None:
+            reg.skill_level = data.skill_level.value
+
     await session.flush()
     audit.record(
         session,
@@ -514,6 +526,15 @@ async def remove_participant(
     if reg is not None:
         reg.participant_id = None
         reg.status = RegistrationStatus.WITHDRAWN.value
+
+        # A removed player must also leave their franchise team — squad members
+        # reference the registration, so without this they'd linger on the Teams
+        # board after being deleted. Imported lazily to avoid a module cycle.
+        from app.modules.squads import repository as squads_repo
+
+        member = await squads_repo.get_member_by_registration(session, org_id, reg.id)
+        if member is not None:
+            await session.delete(member)
 
     await session.flush()
     audit.record(
