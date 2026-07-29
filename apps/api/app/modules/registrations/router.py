@@ -7,7 +7,6 @@ Tenant-scoped via ``get_request_session`` + org-scoped repo queries.
 
 from __future__ import annotations
 
-import asyncio
 import uuid
 
 from fastapi import APIRouter, Depends, status
@@ -149,9 +148,11 @@ async def list_participants(
     rows = await repo.list_participants(session, principal.organization_id, division_id)
     participant_ids = {p.id for p in rows}
     individual_ids = {p.id for p in rows if p.kind == "individual"}
-    with_matches, in_pairs = await asyncio.gather(
-        repo.batch_has_match_links(session, principal.organization_id, participant_ids),
-        repo.batch_individual_in_pair(session, principal.organization_id, individual_ids),
+    with_matches = await repo.batch_has_match_links(
+        session, principal.organization_id, participant_ids
+    )
+    in_pairs = await repo.batch_individual_in_pair(
+        session, principal.organization_id, individual_ids
     )
     return [
         _participant_response(p, participants_with_matches=with_matches, individuals_in_pairs=in_pairs)
@@ -278,9 +279,9 @@ async def update_participant(
     )
     pid = {participant.id}
     individual_ids = pid if participant.kind == "individual" else set()
-    with_matches, in_pairs = await asyncio.gather(
-        repo.batch_has_match_links(session, principal.organization_id, pid),
-        repo.batch_individual_in_pair(session, principal.organization_id, individual_ids),
+    with_matches = await repo.batch_has_match_links(session, principal.organization_id, pid)
+    in_pairs = await repo.batch_individual_in_pair(
+        session, principal.organization_id, individual_ids
     )
     return _participant_response(
         participant, participants_with_matches=with_matches, individuals_in_pairs=in_pairs
