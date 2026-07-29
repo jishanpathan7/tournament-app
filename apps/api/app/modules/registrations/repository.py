@@ -14,6 +14,7 @@ from app.db.models import (
     Division,
     Participant,
     Registration,
+    RosterEntry,
     SportProfile,
     Team,
     Tournament,
@@ -223,6 +224,62 @@ async def get_pair_participant_by_team(
         Participant.team_id == team_id,
         Participant.kind == "pair",
         Participant.deleted_at.is_(None),
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def batch_individual_in_pair(
+    session: AsyncSession, org_id: uuid.UUID, participant_ids: Collection[uuid.UUID]
+) -> set[uuid.UUID]:
+    """Return which individual-kind participant IDs are in a published pair via RosterEntry.
+
+    An individual is "in a pair" when their Registration has a matching RosterEntry row
+    (added by the pairing engine when publishing). The pair-kind Participant uses team_id
+    directly; this covers the individual side.
+    """
+    if not participant_ids:
+        return set()
+    stmt = (
+        select(Registration.participant_id)
+        .join(RosterEntry, RosterEntry.registration_id == Registration.id)
+        .where(
+            Registration.participant_id.in_(participant_ids),
+            Registration.organization_id == org_id,
+        )
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return {r for r in rows if r is not None}
+
+
+async def has_roster_entry_for_registration(
+    session: AsyncSession, org_id: uuid.UUID, registration_id: uuid.UUID
+) -> bool:
+    """True if a RosterEntry links this registration to a published Team."""
+    stmt = (
+        select(func.count())
+        .select_from(RosterEntry)
+        .join(Team, RosterEntry.team_id == Team.id)
+        .where(
+            RosterEntry.registration_id == registration_id,
+            Team.organization_id == org_id,
+        )
+    )
+    return int((await session.execute(stmt)).scalar_one()) > 0
+
+
+async def get_team_by_registration_id(
+    session: AsyncSession, org_id: uuid.UUID, registration_id: uuid.UUID
+) -> Team | None:
+    """Return the Team (with roster loaded) that has a RosterEntry for this registration."""
+    stmt = (
+        select(Team)
+        .join(RosterEntry, RosterEntry.team_id == Team.id)
+        .where(
+            RosterEntry.registration_id == registration_id,
+            Team.organization_id == org_id,
+        )
+        .options(selectinload(Team.roster_entries))
+        .limit(1)
     )
     return (await session.execute(stmt)).scalar_one_or_none()
 

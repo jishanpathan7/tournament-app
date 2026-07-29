@@ -488,11 +488,19 @@ async def update_participant(
         if data.skill_level is not None:
             reg.skill_level = data.skill_level.value
 
-    # When display_name changes for an individual in a published pair, propagate the
-    # new name to the RosterEntry and rebuild the pair name ("A / B") on Team and
-    # the pair-kind Participant so the bracket and match views stay current.
-    if data.display_name is not None and participant.team_id is not None:
-        team = await repo.get_team_with_roster(session, org_id, participant.team_id)
+    # When display_name changes, propagate to the published pair if one exists.
+    # Two paths depending on which kind of participant we're editing:
+    #   A) Pair participant (team_id set): update its own RosterEntry + Team + pair name.
+    #   B) Individual participant (team_id None) in a published pair: look up the Team
+    #      via RosterEntry.registration_id, then do the same cascade.
+    if data.display_name is not None:
+        if participant.team_id is not None:
+            team = await repo.get_team_with_roster(session, org_id, participant.team_id)
+        elif reg is not None:
+            team = await repo.get_team_by_registration_id(session, org_id, reg.id)
+        else:
+            team = None
+
         if team is not None:
             reg_id = reg.id if reg is not None else None
             for entry in team.roster_entries:
@@ -506,7 +514,7 @@ async def update_participant(
             pair_name = " / ".join(n for n in names if n)
             team.name = pair_name
             pair_participant = await repo.get_pair_participant_by_team(
-                session, org_id, participant.team_id
+                session, org_id, team.id
             )
             if pair_participant is not None:
                 pair_participant.display_name = pair_name
@@ -548,7 +556,19 @@ async def remove_participant(
     # Block if the player is in a published pair — the pair Participant, Team, and
     # MatchParticipant rows all reference this individual. Deleting without unpublishing
     # first would orphan those rows and corrupt brackets/match history.
-    if participant.team_id is not None:
+    #
+    # Two cases:
+    #   A) Pair-kind participant: team_id is set directly.
+    #   B) Individual-kind participant paired via the pairing engine: team_id is None on the
+    #      Individual, but a RosterEntry links their registration to the Pair's Team.
+    in_pair = participant.team_id is not None
+    if not in_pair:
+        reg_for_check = await repo.get_registration_for_participant(session, org_id, participant_id)
+        if reg_for_check is not None:
+            in_pair = await repo.has_roster_entry_for_registration(
+                session, org_id, reg_for_check.id
+            )
+    if in_pair:
         raise ConflictError(
             "This player is in a published pair. Regenerate pairings to remove them first.",
             code="has_published_pair",
