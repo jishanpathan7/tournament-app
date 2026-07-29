@@ -212,3 +212,30 @@ async def get_team_with_roster(
         .options(selectinload(Team.roster_entries))
     )
     return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def get_pair_participant_by_team(
+    session: AsyncSession, org_id: uuid.UUID, team_id: uuid.UUID
+) -> Participant | None:
+    """Return the pair-kind Participant whose Team.id matches team_id, if any."""
+    stmt = select(Participant).where(
+        Participant.organization_id == org_id,
+        Participant.team_id == team_id,
+        Participant.kind == "pair",
+        Participant.deleted_at.is_(None),
+    )
+    return (await session.execute(stmt)).scalar_one_or_none()
+
+
+async def batch_has_match_links(
+    session: AsyncSession, org_id: uuid.UUID, participant_ids: Collection[uuid.UUID]
+) -> set[uuid.UUID]:
+    """Return the subset of participant_ids that have at least one MatchParticipant row."""
+    if not participant_ids:
+        return set()
+    stmt = select(MatchParticipant.participant_id).where(
+        MatchParticipant.participant_id.in_(participant_ids),
+        MatchParticipant.organization_id == org_id,
+    )
+    rows = (await session.execute(stmt)).scalars().all()
+    return set(rows)

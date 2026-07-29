@@ -3717,6 +3717,10 @@ export interface components {
        * Format: date-time
        */
       createdAt: string;
+      /** Haspublishedpair */
+      hasPublishedPair?: boolean;
+      /** Hasmatchresults */
+      hasMatchResults?: boolean;
     };
     /** ParticipantUpdate */
     ParticipantUpdate: {

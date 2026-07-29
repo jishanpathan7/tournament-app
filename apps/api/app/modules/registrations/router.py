@@ -71,7 +71,11 @@ def _team_response(team: Team) -> TeamResponse:
     )
 
 
-def _participant_response(p: Participant) -> ParticipantResponse:
+def _participant_response(
+    p: Participant,
+    *,
+    participants_with_matches: set[uuid.UUID] | None = None,
+) -> ParticipantResponse:
     return ParticipantResponse(
         id=p.id,
         division_id=p.division_id,
@@ -89,6 +93,10 @@ def _participant_response(p: Participant) -> ParticipantResponse:
         # SQUAD name, not the pair's own name (see Team.squad_id).
         team_name=p.team.squad.name if p.team and p.team.squad else None,
         created_at=p.created_at,
+        has_published_pair=p.team_id is not None,
+        has_match_results=(
+            p.id in participants_with_matches if participants_with_matches is not None else False
+        ),
     )
 
 
@@ -132,7 +140,11 @@ async def list_participants(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[ParticipantResponse]:
     rows = await repo.list_participants(session, principal.organization_id, division_id)
-    return [_participant_response(p) for p in rows]
+    participant_ids = {p.id for p in rows}
+    with_matches = await repo.batch_has_match_links(
+        session, principal.organization_id, participant_ids
+    )
+    return [_participant_response(p, participants_with_matches=with_matches) for p in rows]
 
 
 @router.post(
@@ -252,7 +264,10 @@ async def update_participant(
         participant_id=participant_id,
         data=body,
     )
-    return _participant_response(participant)
+    with_matches = await repo.batch_has_match_links(
+        session, principal.organization_id, {participant.id}
+    )
+    return _participant_response(participant, participants_with_matches=with_matches)
 
 
 @router.delete(

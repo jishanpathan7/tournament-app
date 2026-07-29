@@ -59,6 +59,9 @@ class ParticipantResponse(ApiModel):
     team_id: uuid.UUID | None
     team_name: str | None = None
     created_at: datetime.datetime
+    # Pre-check flags so the remove dialog can show state-aware warnings before confirming.
+    has_published_pair: bool = False
+    has_match_results: bool = False
 
 
 class ParticipantUpdate(ApiModel):

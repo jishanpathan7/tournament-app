@@ -650,6 +650,7 @@ async def repair_published_rosters(
             account_name = user.name if user else None
             entry.external_name = entrant_display_name(reg, account_name=account_name)
             entry.user_id = None if entrant_has_external_identity(reg) else reg.submitted_by
+            entry.registration_id = reg.id
         repaired += 1
 
     await session.flush()
@@ -703,6 +704,7 @@ def _materialize_team(
                 team_id=team_id,
                 user_id=None if entrant_has_external_identity(reg) else reg.submitted_by,
                 external_name=entrant_display_name(reg, account_name=account_name),
+                registration_id=reg.id,
             )
         )
     participant = Participant(

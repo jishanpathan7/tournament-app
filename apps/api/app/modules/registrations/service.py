@@ -467,17 +467,49 @@ async def update_participant(
     if data.partner_preference is not None:
         participant.partner_preference = data.partner_preference.strip() or None
 
-    # Mirror name + skill onto the linked registration. Franchise team cards and the
-    # doubles-pairing engine read the REGISTRATION (squad members reference it), not
-    # the participant — so without this an edit here never reaches the Teams board or
-    # affects pairing strength. Skill in particular must stay in sync or a corrected
-    # level wouldn't change how fairly the player is paired.
     reg = await repo.get_registration_for_participant(session, org_id, participant_id)
     if reg is not None:
+        # Mirror name + skill onto the linked registration. The Teams board and the
+        # pairing engine read from the registration (squad members reference it), so
+        # edits here must propagate or those surfaces stay stale.
+        fr_patch: dict[str, object] = {}
         if data.display_name is not None:
-            reg.form_response = {**(reg.form_response or {}), "name": participant.display_name}
+            fr_patch["name"] = participant.display_name
+        if data.email is not None:
+            fr_patch["email"] = participant.email
+        if data.phone is not None:
+            fr_patch["phone"] = participant.phone
+        if data.gender is not None:
+            fr_patch["gender"] = participant.gender
+        if data.partner_preference is not None:
+            fr_patch["preferredPartnerName"] = participant.partner_preference
+        if fr_patch:
+            reg.form_response = {**(reg.form_response or {}), **fr_patch}
         if data.skill_level is not None:
             reg.skill_level = data.skill_level.value
+
+    # When display_name changes for an individual in a published pair, propagate the
+    # new name to the RosterEntry and rebuild the pair name ("A / B") on Team and
+    # the pair-kind Participant so the bracket and match views stay current.
+    if data.display_name is not None and participant.team_id is not None:
+        team = await repo.get_team_with_roster(session, org_id, participant.team_id)
+        if team is not None:
+            reg_id = reg.id if reg is not None else None
+            for entry in team.roster_entries:
+                if reg_id is not None and entry.registration_id == reg_id:
+                    entry.external_name = participant.display_name
+                    break
+            names = [
+                e.external_name or ""
+                for e in sorted(team.roster_entries, key=lambda e: (e.created_at, e.id))
+            ]
+            pair_name = " / ".join(n for n in names if n)
+            team.name = pair_name
+            pair_participant = await repo.get_pair_participant_by_team(
+                session, org_id, participant.team_id
+            )
+            if pair_participant is not None:
+                pair_participant.display_name = pair_name
 
     await session.flush()
     audit.record(
@@ -513,8 +545,24 @@ async def remove_participant(
             code="live_tournament",
         )
 
-    had_team = participant.team_id is not None
+    # Block if the player is in a published pair — the pair Participant, Team, and
+    # MatchParticipant rows all reference this individual. Deleting without unpublishing
+    # first would orphan those rows and corrupt brackets/match history.
+    if participant.team_id is not None:
+        raise ConflictError(
+            "This player is in a published pair. Regenerate pairings to remove them first.",
+            code="has_published_pair",
+        )
+
+    # Block if match results already exist — results must be preserved for standings.
     had_matches = await repo.has_match_links(session, org_id, participant_id)
+    if had_matches:
+        raise ConflictError(
+            "This player has match results recorded. Removal would corrupt standings.",
+            code="has_match_results",
+        )
+
+    had_team = False
 
     # Soft-delete: mark withdrawn so all existing queries (standings, match views) can
     # still reference the row without joining into deleted state.

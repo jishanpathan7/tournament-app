@@ -106,10 +106,14 @@ export function useUpdateParticipant(divisionId: string) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.divisions.participants(divisionId),
       });
-      // A player edited here appears on the Teams board (as a squad member) and in
-      // tournament-scoped views — refresh both so the change is reflected there too.
       void queryClient.invalidateQueries({ queryKey: ["squads"] });
       void queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+      // Pairing board shows pair names — must refresh when an individual name/skill changes.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.pairing(divisionId) });
+      // Partner-preference warnings depend on player preferences — refresh on any edit.
+      void queryClient.invalidateQueries({
+        queryKey: ["divisions", divisionId, "partner-warnings"],
+      });
     },
   });
 }
@@ -123,9 +127,9 @@ export function useRemoveParticipant(divisionId: string) {
         queryKey: queryKeys.divisions.participants(divisionId),
       });
       void queryClient.invalidateQueries({ queryKey: ["tournaments"] });
-      // Removing a player also drops them from their franchise team — refresh the
-      // Teams board so they disappear there immediately.
       void queryClient.invalidateQueries({ queryKey: ["squads"] });
+      // Pairing board must reflect the removed player immediately.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.pairing(divisionId) });
     },
   });
 }
