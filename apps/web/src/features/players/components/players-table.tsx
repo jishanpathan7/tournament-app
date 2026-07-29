@@ -131,7 +131,10 @@ export function PlayersTable({
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                   >
-                    {participant ? (
+                    {/* Edit/Remove only make sense for a single player. Pairs and
+                        franchise teams are derived from their members, so they're
+                        changed by re-pairing/re-drafting, not from this row. */}
+                    {participant && participant.kind === "individual" ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
                           <MoreHorizontal className="h-4 w-4" />
