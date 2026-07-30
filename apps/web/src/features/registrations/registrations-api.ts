@@ -62,6 +62,13 @@ export async function bulkApproveRegistrations(divisionId: string): Promise<Bulk
   return data;
 }
 
+export async function backfillParticipants(divisionId: string): Promise<{ created: number }> {
+  const { data } = await api.post<{ created: number }>(
+    `/divisions/${divisionId}/participants/backfill`,
+  );
+  return data;
+}
+
 export function getTeam(teamId: string): Promise<TeamResponse> {
   return apiGet<TeamResponse>(`/teams/${teamId}`);
 }

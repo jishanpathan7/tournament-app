@@ -22,8 +22,8 @@ from app.core import audit
 from app.core.events import emit_event
 from app.core.factory import get_broadcaster
 from app.core.perf import timed
-from app.db.enums import RegistrationStatus, SkillLevel
-from app.db.models import Division, ImportBatch, MappingTemplate, Registration
+from app.db.enums import ParticipantKind, ParticipantStatus, RegistrationStatus, SkillLevel
+from app.db.models import Division, ImportBatch, MappingTemplate, Participant, Registration
 from app.modules.registration_ops import events
 from app.modules.registration_ops import repository as repo
 from app.modules.registration_ops.importers import get_source, list_sources
@@ -36,6 +36,7 @@ from app.modules.registration_ops.schemas import (
     MappingTemplateView,
     PreviewRow,
 )
+from app.modules.registrations.entrant import entrant_display_name
 from app.modules.registrations.partner_resolution import resolve_preferred_partner_ids
 from app.realtime.channels import org_channel
 
@@ -324,18 +325,20 @@ async def commit(
             )
             existing_by_id = {r.id: r for r in rows_db}
 
+        new_regs: list[Registration] = []
         for row in evaluated:
             if row.status == "new":
-                session.add(
-                    _registration_from_row(
-                        org_id, actor_id, division_id, row, auto_approve=auto_approve
-                    )
+                reg = _registration_from_row(
+                    org_id, actor_id, division_id, row, auto_approve=auto_approve
                 )
+                session.add(reg)
+                if auto_approve:
+                    new_regs.append(reg)
                 imported += 1
             elif row.status == "update" and row.existing_id is not None:
-                reg = existing_by_id.get(row.existing_id)
-                if reg is not None:
-                    _apply_row(reg, row)
+                existing_reg = existing_by_id.get(row.existing_id)
+                if existing_reg is not None:
+                    _apply_row(existing_reg, row)
                     updated += 1
                 else:  # pragma: no cover - raced deletion
                     skipped += 1
@@ -343,6 +346,31 @@ async def commit(
                 skipped += 1
     async with timed("import_commit.flush_inserts", _logger):
         await session.flush()
+
+    # Create Participant rows for auto-approved imports so edits work immediately.
+    if new_regs:
+        async with timed(
+            "import_commit.create_participants", _logger, extra={"count": len(new_regs)}
+        ):
+            for reg in new_regs:
+                fr = reg.form_response or {}
+                participant = Participant(
+                    organization_id=org_id,
+                    division_id=division_id,
+                    kind=ParticipantKind.INDIVIDUAL.value,
+                    user_id=None,  # organizer imports are external identities
+                    display_name=entrant_display_name(reg),
+                    email=fr.get("email"),
+                    phone=fr.get("phone"),
+                    gender=fr.get("gender"),
+                    partner_preference=fr.get("preferredPartnerName"),
+                    skill_level=reg.skill_level,
+                    status=ParticipantStatus.APPROVED.value,
+                )
+                session.add(participant)
+                reg.participant_id = participant.id
+        async with timed("import_commit.flush_participants", _logger):
+            await session.flush()
 
     # Link partner-name columns to registration ids so Smart Pairing honors pre-formed pairs.
     async with timed("import_commit.resolve_partners", _logger):

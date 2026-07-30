@@ -10,6 +10,7 @@ import logging
 import uuid
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
@@ -263,6 +264,52 @@ async def approve_all(
     return approved, waitlisted, skipped
 
 
+async def backfill_participants(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    division_id: uuid.UUID,
+) -> int:
+    """Create Participant rows for any APPROVED registrations that have none.
+
+    Handles the case where a CSV import used auto_approve before the import
+    pipeline learned to create Participant rows alongside registrations.
+    Returns the number of rows created.
+    """
+    stmt = select(Registration).where(
+        Registration.organization_id == org_id,
+        Registration.division_id == division_id,
+        Registration.status == RegistrationStatus.APPROVED.value,
+        Registration.participant_id.is_(None),
+    )
+    registrations = list((await session.execute(stmt)).scalars().all())
+    if not registrations:
+        return 0
+
+    created = 0
+    for reg in registrations:
+        fr = reg.form_response or {}
+        participant = Participant(
+            organization_id=org_id,
+            division_id=division_id,
+            kind=ParticipantKind.INDIVIDUAL.value,
+            user_id=(None if entrant_has_external_identity(reg) else reg.submitted_by),
+            display_name=entrant_display_name(reg),
+            email=fr.get("email"),
+            phone=fr.get("phone"),
+            gender=fr.get("gender"),
+            partner_preference=fr.get("preferredPartnerName"),
+            skill_level=reg.skill_level,
+            status=ParticipantStatus.APPROVED.value,
+        )
+        session.add(participant)
+        reg.participant_id = participant.id
+        created += 1
+
+    await session.flush()
+    return created
+
+
 async def waitlist_registration(
     session: AsyncSession, *, org_id: uuid.UUID, actor_id: uuid.UUID, registration_id: uuid.UUID
 ) -> Registration:
@@ -513,9 +560,7 @@ async def update_participant(
             ]
             pair_name = " / ".join(n for n in names if n)
             team.name = pair_name
-            pair_participant = await repo.get_pair_participant_by_team(
-                session, org_id, team.id
-            )
+            pair_participant = await repo.get_pair_participant_by_team(session, org_id, team.id)
             if pair_participant is not None:
                 pair_participant.display_name = pair_name
 

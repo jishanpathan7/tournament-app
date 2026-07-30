@@ -139,6 +139,22 @@ export interface BulkActionResult {
   failed: { id: string; error: unknown }[];
 }
 
+/** Create Participant rows for any approved registrations that are missing them. */
+export function useBackfillParticipants(divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => registrationsApi.backfillParticipants(divisionId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(divisionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.registrations(divisionId),
+      });
+    },
+  });
+}
+
 /** Single-request bulk approve via the backend's approve-all endpoint. */
 export function useBulkApproveRegistrations(divisionId: string) {
   const queryClient = useQueryClient();

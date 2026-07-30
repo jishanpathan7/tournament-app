@@ -155,7 +155,9 @@ async def list_participants(
         session, principal.organization_id, individual_ids
     )
     return [
-        _participant_response(p, participants_with_matches=with_matches, individuals_in_pairs=in_pairs)
+        _participant_response(
+            p, participants_with_matches=with_matches, individuals_in_pairs=in_pairs
+        )
         for p in rows
     ]
 
@@ -177,6 +179,23 @@ async def approve_all_registrations(
         division_id=division_id,
     )
     return BulkApproveResult(approved=approved, waitlisted=waitlisted, skipped=skipped)
+
+
+@router.post(
+    "/divisions/{division_id}/participants/backfill",
+    dependencies=[Depends(authed_csrf)],
+)
+async def backfill_participants(
+    division_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> dict[str, int]:
+    created = await service.backfill_participants(
+        session,
+        org_id=principal.organization_id,
+        division_id=division_id,
+    )
+    return {"created": created}
 
 
 @router.post(
