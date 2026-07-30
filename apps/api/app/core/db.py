@@ -29,9 +29,9 @@ _SSL_MODES = {"require", "verify-ca", "verify-full"}
 def _prepare_url(url: str) -> tuple[str, dict]:
     """Return (clean_url, connect_args) suitable for asyncpg.
 
-    Neon connection strings include ``?sslmode=require&channel_binding=require``
-    which asyncpg rejects.  We strip those params and pass ssl=True via
-    connect_args when sslmode was require/verify-*.
+    Neon/Supabase connection strings include ``?sslmode=require&channel_binding=require``
+    which asyncpg rejects.  We strip those params and pass ssl="require" via
+    connect_args when sslmode was require/verify-* (encrypts; skips cert-chain check).
     """
     parsed = urlparse(url)
     params = parse_qs(parsed.query, keep_blank_values=True)
@@ -41,7 +41,7 @@ def _prepare_url(url: str) -> tuple[str, dict]:
     clean_url = urlunparse(parsed._replace(query=urlencode({k: v[0] for k, v in params.items()})))
     connect_args: dict = {"statement_cache_size": 0}
     if sslmode in _SSL_MODES:
-        connect_args["ssl"] = True
+        connect_args["ssl"] = "require"
     return clean_url, connect_args
 
 
