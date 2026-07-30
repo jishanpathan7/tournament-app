@@ -98,8 +98,12 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
+  // Prefer the fresh lazy query; fall back to the already-loaded participantsByDivision
+  // so the Edit button is available immediately on first click (before lazy resolves).
   const detailParticipant: ParticipantResponse | null = openRow?.participantId
-    ? (participantsById.get(openRow.participantId) ?? null)
+    ? (participantsById.get(openRow.participantId) ??
+       data.participantsByDivision.get(openRow.divisionId)?.find((p) => p.id === openRow.participantId) ??
+       null)
     : null;
 
   const primaryDivisionId = data.divisions.data?.[0]?.id ?? null;
