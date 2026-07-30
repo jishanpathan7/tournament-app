@@ -648,6 +648,7 @@ async def remove_participant(
         member = await squads_repo.get_member_by_registration(session, org_id, reg.id)
         if member is not None:
             await session.delete(member)
+            had_team = True
 
     await session.flush()
     audit.record(

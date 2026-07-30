@@ -123,6 +123,12 @@ export function PlayersTable({
             const meta = statusMeta(row.status);
             const checkedIn = row.attendance === "checked_in";
             const participant = getParticipant(row);
+            // True only when the real ParticipantResponse (with hasMatchResults /
+            // hasPublishedPair flags) has loaded — the fallback object lacks these.
+            const isParticipantResolved =
+              participantsByDivision
+                ?.get(row.divisionId)
+                ?.some((p) => p.id === row.participantId) ?? false;
             return (
               <TableRow
                 key={row.id}
@@ -176,6 +182,7 @@ export function PlayersTable({
                             Edit player
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            disabled={!isParticipantResolved}
                             onClick={() => {
                               setRemovingParticipant(participant);
                               setRemovingDivisionId(row.divisionId);

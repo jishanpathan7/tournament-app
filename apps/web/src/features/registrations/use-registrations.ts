@@ -106,6 +106,9 @@ export function useUpdateParticipant(divisionId: string) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.divisions.participants(divisionId),
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.registrations(divisionId),
+      });
       void queryClient.invalidateQueries({ queryKey: ["squads"] });
       void queryClient.invalidateQueries({ queryKey: ["tournaments"] });
       // Pairing board shows pair names — must refresh when an individual name/skill changes.
@@ -125,6 +128,9 @@ export function useRemoveParticipant(divisionId: string) {
     onSettled: () => {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.divisions.participants(divisionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.registrations(divisionId),
       });
       void queryClient.invalidateQueries({ queryKey: ["tournaments"] });
       void queryClient.invalidateQueries({ queryKey: ["squads"] });

@@ -138,8 +138,10 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
   const liveParticipantId = liveOpenRow?.participantId;
   const detailParticipant: ParticipantResponse | null = liveParticipantId
     ? (participantsById.get(liveParticipantId) ??
-       data.participantsByDivision.get(liveOpenRow!.divisionId)?.find((p) => p.id === liveParticipantId) ??
-       null)
+      data.participantsByDivision
+        .get(liveOpenRow!.divisionId)
+        ?.find((p) => p.id === liveParticipantId) ??
+      null)
     : null;
 
   const primaryDivisionId = data.divisions.data?.[0]?.id ?? null;
