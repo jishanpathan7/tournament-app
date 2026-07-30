@@ -52,7 +52,7 @@ function MatchSides({
   const pa = participantsById.get(a?.participantId ?? "");
   const pb = participantsById.get(b?.participantId ?? "");
   return (
-    <div className="flex flex-col gap-0.5">
+    <div className="flex min-w-0 flex-col gap-0.5">
       <div className="flex flex-wrap gap-1">
         {pa?.teamName ? <TeamBadge teamName={pa.teamName} /> : null}
         {pb?.teamName && pb.teamName !== pa?.teamName ? <TeamBadge teamName={pb.teamName} /> : null}
@@ -134,9 +134,11 @@ function FixtureCard({
               <Link
                 key={leg.id}
                 href={`/t/${slug}/matches/${leg.id}`}
-                className="hover:bg-muted/40 flex items-center justify-between gap-3 rounded-xl px-2 py-2"
+                className="hover:bg-muted/40 flex items-center gap-3 rounded-xl px-2 py-2"
               >
-                <MatchSides match={leg} participantsById={participantsById} />
+                <div className="min-w-0 flex-1">
+                  <MatchSides match={leg} participantsById={participantsById} />
+                </div>
                 <Badge tone={legStatus.tone} className="shrink-0 capitalize">
                   {legStatus.label}
                 </Badge>
