@@ -10,7 +10,7 @@ builder = "nixpacks"
 # how `teams.squad_id` reached production missing. Railway runs this in the app's
 # own environment (private network reachable, native libs loaded), which a
 # `railway ssh` shell does not get.
-preDeployCommand = "alembic upgrade head"
+preDeployCommand = "python3 -c \"import os; u=os.environ.get('DIRECT_URL',''); print('DIRECT_URL host:', u.split('@')[-1].split('/')[0] if u else 'NOT SET')\" && alembic upgrade head"
 
 # Railway injects $PORT automatically. The app must bind to 0.0.0.0:$PORT.
 startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1"
