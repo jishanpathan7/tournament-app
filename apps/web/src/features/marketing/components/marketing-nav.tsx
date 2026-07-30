@@ -60,7 +60,7 @@ export function MarketingNav() {
           ))}
         </nav>
         <div className="flex items-center gap-2">
-          <Button tone="ghost" size="sm" asChild>
+          <Button tone="ghost" size="sm" className="hidden md:inline-flex" asChild>
             <Link href="/login">Sign in</Link>
           </Button>
           <Button tone="candy" size="sm" asChild>
@@ -99,6 +99,15 @@ export function MarketingNav() {
                 </Link>
               </li>
             ))}
+            <li className="border-ink/10 border-t pt-3">
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="text-foreground/80 hover:text-foreground block py-3 text-sm font-medium transition-colors"
+              >
+                Sign in
+              </Link>
+            </li>
           </ul>
         </nav>
       ) : null}

@@ -52,34 +52,53 @@ export function PublicTopNav({
     toast.success("Link copied");
   };
 
-  return (
-    <nav className="border-ink bg-card/90 sticky top-0 z-10 flex flex-wrap items-center gap-4 border-b-2 px-4 py-3 backdrop-blur-sm sm:px-6">
-      <Link href={base} className="shrink-0 font-serif text-lg font-bold tracking-tight">
-        {tournament.organization.name}
+  const tabLinks = tabs.map((tab) => {
+    const href = tabHref(tab.key);
+    const active = pathname === href;
+    return (
+      <Link
+        key={tab.key}
+        href={href}
+        className={cn(
+          "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition-colors",
+          active ? "bg-ink text-white" : "text-muted-foreground hover:bg-muted",
+        )}
+      >
+        {tab.label}
+        {tab.key === "live" ? <LiveDot /> : null}
       </Link>
-      <div className="flex flex-1 gap-1 overflow-x-auto">
-        {tabs.map((tab) => {
-          const href = tabHref(tab.key);
-          const active = pathname === href;
-          return (
-            <Link
-              key={tab.key}
-              href={href}
-              className={cn(
-                "flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold transition-colors",
-                active ? "bg-ink text-white" : "text-muted-foreground hover:bg-muted",
-              )}
-            >
-              {tab.label}
-              {tab.key === "live" ? <LiveDot /> : null}
-            </Link>
-          );
-        })}
+    );
+  });
+
+  return (
+    <nav className="border-ink bg-card/90 sticky top-0 z-10 border-b-2 backdrop-blur-sm">
+      {/* Mobile: two-row layout — org name + share on top, tabs below */}
+      <div className="sm:hidden">
+        <div className="flex items-center justify-between gap-2 px-4 pb-1 pt-2.5">
+          <Link
+            href={base}
+            className="min-w-0 truncate font-serif text-base font-bold tracking-tight"
+          >
+            {tournament.organization.name}
+          </Link>
+          <Button tone="paper" size="sm" onClick={share} className="shrink-0">
+            <Share2 className="h-4 w-4" strokeWidth={2.25} />
+            Share
+          </Button>
+        </div>
+        <div className="flex gap-1 overflow-x-auto px-3 pb-2.5">{tabLinks}</div>
       </div>
-      <Button tone="paper" size="sm" onClick={share} className="shrink-0">
-        <Share2 className="h-4 w-4" strokeWidth={2.25} />
-        Share
-      </Button>
+      {/* Desktop: single-row layout */}
+      <div className="hidden items-center gap-4 px-6 py-3 sm:flex">
+        <Link href={base} className="shrink-0 font-serif text-lg font-bold tracking-tight">
+          {tournament.organization.name}
+        </Link>
+        <div className="flex flex-1 gap-1 overflow-x-auto">{tabLinks}</div>
+        <Button tone="paper" size="sm" onClick={share} className="shrink-0">
+          <Share2 className="h-4 w-4" strokeWidth={2.25} />
+          Share
+        </Button>
+      </div>
     </nav>
   );
 }
