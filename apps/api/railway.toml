@@ -5,12 +5,12 @@
 builder = "nixpacks"
 
 [deploy]
-# Schema first, then traffic. Without this, code shipped ahead of its migration
-# and the first request touching a new column returned a 500 — which is exactly
-# how `teams.squad_id` reached production missing. Railway runs this in the app's
-# own environment (private network reachable, native libs loaded), which a
-# `railway ssh` shell does not get.
-preDeployCommand = "alembic upgrade head"
+# Migrations run at app startup (see app/main.py's lifespan), not as a
+# preDeployCommand — pre-deploy executes in a temporary build container with
+# no route to the private network, so `alembic upgrade head` failed there
+# with "Network is unreachable" against Supabase. Running migrations after
+# the app boots guarantees network access; migrations/env.py still targets
+# DIRECT_URL for a direct (non-pooled) connection.
 
 # Railway injects $PORT automatically. The app must bind to 0.0.0.0:$PORT.
 startCommand = "uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1"

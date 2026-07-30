@@ -4,6 +4,7 @@ import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +23,32 @@ from app.core.logging import configure_logging
 logger = logging.getLogger("app")
 
 
+async def run_migrations() -> None:
+    """Run Alembic migrations (`upgrade head`) against DIRECT_URL.
+
+    This used to run as a Railway `preDeployCommand`, but pre-deploy executes
+    in a temporary build container with no route to the private network —
+    the Supabase connection failed with "Network is unreachable". Running it
+    here, at app startup, guarantees the service already has network access
+    (migrations/env.py reads DIRECT_URL exactly as before).
+
+    Alembic's env.py drives its own event loop via `asyncio.run(...)`, which
+    cannot be called from within an already-running loop (the FastAPI
+    lifespan), so the upgrade is offloaded to a worker thread.
+    """
+    from alembic import command
+    from alembic.config import Config
+
+    def _upgrade() -> None:
+        alembic_ini = Path(__file__).resolve().parent.parent / "alembic.ini"
+        cfg = Config(str(alembic_ini))
+        command.upgrade(cfg, "head")
+
+    logger.info("api.migrations.start")
+    await asyncio.to_thread(_upgrade)
+    logger.info("api.migrations.complete")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = get_settings()
@@ -30,6 +57,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         import sentry_sdk
 
         sentry_sdk.init(dsn=settings.sentry_dsn, traces_sample_rate=0.1)
+
+    if settings.database_url:
+        await run_migrations()
 
     # In-process background job poller (single-instance MVP). Set WORKER_ENABLED=false
     # to instead run a standalone worker (`python -m app.workers`).
