@@ -50,8 +50,8 @@ export function PublicStandingsTable({ slug, stageId }: { slug: string; stageId:
       <table className="w-full text-sm">
         <thead>
           <tr className="border-border text-muted-foreground text-2xs border-b-2 text-left font-mono font-semibold uppercase tracking-[0.14em]">
-            <th className="px-4 py-2.5">#</th>
-            <th className="px-4 py-2.5">
+            <th className="px-3 py-2 sm:px-4 sm:py-2.5">#</th>
+            <th className="px-3 py-2 sm:px-4 sm:py-2.5">
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -72,20 +72,20 @@ export function PublicStandingsTable({ slug, stageId }: { slug: string; stageId:
                 </Tooltip>
               </TooltipProvider>
             </th>
-            <th className="px-4 py-2.5 text-right">W</th>
-            <th className="px-4 py-2.5 text-right">D</th>
-            <th className="px-4 py-2.5 text-right">L</th>
-            <th className="px-4 py-2.5 text-right">Diff</th>
-            <th className="px-4 py-2.5 text-right">Pts</th>
+            <th className="px-3 py-2 text-right sm:px-4 sm:py-2.5">W</th>
+            <th className="px-3 py-2 text-right sm:px-4 sm:py-2.5">D</th>
+            <th className="px-3 py-2 text-right sm:px-4 sm:py-2.5">L</th>
+            <th className="px-3 py-2 text-right sm:px-4 sm:py-2.5">Diff</th>
+            <th className="px-3 py-2 text-right sm:px-4 sm:py-2.5">Pts</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((row) => (
             <tr key={row.participantId} className="border-border border-t">
-              <td className="text-muted-foreground px-4 py-2.5 font-mono tabular-nums">
+              <td className="text-muted-foreground px-3 py-2 font-mono tabular-nums sm:px-4 sm:py-2.5">
                 {row.rank ?? "—"}
               </td>
-              <td className="px-4 py-2.5">
+              <td className="px-3 py-2 sm:px-4 sm:py-2.5">
                 <div className="flex flex-col gap-0.5">
                   <TeamBadge teamName={participantsById.get(row.participantId)?.teamName} />
                   <Link
@@ -96,13 +96,19 @@ export function PublicStandingsTable({ slug, stageId }: { slug: string; stageId:
                   </Link>
                 </div>
               </td>
-              <td className="px-4 py-2.5 text-right font-mono tabular-nums">{row.won}</td>
-              <td className="px-4 py-2.5 text-right font-mono tabular-nums">{row.drawn}</td>
-              <td className="px-4 py-2.5 text-right font-mono tabular-nums">{row.lost}</td>
-              <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+              <td className="px-3 py-2 text-right font-mono tabular-nums sm:px-4 sm:py-2.5">
+                {row.won}
+              </td>
+              <td className="px-3 py-2 text-right font-mono tabular-nums sm:px-4 sm:py-2.5">
+                {row.drawn}
+              </td>
+              <td className="px-3 py-2 text-right font-mono tabular-nums sm:px-4 sm:py-2.5">
+                {row.lost}
+              </td>
+              <td className="px-3 py-2 text-right font-mono tabular-nums sm:px-4 sm:py-2.5">
                 {row.diff > 0 ? `+${row.diff}` : row.diff}
               </td>
-              <td className="px-4 py-2.5 text-right font-mono font-bold tabular-nums">
+              <td className="px-3 py-2 text-right font-mono font-bold tabular-nums sm:px-4 sm:py-2.5">
                 {row.points}
               </td>
             </tr>

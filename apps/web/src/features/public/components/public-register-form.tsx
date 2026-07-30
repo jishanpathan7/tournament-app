@@ -111,7 +111,7 @@ export function PublicRegisterForm({ slug }: { slug: string }) {
 
       {!open ? null : (
         <form
-          className="border-ink bg-card shadow-sticker mt-8 flex flex-col gap-5 rounded-2xl border-2 p-6"
+          className="border-ink bg-card shadow-sticker mt-8 flex flex-col gap-5 rounded-2xl border-2 p-4 sm:p-6"
           onSubmit={handleSubmit((values) => submit.mutate(values))}
           noValidate
         >

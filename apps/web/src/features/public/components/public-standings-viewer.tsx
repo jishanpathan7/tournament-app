@@ -47,7 +47,7 @@ export function PublicStandingsViewer({ slug }: { slug: string }) {
     <div className="flex flex-col gap-4">
       {drawnStages.length > 1 ? (
         <Select value={activeStage?.id} onValueChange={setSelectedStageId}>
-          <SelectTrigger className="w-64" aria-label="Choose a division">
+          <SelectTrigger className="w-full sm:w-64" aria-label="Choose a division">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
