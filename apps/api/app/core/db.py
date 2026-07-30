@@ -4,6 +4,7 @@
 register on ``Base.metadata`` (imported via ``app.db.models``); Alembic targets it.
 """
 
+import ssl as ssl_module
 from collections.abc import AsyncGenerator, AsyncIterator
 from contextlib import asynccontextmanager
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
@@ -41,7 +42,13 @@ def _prepare_url(url: str) -> tuple[str, dict]:
     clean_url = urlunparse(parsed._replace(query=urlencode({k: v[0] for k, v in params.items()})))
     connect_args: dict = {"statement_cache_size": 0}
     if sslmode in _SSL_MODES:
-        connect_args["ssl"] = "require"
+        if sslmode == "require":
+            ctx = ssl_module.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl_module.CERT_NONE
+            connect_args["ssl"] = ctx
+        else:
+            connect_args["ssl"] = True
     return clean_url, connect_args
 
 

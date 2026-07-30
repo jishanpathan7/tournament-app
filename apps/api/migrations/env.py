@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import ssl as ssl_module
 from logging.config import fileConfig
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 
@@ -43,10 +44,15 @@ def _url() -> tuple[str, dict]:
 
     connect_args: dict = {"statement_cache_size": 0}
     if sslmode in {"require", "verify-ca", "verify-full"}:
-        # "require" skips cert-chain verification — sufficient for Supabase/Railway
-        # where the pooler presents a self-signed or untrusted cert. "verify-full"
-        # would need a trusted CA bundle mounted into the container.
-        connect_args["ssl"] = "require"
+        if sslmode == "require":
+            # asyncpg ignores string SSL modes — pass an SSLContext directly.
+            # CERT_NONE matches libpq sslmode=require: encrypted, no chain check.
+            ctx = ssl_module.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl_module.CERT_NONE
+            connect_args["ssl"] = ctx
+        else:
+            connect_args["ssl"] = True
 
     return clean_url, connect_args
 
@@ -64,7 +70,7 @@ def run_migrations_offline() -> None:
         context.run_migrations()
 
 
-def _do_run_migrations(connection) -> None:
+def _do_run_migrations(connection) -> None:  # type: ignore[no-untyped-def]
     context.configure(connection=connection, target_metadata=target_metadata, compare_type=True)
     with context.begin_transaction():
         context.run_migrations()
