@@ -123,19 +123,22 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
   );
   const pageRows = useMemo(() => paginate(filtered, page, PAGE_SIZE), [filtered, page]);
 
-  const detailDivisionId = openRow?.divisionId ?? "";
+  // Use live row data so participantId stays fresh after backfill refetches rows.
+  const liveOpenRow = openRow ? (data.rows.find((r) => r.id === openRow.id) ?? openRow) : null;
+
+  const detailDivisionId = liveOpenRow?.divisionId ?? "";
   const participants = useParticipants(detailDivisionId, {
-    enabled: !!openRow && !!detailDivisionId,
+    enabled: !!liveOpenRow && !!detailDivisionId,
   });
   const participantsById = useMemo(
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
-  // Prefer the fresh lazy query; fall back to the already-loaded participantsByDivision
-  // so the Edit button is available immediately on first click (before lazy resolves).
-  const detailParticipant: ParticipantResponse | null = openRow?.participantId
-    ? (participantsById.get(openRow.participantId) ??
-       data.participantsByDivision.get(openRow.divisionId)?.find((p) => p.id === openRow.participantId) ??
+  // Prefer the fresh lazy query; fall back to participantsByDivision (already loaded).
+  const liveParticipantId = liveOpenRow?.participantId;
+  const detailParticipant: ParticipantResponse | null = liveParticipantId
+    ? (participantsById.get(liveParticipantId) ??
+       data.participantsByDivision.get(liveOpenRow!.divisionId)?.find((p) => p.id === liveParticipantId) ??
        null)
     : null;
 
@@ -271,10 +274,10 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
         )}
       </Card>
 
-      {openRow ? (
+      {liveOpenRow ? (
         <RegistrationDetailDialog
-          registration={openRow.registration}
-          divisionId={openRow.divisionId}
+          registration={liveOpenRow.registration}
+          divisionId={liveOpenRow.divisionId}
           canManage={canManage}
           membersById={data.membersById}
           participant={detailParticipant}
