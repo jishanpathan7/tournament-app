@@ -43,7 +43,10 @@ def _url() -> tuple[str, dict]:
 
     connect_args: dict = {"statement_cache_size": 0}
     if sslmode in {"require", "verify-ca", "verify-full"}:
-        connect_args["ssl"] = True
+        # "require" skips cert-chain verification — sufficient for Supabase/Railway
+        # where the pooler presents a self-signed or untrusted cert. "verify-full"
+        # would need a trusted CA bundle mounted into the container.
+        connect_args["ssl"] = "require"
 
     return clean_url, connect_args
 
