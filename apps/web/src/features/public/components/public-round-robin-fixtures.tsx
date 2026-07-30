@@ -31,7 +31,7 @@ function FixtureRow({
     );
 
   return (
-    <div className="border-border flex items-center gap-3 border-t px-4 py-3 text-sm first:border-t-0">
+    <div className="border-border flex items-center gap-3 border-t px-3 py-2.5 text-sm first:border-t-0 sm:px-4 sm:py-3">
       {nameLink(a?.participantId, a?.outcome === "win")}
       {match.status === "pending" || match.status === "scheduled" ? (
         <span className="text-muted-foreground text-xs">vs</span>

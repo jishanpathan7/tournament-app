@@ -194,7 +194,7 @@ export function PublicBracketViewer({ slug }: { slug: string }) {
       ) : null}
       {drawnStages.length > 1 ? (
         <Select value={activeStage?.id} onValueChange={setSelectedStageId}>
-          <SelectTrigger className="w-64" aria-label="Choose a division">
+          <SelectTrigger className="w-full sm:w-64" aria-label="Choose a division">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
