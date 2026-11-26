@@ -73,6 +73,15 @@ class RosterEntry(UUIDPrimaryKeyMixin, OrgScopedMixin, TimestampMixin, Base):
     user_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True), ForeignKey("users.id", ondelete="RESTRICT"), nullable=True
     )
+    # Links the entry back to the Registration it was materialized from — needed to
+    # identify which entry belongs to which player when both players in a pair have
+    # no platform account (user_id = NULL for imported/external players).
+    registration_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("registrations.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     external_name: Mapped[str | None] = mapped_column(String(200), nullable=True)
     role: Mapped[str | None] = mapped_column(String(40), nullable=True)
 

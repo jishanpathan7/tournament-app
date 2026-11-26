@@ -3,7 +3,7 @@
 import type { ParticipantResponse } from "@tournament/api-client";
 import { UserPlus, Users } from "lucide-react";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { EmptyState } from "@/components/common/empty-state";
 import { ErrorState } from "@/components/common/error-state";
@@ -29,6 +29,9 @@ import {
 } from "@/features/players/use-tournament-players";
 import { RegistrationDetailDialog } from "@/features/registrations/components/registration-detail-dialog";
 import { useParticipants } from "@/features/registrations/use-registrations";
+import * as registrationsApi from "@/features/registrations/registrations-api";
+import { queryKeys } from "@/lib/query-keys";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCan } from "@/hooks/use-permissions";
 import { ACTIONS } from "@/lib/permissions";
 import { paginate } from "@/lib/paginate";
@@ -76,12 +79,42 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
   const data = useTournamentPlayers(tournamentId, { enabled: canManage });
 
+  const queryClient = useQueryClient();
+  const backfillRan = useRef(false);
+
   const [search, setSearch] = useState("");
   const [skill, setSkill] = useState<PlayerSkillFilter>("all");
   const [statusFilter, setStatusFilter] = useState<ParticipantStatusFilter>("all");
   const [importOpen, setImportOpen] = useState(false);
   const [page, setPage] = useState(1);
   const [openRow, setOpenRow] = useState<PlayerRow | null>(null);
+
+  // Repair: if any approved registration is missing a Participant row (imported before
+  // the pipeline learned to create them), backfill once per page-mount per affected division.
+  useEffect(() => {
+    if (backfillRan.current || data.isLoading || !canManage) return;
+    const affectedDivisionIds = [
+      ...new Set(
+        data.rows
+          .filter((r) => !r.participantId && r.status === "approved")
+          .map((r) => r.divisionId),
+      ),
+    ];
+    if (affectedDivisionIds.length === 0) return;
+    backfillRan.current = true;
+    Promise.all(affectedDivisionIds.map((id) => registrationsApi.backfillParticipants(id))).then(
+      () => {
+        affectedDivisionIds.forEach((id) => {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.divisions.registrations(id),
+          });
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.divisions.participants(id),
+          });
+        });
+      },
+    );
+  }, [data.isLoading, data.rows, canManage, queryClient]);
 
   const { filtered: searchFiltered } = useFilteredPlayers(data.rows, search, skill);
   const filtered = useMemo(
@@ -90,16 +123,25 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
   );
   const pageRows = useMemo(() => paginate(filtered, page, PAGE_SIZE), [filtered, page]);
 
-  const detailDivisionId = openRow?.divisionId ?? "";
+  // Use live row data so participantId stays fresh after backfill refetches rows.
+  const liveOpenRow = openRow ? (data.rows.find((r) => r.id === openRow.id) ?? openRow) : null;
+
+  const detailDivisionId = liveOpenRow?.divisionId ?? "";
   const participants = useParticipants(detailDivisionId, {
-    enabled: !!openRow && !!detailDivisionId,
+    enabled: !!liveOpenRow && !!detailDivisionId,
   });
   const participantsById = useMemo(
     () => new Map((participants.data ?? []).map((p) => [p.id, p])),
     [participants.data],
   );
-  const detailParticipant: ParticipantResponse | null = openRow?.participantId
-    ? (participantsById.get(openRow.participantId) ?? null)
+  // Prefer the fresh lazy query; fall back to participantsByDivision (already loaded).
+  const liveParticipantId = liveOpenRow?.participantId;
+  const detailParticipant: ParticipantResponse | null = liveParticipantId
+    ? (participantsById.get(liveParticipantId) ??
+      data.participantsByDivision
+        .get(liveOpenRow!.divisionId)
+        ?.find((p) => p.id === liveParticipantId) ??
+      null)
     : null;
 
   const primaryDivisionId = data.divisions.data?.[0]?.id ?? null;
@@ -234,10 +276,10 @@ export function PlayersManagement({ tournamentId }: { tournamentId: string }) {
         )}
       </Card>
 
-      {openRow ? (
+      {liveOpenRow ? (
         <RegistrationDetailDialog
-          registration={openRow.registration}
-          divisionId={openRow.divisionId}
+          registration={liveOpenRow.registration}
+          divisionId={liveOpenRow.divisionId}
           canManage={canManage}
           membersById={data.membersById}
           participant={detailParticipant}

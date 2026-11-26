@@ -85,25 +85,29 @@ export function ParticipantsTable({
                 </TableCell>
                 {canManage ? (
                   <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
-                        <MoreHorizontal className="h-4 w-4" />
-                        <span className="sr-only">Player actions</span>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setEditing(p)}>
-                          <Pencil className="mr-2 h-3.5 w-3.5" />
-                          Edit player
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => setRemoving(p)}
-                          className="text-pink focus:text-pink"
-                        >
-                          <Trash2 className="mr-2 h-3.5 w-3.5" />
-                          Remove player
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    {/* Pairs are derived from their members — edit/remove the
+                        individual players, not the pair row itself. */}
+                    {p.kind === "individual" ? (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
+                          <MoreHorizontal className="h-4 w-4" />
+                          <span className="sr-only">Player actions</span>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setEditing(p)}>
+                            <Pencil className="mr-2 h-3.5 w-3.5" />
+                            Edit player
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => setRemoving(p)}
+                            className="text-pink focus:text-pink"
+                          >
+                            <Trash2 className="mr-2 h-3.5 w-3.5" />
+                            Remove player
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    ) : null}
                   </TableCell>
                 ) : null}
               </TableRow>

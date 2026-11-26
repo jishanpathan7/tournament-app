@@ -106,6 +106,17 @@ export function useUpdateParticipant(divisionId: string) {
       void queryClient.invalidateQueries({
         queryKey: queryKeys.divisions.participants(divisionId),
       });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.registrations(divisionId),
+      });
+      void queryClient.invalidateQueries({ queryKey: ["squads"] });
+      void queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+      // Pairing board shows pair names — must refresh when an individual name/skill changes.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.pairing(divisionId) });
+      // Partner-preference warnings depend on player preferences — refresh on any edit.
+      void queryClient.invalidateQueries({
+        queryKey: ["divisions", divisionId, "partner-warnings"],
+      });
     },
   });
 }
@@ -119,8 +130,12 @@ export function useRemoveParticipant(divisionId: string) {
         queryKey: queryKeys.divisions.participants(divisionId),
       });
       void queryClient.invalidateQueries({
-        queryKey: ["tournaments"],
+        queryKey: queryKeys.divisions.registrations(divisionId),
       });
+      void queryClient.invalidateQueries({ queryKey: ["tournaments"] });
+      void queryClient.invalidateQueries({ queryKey: ["squads"] });
+      // Pairing board must reflect the removed player immediately.
+      void queryClient.invalidateQueries({ queryKey: queryKeys.divisions.pairing(divisionId) });
     },
   });
 }
@@ -128,6 +143,22 @@ export function useRemoveParticipant(divisionId: string) {
 export interface BulkActionResult {
   succeeded: string[];
   failed: { id: string; error: unknown }[];
+}
+
+/** Create Participant rows for any approved registrations that are missing them. */
+export function useBackfillParticipants(divisionId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => registrationsApi.backfillParticipants(divisionId),
+    onSettled: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.participants(divisionId),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.divisions.registrations(divisionId),
+      });
+    },
+  });
 }
 
 /** Single-request bulk approve via the backend's approve-all endpoint. */

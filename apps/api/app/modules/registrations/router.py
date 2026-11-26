@@ -71,7 +71,17 @@ def _team_response(team: Team) -> TeamResponse:
     )
 
 
-def _participant_response(p: Participant) -> ParticipantResponse:
+def _participant_response(
+    p: Participant,
+    *,
+    participants_with_matches: set[uuid.UUID] | None = None,
+    individuals_in_pairs: set[uuid.UUID] | None = None,
+) -> ParticipantResponse:
+    # Pair participants have team_id set. Individual participants that were paired by
+    # the engine don't — check the individuals_in_pairs set (built via RosterEntry).
+    in_pair = p.team_id is not None or (
+        individuals_in_pairs is not None and p.id in individuals_in_pairs
+    )
     return ParticipantResponse(
         id=p.id,
         division_id=p.division_id,
@@ -89,6 +99,10 @@ def _participant_response(p: Participant) -> ParticipantResponse:
         # SQUAD name, not the pair's own name (see Team.squad_id).
         team_name=p.team.squad.name if p.team and p.team.squad else None,
         created_at=p.created_at,
+        has_published_pair=in_pair,
+        has_match_results=(
+            p.id in participants_with_matches if participants_with_matches is not None else False
+        ),
     )
 
 
@@ -132,7 +146,20 @@ async def list_participants(
     session: AsyncSession = Depends(get_request_session),
 ) -> list[ParticipantResponse]:
     rows = await repo.list_participants(session, principal.organization_id, division_id)
-    return [_participant_response(p) for p in rows]
+    participant_ids = {p.id for p in rows}
+    individual_ids = {p.id for p in rows if p.kind == "individual"}
+    with_matches = await repo.batch_has_match_links(
+        session, principal.organization_id, participant_ids
+    )
+    in_pairs = await repo.batch_individual_in_pair(
+        session, principal.organization_id, individual_ids
+    )
+    return [
+        _participant_response(
+            p, participants_with_matches=with_matches, individuals_in_pairs=in_pairs
+        )
+        for p in rows
+    ]
 
 
 @router.post(
@@ -152,6 +179,23 @@ async def approve_all_registrations(
         division_id=division_id,
     )
     return BulkApproveResult(approved=approved, waitlisted=waitlisted, skipped=skipped)
+
+
+@router.post(
+    "/divisions/{division_id}/participants/backfill",
+    dependencies=[Depends(authed_csrf)],
+)
+async def backfill_participants(
+    division_id: uuid.UUID,
+    principal: Principal = Depends(_manage),
+    session: AsyncSession = Depends(get_request_session),
+) -> dict[str, int]:
+    created = await service.backfill_participants(
+        session,
+        org_id=principal.organization_id,
+        division_id=division_id,
+    )
+    return {"created": created}
 
 
 @router.post(
@@ -252,7 +296,15 @@ async def update_participant(
         participant_id=participant_id,
         data=body,
     )
-    return _participant_response(participant)
+    pid = {participant.id}
+    individual_ids = pid if participant.kind == "individual" else set()
+    with_matches = await repo.batch_has_match_links(session, principal.organization_id, pid)
+    in_pairs = await repo.batch_individual_in_pair(
+        session, principal.organization_id, individual_ids
+    )
+    return _participant_response(
+        participant, participants_with_matches=with_matches, individuals_in_pairs=in_pairs
+    )
 
 
 @router.delete(

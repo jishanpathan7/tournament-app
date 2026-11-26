@@ -75,10 +75,35 @@ export function PlayersTable({
   const [removingDivisionId, setRemovingDivisionId] = useState<string>("");
 
   function getParticipant(row: PlayerRow): ParticipantResponse | null {
-    if (!row.participantId || !participantsByDivision) return null;
-    return (
-      participantsByDivision.get(row.divisionId)?.find((p) => p.id === row.participantId) ?? null
-    );
+    // Only approved players have a participant to edit/remove.
+    if (!row.participantId) return null;
+    const resolved = participantsByDivision
+      ?.get(row.divisionId)
+      ?.find((p) => p.id === row.participantId);
+    if (resolved) return resolved;
+    // Fallback: build the participant from the row so the actions menu never
+    // depends on the separate participants query having resolved. Every row in
+    // this table is an individual player, and the row already carries what the
+    // edit/remove dialogs read (id + prefill fields).
+    const fr = (row.registration.formResponse ?? {}) as Record<string, unknown>;
+    const str = (v: unknown): string | null => (typeof v === "string" && v ? v : null);
+    return {
+      id: row.participantId,
+      divisionId: row.divisionId,
+      kind: "individual",
+      displayName: row.displayName,
+      email: str(fr.email),
+      phone: str(fr.phone),
+      gender: str(fr.gender),
+      partnerPreference: str(fr.preferredPartnerName),
+      seed: null,
+      status: row.status,
+      skillLevel: row.skillLevel ?? null,
+      userId: null,
+      teamId: null,
+      teamName: null,
+      createdAt: row.registration.createdAt,
+    };
   }
 
   return (
@@ -98,6 +123,12 @@ export function PlayersTable({
             const meta = statusMeta(row.status);
             const checkedIn = row.attendance === "checked_in";
             const participant = getParticipant(row);
+            // True only when the real ParticipantResponse (with hasMatchResults /
+            // hasPublishedPair flags) has loaded — the fallback object lacks these.
+            const isParticipantResolved =
+              participantsByDivision
+                ?.get(row.divisionId)
+                ?.some((p) => p.id === row.participantId) ?? false;
             return (
               <TableRow
                 key={row.id}
@@ -131,7 +162,10 @@ export function PlayersTable({
                     onClick={(e) => e.stopPropagation()}
                     onKeyDown={(e) => e.stopPropagation()}
                   >
-                    {participant ? (
+                    {/* Edit/Remove only make sense for a single player. Pairs and
+                        franchise teams are derived from their members, so they're
+                        changed by re-pairing/re-drafting, not from this row. */}
+                    {participant && participant.kind === "individual" ? (
                       <DropdownMenu>
                         <DropdownMenuTrigger className="text-muted-foreground hover:text-foreground rounded p-1 transition-colors">
                           <MoreHorizontal className="h-4 w-4" />
@@ -148,6 +182,7 @@ export function PlayersTable({
                             Edit player
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            disabled={!isParticipantResolved}
                             onClick={() => {
                               setRemovingParticipant(participant);
                               setRemovingDivisionId(row.divisionId);

@@ -63,7 +63,10 @@ export function TeamsBoard({ tournamentId }: { tournamentId: string }) {
   const can = useCan();
   const canManage = can(ACTIONS.TOURNAMENT_UPDATE);
 
-  const squads = useSquads(tournamentId);
+  // alwaysFresh: players are edited on the Participants tab (often in a separate
+  // browser tab), so refetch on mount and on window focus — otherwise a name/skill
+  // edit or a removal wouldn't show here until the cache went stale on its own.
+  const squads = useSquads(tournamentId, { alwaysFresh: true });
   const createSquad = useCreateSquad(tournamentId);
   const autoDistribute = useAutoDistributeSquads(tournamentId);
   const assign = useAssignSquadMember(tournamentId);

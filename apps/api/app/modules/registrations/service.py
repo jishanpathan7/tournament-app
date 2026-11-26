@@ -10,6 +10,7 @@ import logging
 import uuid
 from typing import Any
 
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.errors import ConflictError, NotFoundError, PermissionDeniedError, ValidationError
@@ -263,6 +264,52 @@ async def approve_all(
     return approved, waitlisted, skipped
 
 
+async def backfill_participants(
+    session: AsyncSession,
+    *,
+    org_id: uuid.UUID,
+    division_id: uuid.UUID,
+) -> int:
+    """Create Participant rows for any APPROVED registrations that have none.
+
+    Handles the case where a CSV import used auto_approve before the import
+    pipeline learned to create Participant rows alongside registrations.
+    Returns the number of rows created.
+    """
+    stmt = select(Registration).where(
+        Registration.organization_id == org_id,
+        Registration.division_id == division_id,
+        Registration.status == RegistrationStatus.APPROVED.value,
+        Registration.participant_id.is_(None),
+    )
+    registrations = list((await session.execute(stmt)).scalars().all())
+    if not registrations:
+        return 0
+
+    created = 0
+    for reg in registrations:
+        fr = reg.form_response or {}
+        participant = Participant(
+            organization_id=org_id,
+            division_id=division_id,
+            kind=ParticipantKind.INDIVIDUAL.value,
+            user_id=(None if entrant_has_external_identity(reg) else reg.submitted_by),
+            display_name=entrant_display_name(reg),
+            email=fr.get("email"),
+            phone=fr.get("phone"),
+            gender=fr.get("gender"),
+            partner_preference=fr.get("preferredPartnerName"),
+            skill_level=reg.skill_level,
+            status=ParticipantStatus.APPROVED.value,
+        )
+        session.add(participant)
+        reg.participant_id = participant.id
+        created += 1
+
+    await session.flush()
+    return created
+
+
 async def waitlist_registration(
     session: AsyncSession, *, org_id: uuid.UUID, actor_id: uuid.UUID, registration_id: uuid.UUID
 ) -> Registration:
@@ -467,6 +514,56 @@ async def update_participant(
     if data.partner_preference is not None:
         participant.partner_preference = data.partner_preference.strip() or None
 
+    reg = await repo.get_registration_for_participant(session, org_id, participant_id)
+    if reg is not None:
+        # Mirror name + skill onto the linked registration. The Teams board and the
+        # pairing engine read from the registration (squad members reference it), so
+        # edits here must propagate or those surfaces stay stale.
+        fr_patch: dict[str, object] = {}
+        if data.display_name is not None:
+            fr_patch["name"] = participant.display_name
+        if data.email is not None:
+            fr_patch["email"] = participant.email
+        if data.phone is not None:
+            fr_patch["phone"] = participant.phone
+        if data.gender is not None:
+            fr_patch["gender"] = participant.gender
+        if data.partner_preference is not None:
+            fr_patch["preferredPartnerName"] = participant.partner_preference
+        if fr_patch:
+            reg.form_response = {**(reg.form_response or {}), **fr_patch}
+        if data.skill_level is not None:
+            reg.skill_level = data.skill_level.value
+
+    # When display_name changes, propagate to the published pair if one exists.
+    # Two paths depending on which kind of participant we're editing:
+    #   A) Pair participant (team_id set): update its own RosterEntry + Team + pair name.
+    #   B) Individual participant (team_id None) in a published pair: look up the Team
+    #      via RosterEntry.registration_id, then do the same cascade.
+    if data.display_name is not None:
+        if participant.team_id is not None:
+            team = await repo.get_team_with_roster(session, org_id, participant.team_id)
+        elif reg is not None:
+            team = await repo.get_team_by_registration_id(session, org_id, reg.id)
+        else:
+            team = None
+
+        if team is not None:
+            reg_id = reg.id if reg is not None else None
+            for entry in team.roster_entries:
+                if reg_id is not None and entry.registration_id == reg_id:
+                    entry.external_name = participant.display_name
+                    break
+            names = [
+                e.external_name or ""
+                for e in sorted(team.roster_entries, key=lambda e: (e.created_at, e.id))
+            ]
+            pair_name = " / ".join(n for n in names if n)
+            team.name = pair_name
+            pair_participant = await repo.get_pair_participant_by_team(session, org_id, team.id)
+            if pair_participant is not None:
+                pair_participant.display_name = pair_name
+
     await session.flush()
     audit.record(
         session,
@@ -501,8 +598,36 @@ async def remove_participant(
             code="live_tournament",
         )
 
-    had_team = participant.team_id is not None
+    # Block if the player is in a published pair — the pair Participant, Team, and
+    # MatchParticipant rows all reference this individual. Deleting without unpublishing
+    # first would orphan those rows and corrupt brackets/match history.
+    #
+    # Two cases:
+    #   A) Pair-kind participant: team_id is set directly.
+    #   B) Individual-kind participant paired via the pairing engine: team_id is None on the
+    #      Individual, but a RosterEntry links their registration to the Pair's Team.
+    in_pair = participant.team_id is not None
+    if not in_pair:
+        reg_for_check = await repo.get_registration_for_participant(session, org_id, participant_id)
+        if reg_for_check is not None:
+            in_pair = await repo.has_roster_entry_for_registration(
+                session, org_id, reg_for_check.id
+            )
+    if in_pair:
+        raise ConflictError(
+            "This player is in a published pair. Regenerate pairings to remove them first.",
+            code="has_published_pair",
+        )
+
+    # Block if match results already exist — results must be preserved for standings.
     had_matches = await repo.has_match_links(session, org_id, participant_id)
+    if had_matches:
+        raise ConflictError(
+            "This player has match results recorded. Removal would corrupt standings.",
+            code="has_match_results",
+        )
+
+    had_team = False
 
     # Soft-delete: mark withdrawn so all existing queries (standings, match views) can
     # still reference the row without joining into deleted state.
@@ -514,6 +639,16 @@ async def remove_participant(
     if reg is not None:
         reg.participant_id = None
         reg.status = RegistrationStatus.WITHDRAWN.value
+
+        # A removed player must also leave their franchise team — squad members
+        # reference the registration, so without this they'd linger on the Teams
+        # board after being deleted. Imported lazily to avoid a module cycle.
+        from app.modules.squads import repository as squads_repo
+
+        member = await squads_repo.get_member_by_registration(session, org_id, reg.id)
+        if member is not None:
+            await session.delete(member)
+            had_team = True
 
     await session.flush()
     audit.record(
