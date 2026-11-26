@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Fraunces, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
 
 import { Providers } from "@/components/providers";
@@ -50,6 +51,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-background text-foreground min-h-screen font-sans antialiased">
         <Providers>{children}</Providers>
         <Analytics />
+        <Script id="datsnip-config" strategy="afterInteractive">
+          {`window._sf={siteId:'sf_1640740fb6e97119',ingestUrl:'https://api.datsnip.com'};`}
+        </Script>
+        <Script src="https://api.datsnip.com/sdk/tracker.js" strategy="afterInteractive" />
       </body>
     </html>
   );
